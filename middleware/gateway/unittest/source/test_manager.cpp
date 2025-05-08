@@ -18,6 +18,7 @@
 #include "common/communication/instance.h"
 #include "common/event/listen.h"
 #include "common/message/event.h"
+#include "common/transaction/context.h"
 
 #include "common/message/domain.h"
 #include "common/algorithm/is.h"

@@ -121,6 +121,18 @@ namespace casual
                      };
                   }
 
+                  auto lookup( State& state)
+                  {
+                     return [ &state]( const common::message::domain::process::lookup::Reply& message)
+                     {
+                        Trace trace{ "gateway::manager::handle::local::process::lookup"};
+                        log::debug( "message: ", message);
+                        
+                        // if the lookup is for SM, we'll advertise our services
+                        state.services.advertise( message);
+                     };
+                  }
+
                } // process
 
                namespace outbound
@@ -267,8 +279,6 @@ namespace casual
 
       handle::dispatch_type handler( State& state)
       {
-         static common::server::handle::admin::Call call{ manager::admin::services( state)};
-
          return common::message::dispatch::handler( ipc::inbound(),
             common::message::dispatch::handle::defaults( state),
             handle::local::process::exit( state),
@@ -281,8 +291,11 @@ namespace casual
             handle::local::configuration::request( state),
             handle::local::configuration::update::request( state),
             handle::local::shutdown::request( state),
-
-            std::ref( call));
+            // will send lookup for SM
+            state.services.initialize( manager::admin::services( state)),
+            // will receive lookup for SM
+            handle::local::process::lookup( state)
+         );
       }
 
    } // gateway::manager

@@ -20,6 +20,8 @@
 #include "configuration/model.h"
 
 #include "casual/task.h"
+#include "casual/manager/service/context.h"
+#include "casual/manager/service/policy.h"
 
 
 namespace casual
@@ -90,6 +92,9 @@ namespace casual
                CASUAL_LOG_SERIALIZE( CASUAL_SERIALIZE( groups);)
             } outbound;
 
+            //! holds the services that this manager exposes
+            casual::manager::service::Context< casual::manager::service::policy::Default> services;
+
             //! coordinated tasks, only(?) for shutdown 
             //! inbound before outbound
             casual::task::Coordinator tasks;
@@ -104,6 +109,7 @@ namespace casual
                CASUAL_SERIALIZE( runlevel);
                CASUAL_SERIALIZE( inbound);
                CASUAL_SERIALIZE( outbound);
+               CASUAL_SERIALIZE( services);
                CASUAL_SERIALIZE( tasks);
             )
 

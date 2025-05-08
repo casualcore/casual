@@ -10,6 +10,8 @@ make.IncludePaths([
     'include',
     'unittest/include',
     '../common/include',
+    '../serviceframework/include',
+    '../manager/include',
     '../configuration/include',
     '../configuration/unittest/include',
     '../domain/include',
@@ -19,7 +21,6 @@ make.IncludePaths([
     '../queue/include',
     '../xatmi/include',
     '../cli/include',
-    '../serviceframework/include',
     '../service/unittest/include',
     '../transaction/unittest/include',
     ]    
@@ -31,6 +32,7 @@ make.IncludePaths([
 make.LibraryPaths([
     'bin',
     '../common/bin',
+    '../manager/bin',
     '../configuration/bin',
     '../domain/bin',
     '../service/bin',
@@ -69,7 +71,8 @@ target = make.LinkExecutable( 'bin/casual-gateway-manager',
     ],
     [ 
         common_archive,
-        'casual-serviceframework', 
+        'casual-serviceframework',
+        'casual-manager',
         'casual-common',
         'casual-domain-utility',
     ])

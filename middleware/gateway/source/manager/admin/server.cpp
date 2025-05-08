@@ -12,7 +12,7 @@
 #include "gateway/manager/transform.h"
 
 
-#include "serviceframework/service/protocol.h"
+#include "casual/manager/service/protocol.h"
 
 
 #include "xatmi.h"
@@ -30,7 +30,7 @@ namespace casual
             {
                auto state( manager::State& state)
                {
-                  return [&state]( common::service::invoke::Parameter&& parameter)
+                  return [&state]( casual::manager::service::invoke::Parameter&& parameter) -> casual::manager::service::invoke::Result
                   {
                      Trace trace{ "gateway::manager::admin::local::service::state"};
 
@@ -74,10 +74,7 @@ namespace casual
                         return result;
                      };
 
-                     return serviceframework::service::user( 
-                        std::move( parameter),
-                        get_state,
-                        state);
+                     return casual::manager::service::protocol::dispatch( std::move( parameter), get_state, state);
                   };
                }
 
@@ -87,16 +84,16 @@ namespace casual
          } // <unnamed>
       } // local
 
-      common::server::Arguments services( manager::State& state)
+      std::vector< casual::manager::Service> services( manager::State& state)
       {
-         return { {
-               { service::name::state,
-                  local::service::state( state),
-                  common::service::transaction::Type::none,
-                  common::service::visibility::Type::undiscoverable,
-                  common::service::category::admin
-               }
-         }};
+         return {
+            { 
+               .name = service::name::state,
+               .function = local::service::state( state),
+               .visibility = common::service::visibility::Type::discoverable,
+               .category = std::string{ common::service::category::admin}
+            }
+         };
       }
    } // gateway::manager::admin
 } // casual
