@@ -5,6 +5,7 @@ import os
 
 make.IncludePaths( ['include',
     '../middleware/common/include',
+    '../middleware/manager/include',
     '../middleware/serviceframework/include',
     '../middleware/configuration/include',
     '../middleware/configuration/unittest/include',

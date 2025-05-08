@@ -1,0 +1,46 @@
+import casual.make.api as make
+import casual.middleware.make.api as dsl
+
+make.IncludePaths([
+    'include',
+    'unittest/include',
+    '../common/include',
+    '../serviceframework/include',
+    '../xatmi/include',
+    ]    
+    + make.optional_include_paths()
+    + dsl.paths().include.gtest
+   )
+
+make.LibraryPaths(
+   [
+      'bin',
+      '../common/bin',
+      '../serviceframework/bin',
+   ]
+    + make.optional_library_paths()
+    + dsl.paths().library.gtest
+   )
+
+archive = make.LinkArchive( 'bin/casual-manager', 
+   [
+      make.Compile( 'source/service/context.cpp'),
+      make.Compile( 'source/service/handle.cpp'),
+      make.Compile( 'source/service/policy.cpp'),
+      make.Compile( 'source/service/protocol.cpp'),
+      make.Compile( 'source/service.cpp'),
+   ]
+)
+
+make.LinkUnittest( 'bin/test-casual-gateway',
+   [
+        make.Compile( 'unittest/source/test_manager.cpp'),
+   ],
+   [
+      archive,
+      'casual-common',
+      'casual-serviceframework',
+   ]
+)
+
+

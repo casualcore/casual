@@ -12,6 +12,7 @@ make.IncludePaths( [
     '../xatmi/include',
     '../serviceframework/include',
     '../common/include',
+    '../manager/include',
     '../domain/include',
     '../domain/unittest/include',
     '../service/include',
