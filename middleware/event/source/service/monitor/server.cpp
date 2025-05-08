@@ -116,10 +116,11 @@ namespace casual
 
                common::server::start( {
                   {
-                     ".casual/event/service/metrics",
-                     &local::service::metrics,
-                     common::service::transaction::Type::none,
-                     common::service::category::admin,
+                     .name = ".casual/event/service/metrics",
+                     .function = &local::service::metrics,
+                     .transaction = common::service::transaction::Type::none,
+                     .visibility = common::service::visibility::Type::undiscoverable, 
+                     .category = std::string{ common::service::category::admin}
                   }
                });
 

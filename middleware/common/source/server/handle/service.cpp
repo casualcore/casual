@@ -31,10 +31,13 @@ namespace casual
                template< typename M>
                auto parameter( M& message)
                {
-                  common::service::invoke::Parameter result{ std::move( message.buffer)};
-                  result.service.name = message.service.name;
-                  result.parent = message.parent;
-
+                  common::service::invoke::Parameter result{
+                     .service = { .name = message.service.name},
+                     .header = std::move( message.header),
+                     .parent = message.parent,
+                     .payload = std::move( message.buffer)
+                  };
+                  
                   if( transaction::context().current())
                      result.flags = Flag::in_transaction;
 
@@ -120,10 +123,10 @@ namespace casual
             Trace trace{ "server::handle::service::complement::reply"};
             log::debug( "result: ", result);
 
-            reply.code.user = result.code;
+            reply.code.user = result.code.user;
             reply.buffer = std::move( result.payload);
 
-            if( result.transaction == common::service::invoke::Result::Transaction::commit)
+            if( result.code.result == flag::xatmi::Return::success)
             {
                reply.transaction_state = decltype( reply.transaction_state)::ok;
                reply.code.result = code::xatmi::ok;
@@ -143,13 +146,13 @@ namespace casual
             Trace trace{ "server::handle::service::complement::reply"};
             log::debug( "result: ", result);
 
-            reply.code.user = result.code;
+            reply.code.user = result.code.user;
             reply.buffer = std::move( result.payload);
 
             // we terminate the conversation -> we're doing a service return.
             reply.duplex = decltype( reply.duplex)::terminated;
 
-            if( result.transaction == common::service::invoke::Result::Transaction::commit)
+            if( result.code.result == flag::xatmi::Return::success)
                reply.code.result = code::xatmi::ok;  
             else
                reply.code.result = code::xatmi::service_fail;

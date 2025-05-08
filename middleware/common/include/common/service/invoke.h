@@ -46,19 +46,12 @@ namespace casual
                   receive_only = std::to_underlying( flag::xatmi::Flag::receive_only),
                };
 
-               // indicate that this enum is used as a flag
-               friend consteval void casual_enum_as_flag( Flag);
-               
-
-               Parameter() = default;
-               Parameter( buffer::Payload&& payload) : payload( std::move( payload)) {}
-
-               Parameter( Parameter&&) noexcept = default;
-               Parameter& operator = (Parameter&&) noexcept = default;
+               // indicate that this enum is used as a flag, and uses xatmi flags as a superset
+               friend consteval flag::xatmi::Flag casual_enum_as_flag_superset( Flag);
 
                Flag flags{};
                Service service;
-
+               common::service::header::Fields header;
                common::execution::context::Parent parent;
                buffer::Payload payload;
                strong::conversation::descriptor::id descriptor;
@@ -66,30 +59,42 @@ namespace casual
                CASUAL_LOG_SERIALIZE(
                   CASUAL_SERIALIZE( flags);
                   CASUAL_SERIALIZE( service);
+                  CASUAL_SERIALIZE( header);
                   CASUAL_SERIALIZE( parent);
                   CASUAL_SERIALIZE( payload);
                   CASUAL_SERIALIZE( descriptor);
                )
             };
 
+            static_assert( concepts::movable< Parameter>);
+
+            namespace result
+            {
+               struct Code 
+               {
+                  flag::xatmi::Return result = flag::xatmi::Return::success;
+                  long user{};
+         
+                  CASUAL_CONST_CORRECT_SERIALIZE(
+                     CASUAL_SERIALIZE( result);
+                     CASUAL_SERIALIZE( user);
+                  )
+               };
+               
+            } // result
+
             struct Result
             {
-               enum class Transaction : int
-               {
-                  commit = std::to_underlying( flag::xatmi::Return::success),
-                  rollback = std::to_underlying( flag::xatmi::Return::fail)
-               };
-
-               Result() = default;
-               Result( buffer::Payload&& payload) : payload( std::move( payload)) {}
-
                buffer::Payload payload;
-               long code = 0;
-               Transaction transaction = Transaction::commit;
+               result::Code code;
 
-               friend std::ostream& operator << ( std::ostream& out, Transaction value);
-               friend std::ostream& operator << ( std::ostream& out, const Result& value);
+               CASUAL_LOG_SERIALIZE(
+                  CASUAL_SERIALIZE( payload);
+                  CASUAL_SERIALIZE( code);
+               )
             };
+
+            static_assert( concepts::movable< Result>);
 
             struct Forward
             {

@@ -147,7 +147,13 @@ namespace casual
 
                            callable.entries = common::algorithm::transform( group, transform_entry);
 
-                           return common::server::argument::Service{ name, std::move( callable), common::service::transaction::Type::none, "mockup"};
+                           return common::server::argument::Service{ 
+                              .name = name,
+                              .function = std::move( callable), 
+                              .transaction = common::service::transaction::Type::none, 
+                              .visibility = common::service::visibility::Type::discoverable,
+                              .category = "mockup"
+                           };
                         };
 
                         // transform all groups to services

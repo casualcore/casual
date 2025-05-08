@@ -41,7 +41,7 @@ namespace casual
       void Base::exception()
       {
          common::exception::sink();
-         m_result.transaction = decltype( m_result.transaction)::rollback;
+         m_result.code.result = decltype( m_result.code.result)::fail;
       }
 
       io::Input& Base::input() { return m_input;}

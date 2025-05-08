@@ -95,13 +95,10 @@ namespace casual
 
                      service::invoke::Result result( const server::state::Jump& jump)
                      {
-                        service::invoke::Result result{ transform::payload( jump)};
-
-                        result.code = jump.state.code;
-                        result.transaction = jump.state.value == flag::xatmi::Return::success ?
-                              service::invoke::Result::Transaction::commit : service::invoke::Result::Transaction::rollback;
-
-                        return result;
+                        return service::invoke::Result{ 
+                           .payload = transform::payload( jump),
+                           .code = { .result = jump.state.value, .user = jump.state.code}
+                        };
                      }
 
                      service::invoke::Forward forward( const server::state::Jump& jump)
@@ -170,6 +167,9 @@ namespace casual
 
                      void invoke( service::invoke::Parameter& argument)
                      {
+                        // set the global header
+                        service::header::fields() = std::move( argument.header);
+
                         auto& state = server::context().state();
 
                         // Type of buffer needed by Cobol API TPSVCSTART(), so save information.

@@ -89,7 +89,7 @@ namespace casual
                std::bind( &local::service4, std::placeholders::_1, std::ref( value)),
                common::service::transaction::Type::none, common::service::visibility::Type::discoverable, common::service::category::admin);
 
-            arguments.services.back()( service::invoke::Parameter{ buffer::Payload{ ".binary/", 128}});
+            arguments.services.back()( service::invoke::Parameter{ .payload = buffer::Payload{ ".binary/", 128}});
          });
 
          EXPECT_TRUE( value == "test");

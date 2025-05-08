@@ -35,18 +35,6 @@ namespace casual
                {
                   using function_type = F;
 
-                  basic_service( string::Argument name, function_type function, service::transaction::Type transaction, service::visibility::Type visibility, string::Argument category)
-                   : name( std::move( name)), function( std::move( function)), transaction( transaction), visibility( visibility), category( std::move( category)) {}
-
-                  basic_service( string::Argument name, function_type function, service::transaction::Type transaction, string::Argument category)
-                   : name( std::move( name)), function( std::move( function)), transaction( transaction), category( std::move( category)) {}
-
-                  basic_service( string::Argument name, function_type function, service::transaction::Type transaction)
-                     : name( std::move( name)), function( std::move( function)), transaction( transaction) {}
-
-                  basic_service( string::Argument name, function_type function)
-                     : name( std::move( name)), function( std::move( function)) {}
-
                   std::string name;
                   function_type function;
                   service::transaction::Type transaction = service::transaction::Type::automatic;

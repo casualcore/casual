@@ -61,8 +61,6 @@ namespace casual
          execution::context::parent::service::set( message.parent.service);
          execution::context::parent::span::set( message.parent.span);
 
-         common::service::header::fields() = std::move( message.header);
-
          // set deadline (if any) for further service calls downstream
          common::service::call::context().deadline( start, message.deadline.remaining);
          

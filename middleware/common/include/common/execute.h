@@ -74,7 +74,7 @@ namespace casual
       //! If the action has not been executed the
       //! destructor will perform the execution
       template< typename E>
-      auto scope( E&& executor)
+      [[nodiscard]] auto scope( E&& executor)
       {
          return basic_scope< std::remove_cvref_t< E>>{ std::forward< E>( executor)};
       }
