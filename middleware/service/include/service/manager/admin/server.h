@@ -7,14 +7,12 @@
 #pragma once
 
 
+#include "casual/manager/service.h"
+#include "casual/manager/service/policy.h"
 
 
 #include <vector>
 #include <string>
-
-
-
-#include "common/server/argument.h"
 
 namespace casual
 {
@@ -35,7 +33,17 @@ namespace casual
 
          } // service::name
 
-         common::server::Arguments services( manager::State& state);
+         std::vector< casual::manager::Service> services( manager::State& state);
+
+         //! service-manager needs to have it's own policy for casual::manager::context, since
+         //! we can't communicate with blocking to the same ipc-device (with read, who is
+         //! going to write? with write, what if the ipc-device is full?)
+         struct Policy : casual::manager::service::policy::Default
+         {
+            static void send_ack( const common::message::service::call::ACK& ack);
+
+            static void initialize( const casual::manager::service::context::State& services, manager::State& state);
+         }; 
 
       } // admin
 

@@ -866,7 +866,7 @@ namespace casual
       }
 
 
-      void State::connect_manager( std::vector< common::server::Service> services)
+      void State::connect_manager( const std::vector< casual::manager::Service>& services)
       {
          Trace trace{ "service::manager::State::connect_manager"};
 
@@ -875,7 +875,7 @@ namespace casual
             common::message::service::advertise::Service result;
             result.category = service.category;
             result.name = service.name;
-            result.transaction = service.transaction;
+            result.transaction = decltype( result.transaction)::none;
             result.visibility = service.visibility;
             return result;
          };

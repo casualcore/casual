@@ -1156,62 +1156,6 @@ namespace casual
                }
             } // shutdown
             
-
-            //! service-manager needs to have it's own policy for callee::handle::basic_call, since
-            //! we can't communicate with blocking to the same ipc-device (with read, who is
-            //! going to write? with write, what if the ipc-device is full?)
-            struct Policy
-            {
-
-               Policy( manager::State& state) : m_state( &state) {}
-
-               Policy( Policy&&) = default;
-               Policy& operator = ( Policy&&) = default;
-
-               void configure( common::server::Arguments&& arguments)
-               {
-                  m_state->connect_manager( std::move( arguments.services));
-               }
-
-               void reply( common::strong::ipc::id id, common::message::service::call::Reply& message)
-               {
-                  communication::device::blocking::send( id, message);
-               }
-
-               void ack( const common::message::service::call::ACK& ack)
-               {
-                  local::ack( *m_state)( ack);
-               }
-               
-               template< typename... Ts>
-               void transaction( Ts&&...)
-               {
-                  // service-manager doesn't bother with transactions...
-               }
-
-               common::message::service::transaction::State transaction( bool commit)
-               {
-                  // service-manager doesn't bother with transactions...
-                  return {};
-               }
-
-               void forward( common::service::invoke::Forward&& forward, const common::message::service::call::callee::Request& message)
-               {
-                  assert( ! "can't forward within service-manager");
-                  std::terminate();
-               }
-
-               void statistics( common::strong::ipc::id, common::message::event::service::Call&)
-               {
-                  // We don't collect statistics for the service-manager
-               }
-
-            private:
-               manager::State* m_state;
-            };
-
-            using Call = common::server::handle::basic_call< Policy>;
-            
          } // <unnamed>
       } // local
 
@@ -1233,13 +1177,14 @@ namespace casual
             handle::local::ack( state),
             handle::local::event::subscription::begin( state),
             handle::local::event::subscription::end( state),
-            handle::local::Call{ admin::services( state), state},
             handle::local::domain::discovery::lookup::request( state),
             handle::local::domain::discovery::api::reply( state),
             handle::local::domain::discovery::fetch::known::request( state),
             handle::local::configuration::update::request( state),
             handle::local::configuration::request( state),
             handle::local::shutdown::request( state),
+            // will advertise the services directly to our state
+            state.admin_services.initialize( admin::services( state), state),
          };
       }
 

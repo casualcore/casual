@@ -21,6 +21,7 @@
 #include "common/communication/instance.h"
 #include "common/event/listen.h"
 #include "common/algorithm/container.h"
+#include "common/transaction/context.h"
 
 #include "common/code/xatmi.h"
 

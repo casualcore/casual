@@ -6,8 +6,9 @@
 
 #pragma once
 
-#include "common/message/service.h"
+#include "service/manager/admin/server.h"
 
+#include "common/message/service.h"
 #include "common/metric.h"
 #include "common/server/service.h"
 #include "common/communication/ipc.h"
@@ -16,6 +17,8 @@
 #include "common/message/coordinate.h"
 #include "common/communication/select.h"
 #include "common/communication/ipc/send.h"
+
+#include "casual/manager/service/context.h"
 
 #include "configuration/model.h"
 
@@ -592,6 +595,8 @@ namespace casual
          //! holds all alias restrictions.
          casual::configuration::model::service::Restriction restriction;
 
+         //! our own exported services
+         casual::manager::service::Context< admin::Policy> admin_services;
 
          //! @returns true if we're ready to shutdown
          bool done() const noexcept;
@@ -653,7 +658,8 @@ namespace casual
          //! @return the services that was reset.
          std::vector< std::string> metric_reset( std::vector< std::string> services);
 
-         void connect_manager( std::vector< common::server::Service> services);
+         //! adds our own services to our state
+         void connect_manager( const std::vector< casual::manager::Service>& services);
 
          CASUAL_LOG_SERIALIZE(
             CASUAL_SERIALIZE( runlevel);

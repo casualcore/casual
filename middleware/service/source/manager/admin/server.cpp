@@ -10,7 +10,7 @@
 
 #include "common/algorithm.h"
 
-#include "serviceframework/service/protocol.h"
+#include "casual/manager/service/protocol.h"
 
 
 namespace casual
@@ -21,31 +21,32 @@ namespace casual
       {
          namespace
          {
-            common::service::invoke::Result state( common::service::invoke::Parameter&& parameter, manager::State& state)
+            auto state( manager::State& state)
             {
-               auto protocol = serviceframework::service::protocol::deduce( std::move( parameter));
-
-               auto result = serviceframework::service::user( protocol, &transform::state, state);
-
-               protocol << CASUAL_NAMED_VALUE( result);
-
-               return protocol.finalize();
+               return [ &state]( casual::manager::service::invoke::Parameter&& parameter)
+               {
+                  return casual::manager::service::protocol::dispatch( 
+                     std::move( parameter), 
+                     &transform::state, state);
+               };
             }
 
             namespace metric
             {
-               common::service::invoke::Result reset( common::service::invoke::Parameter&& parameter, manager::State& state)
+               auto reset( manager::State& state)
                {
-                  auto protocol = serviceframework::service::protocol::deduce( std::move( parameter));
+                  return [ &state]( casual::manager::service::invoke::Parameter&& parameter)
+                  {
+                     auto protocol = casual::manager::service::protocol::deduce( std::move( parameter));
 
-                  std::vector< std::string> services;
-                  protocol >> CASUAL_NAMED_VALUE( services);
+                     auto services = protocol.extract< std::vector< std::string>>( "services");
 
-                  auto result = serviceframework::service::user( protocol, &manager::State::metric_reset, state, std::move( services));
-
-                  protocol << CASUAL_NAMED_VALUE( result);
-
-                  return protocol.finalize();
+                     return casual::manager::service::protocol::dispatch( 
+                        std::move( protocol), 
+                        &manager::State::metric_reset, 
+                        state, 
+                        std::move( services));
+                  };
                }
 
             } // metric
@@ -53,23 +54,39 @@ namespace casual
          } // <unnamed>
       } // local
 
-      common::server::Arguments services( manager::State& state)
+      std::vector< casual::manager::Service> services( manager::State& state)
       {
-         return { {
-               { service::name::state,
-                  std::bind( &local::state, std::placeholders::_1, std::ref( state)),
-                  common::service::transaction::Type::none,
-                  common::service::visibility::Type::undiscoverable,
-                  common::service::category::admin
-               },
-               { service::name::metric::reset,
-                  std::bind( &local::metric::reset, std::placeholders::_1, std::ref( state)),
-                  common::service::transaction::Type::none,
-                  common::service::visibility::Type::undiscoverable,
-                  common::service::category::admin
-               }
-         }};
+         return {
+            {  
+               .name = service::name::state,
+               .function = local::state( state),
+               .visibility = common::service::visibility::Type::undiscoverable,
+               .category = std::string{ common::service::category::admin}
+            },
+            { 
+               .name = service::name::metric::reset,
+               .function = local::metric::reset( state),
+               .visibility = common::service::visibility::Type::undiscoverable,
+               .category = std::string{ common::service::category::admin}
+            }
+         };
       }
+
+      void Policy::send_ack( const common::message::service::call::ACK& ack)
+      {
+         common::Trace trace{ "service::manager::admin::Policy::send_ack"};
+
+         // we just push it to our inbound device, and let the regular handler handle it
+         common::communication::ipc::inbound::device().push( ack);
+      }
+
+      void Policy::initialize( const casual::manager::service::context::State& context, manager::State& state)
+      {
+         common::Trace trace{ "service::manager::admin::Policy::initialize"};
+
+         state.connect_manager( common::algorithm::transform( context.services, common::predicate::adapter::second()));
+      }
+
 
    } // service::manager::admin
 } // casual
