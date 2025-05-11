@@ -1805,7 +1805,99 @@ domain:
             EXPECT_TRUE( request.parent.span != common::execution::context::get().span);
 
          }
+      }
 
+      TEST( gateway_manager, A_B__forward_to_b__expect_metrics_with_correct_span_from_outbound)
+      {
+         common::unittest::Trace trace;
+
+         
+         auto b = local::domain( R"(
+domain:
+   name: B
+   gateway:
+      inbound:
+         groups:
+            -  connections:
+                  -  address: 127.0.0.1:7010
+)");
+
+         // we advertise service b
+         casual::service::unittest::advertise( { "b"});
+  
+            
+         auto a = local::domain( R"(
+domain:
+   name: A
+   servers:
+      -  path: ${CASUAL_MAKE_SOURCE_ROOT}/middleware/example/server/bin/casual-example-server
+         arguments: [ --forward, b]
+         memberships: [ user]
+   gateway:
+      outbound:
+         groups:
+            -  connections:
+                  -  address: 127.0.0.1:7010
+   )");
+
+         // subscribe to metric event
+         common::event::subscribe( common::process::handle(), { common::message::event::service::Calls::type()});
+
+         unittest::fetch::until( unittest::fetch::predicate::outbound::connected());
+
+         const auto payload = unittest::random::binary( 1024);  
+         auto correlation = common::unittest::service::send( "casual/example/forward", payload);
+         
+         // receive the call to b. It won't have the same correlation, since "forward" does its own tpcall
+         const auto b_request = common::communication::ipc::receive< common::message::service::call::callee::Request>();
+
+         {
+            EXPECT_TRUE( b_request.service.name == "b");
+            EXPECT_TRUE( b_request.parent.service == "casual/example/forward");
+            EXPECT_TRUE( b_request.parent.span) << CASUAL_NAMED_VALUE( b_request);
+
+            // reply to the call
+            auto reply = common::message::reverse::type( b_request);
+            reply.code.result = decltype( reply.code.result)::ok;
+            reply.buffer = b_request.buffer;
+            communication::device::blocking::send( b_request.process.ipc, reply);
+
+            // we don't ack the request. It doesn't matter.
+         }
+
+         // receive the reply to the call to forward
+         {
+            const auto reply = common::communication::ipc::receive< common::message::service::call::Reply>( correlation);
+            EXPECT_TRUE( reply.buffer.data == payload);
+         }
+
+
+         // consume the metric events
+         {
+            std::vector< common::message::event::service::Metric> metrics;
+
+            common::unittest::eventually::succeed( [ &metrics]()
+            {
+               if( auto event = common::communication::ipc::non::blocking::receive< common::message::event::service::Calls>())
+                  algorithm::container::append( event->metrics, metrics);
+
+               return algorithm::find( metrics, "casual/example/forward") && algorithm::find( metrics, "b");
+            });
+
+            auto forward = algorithm::find( metrics, "casual/example/forward");
+            auto outbound = algorithm::find( metrics, "b");
+
+            EXPECT_TRUE( forward->span != strong::execution::span::id{});
+            // no parent span yet
+            EXPECT_TRUE( forward->parent.span == strong::execution::span::id{}) << CASUAL_NAMED_VALUE( *forward);
+            EXPECT_TRUE( outbound->span != strong::execution::span::id{});
+            EXPECT_TRUE( outbound->parent.span != strong::execution::span::id{});
+            // outbound should have parent span from forward
+            EXPECT_TRUE( outbound->parent.span == forward->span) << CASUAL_NAMED_VALUE( *outbound);
+
+            // the span from outbound should be the same as the one we got in b_request
+            EXPECT_TRUE( outbound->span == b_request.parent.span) << CASUAL_NAMED_VALUE( *outbound);
+         }
       }
 
       TEST( gateway_manager_inbound, advertise_b_in_B__5ms_timeout__call_b_from_A__twice__expect__timeout_for_both_calls)

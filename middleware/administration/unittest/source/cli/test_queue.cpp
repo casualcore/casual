@@ -450,7 +450,7 @@ domain:
 
          gateway::unittest::fetch::until( gateway::unittest::fetch::predicate::outbound::connected());
          
-         casual::domain::unittest::discover( {}, { "b1", "b2"});
+         casual::domain::unittest::discover::request( {}, { "b1", "b2"});
 
 /*
 

@@ -92,7 +92,7 @@ namespace casual
 
             namespace span
             {
-               void set( strong::execution::span::id id);
+               strong::execution::span::id set( strong::execution::span::id id);
             } // span
             
          } // parent

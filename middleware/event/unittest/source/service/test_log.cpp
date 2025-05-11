@@ -249,6 +249,90 @@ domain:
          EXPECT_TRUE( ! common::unittest::file::fetch::until::content(log_file).empty()) << common::unittest::file::fetch::content( log_file);
       }
 
+      TEST( event_service_log, call_forward_echo__expect_parent_span_from_forward__expext_forward_span__as_echo_parent_span)
+      {
+         common::unittest::Trace trace;
+
+         auto log_file = common::unittest::file::temporary::name( ".log");
+
+         common::environment::variable::set( "SERVICE_LOG_FILE", log_file.string());
+
+         auto a = domain::unittest::manager( local::configuration::base, R"(
+domain:
+   name: A
+   servers:
+      - path: "${CASUAL_MAKE_SOURCE_ROOT}/middleware/example/server/bin/casual-example-server"
+        memberships: [ second]
+        arguments: [ --forward, casual/example/echo]
+        instances: 2
+      - path: bin/casual-event-service-log
+        arguments: [ --file, "${SERVICE_LOG_FILE}"]
+        memberships: [ second]
+)");
+
+         ASSERT_TRUE( local::fetch::service::log());
+
+         const auto payload = common::unittest::random::binary( 128);
+         
+         // call forward, this does not propagate any span from us.
+         EXPECT_TRUE( common::unittest::service::receive( common::unittest::service::send( "casual/example/forward", payload)) == payload);
+
+         static constexpr auto fetch_rows = []( const auto& file)
+         {
+            return common::string::split( common::unittest::file::fetch::content( file), '\n');
+         };
+
+         // make sure we have at least two rows
+         common::unittest::eventually::succeed( [ &log_file]()
+         {
+            return fetch_rows( log_file).size() >= 2;
+         });
+
+         auto rows = fetch_rows( log_file);
+         EXPECT_TRUE( rows.size() >= 2) << CASUAL_NAMED_VALUE( rows);
+
+         
+         static constexpr auto extract_row = []( const auto& rows, std::string_view service) -> std::vector< std::string>
+         {
+            for( auto& row : rows)
+            {
+               auto parts = common::string::split( row, '|');
+               if( parts.size() > 1 && parts.at( 0) == service)
+                  return parts;
+            }
+
+            return {};
+         };
+
+         std::string forward_span;
+
+         // check forward metric
+         {
+            auto parts = extract_row( rows, "casual/example/forward");
+            ASSERT_TRUE( ! parts.empty()) << CASUAL_NAMED_VALUE( parts);
+            
+            // example
+            // some/service|some/parent/service|90053|0bd2c4b424e34e2296c25938766eedbf|10459c8a34e6422a9d5f584856db6701:a6f10817cdd94f3987985a8195e8f927:42:90053|1724141674147439|1724141674189439|6000|OK|S|cdb2b8d804d6e205|9bfeec3308a2a9cd|42
+            
+            EXPECT_TRUE( parts.at( 0) == "casual/example/forward");
+            forward_span = parts.at( 10);
+            EXPECT_TRUE( ! forward_span.empty());
+            EXPECT_TRUE( parts.at( 11).empty());
+         }
+
+         // check echo metric
+         {
+            auto parts = extract_row( rows, "casual/example/echo");
+            ASSERT_TRUE( ! parts.empty()) << CASUAL_NAMED_VALUE( parts);
+
+            EXPECT_TRUE( parts.at( 0) == "casual/example/echo");
+            EXPECT_TRUE( parts.at( 1) == "casual/example/forward");
+            EXPECT_TRUE( ! parts.at( 10).empty());
+            // we should have the forward span as parent
+            EXPECT_TRUE( parts.at( 11) == forward_span);
+         }
+      }
+
    } // event
 } // casual
 

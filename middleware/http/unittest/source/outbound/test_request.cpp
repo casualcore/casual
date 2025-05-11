@@ -62,4 +62,32 @@ namespace casual::http::outbound
       EXPECT_TRUE( request.state().url == local::node().url) << request.state().url;
    }
 
+   TEST( http_outbound_request, header_prepare_trace)
+   {
+      common::unittest::Trace trace;
+
+      auto execution = common::strong::execution::id::generate();
+      auto span = common::strong::execution::span::id::generate();
+
+      auto field = request::detail::header::prepare::trace( execution, span);
+
+      EXPECT_TRUE( field.name() == "traceparent");
+      EXPECT_TRUE( common::unittest::regex::match( field.value(), R"(^00-[0-9a-f]{32}-[0-9a-f]{16}-00$)")) << CASUAL_NAMED_VALUE( field);
+   }
+
+   TEST( http_outbound_request, header_prepare_trace_empty_execution_and_parent)
+   {
+      common::unittest::Trace trace;
+
+      // execution "can not" be empty in reality.
+      auto execution = common::strong::execution::id{};
+      // span could be empty in reality.
+      auto span = common::strong::execution::span::id{};
+
+      auto field = request::detail::header::prepare::trace( execution, span);
+
+      EXPECT_TRUE( field.name() == "traceparent");
+      EXPECT_TRUE( common::unittest::regex::match( field.value(), R"(^00-[0]{32}-[0]{16}-00$)")) << CASUAL_NAMED_VALUE( field);
+   }
+
 } // casual::http::outbound

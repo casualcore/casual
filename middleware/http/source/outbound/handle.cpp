@@ -61,6 +61,8 @@ namespace casual
                            metric.process = common::process::handle();
                            metric.correlation = message.correlation;
                            metric.execution = message.execution;
+                           // we just generate a new span. 
+                           metric.span = common::strong::execution::span::id::generate();
                            metric.service = message.service.logical_name();
                            metric.parent =  message.parent;
                            metric.type = decltype( metric.type)::concurrent;

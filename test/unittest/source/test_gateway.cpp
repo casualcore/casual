@@ -1626,7 +1626,7 @@ domain:
          
          // discover a service that we know exists in B, C and D
          {
-            auto services = casual::domain::unittest::service::discover( { "casual/example/domain/name"});
+            auto services = casual::domain::unittest::discover::services( { "casual/example/domain/name"});
             EXPECT_TRUE( services.at( 0) == "casual/example/domain/name");
          }
 

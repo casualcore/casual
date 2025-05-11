@@ -107,6 +107,13 @@ namespace casual
             return count != 0;
          }
 
+
+         namespace header::prepare
+         {
+            //! only exposed for testing
+            common::service::header::Field trace( const common::strong::execution::id& execution, const common::strong::execution::span::id& span);
+         } // header::prepare
+
       } // detail
 
       namespace blocking

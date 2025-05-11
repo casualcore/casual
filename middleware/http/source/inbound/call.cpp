@@ -36,9 +36,27 @@ namespace casual
                   if( auto found = algorithm::find( header, "content-type"))
                       return protocol::convert::to::buffer( found->value());
 
-                  common::code::raise::error( code::bad_request, "content-type header is manatory");                 
+                  common::code::raise::error( code::bad_request, "content-type header is mandatory");                 
                }
             } // buffer
+
+            namespace extract::header
+            {
+               auto trace( std::vector< call::header::Field>& header) -> std::tuple< common::strong::execution::id, common::strong::execution::span::id>
+               {
+                  if( auto found = algorithm::find( header, http::header::name::execution::trace::parent))
+                  {
+                     auto field = algorithm::container::extract( header, std::begin( found));
+
+                     return detail::transform::span( field.value());
+                  }
+
+                  return {};
+               }
+               
+            } // extract::header
+
+
 
             namespace transform::reply
             {
@@ -136,6 +154,10 @@ namespace casual
                   {
                      message::service::call::callee::Request result;
                      result.parent.service = request.url;
+                     
+                     // extract execution and span from the traceparent header
+                     std::tie( result.execution, result.parent.span) = extract::header::trace( request.payload.header);
+
                      result.buffer.type = buffer::type( request.payload.header);
                      result.buffer.data = std::move( request.payload.body);
                      result.header = std::move( request.payload.header);
@@ -199,6 +221,30 @@ namespace casual
          } // <unnamed>
       } // local 
 
+      namespace detail
+      {
+         namespace transform
+         {
+
+            auto span( std::string_view value) -> std::tuple< common::strong::execution::id, common::strong::execution::span::id>
+            {
+               static const std::regex regex{ R"(^00-[0-9a-f]{32}-[0-9a-f]{16}-[0-9a-f]{2}$)"};
+               if( ! std::regex_match( std::begin( value), std::end( value), regex))
+                  return {};
+
+               auto result = std::tuple< common::strong::execution::id, common::strong::execution::span::id>{};
+
+               auto& [ execution, span] = result;
+
+               transcode::hex::decode( value.substr( 3, 32), binary::span::fixed::make( execution.underlying().get()));
+               transcode::hex::decode( value.substr( 36, 16), span.underlying());
+
+               return result;
+            }
+         } // transform
+         
+      } // detail
+
       std::ostream& operator << ( std::ostream& out, Directive value)
       {
          switch( value)
@@ -238,7 +284,7 @@ namespace casual
       {
          Trace trace{ "http::inbound::call::Context::receive"};
 
-         casual::assertion( m_implementation, common::code::casual::invalid_semantics, " http::inbound::call::Context::receivce");
+         casual::assertion( m_implementation, common::code::casual::invalid_semantics, " http::inbound::call::Context::receive");
 
          try
          {

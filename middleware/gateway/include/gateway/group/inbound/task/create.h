@@ -41,12 +41,6 @@ namespace casual
          [[nodiscard]] task_unit enqueue( State& state, common::strong::socket::id descriptor, casual::queue::ipc::message::group::enqueue::Request&& message);
          [[nodiscard]] task_unit dequeue( State& state, common::strong::socket::id descriptor, casual::queue::ipc::message::group::dequeue::Request&& message);
       } // queue
-
-      [[nodiscard]] task_unit transaction( State& state, common::strong::socket::id descriptor, common::message::transaction::resource::prepare::Request&& message);
-      [[nodiscard]] task_unit transaction( State& state, common::strong::socket::id descriptor, common::message::transaction::resource::commit::Request&& message);
-      [[nodiscard]] task_unit transaction( State& state, common::strong::socket::id descriptor, common::message::transaction::resource::rollback::Request&& message);
-
-   
       
    } // gateway::group::inbound::task::create   
 } // casual

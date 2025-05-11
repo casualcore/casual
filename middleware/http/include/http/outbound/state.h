@@ -61,6 +61,7 @@ namespace casual
                   common::process::Handle destination;
                   common::strong::correlation::id correlation;
                   common::strong::execution::id execution;
+                  common::strong::execution::span::id span;
                   platform::time::point::type start = platform::time::point::limit::zero();
                   std::string service;
                   common::execution::context::Parent parent;

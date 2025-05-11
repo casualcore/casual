@@ -9,12 +9,23 @@
 
 #include "serviceframework/service/protocol/call.h"
 
-#include "common/unittest.h"
+#include "common/communication/instance.h"
 
 namespace casual
 {
    namespace transaction::unittest
    {
+      using namespace common;
+
+      common::code::tx commit( const common::transaction::ID& trid)
+      {
+         common::message::transaction::commit::Request request{ process::handle()};
+         request.trid = trid;
+
+         auto reply = communication::ipc::call( communication::instance::outbound::transaction::manager::device(), request);
+         return reply.state;
+      }
+
       manager::admin::model::State state()
       {
          common::unittest::service::wait::until::advertised( manager::admin::service::name::state);

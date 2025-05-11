@@ -204,7 +204,7 @@ Binary representation of the example (network byte ordering in base64):
 
 ## domain_discovery_reply - **#7311** - _[1.4]_
 
-Sent to and received from other domains when one domain wants to discover information abut the other.
+Sent to and received from other domains when one domain wants to discover information about the other.
 
 role name                                 | network type   | network size | description                                                     
 ----------------------------------------- | -------------- | ------------ | ----------------------------------------------------------------
@@ -254,6 +254,53 @@ content.queues:
 
 Binary representation of the example (network byte ordering in base64):
 `cHPL9BRESkGHswCG8UP8YOL2t8N/c0oJgqCrFYGyH6UAAAAAAAAACGRvbWFpbiBCAAAAAAAAAAEAAAAAAAAACHNlcnZpY2UxAAAAAAAAAAdleGFtcGxlAAEAAAAU9GsEAAAAAAAAAAAAAAAAAAAAAAEAAAAAAAAABnF1ZXVlMQAAAAAAAAAKAAAAAAA9CQABAA==`
+
+
+
+## domain_discovery_reply_v3 - **#7301** - _[1.0, 1.1, 1.2, 1.3]_
+
+Sent to and received from other domains when one domain wants to discover information about the other.
+
+role name                                 | network type   | network size | description                                                     
+----------------------------------------- | -------------- | ------------ | ----------------------------------------------------------------
+execution                                 | (fixed) binary |           16 | uuid of the current execution context (breadcrumb)              
+domain.id                                 | (fixed) binary |           16 | uuid of the caller domain                                       
+domain.name.size                          | uint64         |            8 | size of the caller domain name                                  
+domain.name.data                          | dynamic string |       [0..*] | dynamic byte array with the caller domain name                  
+content.services.size                     | uint64         |            8 | number of services to follow (an array of services)             
+content.services.element.name.size        | uint64         |            8 | size of the current service name                                
+content.services.element.name.data        | dynamic string |       [0..*] | dynamic byte array of the current service name                  
+content.services.element.category.size    | uint64         |            8 | size of the current service category                            
+content.services.element.category.data    | dynamic string |       [0..*] | dynamic byte array of the current service category              
+content.services.element.transaction      | uint16         |            2 | service transaction mode (auto, atomic, join, none)             
+content.services.element.timeout.duration | uint64         |            8 | service timeout (ns)                                            
+content.services.element.hops             | uint64         |            8 | number of domain hops to the service (local services has 0 hops)
+content.queues.size                       | uint64         |            8 | number of requested queues to follow (an array of queues)       
+content.queues.element.name.size          | uint64         |            8 | size of the current queue name                                  
+content.queues.element.name.data          | dynamic string |       [0..*] | dynamic byte array of the current queue name                    
+content.queues.element.retries            | uint64         |            8 | how many 'retries' the queue has                                
+
+#### example 
+```yaml
+---
+execution: !!binary "cHPL9BRESkGHswCG8UP8YA=="
+domain:
+  id: !!binary "4va3w39zSgmCoKsVgbIfpQ=="
+  name: "domain B"
+content.services:
+  - name: "service1"
+    category: "example"
+    transaction: 1
+    timeout.duration: 90000000000
+    hops: 0
+content.queues:
+  - name: "queue1"
+    retries: 10
+...
+```
+
+Binary representation of the example (network byte ordering in base64):
+`cHPL9BRESkGHswCG8UP8YOL2t8N/c0oJgqCrFYGyH6UAAAAAAAAACGRvbWFpbiBCAAAAAAAAAAEAAAAAAAAACHNlcnZpY2UxAAAAAAAAAAdleGFtcGxlAAEAAAAU9GsEAAAAAAAAAAAAAAAAAAAAAAEAAAAAAAAABnF1ZXVlMQAAAAAAAAAK`
 
 
 

@@ -37,7 +37,16 @@ namespace casual
             namespace execution
             {
                inline constexpr auto id = "casual-execution-id";
+
+               namespace trace 
+               {
+                  inline constexpr std::string_view parent = "traceparent";
+               } // trace
+
             } // execution
+
+            
+
          } // name
 
 

@@ -53,6 +53,35 @@ namespace casual
 
          EXPECT_NE( uuid::string( uuid), uuid::string( *reset_id));
       }
+
+      TEST( xatmi_execution, execution_span_id_get_set)
+      {
+         common::unittest::Trace trace;
+
+         constexpr std::uint64_t id = 42;
+
+         casual_execution_span_id_set( id);
+
+         EXPECT_EQ( casual_execution_span_id_get(), id);
+
+         // clear context for good measure
+         common::execution::context::clear();
+      }
+
+      TEST( xatmi_execution, execution_parent_span_id_get_set)
+      {
+         common::unittest::Trace trace;
+
+         constexpr std::uint64_t id = 42;
+
+         casual_execution_parent_span_id_set( id);
+
+         EXPECT_EQ( casual_execution_parent_span_id_get(), id);
+
+         // clear context for good measure
+         common::execution::context::clear();
+      }
+
    } // common
 } // casual
 

@@ -61,15 +61,19 @@ namespace casual
                {
                   Trace trace( "service::call::local::prepare::lookup");
 
+                  using Semantic = message::service::lookup::request::context::Semantic;
+
                   auto transform_context = []( auto flags)
                   {
                      // if no-reply we treat it as a _forward-call_, and we'll not block until the service is idle.
                      // Hence, it's a fire-and-forget message.
 
                      message::service::lookup::request::Context context;
-                     context.semantic = flag::contains( flags, call::async::Flag::no_reply) ? decltype( context.semantic)::no_reply : decltype( context.semantic)::regular;
+                     context.semantic = flag::contains( flags, call::async::Flag::no_reply) ? Semantic::no_reply : Semantic::regular;
                      return context;
                   };
+
+                  const auto context = transform_context( flags);
 
                   if( auto& current = common::transaction::Context::instance().current())
                   {                     
@@ -78,11 +82,17 @@ namespace casual
                         if( flag::contains( flags, call::async::Flag::no_reply))
                            code::raise::error( code::xatmi::argument, "TPNOREPLY can only be used with TPNOTRAN");
 
-                        return service::Lookup{ std::move( service), transform_context( flags), current.deadline};
+                        return service::Lookup{ std::move( service), context, current.deadline};
                      }
                   }
 
-                  return service::Lookup{ std::move( service), transform_context( flags), deadline};
+                  // if noreply we don't supply our current deadline. There are use cases where servers
+                  // will call it self with noreply, as poor mans polling mechanism. If we supply the deadline
+                  // the server will eventually run out of time (if a timeout is set for the service).
+                  if( context.semantic == Semantic::no_reply)
+                     return service::Lookup{ std::move( service), context, {}};
+                  else
+                     return service::Lookup{ std::move( service), context, deadline};
                }
 
                inline Reply message(
@@ -353,8 +363,9 @@ namespace casual
       }
 
 
-      void Context::clean()
+      void Context::clear()
       {
+         m_state.deadline = {}; 
          // TODO: Do some cleaning on buffers, pending replies and such...
       }
 

@@ -37,15 +37,11 @@ namespace casual
                      return result_context::external;
                }
 
-
-               template< typename M>
-               void branch( State& state, strong::socket::id descriptor, const M& message)
+               void branch( State& state, const process::Handle& process, const strong::correlation::id& correlation, transaction::global::id::range gtrid)
                {
-                  auto gtrid = transaction::id::range::global( message.trid);
 
-                  common::message::transaction::inbound::branch::Request request{ state.connections.process_handle( descriptor)};
-                  request.correlation = message.correlation;
-                  request.execution = message.execution;
+                  common::message::transaction::inbound::branch::Request request{ process};
+                  request.correlation = correlation;
                   request.gtrid = gtrid;
 
                   state.multiplex.send( ipc::manager::transaction(), request);
@@ -108,7 +104,10 @@ namespace casual
                   log::error( code::casual::internal_correlation, "failed to correlate the ipc partner for tcp descriptor:  ", descriptor);
             }
          
-
+            // We emulate an error reply to the request, and send it to the partner ipc. This will then be handled as if it was a real reply
+            // from the service.
+            // NOTE: this helps us to keep the 'task' a bit cleaner. Also, this only happen in the _error path_, which we don't care about performance
+            // as much as the happy path.
             template< typename M>
             void fake_service_error_reply( State& state, strong::socket::id descriptor, M&& request, common::code::xatmi code)
             {
@@ -219,19 +218,23 @@ namespace casual
 
                auto shared = std::make_shared< Shared>();
 
-               if( message.trid)
-               {
-                  shared->origin_trid = message.trid;
-
-                  if( auto found = state.transaction_cache.associate( message.trid, descriptor))
-                     message.trid = *found;
-                  else
-                     local::lookup::branch( state, descriptor, message);
-               }
-               
                shared->message = std::move( message);
+
                // make sure the ipc partner to the tcp socket gets the reply
                shared->message.process = state.connections.process_handle( descriptor);
+
+               if( shared->message.trid)
+               {
+                  // we use `origin_trid` to keep track of the original trid, and indicate that the call is in transaction
+                  // we reset `message.trid` to indicate that we've not yet got the branched trid
+                  shared->origin_trid = std::exchange( shared->message.trid, {});
+
+                  if( auto found = state.transaction_cache.associate( shared->origin_trid, descriptor))
+                     shared->message.trid = *found;
+                  else
+                     local::lookup::branch( state, shared->message.process, shared->message.correlation, transaction::id::range::global( shared->origin_trid));
+               }
+               
 
                return task_unit{ descriptor, message.correlation,
                   [ &state, shared]( common::message::service::lookup::Reply& reply, strong::socket::id descriptor) mutable
@@ -247,7 +250,7 @@ namespace casual
 
                            // If the call wasn't in transaction, or we've branched the trid already.
                            // If the call failed, we've "sent" the reply, 
-                           if( ! shared->origin_trid || shared->origin_trid != shared->message.trid)
+                           if( ! shared->origin_trid || shared->message.trid)
                               local::send::service_request( state, descriptor, *shared->lookup, shared->message);
 
                            break;
@@ -286,7 +289,12 @@ namespace casual
                      if( message::protocol::compatible< common::message::service::call::Reply>( connection->protocol()))
                         tcp::send( state, connection->descriptor(), reply);
                      else
-                        tcp::send( state, connection->descriptor(), message::protocol::transform::to< common::message::service::call::v1_2::Reply>( std::move( reply)));
+                     {
+                        // we need to transform the reply to the protocol version of the tcp connection
+                        auto message = message::protocol::transform::to< common::message::service::call::v1_2::Reply>( std::move( reply));
+                        message.transaction.trid = shared->origin_trid;
+                        tcp::send( state, connection->descriptor(), message);
+                     }
                      
                      // We're done
                      return casual::task::concurrent::unit::Dispatch::done;
@@ -329,19 +337,21 @@ namespace casual
 
                auto shared = std::make_shared< Shared>();
 
-               if( message.trid)
-               {
-                  shared->origin_trid = message.trid;
-
-                  if( auto found = state.transaction_cache.associate( message.trid, descriptor))
-                     message.trid = *found;
-                  else
-                     local::lookup::branch( state, descriptor, message);
-               }
-               
                shared->message = std::move( message);
                // make sure the ipc partner to the tcp socket gets the reply
                shared->message.process = state.connections.process_handle( descriptor);
+
+               if( shared->message.trid)
+               {
+                  // we use `origin_trid` to keep track of the original trid, and indicate that the call is in transaction
+                  // we reset `message.trid` to indicate that we've not yet got the branched trid
+                  shared->origin_trid = std::exchange( shared->message.trid, {});
+
+                  if( auto found = state.transaction_cache.associate( shared->origin_trid, descriptor))
+                     shared->message.trid = *found;
+                  else
+                     local::lookup::branch( state, shared->message.process, shared->message.correlation, transaction::id::range::global( shared->origin_trid));
+               }
 
                return task_unit{ descriptor, message.correlation,
                   [ &state, shared]( common::message::service::lookup::Reply& reply, strong::socket::id descriptor) mutable
@@ -356,7 +366,7 @@ namespace casual
                            shared->lookup = std::move( reply);
 
                            // if the call wasn't in transaction, or we've branched the trid already
-                           if( ! shared->origin_trid || shared->origin_trid != shared->message.trid)
+                           if( ! shared->origin_trid || shared->message.trid)
                               local::send::service_request( state, descriptor, *shared->lookup, shared->message);
 
                            break;
@@ -447,21 +457,22 @@ namespace casual
 
                auto shared = std::make_shared< Shared>();
 
-               if( message.trid)
+               shared->message = std::move( message);
+               shared->message.process = state.connections.process_handle( descriptor);
+
+               if( shared->message.trid)
                {
-                  if( auto found = state.transaction_cache.associate( message.trid, descriptor))
+                  if( auto found = state.transaction_cache.associate( shared->message.trid, descriptor))
                   {
-                     message.trid = *found;
+                     shared->message.trid = *found;
                   }
                   else
                   {
                      shared->wait_for_branch = true;
-                     local::lookup::branch( state, descriptor,  message);
+                     local::lookup::branch( state, shared->message.process, shared->message.correlation, transaction::id::range::global( shared->message.trid));
                   }
                }
 
-               shared->message = std::move( message);
-               shared->message.process = state.connections.process_handle( descriptor);
 
                return task_unit{ descriptor, message.correlation,
                   [ &state, shared]( casual::queue::ipc::message::lookup::Reply& reply, strong::socket::id descriptor) mutable
@@ -495,43 +506,6 @@ namespace casual
                };
             }
 
-            template< typename M>
-            auto handle_transaction( State& state, strong::socket::id descriptor, M&& message)
-            {
-               Trace trace{ "gateway::group::inbound::task::create::local::handle_transaction"};
-
-               using reply_type = common::message::reverse::type_t< M>;
-
-               // map to the internal trid, we expect to find this in cache
-               if( auto found = state.transaction_cache.find( common::transaction::id::range::global( message.trid)))
-               {
-                  message.trid = *found;
-                  message.process = state.connections.process_handle( descriptor);
-                  state.multiplex.send( ipc::manager::transaction(), message);
-               }
-               else
-               {
-                  log::error( code::casual::invalid_semantics, "failed map to internal trid: ", message, " - action: reply with: ", code::xa::protocol);
-                  local::fake_transaction_error_reply( state, descriptor, message, code::xa::protocol);
-               }
-
-               return task_unit{ descriptor, message.correlation,
-                  [ &state, origin_trid = message.trid]( reply_type& reply, strong::socket::id descriptor)
-                  {
-                     Trace trace{ "gateway::group::inbound::task::create::local::handle_transaction task"};
-
-                     // map back to the external trid.
-                     reply.trid = origin_trid;
-
-                     // we don't clean transaction_cache, TM will tell us when it's done
-
-                     inbound::tcp::send( state, descriptor, reply);
-                     
-                     // we're done regardless
-                     return casual::task::concurrent::unit::Dispatch::done;
-                  }
-               };
-            }
          } // <unnamed>
       } // local
 
@@ -568,22 +542,6 @@ namespace casual
          }
 
       } // queue
-
-   
-      task_unit transaction( State& state, strong::socket::id descriptor, common::message::transaction::resource::prepare::Request&& message)
-      {
-         return local::handle_transaction( state, descriptor, message);
-      }
-
-      task_unit transaction( State& state, strong::socket::id descriptor, common::message::transaction::resource::commit::Request&& message)
-      {
-         return local::handle_transaction( state, descriptor, message);
-      }
-
-      task_unit transaction( State& state, strong::socket::id descriptor, common::message::transaction::resource::rollback::Request&& message)
-      {
-         return local::handle_transaction( state, descriptor, message);
-      }
 
    } // gateway::group::inbound::task::create
    

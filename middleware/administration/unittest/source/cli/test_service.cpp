@@ -369,7 +369,7 @@ domain:
 
          gateway::unittest::fetch::until( gateway::unittest::fetch::predicate::outbound::connected());
 
-         casual::domain::unittest::service::discover( { "a", "b", "c"});
+         casual::domain::unittest::discover::services( { "a", "b", "c"});
 
 /*
 

@@ -10,6 +10,8 @@
 
 #include "gateway/manager/admin/model.h"
 
+#include "common/communication/tcp.h"
+
 #include <vector>
 #include <string>
 #include <optional>
@@ -54,7 +56,8 @@ namespace casual
                { 
                   return []( auto& connection)
                   {
-                     return connection.bound == decltype( connection.bound)::in;
+                     using Bound = decltype( connection.bound);
+                     return common::algorithm::compare::any( connection.bound, Bound::in, Bound::in_forward);
                   };
                }
 
@@ -191,6 +194,17 @@ namespace casual
                
          } // predicate
       } // fetch
+
+      namespace tcp::connect
+      {
+         // connect to an ìnbound at address as `version`.
+         common::communication::tcp::Duplex out( std::string_view address, message::protocol::Version version, common::domain::Identity domain = common::domain::identity());
+
+         // connect to an reverse outbound at address as `version`.
+         common::communication::tcp::Duplex in( std::string_view address, message::protocol::Version version, common::domain::Identity domain = common::domain::identity());
+         
+         
+      } // tcp::connect
       
    } // gateway::unittest
 } // casual

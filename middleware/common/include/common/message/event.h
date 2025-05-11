@@ -257,6 +257,8 @@ namespace casual
 
                auto duration() const noexcept { return end - start;}
 
+               inline friend bool operator == ( const Metric& lhs, std::string_view rhs) { return lhs.service == rhs;}
+
                CASUAL_CONST_CORRECT_SERIALIZE(
                   CASUAL_SERIALIZE( span);
                   CASUAL_SERIALIZE( service);

@@ -47,6 +47,20 @@ namespace casual
                }
             } // sequential
 
+            namespace caller
+            {
+               std::string_view description( Semantic value) noexcept
+               {
+                  switch( value)
+                  {
+                     case Semantic::reply: return "reply";
+                     case Semantic::no_reply: return "no_reply";
+                  }
+                  return "<unknown>";
+               }
+               
+            } // caller
+
             void Sequential::reserve( Caller caller)
             {
                assert( ! m_caller);

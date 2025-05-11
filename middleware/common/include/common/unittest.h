@@ -256,6 +256,11 @@ namespace casual
          {
             return std::regex_match( value, std::regex( expression.data(), expression.size()));
          }
+
+         inline bool match( std::string_view value, std::string_view expression)
+         {
+            return match( std::string{ value}, expression);
+         }
          
       } // regex
 

@@ -6,6 +6,7 @@
 
 #include "gateway/unittest/utility.h"
 #include "gateway/manager/admin/server.h"
+#include "gateway/message.h"
 
 #include "serviceframework/service/protocol/call.h"
 
@@ -58,6 +59,63 @@ namespace casual
 
          return {};         
       }
+
+      namespace tcp::connect
+      {
+         namespace local
+         {
+            namespace
+            {
+               auto eventually_connect( std::string_view address)
+               {
+                  communication::Socket socket;
+                  common::unittest::eventually::succeed( [ &socket, address]()
+                  {
+                     socket = communication::tcp::connect( std::string{ address});
+                     return predicate::boolean( socket);
+                  });
+                  return socket;
+               };
+   
+            } // <unnamed>
+         } // local
+
+         common::communication::tcp::Duplex out( std::string_view address, message::protocol::Version version, common::domain::Identity domain)
+         {
+            common::communication::tcp::Duplex device{ local::eventually_connect( address)};
+
+            {
+               gateway::message::domain::connect::Request request;
+               request.domain = domain;
+               request.versions.push_back( version);
+
+               auto reply = communication::device::call( device, request, device);
+
+               EXPECT_TRUE( reply.version == version);
+            }
+
+            return device;
+         }
+
+         common::communication::tcp::Duplex in( std::string_view address, message::protocol::Version version, common::domain::Identity domain)
+         {
+            common::communication::tcp::Duplex device{ local::eventually_connect( address)};
+
+            auto request = communication::device::receive< gateway::message::domain::connect::Request>( device);
+
+            if( ! algorithm::find( request.versions, version))
+               code::raise::error( code::casual::invalid_semantics, "could not find version: ", version, " in ", request.versions);
+            
+            auto reply = common::message::reverse::type( request);
+            reply.domain = domain;
+            reply.version = version;
+
+            communication::device::blocking::send( device, reply);
+
+            return device;
+         }
+         
+      } // tcp::connect
       
    } // gateway::unittest
    

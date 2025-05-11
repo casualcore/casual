@@ -170,8 +170,7 @@ domain:
          common::unittest::Trace trace;
          local::Domain domain;
 
-         common::message::event::service::Calls event;
-         common::event::subscribe( common::process::handle(), { event.type()});
+         common::event::subscribe( common::process::handle(), { common::message::event::service::Calls::type()});
 
          // this call will fail due to discard_transaction: false
          {
@@ -189,6 +188,8 @@ domain:
          }
 
          {
+            common::message::event::service::Calls event;
+
             common::communication::device::blocking::receive( 
                common::communication::ipc::inbound::device(),
                event);
@@ -199,6 +200,10 @@ domain:
             EXPECT_TRUE( metric.parent.service == "");
             EXPECT_TRUE( metric.type == common::message::event::service::metric::Type::concurrent);
             EXPECT_TRUE( metric.code.result == common::code::xatmi::protocol);
+            // we expect no parent span
+            EXPECT_TRUE( ! metric.parent.span);
+            // we expect a new span from the http-outbound
+            EXPECT_TRUE( metric.span);
          }
       }
    } // http::outbound

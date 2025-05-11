@@ -1,7 +1,32 @@
 # Changelog
 This is the changelog for `casual` and all changes are listed in this document.
 
+## [1.7.5] - 2025-04-24
+
+### Fixes
+- service: lookup with no-reply does not reserve instance ([#534](https://github.com/casualcore/casual/issues/534))
+- service: call with NOREPLY should not supply current deadline ([#534](https://github.com/casualcore/casual/issues/534))
+- xatmi: expose c-api to set/get execution (parent) span ([#550](https://github.com/casualcore/casual/issues/550))
+- http: propagate otel span ([#546](https://github.com/casualcore/casual/issues/546))
+- http: outbound generate span and propagate `traceparent` as header ([#546](https://github.com/casualcore/casual/issues/546))
+- gateway: inbound fails to handle trids that is already branched ([#533](https://github.com/casualcore/casual/issues/533))
+- common: execution.context.span should not be default generated ([#544](https://github.com/casualcore/casual/issues/544))
+- common: otel span could be generated as value 0 
+- gateway: add missing messages for the binary dump protocol generator
+- documentation: missing documentation for domain_discovery_reply_v3
+- gateway: outbound does not set otel span in metric event ([#539](https://github.com/casualcore/casual/issues/539))
+
+## [1.7.4] - 2025-04-07
+
+### Fixes
+- gateway: inbound removed trid branch mapping for transaction messages
+- transaction: used view to removed gtrid
+- gateway: transaction message reply with origin trid
+- gateway: compatibility with 1.6 (protocol 1.2) service call ([#533](https://github.com/casualcore/casual/issues/533))
+
 ## [1.7.3] - 2025-01-28
+
+### Fixes
 - common: include rapidjson within inline ns for ABI
 - xatmi: build-server uses [0,1] as values for service visibility ([#506](https://github.com/casualcore/casual/issues/506))
 
