@@ -20,7 +20,7 @@
 
 #include "serviceframework/service/protocol/call.h"
 
-#include "domain/manager/admin/server.h"
+#include "domain/manager/admin/service/name.h"
 
 namespace casual
 {

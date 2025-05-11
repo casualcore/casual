@@ -16,6 +16,9 @@
 #include "common/communication/ipc/send.h"
 #include "common/signal/timer.h"
 
+#include "casual/manager/service/context.h"
+#include "casual/manager/service/policy.h"
+
 #include <iosfwd>
 
 namespace casual
@@ -242,6 +245,8 @@ namespace casual
          state::pending::Content pending_content;
          state::Providers providers;
 
+         casual::manager::service::Context< casual::manager::service::policy::Default> services;
+
          void failed( common::strong::process::id pid);
          void failed( const common::strong::ipc::id& ipc);
 
@@ -255,6 +260,7 @@ namespace casual
             CASUAL_SERIALIZE( accumulate);
             CASUAL_SERIALIZE( pending_content);
             CASUAL_SERIALIZE( providers);
+            CASUAL_SERIALIZE( services);
          )
 
       };

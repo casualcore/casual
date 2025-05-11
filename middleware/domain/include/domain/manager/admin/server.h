@@ -7,51 +7,35 @@
 
 #pragma once
 
-#include "common/server/argument.h"
+#include "domain/manager/admin/service/name.h"
+
+#include "casual/manager/service.h"
+#include "casual/manager/service/policy.h"
+
+
+#include <vector>
+#include <string>
 
 namespace casual
 {
    namespace domain::manager
    {
       struct State;
-   }
 
-   namespace domain::manager::admin
-   {
-      namespace service::name
+      namespace admin
       {
-         constexpr std::string_view state = ".casual/domain/state";
-         namespace scale
+         std::vector< casual::manager::Service> services( manager::State& state);
+
+         struct Policy : casual::manager::service::policy::Default
          {
-            constexpr std::string_view aliases = ".casual/domain/scale/aliases";
-         } // scale
+            static void send_ack( const common::message::service::call::ACK& ack);
 
-         namespace restart
-         {
-            constexpr std::string_view aliases = ".casual/domain/restart/aliases";
-            constexpr std::string_view groups = ".casual/domain/restart/groups";
-         } // restart
+            static void initialize( const casual::manager::service::context::State& services);
+         }; 
 
-         constexpr std::string_view shutdown = ".casual/domain/shutdown";
+      } // admin
 
-         namespace configuration
-         {
-            constexpr std::string_view get = ".casual/domain/configuration/get";
-            constexpr std::string_view put = ".casual/domain/configuration/put";
-            constexpr std::string_view post = ".casual/domain/configuration/post";
-         } // configuration
-
-         namespace environment
-         {
-            constexpr std::string_view set = ".casual/domain/environment/set";
-            constexpr std::string_view unset = ".casual/domain/environment/unset";
-         } // environment
-
-      } // service::name
-
-      common::server::Arguments services( manager::State& state);
-
-   } // domain::manager::admin
+   } // domain::manager
 } // casual
 
 

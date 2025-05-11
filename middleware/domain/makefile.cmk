@@ -9,6 +9,7 @@ make.IncludePaths([
    'include',
    'unittest/include',
    '../common/include',
+   '../manager/include',
    '../buffer/include',
    '../configuration/include',
    '../xatmi/include',
@@ -22,6 +23,7 @@ make.IncludePaths([
 make.LibraryPaths([
     'bin',
     '../common/bin',
+    '../manager/bin',
     '../configuration/bin',
     '../serviceframework/bin',
     '../xatmi/bin']
@@ -77,6 +79,7 @@ target_domain_manager = make.LinkExecutable( 'bin/casual-domain-manager',
      utility_library,
      common_library,
      'casual-common',
+     'casual-manager',
      'casual-configuration',
      'casual-serviceframework'
     ] 
@@ -139,6 +142,7 @@ discovery_executable = make.LinkExecutable( 'bin/casual-domain-discovery',
         discovery_archive,
         utility_library,
         'casual-common',
+        'casual-manager',
         'casual-serviceframework',
     ]
 )

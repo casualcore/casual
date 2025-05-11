@@ -9,9 +9,11 @@
 
 #include "domain/strong/id.h"
 #include "domain/manager/task/message.h"
+#include "domain/manager/admin/server.h"
 
 #include "casual/platform.h"
 #include "casual/task.h"
+#include "casual/manager/service/context.h"
 
 #include "common/message/domain.h"
 #include "common/uuid.h"
@@ -379,6 +381,11 @@ namespace casual
          struct
          {
             std::vector< common::message::domain::process::lookup::Request> lookup;
+
+            CASUAL_LOG_SERIALIZE(
+               CASUAL_SERIALIZE( lookup);
+            )
+            
          } pending;
 
          std::map< common::Uuid, common::process::Handle> singletons;
@@ -459,6 +466,8 @@ namespace casual
          //! the 'singleton' file for the domain
          common::file::scoped::Path singleton_file;
 
+         //! our own exported services
+         casual::manager::service::Context< admin::Policy> services;
 
          //! Cleans up an exit (server or executable).
          //!
@@ -520,6 +529,13 @@ namespace casual
             CASUAL_SERIALIZE( group_id);
             CASUAL_SERIALIZE( whitelisted);
             CASUAL_SERIALIZE( configuration);
+            CASUAL_SERIALIZE( grandchildren);
+            CASUAL_SERIALIZE( singletons);
+            CASUAL_SERIALIZE( pending);
+            CASUAL_SERIALIZE( tasks);
+            CASUAL_SERIALIZE( event);
+            CASUAL_SERIALIZE( services);
+            CASUAL_SERIALIZE( singleton_file);
             CASUAL_SERIALIZE( bare);
          )
 

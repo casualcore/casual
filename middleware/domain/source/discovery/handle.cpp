@@ -792,27 +792,12 @@ namespace casual
             {
                auto reply( State& state)
                {
-                  Trace trace{ "discovery::handle::local::service::manager::lookup"};
-
-                  // Need to lookup service-manager with _wait_, and when we get the reply
-                  // we advertise our services.
-                  auto send_request = []()
-                  {
-                     return common::communication::instance::lookup::request( common::communication::instance::identity::service::manager.id);
-                  };
-
-                  return [ &state, correlation = send_request()]( const common::message::domain::process::lookup::Reply& message)
+                  return [ &state]( const common::message::domain::process::lookup::Reply& message)
                   {
                      Trace trace{ "discovery::handle::local::service::manager::lookup::reply"};
-                     log::debug( "message: ", message);
+                     local::handler::entry( message);
 
-                     if( message.correlation == correlation)
-                     {
-                        casual::assertion( communication::instance::identity::service::manager == message.identification, "message.identification is not service-manager ",  message.identification);
-                        log::debug( "service-manager is online");
-
-                        common::server::handle::policy::advertise( admin::services( state).services);
-                     }
+                     state.services.advertise( message);
                   };
 
                }
@@ -873,9 +858,7 @@ namespace casual
             local::configuration::update::request( state),
             local::shutdown::request( state),
             local::service::manager::lookup::reply( state),
-            local::server::Handle{ 
-               admin::services( state)
-            }
+            state.services.initialize( admin::services( state))
          };
       }
 

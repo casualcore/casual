@@ -898,22 +898,8 @@ namespace casual
                      void service( State& state, const common::process::Handle& process)
                      {
                         Trace trace{ "domain::manager::handle::local::process::detail::singleton::service"};
-                        
-                        auto transform_service = []( const auto& service)
-                        {
-                           common::message::service::advertise::Service result;
-                           result.name = service.name;
-                           result.category = service.category;
-                           result.transaction = service.transaction;
-                           result.visibility = service.visibility;
-                           return result;
-                        };
 
-                        common::message::service::Advertise message{ common::process::handle()};
-                        message.alias = instance::alias();
-                        message.services.add = algorithm::transform( manager::admin::services( state).services, transform_service);
-                           
-                        state.multiplex.send( process, message);
+                        state.multiplex.send( process, state.services.advertise());
                      }
 
                      //! @returns true if it's a singleton process that tries to connect and this function takes
@@ -1109,36 +1095,24 @@ namespace casual
 
             } // configuration
 
-            namespace server
+            namespace service
             {
-               using base_type = common::server::handle::policy::call::Admin;
-               struct Policy : base_type
+               //! this is only for our own service invocations, we push the ack to our
+               //! own ipc device, and handle it here.
+               auto ack( State& state)
                {
-                  Policy( manager::State& state)
-                     :  m_state( state) {}
-
-                  void configure( common::server::Arguments&& arguments)
+                  return [ &state]( const common::message::service::call::ACK& message)
                   {
-                     // no-op, we'll advertise our services when the broker comes online.
-                  }
+                     Trace trace{ "domain::manager::handle::service::ack"};
+                     log::debug( "message: ", message);
 
-                  // overload ack so we use domain-manager internal stuff to lookup service-manager
-                  void ack( const common::message::service::call::ACK& message)
-                  {
-                     Trace trace{ "domain::manager::handle::local::server::Policy::ack"};
-
-                     if( auto service_manager = m_state.singleton( common::communication::instance::identity::service::manager.id))
-                         m_state.multiplex.send( service_manager.ipc, message);
+                     if( auto sm = state.singleton( common::communication::instance::identity::service::manager.id))
+                        state.multiplex.send( sm.ipc, message);
                      else
                         log::debug( "failed to reach service-manager - action: discard sending ACK");
-                  }
-
-               private: 
-                  manager::State& m_state;
-               };
-
-               using Handle = common::server::handle::basic_call< Policy>;
-            } // server
+                  };
+               }
+            } // service
 
          } // <unnamed>
       } // local
@@ -1169,9 +1143,9 @@ namespace casual
             handle::local::configuration::request( state),
             handle::local::configuration::update::reply( state),
             handle::local::configuration::stakeholder::registration( state),
-            handle::local::server::Handle{
-               manager::admin::services( state),
-               state}
+            state.services.initialize( manager::admin::services( state)),
+            // handles our own service acks
+            handle::local::service::ack( state)
          };
 
       }

@@ -9,7 +9,7 @@
 #include "domain/discovery/admin/transform.h"
 #include "domain/discovery/common.h"
 
-#include "serviceframework/service/protocol.h"
+#include "casual/manager/service/protocol.h"
 
 
 namespace casual
@@ -24,9 +24,9 @@ namespace casual
             {
                auto state( discovery::State& state)
                {
-                  return [&state]( common::service::invoke::Parameter&& parameter)
+                  return [&state]( casual::manager::service::invoke::Parameter&& parameter)
                   {                    
-                     return serviceframework::service::user( 
+                     return casual::manager::service::protocol::dispatch( 
                         std::move( parameter),
                         admin::transform,
                         state);
@@ -37,18 +37,18 @@ namespace casual
          } // <unnamed>
       } // local
 
-      common::server::Arguments services( discovery::State& state)
+      std::vector< casual::manager::Service> services( discovery::State& state)
       {
          Trace trace{ "domain::discovery::admin::services"};
 
-         return common::server::Arguments{ {
-            { admin::service::name::state,
-               local::service::state( state),
-               common::service::transaction::Type::none,
-               common::service::visibility::Type::undiscoverable,
-               common::service::category::admin
+         return {
+            {  
+               .name = std::string{ admin::service::name::state},
+               .function = local::service::state( state),
+               .visibility = common::service::visibility::Type::undiscoverable,
+               .category = std::string{ common::service::category::admin}
             }
-         }};
+         };
 
       }
 

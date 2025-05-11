@@ -14,7 +14,7 @@
 #include "configuration/model/transform.h"
 #include "configuration/message.h"
 
-#include "serviceframework/service/protocol.h"
+#include "casual/manager/service/protocol.h"
 
 namespace casual
 {
@@ -151,10 +151,10 @@ namespace casual
             {
                auto state( const manager::State& state)
                {
-                  return [&state]( common::service::invoke::Parameter&& parameter)
+                  return [&state]( casual::manager::service::invoke::Parameter&& parameter)
                   {
-                     return serviceframework::service::user( 
-                        serviceframework::service::protocol::deduce( std::move( parameter)), 
+                     return casual::manager::service::protocol::dispatch(
+                        std::move( parameter), 
                         []( auto& state){ return transform::state( state);}, 
                         state);
                   };
@@ -164,12 +164,12 @@ namespace casual
                {
                   auto aliases( manager::State& state)
                   {
-                     return [&state]( common::service::invoke::Parameter&& parameter)
+                     return [&state]( casual::manager::service::invoke::Parameter&& parameter)
                      {
-                        auto protocol = serviceframework::service::protocol::deduce( std::move( parameter));
+                        auto protocol = casual::manager::service::protocol::deduce( std::move( parameter));
                         auto aliases = protocol.extract< std::vector< model::scale::Alias>>( "aliases");
 
-                        return serviceframework::service::user( std::move( protocol), &handle::scale::aliases, state, std::move( aliases));
+                        return casual::manager::service::protocol::dispatch( std::move( protocol), &handle::scale::aliases, state, std::move( aliases));
                      };
                   }     
                } // scale
@@ -179,23 +179,23 @@ namespace casual
                {
                   auto aliases( manager::State& state)
                   {
-                     return [&state]( common::service::invoke::Parameter&& parameter)
+                     return [&state]( casual::manager::service::invoke::Parameter&& parameter)
                      {
-                        auto protocol = serviceframework::service::protocol::deduce( std::move( parameter));
+                        auto protocol = casual::manager::service::protocol::deduce( std::move( parameter));
                         auto aliases = protocol.extract< std::vector< model::restart::Alias>>( "aliases");
 
-                        return serviceframework::service::user( std::move( protocol), &local::restart::aliases, state, std::move( aliases));
+                        return casual::manager::service::protocol::dispatch( std::move( protocol), &local::restart::aliases, state, std::move( aliases));
                      };
                   }
 
                   auto groups( manager::State& state)
                   {
-                     return [&state]( common::service::invoke::Parameter&& parameter)
+                     return [&state]( casual::manager::service::invoke::Parameter&& parameter)
                      {
-                        auto protocol = serviceframework::service::protocol::deduce( std::move( parameter));
+                        auto protocol = casual::manager::service::protocol::deduce( std::move( parameter));
                         auto groups = protocol.extract< std::vector< model::restart::Group>>( "groups");
 
-                        return serviceframework::service::user( std::move( protocol), &local::restart::groups, state, std::move( groups));
+                        return casual::manager::service::protocol::dispatch( std::move( protocol), &local::restart::groups, state, std::move( groups));
                      };
                   }
                } // restart
@@ -204,10 +204,10 @@ namespace casual
 
                auto shutdown( manager::State& state)
                {
-                  return [&state]( common::service::invoke::Parameter&& parameter)
+                  return [&state]( casual::manager::service::invoke::Parameter&& parameter)
                   {
-                     return serviceframework::service::user( 
-                        serviceframework::service::protocol::deduce( std::move( parameter)), 
+                     return casual::manager::service::protocol::dispatch( 
+                        casual::manager::service::protocol::deduce( std::move( parameter)), 
                         &handle::shutdown, state);
                   };
                }
@@ -216,14 +216,14 @@ namespace casual
                {
                   auto set( manager::State& state)
                   {
-                     return [&state]( common::service::invoke::Parameter&& parameter)
+                     return [&state]( casual::manager::service::invoke::Parameter&& parameter)
                      {
-                        auto protocol = serviceframework::service::protocol::deduce( std::move( parameter));
+                        auto protocol = casual::manager::service::protocol::deduce( std::move( parameter));
 
                         model::set::Environment environment;
                         protocol >> CASUAL_NAMED_VALUE( environment);
 
-                        return serviceframework::service::user(
+                        return casual::manager::service::protocol::dispatch(
                            std::move( protocol),
                            &local::set::environment,
                            state, 
@@ -233,14 +233,14 @@ namespace casual
 
                   auto unset( manager::State& state)
                   {
-                     return [&state]( common::service::invoke::Parameter&& parameter)
+                     return [&state]( casual::manager::service::invoke::Parameter&& parameter)
                      {
-                        auto protocol = serviceframework::service::protocol::deduce( std::move( parameter));
+                        auto protocol = casual::manager::service::protocol::deduce( std::move( parameter));
 
                         model::unset::Environment environment;
                         protocol >> CASUAL_NAMED_VALUE( environment);
 
-                        return serviceframework::service::user(
+                        return casual::manager::service::protocol::dispatch(
                            std::move( protocol),
                            &local::unset::environment,
                            state, 
@@ -253,15 +253,15 @@ namespace casual
                {
                   auto get( manager::State& state)
                   {
-                     return [&state]( common::service::invoke::Parameter&& parameter)
+                     return [&state]( casual::manager::service::invoke::Parameter&& parameter)
                      {
                         auto get_configuration = []( auto& state)
                         {
                            return casual::configuration::model::transform( manager::configuration::get( state));
                         };
 
-                        return serviceframework::service::user( 
-                           serviceframework::service::protocol::deduce( std::move( parameter)),
+                        return casual::manager::service::protocol::dispatch( 
+                           casual::manager::service::protocol::deduce( std::move( parameter)),
                            get_configuration,
                            state);
                      };
@@ -269,11 +269,11 @@ namespace casual
 
                   auto post( manager::State& state)
                   {
-                     return [&state]( common::service::invoke::Parameter&& parameter)
+                     return [&state]( casual::manager::service::invoke::Parameter&& parameter)
                      {
                         Trace trace{ "domain::manager::admin::local::service::configuration::post"};
 
-                        auto protocol = serviceframework::service::protocol::deduce( std::move( parameter));
+                        auto protocol = casual::manager::service::protocol::deduce( std::move( parameter));
                         auto wanted = normalize( casual::configuration::model::transform( protocol.extract< casual::configuration::user::Model>()));
 
                         auto post_configuration = []( auto& state, auto& wanted)
@@ -282,7 +282,7 @@ namespace casual
                            return manager::configuration::post( state, std::move( wanted));
                         };
 
-                        return serviceframework::service::user( 
+                        return casual::manager::service::protocol::dispatch( 
                            std::move( protocol),
                            post_configuration,
                            state, wanted);
@@ -291,9 +291,9 @@ namespace casual
 
                   auto put( manager::State& state)
                   {
-                     return [&state]( common::service::invoke::Parameter&& parameter)
+                     return [&state]( casual::manager::service::invoke::Parameter&& parameter)
                      {
-                        auto protocol = serviceframework::service::protocol::deduce( std::move( parameter));
+                        auto protocol = casual::manager::service::protocol::deduce( std::move( parameter));
                         auto updates = casual::configuration::model::transform( protocol.extract< casual::configuration::user::Model>());
 
                         auto post_configuration = []( auto& state, auto& updates)
@@ -302,7 +302,7 @@ namespace casual
                            return manager::configuration::post( state, normalize( state.configuration.model + std::move( updates)));
                         };
 
-                        return serviceframework::service::user( 
+                        return casual::manager::service::protocol::dispatch( 
                            std::move( protocol),
                            post_configuration,
                            state, updates);
@@ -314,83 +314,87 @@ namespace casual
          } // <unnamed>
       } // local
 
-      common::server::Arguments services( manager::State& state)
+      std::vector< casual::manager::Service> services( manager::State& state)
       {
-         return { {
-               { service::name::state,
-                  local::service::state( state),
-                  common::service::transaction::Type::none,
-                  common::service::visibility::Type::undiscoverable,
-                  common::service::category::admin
+         return { 
+               { .name = std::string{ service::name::state},
+                  .function = local::service::state( state),
+                  .visibility = common::service::visibility::Type::undiscoverable,
+                  .category = std::string{ common::service::category::admin}
                },
-               { service::name::scale::aliases,
-                     local::service::scale::aliases( state),
-                     common::service::transaction::Type::none,
-                     common::service::visibility::Type::undiscoverable,
-                     common::service::category::admin
+               { .name = std::string{ service::name::scale::aliases},
+                  .function = local::service::scale::aliases( state),
+                  .visibility = common::service::visibility::Type::undiscoverable,
+                  .category = std::string{ common::service::category::admin}
                },
-               { service::name::restart::aliases,
-                     local::service::restart::aliases( state),
-                     common::service::transaction::Type::none,
-                     common::service::visibility::Type::undiscoverable,
-                     common::service::category::admin
+               { .name = std::string{ service::name::restart::aliases},
+                  .function = local::service::restart::aliases( state),
+                  .visibility = common::service::visibility::Type::undiscoverable,
+                  .category = std::string{ common::service::category::admin}
                },
-               { service::name::restart::groups,
-                     local::service::restart::groups( state),
-                     common::service::transaction::Type::none,
-                     common::service::visibility::Type::undiscoverable,
-                     common::service::category::admin
+               { .name = std::string{ service::name::restart::groups},
+                  .function = local::service::restart::groups( state),
+                  .visibility = common::service::visibility::Type::undiscoverable,
+                  .category = std::string{ common::service::category::admin}
                },
-               { service::name::shutdown,
-                     local::service::shutdown( state),
-                     common::service::transaction::Type::none,
-                     common::service::visibility::Type::undiscoverable,
-                     common::service::category::admin
+               { .name = std::string{ service::name::shutdown},
+                  .function = local::service::shutdown( state),
+                  .visibility = common::service::visibility::Type::undiscoverable,
+                  .category = std::string{ common::service::category::admin}
                },
-               { service::name::configuration::get,
-                     local::service::configuration::get( state),
-                     common::service::transaction::Type::none,
-                     common::service::visibility::Type::undiscoverable,
-                     common::service::category::admin
+               { .name = std::string{ service::name::configuration::get},
+                  .function = local::service::configuration::get( state),
+                  .visibility = common::service::visibility::Type::undiscoverable,
+                  .category = std::string{ common::service::category::admin}
                },
-               { service::name::configuration::post,
-                     local::service::configuration::post( state),
-                     common::service::transaction::Type::none,
-                     common::service::visibility::Type::undiscoverable,
-                     common::service::category::admin
+               { .name = std::string{ service::name::configuration::post},
+                  .function = local::service::configuration::post( state),
+                  .visibility = common::service::visibility::Type::undiscoverable,
+                  .category = std::string{ common::service::category::admin}
                },
-               { service::name::configuration::put,
-                     local::service::configuration::put( state),
-                     common::service::transaction::Type::none,
-                     common::service::visibility::Type::undiscoverable,
-                     common::service::category::admin
+               { .name = std::string{ service::name::configuration::put},
+                  .function = local::service::configuration::put( state),
+                  .visibility = common::service::visibility::Type::undiscoverable,
+                  .category = std::string{ common::service::category::admin}
                },
-               { service::name::environment::set,
-                     local::service::environment::set( state),
-                     common::service::transaction::Type::none,
-                     common::service::visibility::Type::undiscoverable,
-                     common::service::category::admin
+               { .name = std::string{ service::name::environment::set},
+                  .function = local::service::environment::set( state),
+                  .visibility = common::service::visibility::Type::undiscoverable,
+                  .category = std::string{ common::service::category::admin}
                },
-               { service::name::environment::unset,
-                     local::service::environment::unset( state),
-                     common::service::transaction::Type::none,
-                     common::service::visibility::Type::undiscoverable,
-                     common::service::category::admin
+               { .name = std::string{ service::name::environment::unset},
+                  .function = local::service::environment::unset( state),
+                  .visibility = common::service::visibility::Type::undiscoverable,
+                  .category = std::string{ common::service::category::admin}
                },
                // deprecated
-               { ".casual/domain/scale/instances",
-                     local::service::scale::aliases( state),
-                     common::service::transaction::Type::none,
-                     common::service::visibility::Type::undiscoverable,
-                     common::service::category::deprecated
+               { .name = ".casual/domain/scale/instances",
+                  .function = local::service::scale::aliases( state),
+                  .visibility = common::service::visibility::Type::undiscoverable,
+                  .category = std::string{ common::service::category::deprecated}
                },
-               { ".casual/domain/restart/instances",
-                     local::service::restart::aliases( state),
-                     common::service::transaction::Type::none,
-                     common::service::visibility::Type::undiscoverable,
-                     common::service::category::deprecated
+               { .name = ".casual/domain/restart/instances",
+                  .function = local::service::restart::aliases( state),
+                  .visibility = common::service::visibility::Type::undiscoverable,
+                  .category = std::string{ common::service::category::deprecated}
                },
-         }};
+         };
       }
+
+      void Policy::send_ack( const common::message::service::call::ACK& ack)
+      {
+         Trace trace{ "domain::manager::admin::Policy::send_ack"};
+
+         // we just push it to our own inbound device, and handle it later
+         communication::ipc::inbound::device().push( ack);
+      }
+
+      void Policy::initialize( const casual::manager::service::context::State& services)
+      {
+         Trace trace{ "domain::manager::admin::Policy::initialize"};
+
+         // no-op
+      }
+
    } // gateway::manager::admin
 } // casual
