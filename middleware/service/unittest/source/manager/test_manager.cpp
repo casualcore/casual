@@ -303,7 +303,7 @@ domain:
 
          auto state = unittest::state();
 
-         auto service = common::service::lookup::reply( common::service::Lookup{ "B"});
+         auto service = common::service::lookup::reply( common::service::Lookup{ "B", {}});
          // we expect the 'real-name' of the service to be replied
          EXPECT_TRUE( service.service.name == "A");
 
@@ -334,7 +334,7 @@ domain:
 
          service::unittest::advertise( { "a"});
 
-         auto service = common::service::lookup::reply( common::service::Lookup{ "a"});
+         auto service = common::service::lookup::reply( common::service::Lookup{ "a", {}});
          ASSERT_TRUE( ! service.absent());
 
          auto reply = common::communication::ipc::receive< common::message::service::call::Reply>();
@@ -368,11 +368,11 @@ domain:
 
          // reserve
          {
-            common::service::lookup::reply( common::service::Lookup{ "a"});
+            common::service::lookup::reply( common::service::Lookup{ "a", {}});
          }
 
          EXPECT_CODE( 
-            common::service::lookup::reply( common::service::Lookup{ "a"});
+            common::service::lookup::reply( common::service::Lookup{ "a", {}});
          ,common::code::xatmi::timeout);
 
          // the first reserve should give timeout reply
@@ -402,9 +402,9 @@ domain:
 
           service::unittest::advertise( { "a", "b"});
 
-         auto lookup_a = common::service::Lookup{ "a"};
+         auto lookup_a = common::service::Lookup{ "a", {}};
          // 'b' does not have any timeout
-         auto lookup_b = common::service::Lookup{ "b"};
+         auto lookup_b = common::service::Lookup{ "b", {}};
          
          auto lookup_reply_a= common::service::lookup::reply( std::move( lookup_a));
          EXPECT_TRUE( lookup_reply_a.state == decltype( lookup_reply_a.state)::idle);
@@ -648,11 +648,11 @@ domain:
          }
 
          EXPECT_CODE({
-            auto service = common::service::lookup::reply( common::service::Lookup{ "service1"});
+            auto service = common::service::lookup::reply( common::service::Lookup{ "service1", {}});
          }, common::code::xatmi::no_entry);
 
          EXPECT_CODE({
-            auto service = common::service::lookup::reply( common::service::Lookup{ "service2"});
+            auto service = common::service::lookup::reply( common::service::Lookup{ "service2", {}});
          }, common::code::xatmi::no_entry);
       }
 
@@ -665,7 +665,7 @@ domain:
          service::unittest::advertise( { "service1", "service2"});
 
          {
-            auto service = common::service::lookup::reply( common::service::Lookup{ "service1"});
+            auto service = common::service::lookup::reply( common::service::Lookup{ "service1", {}});
             EXPECT_TRUE( service.service.name == "service1");
             EXPECT_TRUE( service.process == common::process::handle());
             EXPECT_TRUE( service.state == decltype( service.state)::idle);
@@ -673,7 +673,7 @@ domain:
 
          {
             // we only have one instance, we expect lookup to not get "the reply"
-            auto lookup = common::service::Lookup{ "service2"};
+            auto lookup = common::service::Lookup{ "service2", {}};
             EXPECT_TRUE( ! common::service::lookup::non::blocking::reply( lookup));
          }
       }
@@ -690,7 +690,7 @@ domain:
          // echo server has unadvertise this service. The service is
          // still "present" in service-manager with no instances. Hence it's absent
          EXPECT_CODE({
-            common::service::lookup::reply( common::service::Lookup{ "service2"});
+            common::service::lookup::reply( common::service::Lookup{ "service2", {}});
          }, common::code::xatmi::no_entry);
       }
 
@@ -705,7 +705,7 @@ domain:
          service::unittest::advertise( { "service1", "service2"});
 
          EXPECT_CODE({
-            common::service::lookup::reply( common::service::Lookup{ "non-existent-service"});
+            common::service::lookup::reply( common::service::Lookup{ "non-existent-service", {}});
          }, common::code::xatmi::no_entry);
       }
 
@@ -719,13 +719,13 @@ domain:
          service::unittest::advertise( { "service1", "service2"});
 
          {
-            auto service = common::service::lookup::reply( common::service::Lookup{ "service1"});
+            auto service = common::service::lookup::reply( common::service::Lookup{ "service1", {}});
             EXPECT_TRUE( service.service.name == "service1");
             EXPECT_TRUE( service.process == common::process::handle());
             EXPECT_TRUE( service.state == decltype( service.state)::idle);
          }
 
-         common::service::Lookup lookup{ "service2"};
+         common::service::Lookup lookup{ "service2", {}};
          {
             // we only have one instance, we expect this to be busy
             EXPECT_TRUE( ! common::service::lookup::non::blocking::reply( lookup));
@@ -761,7 +761,7 @@ domain:
          auto forward = common::communication::instance::fetch::handle( forward::instance::identity.id);
 
          {
-            auto service = common::service::lookup::reply( common::service::Lookup{ "service1"});
+            auto service = common::service::lookup::reply( common::service::Lookup{ "service1", {}});
             EXPECT_TRUE( service.service.name == "service1");
             EXPECT_TRUE( service.process == common::process::handle());
             EXPECT_TRUE( service.state == decltype( service.state)::idle);
@@ -769,7 +769,7 @@ domain:
 
 
          {
-            auto service = common::service::lookup::reply( common::service::Lookup{ "service1", decltype( common::service::lookup::Context::semantic)::no_reply});
+            auto service = common::service::lookup::reply( common::service::Lookup{ "service1", {}, decltype( common::service::lookup::Context::semantic)::no_reply});
             EXPECT_TRUE( service.service.name == "service1");
 
             // service-manager will let us think that the service is idle, and send us the process-handle to the forward-cache
@@ -854,7 +854,7 @@ domain:
 
          auto correlation = []()
          {
-            auto service = common::service::lookup::reply( common::service::Lookup{ "service1"});
+            auto service = common::service::lookup::reply( common::service::Lookup{ "service1", {}});
             EXPECT_TRUE( service.service.name == "service1");
             EXPECT_TRUE( service.process == common::process::handle());
             EXPECT_TRUE( service.state == decltype( service.state)::idle);
@@ -912,7 +912,7 @@ domain:
 
          {
             // we expect service 'a' to be absent.
-            auto lookup = common::service::Lookup{ "a"};
+            auto lookup = common::service::Lookup{ "a", {}};
             EXPECT_CODE( common::service::lookup::reply( std::move( lookup)), common::code::xatmi::no_entry);
          }
       }
@@ -926,7 +926,7 @@ domain:
          service::unittest::advertise( { "a"});
 
          // 'emulate' that a call is in progress (more like consuming the lookup reply...)
-         const auto service = common::service::lookup::reply( common::service::Lookup{ "a"});
+         const auto service = common::service::lookup::reply( common::service::Lookup{ "a", {}});
 
          EXPECT_TRUE( service.state == decltype( service.state)::idle);
 
@@ -952,7 +952,7 @@ domain:
 
          {
             // we expect service 'a' to be absent.
-            auto absent = common::service::Lookup{ "a"};
+            auto absent = common::service::Lookup{ "a", {}};
             EXPECT_CODE( common::service::lookup::reply( std::move( absent)), common::code::xatmi::no_entry);
          }
       }
@@ -965,9 +965,13 @@ domain:
 
          service::unittest::advertise( { "a", "b", "c", "d"});
 
-         auto idle = common::service::lookup::reply( common::service::Lookup{ "a"});
+         auto idle = common::service::lookup::reply( common::service::Lookup{ "a", {}});
 
-         auto lookups = common::algorithm::container::emplace::initialize< std::vector< common::service::Lookup>>(  "b", "c", "d");
+         auto lookups = common::algorithm::container::emplace::initialize< std::vector< common::service::Lookup>>(
+            common::service::Lookup{ "b", {}},
+            common::service::Lookup{ "c", {}},
+            common::service::Lookup{ "d", {}}
+         );
 
          EXPECT_TRUE( idle.state == decltype( idle.state)::idle);
 
@@ -1038,8 +1042,8 @@ domain:
          // we reserve (lock) our instance to the 'call', via the route
          struct 
          {
-            common::service::Lookup first{ "B"};
-            common::service::Lookup second{ "B"};
+            common::service::Lookup first{ "B", {}};
+            common::service::Lookup second{ "B", {}};
          } lookup;
 
          using State =  common::service::lookup::State;
@@ -1071,7 +1075,7 @@ domain:
          auto end = start + std::chrono::milliseconds{ 2};
 
          {
-            auto service = common::service::lookup::reply( common::service::Lookup{ "service1"});
+            auto service = common::service::lookup::reply( common::service::Lookup{ "service1", {}});
             EXPECT_TRUE( service.service.name == "service1");
             EXPECT_TRUE( service.process == common::process::handle());
             EXPECT_TRUE( service.state == decltype( service.state)::idle);
@@ -1230,13 +1234,13 @@ domain:
 
          // we reserve ourselves
          {
-            auto service = common::service::lookup::reply( common::service::Lookup{ "local-service"});
+            auto service = common::service::lookup::reply( common::service::Lookup{ "local-service", {}});
             EXPECT_TRUE( service.service.name == "local-service");
             EXPECT_TRUE( service.state == decltype( service.state)::idle);
          }
 
          // lookup 'local-service' again
-         common::service::Lookup lookup{ "local-service"};
+         common::service::Lookup lookup{ "local-service", {}};
 
          // some unrelated concurrent services are advertised while our second lookup is pending
          service::unittest::concurrent::advertise( { "some-remote-service", "some-other-remote-service"});
@@ -1271,13 +1275,13 @@ domain:
 
          // we reserve ourselves
          {
-            auto service = common::service::lookup::reply( common::service::Lookup{ "local-service"});
+            auto service = common::service::lookup::reply( common::service::Lookup{ "local-service", {}});
             EXPECT_TRUE( service.service.name == "local-service");
             EXPECT_TRUE( service.state == decltype( service.state)::idle);
          }
 
          // lookup 'local-service' again
-         common::service::Lookup lookup{ "local-service"};
+         common::service::Lookup lookup{ "local-service", {}};
 
          // meanwhile, some process dies
          {
@@ -1358,7 +1362,7 @@ domain:
 
          // reserve the service
          {
-            auto service = common::service::lookup::reply( common::service::Lookup{ "a"});
+            auto service = common::service::lookup::reply( common::service::Lookup{ "a", {}});
             EXPECT_TRUE( service.service.name == "a");
             EXPECT_TRUE( service.process == callee);
             EXPECT_TRUE( service.state == decltype( service.state)::idle);
@@ -1393,6 +1397,82 @@ domain:
             EXPECT_TRUE( metric.code.result == common::code::xatmi::service_error);
             EXPECT_TRUE( metric.trid == common::transaction::context().current().trid);
          }
+      }
+
+      namespace local
+      {
+         namespace
+         {
+            auto advertise( const std::vector< std::string>& services, auto& device)
+            {
+               common::message::service::concurrent::Advertise message;
+               message.process.pid = common::process::id();
+               message.process.ipc = device.connector().handle().ipc();
+
+               for( auto& service : services)
+               {
+                  message.services.add.push_back( { 
+                     .name = std::move( service), 
+                     .transaction = common::service::transaction::Type::automatic, 
+                     .visibility = common::service::visibility::Type::discoverable});
+               }
+
+               common::communication::device::blocking::send( common::communication::instance::outbound::service::manager::device(), message);
+            }
+
+            auto lookup( std::string service, const auto& trid)
+            {
+               return common::service::lookup::reply( common::service::Lookup{ 
+                  std::move( service),
+                  trid,
+                  common::message::service::lookup::request::context::Semantic::wait
+               });
+            }
+            
+         } // <unnamed>
+      } // local
+
+
+      TEST( service_manager, advertise_concurrent_services_with_10_ipc__lookup_with_gtrid__expect_same_ipc)
+      {
+         common::unittest::Trace trace;
+
+         auto const services = std::vector< std::string>{ "a", "b", "c"};
+
+         auto domain = local::domain();
+
+         std::array< common::communication::ipc::inbound::Device, 10> devices;
+
+         common::algorithm::for_each( devices, [ &services]( auto& device)
+         {
+            local::advertise( services, device);
+         });
+
+         // create a lot of gtrid state for the SM
+         common::algorithm::for_n< 10>( [ &services]()
+         {
+            for( auto& service : services)
+            {
+               auto reply = local::lookup( service, common::transaction::id::create());
+               EXPECT_TRUE( reply.process.ipc);
+            }
+         });
+
+         auto trid = common::transaction::id::create();
+
+         auto first_lookup = local::lookup( "a", trid);
+
+         EXPECT_TRUE( first_lookup.process.ipc);
+
+         // lookup all 3 services 10 more times, we should get the same ipc
+         common::algorithm::for_n< 10>( [&]()
+         {
+            for( auto& service : services)
+            {
+               auto reply = local::lookup( service, trid);
+               EXPECT_TRUE( reply.process.ipc == first_lookup.process.ipc) << CASUAL_NAMED_VALUE( reply);
+            }
+         });
       }
 
    } // service
