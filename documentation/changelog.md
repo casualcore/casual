@@ -1,6 +1,9 @@
 # Changelog
 This is the changelog for `casual` and all changes are listed in this document.
 
+## [1.7.6] - 2025-05-18
+- common: service::Lookup does not propagate (current) trid ([#557](https://github.com/casualcore/casual/issues/557))
+
 ## [1.7.5] - 2025-04-24
 
 ### Fixes
