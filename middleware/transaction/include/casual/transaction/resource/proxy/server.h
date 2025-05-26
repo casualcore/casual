@@ -20,7 +20,7 @@ struct casual_resource_proxy_service_argument
 {
 
    int argc;
-   char** argv;
+   const char** argv;
 
    struct casual_xa_switch_mapping* xaSwitches;
 };

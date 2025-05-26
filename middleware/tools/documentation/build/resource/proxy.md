@@ -49,33 +49,21 @@ NAME
 
 DESCRIPTION
 
+   builds a resource proxy
+
 OPTIONS
-   -o, --output <value>
-      name of the resulting resource proxy
 
-   -k, --resource-key <value>
-      key of the resource
-
-   -c, --compiler <value>
-      compiler to use
-
-   -c, --compile-directives <value>
-      additional compile directives
-
-   -l, --link-directives <value>
-      additional link directives
-
-   -p, --resource-properties <value>
-      path to resource properties file
-
-   -v, --verbose
-      verbose output
-
-   -s, --keep-source
-      keep the generated source file
-
-   --help
-      Shows this help
+name                    value(s)  description                         
+----------------------  --------  ------------------------------------
+--output                <value>   name of the resulting resource proxy
+--resource-key          <value>   key of the resource                 
+--compiler              <value>   compiler to use                     
+--compile-directives    <value>   additional compile directives       
+--link-directives       <value>   additional link directives          
+--system-configuration  <value>   path to system configuration file   
+--verbose               <value>   verbose output                      
+--keep-source           <value>   keep the generated source file      
+--help                  <value>   shows this help information 
 ```
 
 ## regarding this documentation
