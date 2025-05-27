@@ -7,128 +7,160 @@
 
 
 
-#include "common/service/invoke.h"
-#include "common/service/type.h"
+
 #include "common/environment.h"
 #include "casual/argument.h"
 #include "common/log.h"
 #include "common/server/start.h"
 #include "common/exception/guard.h"
+#include "common/message/dispatch.h"
+#include "common/message/dispatch/handle.h"
+#include "common/communication/instance.h"
 
-#include "serviceframework/service/protocol.h"
+#include "casual/manager/service/protocol.h"
+#include "casual/manager/service.h"
+#include "casual/manager/service/context.h"
+#include "casual/manager/service/policy.h"
 
 #include "sql/database.h"
 
 namespace casual
 {
-   namespace event
+   namespace event::service::monitor
    {
-      namespace service
+
+      namespace local
       {
-         namespace monitor
+         namespace
          {
-            namespace local
+
+            struct State
             {
-               namespace
-               {
-                  namespace database
-                  {
-                     std::string name = "monitor.db";
-                  } // database
+               std::string database = "monitor.db";
+               manager::service::Context< manager::service::policy::Default> services;
 
-                  namespace model
-                  {
-                     struct Entry
-                     {
-                        struct 
-                        {
-                           std::string name;
-                           std::string parent;
-
-                           CASUAL_CONST_CORRECT_SERIALIZE(
-                              CASUAL_SERIALIZE( name);
-                              CASUAL_SERIALIZE( parent);
-                           )
-                        } service;
-
-                        common::Uuid execution;
-                        platform::time::point::type start;
-                        platform::time::point::type end;
-
-                        CASUAL_CONST_CORRECT_SERIALIZE(
-                           CASUAL_SERIALIZE( service);
-                           CASUAL_SERIALIZE( execution);
-                           CASUAL_SERIALIZE( start);
-                           CASUAL_SERIALIZE( end);
-                        )
-
-                     };
-                  } // model
-
-                  auto select()
-                  {
-                     const common::Trace trace( "Database::select");
-
-                     auto connection = sql::database::Connection( common::environment::directory::domain() / "monitor.db");
-                     //auto query = connection.query( "SELECT service, parentservice, callid, transactionid, start, end FROM calls;");
-                     auto query = connection.query( "SELECT service, parentservice, callid, start, end FROM calls;");
-
-                     return sql::database::query::fetch( std::move( query), []( sql::database::Row& row)
-                     {
-                        model::Entry entry;
-                        sql::database::row::get( row, 
-                           entry.service.name,
-                           entry.service.parent,
-                           entry.execution.get(),
-                           entry.start,
-                           entry.end);
-
-                        return entry;
-                     });
-                  }
-
-                  namespace service
-                  {
-                     common::service::invoke::Result metrics( common::service::invoke::Parameter&& parameter)
-                     {
-                        auto protocol = serviceframework::service::protocol::deduce( std::move( parameter));
-
-                        auto result = serviceframework::service::user( protocol, &local::select);
-
-                        protocol << CASUAL_NAMED_VALUE( result);
-                        return protocol.finalize();
-                     }
-                  } // service
-               } // <unnamed>
-            } // local
+               CASUAL_LOG_SERIALIZE(
+                  CASUAL_SERIALIZE( database);
+                  CASUAL_SERIALIZE( services);
+               )
+            };
 
 
-
-            void main( int argc, const char** argv)
+            namespace model
             {
-               // get database from arguments
-
+               struct Entry
                {
-                  argument::parse( "service monitor server",{
-                     argument::Option( std::tie( local::database::name), { "-db", "--database"}, "path to monitor database log")
-                  }, argc, argv);
+                  struct 
+                  {
+                     std::string name;
+                     std::string parent;
+
+                     CASUAL_CONST_CORRECT_SERIALIZE(
+                        CASUAL_SERIALIZE( name);
+                        CASUAL_SERIALIZE( parent);
+                     )
+                  } service;
+
+                  common::Uuid execution;
+                  platform::time::point::type start;
+                  platform::time::point::type end;
+
+                  CASUAL_CONST_CORRECT_SERIALIZE(
+                     CASUAL_SERIALIZE( service);
+                     CASUAL_SERIALIZE( execution);
+                     CASUAL_SERIALIZE( start);
+                     CASUAL_SERIALIZE( end);
+                  )
+
+               };
+            } // model
+
+            auto select( const State& state)
+            {
+               const common::Trace trace( "Database::select");
+
+               auto connection = sql::database::Connection( common::environment::directory::domain() / "monitor.db");
+               //auto query = connection.query( "SELECT service, parentservice, callid, transactionid, start, end FROM calls;");
+               auto query = connection.query( "SELECT service, parentservice, callid, start, end FROM calls;");
+
+               return sql::database::query::fetch( std::move( query), []( sql::database::Row& row)
+               {
+                  model::Entry entry;
+                  sql::database::row::get( row, 
+                     entry.service.name,
+                     entry.service.parent,
+                     entry.execution.get(),
+                     entry.start,
+                     entry.end);
+
+                  return entry;
+               });
+            }
+
+            namespace service
+            {
+               auto metrics( const State& state)
+               {
+                  return [ &state]( casual::manager::service::invoke::Parameter&& parameter)
+                  {
+                     return casual::manager::service::protocol::dispatch( 
+                        std::move( parameter),
+                        &local::select,
+                        state);
+                  };
                }
+            } // service
 
-               common::server::start( {
-                  {
-                     .name = ".casual/event/service/metrics",
-                     .function = &local::service::metrics,
-                     .transaction = common::service::transaction::Type::none,
-                     .visibility = common::service::visibility::Type::undiscoverable, 
+            std::vector< casual::manager::Service> services( const State& state)
+            {
+               return { 
+                  { 
+                     .name = std::string{ ".casual/event/service/metrics"},
+                     .function = local::service::metrics( state),
+                     .visibility = common::service::visibility::Type::undiscoverable,
                      .category = std::string{ common::service::category::admin}
                   }
-               });
+               };
+            }
+
+            auto handlers( State& state)
+            {
+               return common::message::dispatch::handle::defaults( state) +
+                  state.services.initialize( local::services( state));
 
             }
 
-         } // monitor
-      } // service
-   } // event
+            void start( State& state)
+            {
+               common::Trace trace{ "event::service::monitor::start"};
+
+               // Start the message-pump
+               common::message::dispatch::pump(
+                  local::handlers( state),
+                  common::communication::ipc::inbound::device());
+            }
+
+         } // <unnamed>
+      } // local
+
+
+
+      void main( int argc, const char** argv)
+      {
+         // get database from arguments
+
+         local::State state;
+
+         {
+            argument::parse( "service monitor server",{
+               argument::Option( std::tie( state.database), { "-db", "--database"}, "path to monitor database log")
+            }, argc, argv);
+         }
+
+         local::start( state);
+      }
+
+   } // event::service::monitor
 } // casual
 
 

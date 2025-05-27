@@ -4,6 +4,7 @@ import casual.middleware.make.api as dsl
 make.IncludePaths([
 	'include',
 	'../common/include',
+    '../manager/include',
 	'../serviceframework/include',
 	'../xatmi/include',
    '../domain/include',
@@ -17,6 +18,7 @@ make.IncludePaths([
 make.LibraryPaths([
 	'bin',
     '../common/bin',
+    '../manager/bin',
     '../xatmi/bin',
     '../domain/bin',
     '../service/bin',
@@ -83,6 +85,7 @@ target = make.LinkExecutable( 'bin/casual-event-service-monitor-server',
 	[
         common_archive,
         'casual-common',
+        'casual-manager',
         'casual-serviceframework',
         'sqlite3'
 	] )
