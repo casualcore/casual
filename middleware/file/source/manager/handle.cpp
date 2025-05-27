@@ -14,7 +14,6 @@
 #include "common/message/transaction.h"
 #include "common/event/listen.h"
 
-#include "common/server/handle/call.h"
 
 namespace casual
 {
@@ -114,6 +113,22 @@ namespace casual
                   }
                } // process
             } // event
+
+            namespace service::manager::lookup
+            {
+               auto reply( State& state)
+               {
+                  return [ &state]( const common::message::domain::process::lookup::Reply& message)
+                  {
+                     common::Trace trace{ "discovery::handle::local::service::manager::lookup::reply"};
+                     common::log::debug( "message: ", message);
+
+                     // will advertise our services if the reply refers to SM.
+                     state.services.advertise( message);
+                  };
+
+               }
+            } // service::manager::lookup
             
          } // <unnamed>
       } // local
@@ -131,9 +146,9 @@ namespace casual
             local::transaction::prepare::request( state),
             local::transaction::commit::request( state),
             local::transaction::rollback::request( state),
-
-            common::server::handle::admin::Call{
-               manager::admin::services( state)}
+            state.services.initialize( manager::admin::services( state)),
+            // take care of the lookup reply for SM that initialize has requested above
+            local::service::manager::lookup::reply( state),
          };
       }
 

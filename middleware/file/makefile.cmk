@@ -8,6 +8,7 @@ make.IncludePaths( [
    'unittest/include',
    '../common/include',
    '../cli/include',
+   '../manager/include',
    '../transaction/include',
    '../serviceframework/include', 
    '../xatmi/include',
@@ -22,6 +23,7 @@ make.LibraryPaths(
       'bin',
       '../common/bin',
       '../cli/bin',
+      '../manager/bin',
       '../domain/bin',
       '../serviceframework/bin',
       '../configuration/bin',
@@ -50,6 +52,7 @@ file_manager = make.LinkExecutable( 'bin/casual-file-manager',
    ], 
    [ 
       'casual-common',
+      'casual-manager',
       'casual-serviceframework',
    ]
 )

@@ -15,7 +15,7 @@
 
 #include "common/transaction/id.h"
 
-#include "serviceframework/service/protocol.h"
+#include "casual/manager/service/protocol.h"
 
 #include <ranges>
 
@@ -73,24 +73,24 @@ namespace casual
 
                auto state( const manager::State& state)
                {
-                  return [&state]( common::service::invoke::Parameter&& parameter)
+                  return [&state]( casual::manager::service::invoke::Parameter&& parameter)
                   {
-                     return serviceframework::service::user( 
-                        serviceframework::service::protocol::deduce( std::move( parameter)), 
+                     return casual::manager::service::protocol::dispatch(
+                        std::move( parameter), 
                         &detail::state, state);
                   };
                }
 
                auto recover( manager::State& state)
                {
-                  return [&state]( common::service::invoke::Parameter&& parameter)
+                  return [&state]( casual::manager::service::invoke::Parameter&& parameter)
                   {
-                     auto protocol = serviceframework::service::protocol::deduce( std::move( parameter));
+                     auto protocol = casual::manager::service::protocol::deduce( std::move( parameter));
 
                      const auto gtrids = protocol.extract< std::vector< common::transaction::global::ID>>( "gtrids");
                      const auto directive = protocol.extract< model::recovery::Directive>( "directive");
 
-                     return serviceframework::service::user( std::move( protocol), &detail::recover, state, gtrids, directive);
+                     return casual::manager::service::protocol::dispatch( std::move( protocol), &detail::recover, state, gtrids, directive);
                   };
                }
 
@@ -99,25 +99,22 @@ namespace casual
       } // local
 
 
-      common::server::Arguments services( manager::State& state)
+      std::vector< casual::manager::Service> services( manager::State& state)
       {
-         return 
-         {{
-            { 
-               service::name::state,
-               local::service::state( state),
-               common::service::transaction::Type::none,
-               common::service::visibility::Type::undiscoverable,
-               common::service::category::admin
+         return {
+            casual::manager::Service{ 
+               .name = service::name::state,
+               .function = local::service::state( state),
+               .visibility = common::service::visibility::Type::undiscoverable,
+               .category = std::string{ common::service::category::admin}
             },
-            { 
-               service::name::recover,
-               local::service::recover( state),
-               common::service::transaction::Type::none,
-               common::service::visibility::Type::undiscoverable,
-               common::service::category::admin
-            },
-         }};
+            casual::manager::Service{
+               .name = service::name::recover,
+               .function = local::service::recover( state),
+               .visibility = common::service::visibility::Type::undiscoverable,
+               .category = std::string{ common::service::category::admin}
+            }
+         };
       }
 
    } // file::manager::admin

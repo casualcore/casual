@@ -13,6 +13,9 @@
 #include "file/message.h"
 
 #include <chrono>
+#include "casual/manager/service/context.h"
+#include "casual/manager/service/policy.h"
+
 #include <vector>
 
 namespace casual
@@ -40,6 +43,8 @@ namespace casual
          std::vector< Request> working;
          std::vector< Request> pending;
 
+         casual::manager::service::Context< casual::manager::service::policy::Default> services;
+
          bool done() const;
 
          CASUAL_LOG_SERIALIZE(
@@ -48,6 +53,7 @@ namespace casual
             CASUAL_SERIALIZE( runlevel);
             CASUAL_SERIALIZE( working);
             CASUAL_SERIALIZE( pending);
+            CASUAL_SERIALIZE( services);
          )
       };
 
