@@ -26,8 +26,8 @@ namespace casual
          {
             auto prepare( std::string protocol)
             {
-               serviceframework::service::protocol::parameter_type result;
-               result.payload.type = std::move( protocol);
+               serviceframework::service::protocol::payload_type result;
+               result.type = std::move( protocol);
 
                return result;
             }
@@ -37,9 +37,9 @@ namespace casual
             {
                auto result = prepare( std::move( protocol));
 
-               auto writer = common::serialize::create::writer::from( result.payload.type);
+               auto writer = common::serialize::create::writer::from( result.type);
                writer << CASUAL_NAMED_VALUE( value);
-               writer.consume( result.payload.data);
+               writer.consume( result.data);
 
                return result;
             }
@@ -54,7 +54,7 @@ namespace casual
       {
          common::unittest::Trace trace;
 
-         auto protocol = service::protocol::deduce( local::prepare( GetParam()));
+         auto protocol = service::protocol::deduce( local::prepare( GetParam()), {});
          EXPECT_TRUE( protocol.type() == GetParam());
       }
 
@@ -64,11 +64,11 @@ namespace casual
 
          long some_long = 42;
 
-         auto parameter = local::prepare( GetParam(), some_long);
+         auto payload = local::prepare( GetParam(), some_long);
 
-         EXPECT_TRUE( parameter.payload.data.size() > 0) << "size: " << parameter.payload.data.size();
+         EXPECT_TRUE( payload.data.size() > 0) << "size: " << payload.data.size();
 
-         auto protocol = service::protocol::deduce( std::move( parameter));
+         auto protocol = service::protocol::deduce( std::move( payload), {});
 
          {
             long value = 0;
@@ -89,7 +89,7 @@ namespace casual
             vo.m_string = "poop";
          }
 
-         auto protocol = service::protocol::deduce( local::prepare( GetParam(), vo));
+         auto protocol = service::protocol::deduce( local::prepare( GetParam(), vo), {});
 
          {
             test::SimpleVO value;
@@ -105,7 +105,7 @@ namespace casual
       {
          common::unittest::Trace trace;
 
-         auto protocol = service::protocol::deduce( local::prepare( GetParam()));
+         auto protocol = service::protocol::deduce( local::prepare( GetParam()), {});
 
          {
             test::SimpleVO value;
@@ -121,7 +121,7 @@ namespace casual
          {
             test::SimpleVO value;
 
-            auto reader = common::serialize::create::reader::strict::from( result.payload.type, result.payload.data);
+            auto reader = common::serialize::create::reader::strict::from( result.type, result.data);
             reader >> CASUAL_NAMED_VALUE( value);
 
             EXPECT_TRUE( value.m_bool == false);
@@ -140,7 +140,7 @@ namespace casual
          if( type == common::buffer::type::ini)
             return;
 
-         auto protocol = service::protocol::deduce( local::prepare( type));
+         auto protocol = service::protocol::deduce( local::prepare( type), {});
 
          {
             test::SimpleVO value;
@@ -156,7 +156,7 @@ namespace casual
          {
             test::SimpleVO value;
 
-            auto reader = common::serialize::create::reader::strict::from( result.payload.type, result.payload.data);
+            auto reader = common::serialize::create::reader::strict::from( result.type, result.data);
             reader >> value;
 
             EXPECT_TRUE( value.m_bool == false);
@@ -175,7 +175,7 @@ namespace casual
          if( type == common::buffer::type::ini)
             return;
 
-         auto protocol = service::protocol::deduce( local::prepare( type));
+         auto protocol = service::protocol::deduce( local::prepare( type), {});
 
          {
             const auto value  = []()
@@ -195,7 +195,7 @@ namespace casual
          {
             test::SimpleVO value;
 
-            auto reader = common::serialize::create::reader::strict::from( result.payload.type, result.payload.data);
+            auto reader = common::serialize::create::reader::strict::from( result.type, result.data);
             reader >> value;
 
             EXPECT_TRUE( value.m_bool == false);
@@ -237,7 +237,7 @@ namespace casual
 
 
          local::Value value{ 42, "foo"};
-         auto protocol = service::protocol::deduce( local::prepare( GetParam(), value));
+         auto protocol = service::protocol::deduce( local::prepare( GetParam(), value), {});
 
          // input
          {

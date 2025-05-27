@@ -23,7 +23,8 @@ namespace casual
    {
       struct Base : common::traits::unrelocatable
       {
-         Base( protocol::parameter_type&& parameter);
+         Base( protocol::payload_type&& payload);
+         Base();
 
          bool call() const;
          void exception();
@@ -33,10 +34,12 @@ namespace casual
 
       protected:
 
-         protocol::result_type finalize();
+         protocol::payload_type reuse_payload();
 
-         protocol::parameter_type m_parameter;
-         protocol::result_type m_result;
+         
+
+         //protocol::parameter_type m_parameter;
+         protocol::payload_type m_payload;
 
          io::Input m_input;
          io::Output m_output;
@@ -45,9 +48,9 @@ namespace casual
 
       struct Binary : public Base
       {
-         Binary( protocol::parameter_type&& parameter);
+         Binary( protocol::payload_type&& payload);
          static constexpr auto type() { return common::buffer::type::binary;}
-         protocol::result_type finalize();
+         protocol::payload_type finalize();
 
       private:
          common::serialize::Reader m_reader;
@@ -57,9 +60,9 @@ namespace casual
 
       struct Yaml : public Base
       {
-         Yaml( protocol::parameter_type&& parameter);
+         Yaml( protocol::payload_type&& payload);
 
-         protocol::result_type finalize();
+         protocol::payload_type finalize();
          static constexpr auto type() { return common::buffer::type::yaml;}
 
       private:
@@ -69,9 +72,9 @@ namespace casual
 
       struct Json : public Base
       {
-         Json( protocol::parameter_type&& parameter);
+         Json( protocol::payload_type&& payload);
 
-         protocol::result_type finalize();
+         protocol::payload_type finalize();
          static constexpr auto type() { return common::buffer::type::json;}
 
       private:
@@ -81,9 +84,9 @@ namespace casual
 
       struct Xml : public Base
       {
-         Xml( protocol::parameter_type&& parameter);
+         Xml( protocol::payload_type&& payload);
 
-         protocol::result_type finalize();
+         protocol::payload_type finalize();
          static constexpr auto type() { return common::buffer::type::xml;}
 
       private:
@@ -93,9 +96,9 @@ namespace casual
 
       struct Ini : public Base
       {
-         Ini( protocol::parameter_type&& parameter);
+         Ini( protocol::payload_type&& payload);
 
-         protocol::result_type finalize();
+         protocol::payload_type finalize();
          static constexpr auto type() { return common::buffer::type::ini;}
 
       private:
@@ -112,7 +115,7 @@ namespace casual
             inline decltype( auto) type() const { return m_protocol.type();}
 
             bool call();
-            protocol::result_type finalize();
+            protocol::payload_type finalize();
             inline void exception() { m_protocol.exception();}
 
             inline io::Input& input() { return m_protocol.input();}
@@ -131,7 +134,7 @@ namespace casual
          Describe( service::Protocol&& protocol);
 
          bool call() const;
-         protocol::result_type finalize();
+         protocol::payload_type finalize();
          inline decltype( auto) type() const { return m_protocol.type();}
 
          inline void exception() { m_protocol.exception();}

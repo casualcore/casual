@@ -19,284 +19,284 @@
 
 namespace casual
 {
-   namespace serviceframework
+   namespace serviceframework::service
    {
-      namespace service
+
+      namespace protocol
       {
-         namespace protocol
+         using payload_type = common::buffer::Payload;
+         using headers_type = common::service::header::Fields;
+         //using parameter_type = common::service::invoke::Parameter;
+         //using result_type = common::service::invoke::Result;
+
+         namespace io
          {
-            using parameter_type = common::service::invoke::Parameter;
-            using result_type = common::service::invoke::Result;
+            using readers_type = std::vector< common::serialize::Reader*>;
+            using writers_type = std::vector< common::serialize::Writer*>;
 
-            namespace io
+            struct Input
             {
-               using readers_type = std::vector< common::serialize::Reader*>;
-               using writers_type = std::vector< common::serialize::Writer*>;
+               readers_type readers;
+               writers_type writers;
+            };
 
-               struct Input
+            struct Output
+            {
+               readers_type readers;
+               writers_type writers;
+            };
+
+         } // io
+
+      } // protocol
+
+
+      class Protocol
+      {
+      public:
+
+         template< typename P>
+         explicit Protocol( P&& protocol)
+            : Protocol{ std::make_unique< model< P>>( std::forward< P>( protocol))}
+         {}
+
+         ~Protocol();
+         
+         Protocol( Protocol&&);
+         Protocol& operator = ( Protocol&&);
+
+         bool call() const { return m_concept->call();}
+
+         protocol::payload_type finalize() { return m_concept->finalize();}
+         void exception() { m_concept->exception();}
+         std::string_view type() const { return m_concept->type();}
+         
+         //! extract type `R` with `name`
+         template< typename R, typename N> 
+         auto extract( N&& name)
+         {
+            R result{};
+            *this >> CASUAL_NAMED_VALUE_NAME( result, name);
+            return result;
+         }
+
+         //! extract type `R`
+         template< typename R> 
+         auto extract()
+         {
+            R result;
+            *this >> result;
+            return result;
+         }
+
+         template< typename T>
+         Protocol& operator >> ( T&& value)
+         {
+            serialize( std::forward< T>( value), m_concept->input());
+            return *this;
+         }
+
+         template< typename T>
+         Protocol& operator << ( T&& value)
+         {
+            // check if user uses const lvalues for _result_. Don't really see a
+            // use case when this would be natural, based on the intent of the 
+            // `Protocol` type. But apparently there are... 
+            if constexpr ( std::is_const_v< std::remove_reference_t< T>>)
+            {
+               auto& io = m_concept->output();
+
+               if( io.readers.empty())
                {
-                  readers_type readers;
-                  writers_type writers;
-               };
-
-               struct Output
+                  for( auto& archive : io.writers)
+                     *archive << value;
+               }
+               else
                {
-                  readers_type readers;
-                  writers_type writers;
-               };
+                  // need to copy to enable protocols that mutates the value (describe is one).
+                  auto non_const = value;
+                  serialize( non_const, io);
+               }
+            }
+            else // use the effective, normal branch
+               serialize( std::forward< T>( value), m_concept->output());
+            return *this;
+         }
 
-            } // io
+         template< typename P, typename... Args>
+         static Protocol emplace( Args&&... args)
+         {
+            return { std::make_unique< model< P>>( std::forward< Args>( args)...)};
+         }
 
-         } // protocol
+         friend std::ostream& operator << ( std::ostream& out, const Protocol& value);
 
+         //! @attention internal use only
+         //! @{
+         auto& input() { return m_concept->input();}
+         auto& output() { return m_concept->output();}
+         //! @}
 
-         class Protocol
+      private:
+
+         struct Concept
+         {
+            virtual ~Concept() = default;
+            virtual protocol::io::Input& input() = 0;
+            virtual protocol::io::Output& output() = 0;
+            virtual bool call() = 0;
+            virtual protocol::payload_type finalize() = 0;
+            virtual void exception() = 0;
+
+            virtual std::string_view type() const = 0;
+         };
+
+         template< typename P>
+         Protocol( std::unique_ptr< P>&& model) : m_concept( std::move( model)) {}
+
+         template< typename Protocol>
+         struct model : Concept
+         {
+            template< typename... Args>
+            model( Args&&... args) : m_protocol{ std::forward< Args>( args)...} {}
+
+            protocol::io::Input& input() override { return m_protocol.input();}
+            protocol::io::Output& output() override { return m_protocol.output();}
+            bool call() override { return m_protocol.call();}
+            protocol::payload_type finalize() override { return m_protocol.finalize();}
+            void exception() override { m_protocol.exception();}
+
+            std::string_view type() const override { return m_protocol.type();}
+
+         private:
+            Protocol m_protocol;
+         };
+
+         template< typename T, typename A>
+         void serialize( T&& value, A& io)
+         {
+            for( auto& archive : io.readers)
+               *archive >> value;
+            for( auto& archive : io.writers)
+               *archive << value;
+         }
+
+         std::unique_ptr< Concept> m_concept;
+      };
+
+      namespace protocol
+      {
+         class Factory
          {
          public:
+            static Factory& instance();
 
-            template< typename P>
-            Protocol( P&& protocol)
-               : Protocol{ std::make_unique< model< P>>( std::forward< P>( protocol))}
-            {}
+            using creator_type = std::function< Protocol( protocol::payload_type&&)>;
 
-            ~Protocol();
-            
-            Protocol( Protocol&&);
-            Protocol& operator = ( Protocol&&);
+            Protocol create( protocol::payload_type&& parameter, const common::service::header::Fields& headers);
 
-            bool call() const { return m_concept->call();}
-
-            protocol::result_type finalize() { return m_concept->finalize();}
-            void exception() { m_concept->exception();}
-            std::string_view type() const { return m_concept->type();}
-            
-            //! extract type `R` with `name`
-            template< typename R, typename N> 
-            auto extract( N&& name)
+            template< typename Protocol>
+            std::string_view registration( std::string_view type)
             {
-               R result{};
-               *this >> CASUAL_NAMED_VALUE_NAME( result, name);
-               return result;
+               m_creators[ type] = Creator< Protocol>{};
+               return type;
             }
 
-            //! extract type `R`
-            template< typename R> 
-            auto extract()
+            template< typename Protocol>
+            std::string_view registration()
             {
-               R result;
-               *this >> result;
-               return result;
+               return registration< Protocol>( Protocol::type());
             }
-
-            template< typename T>
-            Protocol& operator >> ( T&& value)
-            {
-               serialize( std::forward< T>( value), m_concept->input());
-               return *this;
-            }
-
-            template< typename T>
-            Protocol& operator << ( T&& value)
-            {
-               // check if user uses const lvalues for _result_. Don't really see a
-               // use case when this would be natural, based on the intent of the 
-               // `Protocol` type. But apparently there are... 
-               if constexpr ( std::is_const_v< std::remove_reference_t< T>>)
-               {
-                  auto& io = m_concept->output();
-
-                  if( io.readers.empty())
-                  {
-                     for( auto& archive : io.writers)
-                        *archive << value;
-                  }
-                  else
-                  {
-                     // need to copy to enable protocols that mutates the value (describe is one).
-                     auto non_const = value;
-                     serialize( non_const, io);
-                  }
-               }
-               else // use the effective, normal branch
-                  serialize( std::forward< T>( value), m_concept->output());
-               return *this;
-            }
-
-            template< typename P, typename... Args>
-            static Protocol emplace( Args&&... args)
-            {
-               return { std::make_unique< model< P>>( std::forward< Args>( args)...)};
-            }
-
-            friend std::ostream& operator << ( std::ostream& out, const Protocol& value);
-
-            //! @attention internal use only
-            //! @{
-            auto& input() { return m_concept->input();}
-            auto& output() { return m_concept->output();}
-            //! @}
 
          private:
 
-            struct Concept
-            {
-               virtual ~Concept() = default;
-               virtual protocol::io::Input& input() = 0;
-               virtual protocol::io::Output& output() = 0;
-               virtual bool call() = 0;
-               virtual protocol::result_type finalize() = 0;
-               virtual void exception() = 0;
-
-               virtual std::string_view type() const = 0;
-            };
-
             template< typename P>
-            Protocol( std::unique_ptr< P>&& model) : m_concept( std::move( model)) {}
-
-            template< typename Protocol>
-            struct model : Concept
+            struct Creator
             {
-               template< typename... Args>
-               model( Args&&... args) : m_protocol{ std::forward< Args>( args)...} {}
+               using protocol_type = P;
 
-               protocol::io::Input& input() override { return m_protocol.input();}
-               protocol::io::Output& output() override { return m_protocol.output();}
-               bool call() override { return m_protocol.call();}
-               protocol::result_type finalize() override { return m_protocol.finalize();}
-               void exception() override { m_protocol.exception();}
+               service::Protocol operator()( protocol::payload_type&& payload) const
+               {
+                  return service::Protocol::emplace< protocol_type>( std::move( payload));
+               }
 
-               std::string_view type() const override { return m_protocol.type();}
-
-            private:
-               Protocol m_protocol;
             };
 
-            template< typename T, typename A>
-            void serialize( T&& value, A& io)
-            {
-               for( auto& archive : io.readers)
-                  *archive >> value;
-               for( auto& archive : io.writers)
-                  *archive << value;
-            }
+            Factory();
 
-            std::unique_ptr< Concept> m_concept;
+            using mapping_type = std::map< std::string_view, creator_type>;
+
+            mapping_type m_creators;
          };
 
-         namespace protocol
+         //! @returns a protocol deduced from `payload`
+         Protocol deduce( protocol::payload_type&& payload, const common::service::header::Fields& headers);
+
+      } // protocol
+
+
+      template< typename F, typename... Args>
+      auto user( Protocol& protocol, F&& function, Args&&... args)
+      {
+         if( protocol.call())
          {
-            class Factory
+            try
             {
-            public:
-               static Factory& instance();
-
-               using creator_type = std::function< Protocol( protocol::parameter_type&&)>;
-
-               Protocol create( protocol::parameter_type&& parameter);
-
-               template< typename Protocol>
-               std::string_view registration( std::string_view type)
-               {
-                  m_creators[ type] = Creator< Protocol>{};
-                  return type;
-               }
-
-               template< typename Protocol>
-               std::string_view registration()
-               {
-                  return registration< Protocol>( Protocol::type());
-               }
-
-            private:
-
-               template< typename P>
-               struct Creator
-               {
-                  using protocol_type = P;
-
-                  service::Protocol operator()( protocol::parameter_type&& parameter) const
-                  {
-                     return service::Protocol::emplace< protocol_type>( std::move( parameter));
-                  }
-
-               };
-
-               Factory();
-
-               using mapping_type = std::map< std::string_view, creator_type>;
-
-               mapping_type m_creators;
-            };
-
-            //! @returns a protocol deduced from `parameter`
-            Protocol deduce( protocol::parameter_type&& parameter);
-
-         } // protocol
-
-
-         template< typename F, typename... Args>
-         auto user( Protocol& protocol, F&& function, Args&&... args)
-         {
-            if( protocol.call())
-            {
-               try
-               {
-                  return common::invoke( function, std::forward< Args>( args)...);
-               }
-               catch( ...)
-               {
-                  protocol.exception();
-               }
+               return common::invoke( function, std::forward< Args>( args)...);
             }
-            return decltype( common::invoke( function, std::forward< Args>( args)...))();
-         }
-
-         namespace detail
-         {
-            template< typename R> 
-            struct user 
+            catch( ...)
             {
-               template< typename F, typename... Args>
-               static auto call( Protocol&& protocol, F&& function, Args&&... args)
-               {
-                  auto result = service::user( protocol, std::forward< F>( function), std::forward< Args>( args)...);
-                  protocol << CASUAL_NAMED_VALUE( result);
-                  return protocol.finalize();
-               }
-            };
+               protocol.exception();
+            }
+         }
+         return decltype( common::invoke( function, std::forward< Args>( args)...))();
+      }
 
-            template<> 
-            struct user< void>
+      namespace detail
+      {
+         template< typename R> 
+         struct user 
+         {
+            template< typename F, typename... Args>
+            static auto call( Protocol&& protocol, F&& function, Args&&... args)
             {
-               template< typename F, typename... Args>
-               static auto call( Protocol&& protocol, F&& function, Args&&... args)
-               {
-                  service::user( protocol, std::forward< F>( function), std::forward< Args>( args)...);
-                  return protocol.finalize();
-               }
-            };
+               auto result = service::user( protocol, std::forward< F>( function), std::forward< Args>( args)...);
+               protocol << CASUAL_NAMED_VALUE( result);
+               return protocol.finalize();
+            }
+         };
 
-         } // detail
-         
-         //! takes ownership of protocol and serializes the result (if not void) and return 
-         //! common::service::invoke::Result
-         template< typename F, typename... Args>
-         auto user( Protocol&& protocol, F&& function, Args&&... args)
+         template<> 
+         struct user< void>
          {
-            using implementation = detail::user< decltype( common::invoke( function, std::forward< Args>( args)...))>;
-            return implementation::call( std::move( protocol), std::forward< F>( function), std::forward< Args>( args)...);
-         }
+            template< typename F, typename... Args>
+            static auto call( Protocol&& protocol, F&& function, Args&&... args)
+            {
+               service::user( protocol, std::forward< F>( function), std::forward< Args>( args)...);
+               return protocol.finalize();
+            }
+         };
 
-         //! takes ownership of `parameter` and deduces protocol and serializes the result (if not void) and return 
-         //! common::service::invoke::Result
-         template< typename... Ts>
-         auto user( common::service::invoke::Parameter&& parameter, Ts&&... ts)
-         {
-            return service::user( protocol::deduce( std::move( parameter)), std::forward< Ts>( ts)...);
-         }
+      } // detail
+      
+      //! takes ownership of protocol and serializes the result (if not void) and return 
+      //! common::service::invoke::Result
+      template< typename F, typename... Args>
+      auto user( Protocol&& protocol, F&& function, Args&&... args)
+      {
+         using implementation = detail::user< decltype( common::invoke( function, std::forward< Args>( args)...))>;
+         return implementation::call( std::move( protocol), std::forward< F>( function), std::forward< Args>( args)...);
+      }
 
-      } // service
-   } // serviceframework
+      //! takes ownership of `payload` and deduces protocol and serializes the result (if not void) and return 
+      //! common::service::invoke::Result
+      template< typename... Ts>
+      auto user( protocol::payload_type&& payload, const protocol::headers_type& headers, Ts&&... ts)
+      {
+         return service::user( protocol::deduce( std::move( payload), headers), std::forward< Ts>( ts)...);
+      }
+
+   } // serviceframework::service
 } // casual
 
 

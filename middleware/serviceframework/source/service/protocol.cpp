@@ -37,10 +37,10 @@ namespace casual
             {
                namespace
                {
-                  bool describe()
+                  bool describe( const common::service::header::Fields& headers)
                   {
-                     return common::service::header::fields().contains( "casual-service-describe") &&
-                           common::service::header::fields().at( "casual-service-describe").value() != "false";
+                     return headers.contains( "casual-service-describe") &&
+                        headers.at( "casual-service-describe").value() != "false";
                   }
 
                } // <unnamed>
@@ -61,20 +61,20 @@ namespace casual
                registration< service::protocol::implementation::Ini>();
             }
 
-            Protocol Factory::create( common::service::invoke::Parameter&& parameter)
+            Protocol Factory::create( protocol::payload_type&& payload, const common::service::header::Fields& headers)
             {
                Trace trace{ "service::protocol::Factory::create"};
-               common::log::debug( "parameter: ", parameter);
+               common::log::debug( "payload: ", payload);
 
-               if( auto found = common::algorithm::find( m_creators, parameter.payload.type))
+               if( auto found = common::algorithm::find( m_creators, payload.type))
                {
-                  auto protocol = found->second( std::move( parameter));
+                  auto protocol = found->second( std::move( payload));
 
                   // should we wrap it in 'adapters'?
                   if( log::parameter)
                      protocol = Protocol::emplace< protocol::implementation::parameter::Log>( std::move( protocol));
                   
-                  if( local::describe())
+                  if( local::describe( headers))
                      protocol = Protocol::emplace< protocol::implementation::Describe>( std::move( protocol));
 
                   common::log::debug( "protocol: ", protocol);
@@ -82,13 +82,13 @@ namespace casual
                   return protocol;
                }
                
-               common::code::raise::error( common::code::casual::communication_protocol, "no suitable protocol was found for type: " + parameter.payload.type);
+               common::code::raise::error( common::code::casual::communication_protocol, "no suitable protocol was found for type: ", payload.type);
             }
 
 
-            Protocol deduce( common::service::invoke::Parameter&& parameter)
+            Protocol deduce( protocol::payload_type&& payload, const common::service::header::Fields& headers)
             {
-               return Factory::instance().create( std::move( parameter));
+               return Factory::instance().create( std::move( payload), headers);
             }
 
          } // protocol

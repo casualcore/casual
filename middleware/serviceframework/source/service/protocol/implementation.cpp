@@ -27,11 +27,9 @@ namespace casual
    namespace serviceframework::service::protocol::implementation
    {
 
-      Base::Base( protocol::parameter_type&& parameter)
-         : m_parameter( std::move( parameter))
-      {
-         m_result.payload.type = m_parameter.payload.type;
-      }
+      Base::Base( protocol::payload_type&& payload)
+         : m_payload{ std::move( payload)}
+      {}
 
       bool Base::call() const
       {
@@ -41,24 +39,23 @@ namespace casual
       void Base::exception()
       {
          common::exception::sink();
-         m_result.code.result = decltype( m_result.code.result)::fail;
+         //m_result.code.result = decltype( m_result.code.result)::fail;
       }
 
       io::Input& Base::input() { return m_input;}
       io::Output& Base::output() { return m_output;}
 
-      
-      protocol::result_type Base::finalize()
+      protocol::payload_type Base::reuse_payload()
       {
-         Trace trace{ "protocol::implementation::Base::finalize"};
-         return std::move( m_result);
+         auto result = std::move( m_payload);
+         result.data.clear();
+         return result;
       }
 
 
-
-      Binary::Binary( protocol::parameter_type&& parameter)
-         : Base( std::move( parameter)),
-            m_reader( common::serialize::binary::reader( m_parameter.payload.data)), 
+      Binary::Binary( protocol::payload_type&& payload)
+         : Base( std::move( payload)), 
+            m_reader( common::serialize::binary::reader( m_payload.data)), 
             m_writer( common::serialize::binary::writer())
       {
          Trace trace{ "protocol::Binary::Binary"};
@@ -68,112 +65,96 @@ namespace casual
 
       }
 
-      protocol::result_type Binary::finalize()
+      protocol::payload_type Binary::finalize()
       {
-         auto result = Base::finalize();
-         m_writer.consume( result.payload.data);
+         // resuse the payload memory
+         auto result = Base::reuse_payload();
+         m_writer.consume( result.data);
          return result;
       }
 
 
-      Yaml::Yaml( protocol::parameter_type&& parameter)
-         : Base( std::move( parameter)),
-            m_reader{ common::serialize::yaml::relaxed::reader( m_parameter.payload.data)},
+      Yaml::Yaml( protocol::payload_type&& payload)
+         : Base( std::move( payload)),
+            m_reader{ common::serialize::yaml::relaxed::reader( m_payload.data)},
             m_writer{ common::serialize::yaml::writer()}
       {
          Trace trace{ "protocol::Yaml::Yaml"};
 
          m_input.readers.push_back( &m_reader);
          m_output.writers.push_back( &m_writer);
-
-         // We don't need the request-buffer any more, we can use the memory though...
-         m_result.payload = std::move( m_parameter.payload);
-         m_result.payload.data.clear();
       }
 
-      protocol::result_type Yaml::finalize()
+      protocol::payload_type Yaml::finalize()
       {
          Trace trace{ "protocol::Yaml::finalize"};
 
-         auto result = Base::finalize();
-         m_writer.consume( result.payload.data);
+         auto result = Base::reuse_payload();
+         m_writer.consume( result.data);
          return result;
       }
 
 
-      Json::Json( protocol::parameter_type&& parameter)
-         : Base( std::move( parameter)),
-            m_reader{ common::serialize::json::relaxed::reader( m_parameter.payload.data)},
+      Json::Json( protocol::payload_type&& payload)
+         : Base( std::move( payload)),
+            m_reader{ common::serialize::json::relaxed::reader( m_payload.data)},
             m_writer{ common::serialize::json::writer()}
       {
          Trace trace{ "protocol::Json::Json"};
 
          m_input.readers.push_back( &m_reader);
          m_output.writers.push_back( &m_writer);
-
-         // We don't need the request-buffer any more, we can use the memory though...
-         m_result.payload = std::move( m_parameter.payload);
-         m_result.payload.data.clear();
       }
 
-      protocol::result_type Json::finalize()
+      protocol::payload_type Json::finalize()
       {
          Trace trace{ "protocol::Json::finalize"};
 
-         auto result = Base::finalize();
-         m_writer.consume( result.payload.data);
+         auto result = Base::reuse_payload();
+         m_writer.consume( result.data);
          return result;
       }
 
 
 
-      Xml::Xml( protocol::parameter_type&& parameter)
-         : Base( std::move( parameter)),
-            m_reader{ common::serialize::xml::relaxed::reader( m_parameter.payload.data)},
+      Xml::Xml( protocol::payload_type&& payload)
+         : Base( std::move( payload)),
+            m_reader{ common::serialize::xml::relaxed::reader( m_payload.data)},
             m_writer{ common::serialize::xml::writer()}
       {
          Trace trace{ "protocol::Xml::Xml"};
 
          m_input.readers.push_back( &m_reader);
          m_output.writers.push_back( &m_writer);
-
-         // We don't need the request-buffer any more, we can use the memory though...
-         m_result.payload = std::move( m_parameter.payload);
-         m_result.payload.data.clear();
-
       }
 
-      protocol::result_type Xml::finalize()
+      protocol::payload_type Xml::finalize()
       {
          Trace trace{ "protocol::Xml::finalize"};
 
-         auto result = Base::finalize();
-         m_writer.consume( result.payload.data);
+         auto result = Base::reuse_payload();
+         m_writer.consume( result.data);
          return result;
       }
 
 
-      Ini::Ini( protocol::parameter_type&& parameter)
-      : Base( std::move( parameter)),
-         m_reader( common::serialize::ini::relaxed::reader( m_parameter.payload.data)),
+      Ini::Ini( protocol::payload_type&& payload)
+      : Base( std::move( payload)),
+         m_reader( common::serialize::ini::relaxed::reader( m_payload.data)),
          m_writer( common::serialize::ini::writer())
       {
          Trace trace{ "protocol::Ini::Ini"};
 
          m_input.readers.push_back( &m_reader);
          m_output.writers.push_back( &m_writer);
-
-         // We don't need the request-buffer any more, we can use the memory though...
-         m_result.payload = std::move( m_parameter.payload);
-         m_result.payload.data.clear();
       }
 
-      protocol::result_type Ini::finalize()
+      protocol::payload_type Ini::finalize()
       {
          Trace trace{ "protocol::Ini::finalize"};
 
-         auto result = Base::finalize();
-         m_writer.consume( result.payload.data);
+         auto result = Base::reuse_payload();
+         m_writer.consume( result.data);
          return result;
       }
 
@@ -218,7 +199,7 @@ namespace casual
             return m_protocol.call();
          }
 
-         protocol::result_type Log::finalize() 
+         protocol::payload_type Log::finalize() 
          { 
             Trace trace{ "protocol::implementation::parameter::Log::finalize"};
 
@@ -252,7 +233,7 @@ namespace casual
          return false;
       }
 
-      protocol::result_type Describe::finalize()
+      protocol::payload_type Describe::finalize()
       {
          Trace trace{ "protocol::Describe::finalize"};
 
