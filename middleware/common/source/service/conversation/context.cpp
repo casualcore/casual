@@ -267,11 +267,22 @@ namespace casual
             {
                Trace trace{ "common::service::conversation::Context::connect"};
 
+               auto create_lookup = []( const auto& service, auto flags, const auto& trid)
+               {
+                  if( flag::contains( flags, connect::Flag::no_transaction))
+                     return service::Lookup{ service, {}};
+                  else
+                     return service::Lookup{ service, trid};
+               };
+
                local::validate::flags( flags);
 
-               service::Lookup lookup{ service};
                log::debug( "service: ", service, " buffer: ", buffer, " flags: ", flags);
 
+               auto& transaction = common::transaction::context().current();
+
+               auto lookup = create_lookup( service, flags, transaction.trid);
+              
 
                auto start = platform::time::clock::type::now();
 
@@ -306,8 +317,6 @@ namespace casual
                   message.parent.span = common::execution::context::get().span;
                   message.parent.service = common::execution::context::get().service;
                   message.duplex = local::duplex::invert( value.duplex);
-
-                  auto& transaction = common::transaction::context().current();
 
                   if( ! flag::contains( flags, connect::Flag::no_transaction) && transaction)
                   {

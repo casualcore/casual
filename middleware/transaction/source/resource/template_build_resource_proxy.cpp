@@ -15,7 +15,7 @@ extern "C" {
 extern struct xa_switch_t casual_mockup_xa_switch_static;
 
 
-int main( int argc, char** argv)
+int main( int argc, const char** argv)
 {
 
    struct casual_xa_switch_mapping xa_mapping[] = {

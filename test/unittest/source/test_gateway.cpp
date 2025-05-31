@@ -1649,6 +1649,60 @@ domain:
          EXPECT_TRUE( domains[ "D"] > 0) << CASUAL_NAMED_VALUE( domains);
       }
 
+      TEST( test_gateway, domain_A_to__B_C_D__call_domain_name_in_transaction___expect_all_calls_to_go_to_one_domain)
+      {
+         common::unittest::Trace trace;
+
+         // sink child signals 
+         signal::callback::registration< code::signal::child>( [](){});
+
+         auto b = local::example::domain( "B", "7001");
+         auto c = local::example::domain( "C", "7002");
+         auto d = local::example::domain( "D", "7003");
+
+         auto a = local::domain( R"(
+domain: 
+   name: A
+  
+   gateway:
+      outbound:
+         groups:
+            -  connections:
+                  -  address: 127.0.0.1:7001
+                  -  address: 127.0.0.1:7002
+                  -  address: 127.0.0.1:7003
+)");
+
+         gateway::unittest::fetch::until( gateway::unittest::fetch::predicate::outbound::connected( 3));
+         
+         // discover a service that we know exists in B, C and D
+         {
+            auto services = casual::domain::unittest::discover::services( { "casual/example/domain/name"});
+            EXPECT_TRUE( services.at( 0) == "casual/example/domain/name");
+         }
+
+         // start a transaction
+         EXPECT_TRUE( ::tx_begin() == TX_OK);
+
+         std::map< std::string, int> domains;
+
+         constexpr int count = 20;
+
+         algorithm::for_n< count>( [ &domains]() mutable
+         {
+            auto buffer = local::call( "casual/example/domain/name");
+            domains[ buffer.get()]++;
+         });
+
+         // commit the transaction
+         EXPECT_TRUE( ::tx_commit() == TX_OK);
+
+         // should only be one domain that got all calls
+         ASSERT_TRUE( domains.size() == 1) << CASUAL_NAMED_VALUE( domains);
+         EXPECT_TRUE( std::begin( domains)->second == count) << CASUAL_NAMED_VALUE( domains);
+      }
+
+
       TEST( test_gateway, domains_A_B__B_has_echo__call_echo_from_A__expect_discovery__shutdown_B__expect_no_ent__boot_B__expect_discovery)
       {
          common::unittest::Trace trace;
@@ -3759,7 +3813,7 @@ domain:
          auto lookup = []()
          {
             auto context = common::service::lookup::Context{ common::message::service::lookup::request::context::Semantic::wait};
-            return common::service::Lookup{ "casual/example/echo", context};
+            return common::service::Lookup{ "casual/example/echo", {}, context};
          }();
 
          // expect no service to be found

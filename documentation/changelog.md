@@ -1,6 +1,17 @@
 # Changelog
 This is the changelog for `casual` and all changes are listed in this document.
 
+## [1.7.7] - 2025-05-27
+
+### Fixes
+- tools: casual-build-resource-proxy doesn't respect --keep-source ([#562](https://github.com/casualcore/casual/issues/562))
+- tools: casual-build-resource-proxy fails to compile ([#561](https://github.com/casualcore/casual/issues/561))
+
+## [1.7.6] - 2025-05-18
+
+### Fixes
+- common: service::Lookup does not propagate (current) trid ([#557](https://github.com/casualcore/casual/issues/557))
+
 ## [1.7.5] - 2025-04-24
 
 ### Fixes

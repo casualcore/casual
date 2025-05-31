@@ -19,6 +19,7 @@
 #include "common/exception/guard.h"
 #include "common/code/raise.h"
 #include "common/code/casual.h"
+#include "common/execute.h"
 
 #include "configuration/system.h"
 
@@ -227,21 +228,22 @@ int main( int argc, const char** argv)
 
                         // Generate file
                         common::file::scoped::Path path( common::file::name::unique( "rm_proxy_", ".cpp"));
+                        
+                        // make sure we keep the file if user has requested it
+                        auto path_keep_scope = common::execute::scope( [keep = settings.keep_source, &path]()
+                        { 
+                           if( keep)
+                              path.release();
+                        });
 
                         {
                            std::ofstream file( path);
-
                            trace::Exit log( "generate file: " + path.string(), settings.verbose);
 
                            local::generate( file, xa_switch);
                         }
 
                         build( path, xa_switch, settings);
-
-                        if( settings.keep_source)
-                        {
-                           path.release();
-                        }
                      }
                   } // <unnamed>
                } // local

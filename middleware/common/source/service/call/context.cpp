@@ -82,7 +82,7 @@ namespace casual
                         if( flag::contains( flags, call::async::Flag::no_reply))
                            code::raise::error( code::xatmi::argument, "TPNOREPLY can only be used with TPNOTRAN");
 
-                        return service::Lookup{ std::move( service), context, current.deadline};
+                        return service::Lookup{ std::move( service), current.trid, context, current.deadline};
                      }
                   }
 
@@ -90,9 +90,9 @@ namespace casual
                   // will call it self with noreply, as poor mans polling mechanism. If we supply the deadline
                   // the server will eventually run out of time (if a timeout is set for the service).
                   if( context.semantic == Semantic::no_reply)
-                     return service::Lookup{ std::move( service), context, {}};
+                     return service::Lookup{ std::move( service), {}, context, {}};
                   else
-                     return service::Lookup{ std::move( service), context, deadline};
+                     return service::Lookup{ std::move( service), {}, context, deadline};
                }
 
                inline Reply message(

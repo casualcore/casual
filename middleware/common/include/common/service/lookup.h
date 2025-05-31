@@ -10,6 +10,7 @@
 
 #include "common/uuid.h"
 #include "common/message/service.h"
+#include "common/transaction/id.h"
 
 #include <optional>
 #include <string>
@@ -39,12 +40,14 @@ namespace casual
 
       struct Lookup
       {                        
-         //! Lookup an entry point for the @p service
-         Lookup( std::string service, std::optional< platform::time::point::type> deadline = {});
+         //! Lookup an entry point for the `service`. `trid` represent the current transaction to give
+         //! SM a chance to keep calls within the same transaction to end up at the same destination.
+         Lookup( std::string service, const common::transaction::ID& trid, std::optional< platform::time::point::type> deadline = {});
 
-         //! Lookup an entry point for the @p service
-         //! using a specific context
-         Lookup( std::string service, lookup::Context context, std::optional< platform::time::point::type> deadline = {});
+         //! Lookup an entry point for the `service`. `trid` represent the current transaction to give
+         //! SM a chance to keep calls within the same transaction to end up at the same destination.
+         //! `context` could be used for specific semantics.
+         Lookup( std::string service, const common::transaction::ID& trid, lookup::Context context, std::optional< platform::time::point::type> deadline = {});
 
          //! If pending lookup discard it.
          ~Lookup();
