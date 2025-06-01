@@ -8,10 +8,11 @@
 #include "casual/xatmi/explicit.h"
 #include "casual/xatmi/internal/code.h"
 
+
 #include "common/buffer/pool.h"
-#include "common/server/context.h"
-#include "casual/platform.h"
 #include "common/memory.h"
+
+#include "casual/platform.h"
 
 
 char* casual_buffer_allocate( const char* type, const char* subtype, long size)

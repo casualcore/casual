@@ -8,11 +8,11 @@
 #include "domain/common.h"
 #include "domain/discovery/api.h"
 #include "domain/discovery/admin/server.h"
+#include "domain/discovery/admin/call.h"
 
 #include "common/unittest.h"
 #include "common/communication/ipc.h"
 
-#include "serviceframework/service/protocol/call.h"
 
 namespace casual
 {
@@ -36,10 +36,7 @@ namespace casual
 
       casual::domain::discovery::admin::model::State state()
       {
-         common::unittest::service::wait::until::advertised( casual::domain::discovery::admin::service::name::state);
-         serviceframework::service::protocol::binary::Call call;
-         auto reply = call( casual::domain::discovery::admin::service::name::state);
-         return reply.extract< casual::domain::discovery::admin::model::State>();
+         return discovery::admin::call::service< casual::domain::discovery::admin::model::State>( casual::domain::discovery::admin::service::name::state);
       }
 
 

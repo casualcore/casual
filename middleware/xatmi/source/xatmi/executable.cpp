@@ -9,7 +9,7 @@
 #include "casual/xatmi/internal/log.h"
 #include "casual/xatmi/internal/transform.h"
 
-#include "common/executable/start.h"
+#include "server/executable/start.h"
 
 #include "common/functional.h"
 #include "common/exception/capture.h"
@@ -38,7 +38,7 @@ namespace casual
                      // We block child so users can spawn stuff without actions/errors from casual
                      common::signal::thread::scope::Block block( { common::code::signal::child});
 
-                     return common::executable::start( 
+                     return casual::server::executable::start( 
                         xatmi::transform::resources( argument.xa_switches),
                         [&](){
                            return common::invoke( argument.entrypoint, argument.argc, argument.argv);

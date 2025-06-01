@@ -14,7 +14,7 @@
 #include "common/communication/ipc.h"
 #include "common/environment.h"
 #include "common/domain.h"
-#include "common/service/call/context.h"
+
 
 
 namespace casual
@@ -32,8 +32,6 @@ namespace casual
             // set that we're in _unittest-context_
             common::environment::variable::set( common::environment::variable::name::internal::unittest::context, "");
             
-            // clear global deadline state
-            service::call::context().clear();
             
             execution::context::reset();
             signal::clear();

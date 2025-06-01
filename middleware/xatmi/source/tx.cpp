@@ -6,7 +6,8 @@
 
 #include "tx.h"
 
-#include "common/transaction/context.h"
+#include "transaction/context.h"
+
 #include "common/code/tx.h"
 #include "common/code/category.h"
 #include "common/exception/capture.h"
@@ -63,7 +64,7 @@ int tx_begin()
 {
    local::Trace trace{ "tx_begin"};
    return local::wrap( [](){
-      return casual::common::transaction::Context::instance().begin();
+      return casual::transaction::context().begin();
    });
 }
 
@@ -71,7 +72,7 @@ int tx_close()
 {
    local::Trace trace{ "tx_close"};
    return local::wrap( [](){
-      return casual::common::transaction::Context::instance().close();
+      return casual::transaction::context().close();
    });
 }
 
@@ -79,7 +80,7 @@ int tx_commit()
 {
    local::Trace trace{ "tx_commit"};
    return local::wrap( [](){
-      return casual::common::transaction::Context::instance().commit();
+      return casual::transaction::context().commit();
    });
 }
 
@@ -87,7 +88,7 @@ int tx_open()
 {
    local::Trace trace{ "tx_open"};
    return local::wrap( [](){
-      return casual::common::transaction::Context::instance().open();
+      return casual::transaction::context().open();
    });
 }
 
@@ -95,7 +96,7 @@ int tx_rollback()
 {
    local::Trace trace{ "tx_rollback"};
    return local::wrap( [](){
-      return casual::common::transaction::Context::instance().rollback();
+      return casual::transaction::context().rollback();
    });
 }
 
@@ -104,11 +105,11 @@ int tx_set_commit_return( COMMIT_RETURN value)
    local::Trace trace{ "tx_set_commit_return"};
    return local::wrap( []( auto value)
    {
-      using Return = casual::common::transaction::commit::Return;
+      using Return = casual::transaction::commit::Return;
       if( ! casual::common::algorithm::compare::any( Return{ value}, Return::completed, Return::logged))
          return casual::common::code::tx::argument;
 
-      return casual::common::transaction::Context::instance().set_commit_return( Return{ value});
+      return casual::transaction::context().set_commit_return( Return{ value});
    }, value);
 }
 
@@ -117,13 +118,13 @@ int tx_set_transaction_control( TRANSACTION_CONTROL value)
    local::Trace trace{ "tx_set_transaction_control"};
    return local::wrap( []( auto value)
    {
-      using Control = casual::common::transaction::Control; 
+      using Control = casual::transaction::Control; 
       auto control = Control{ value};
 
       if( ! casual::common::algorithm::compare::any( control, Control::chained, Control::unchained, Control::stacked))
          return casual::common::code::tx::argument;
       
-      return casual::common::transaction::Context::instance().set_transaction_control( control);
+      return casual::transaction::context().set_transaction_control( control);
    }, value);
 }
 
@@ -131,7 +132,7 @@ int tx_set_transaction_timeout( TRANSACTION_TIMEOUT timeout)
 {
    local::Trace trace{ "tx_set_transaction_timeout"};
    return local::wrap( []( auto value){
-      return casual::common::transaction::Context::instance().set_transaction_timeout( std::chrono::seconds{ value});
+      return casual::transaction::context().set_transaction_timeout( std::chrono::seconds{ value});
    }, timeout);
 }
 
@@ -140,7 +141,7 @@ int tx_info( TXINFO* info)
    try
    {
       local::Trace trace{ "tx_info"};
-      return casual::common::transaction::Context::instance().info( info) ? 1 : 0;
+      return casual::transaction::context().info( info) ? 1 : 0;
    }
    catch( ...)
    {
@@ -158,7 +159,7 @@ int tx_suspend( XID* xid)
 {
    local::Trace trace{ "tx_suspend"};
    return local::wrap( [xid](){
-      return casual::common::transaction::Context::instance().suspend( xid);
+      return casual::transaction::context().suspend( xid);
    });
 }
 
@@ -166,7 +167,7 @@ int tx_resume( const XID* xid)
 {
    local::Trace trace{ "tx_resume"};
    return local::wrap( [xid](){
-      return casual::common::transaction::Context::instance().resume( xid);
+      return casual::transaction::context().resume( xid);
    });
 }
 
@@ -174,7 +175,7 @@ int tx_resume( const XID* xid)
 COMMIT_RETURN tx_get_commit_return()
 {
    local::Trace trace{ "tx_get_commit_return"};
-   return std::to_underlying( casual::common::transaction::Context::instance().get_commit_return());
+   return std::to_underlying( casual::transaction::context().get_commit_return());
 }
 
 

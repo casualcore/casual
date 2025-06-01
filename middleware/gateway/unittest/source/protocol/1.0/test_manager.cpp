@@ -120,7 +120,7 @@ domain:
 
             common::message::service::call::callee::Request request{ common::process::handle()};
             request.service.name = "x";
-            request.header.add( common::service::header::Field{ "foo", "bar"});
+            request.header.add( { "foo", "bar"});
             request.trid = trid;
             request.deadline.remaining = std::chrono::seconds{ 10};
             request.buffer.data = payload;
@@ -237,7 +237,7 @@ domain:
          {
             common::message::service::call::v1_2::callee::Request request{ common::process::handle()};
             request.service.name = "x";
-            request.header.add( common::service::header::Field{ "foo", "bar"});
+            request.header.add( { "foo", "bar"});
             request.trid = trid;
             request.service.timeout.duration = std::chrono::seconds{ 10};
             request.buffer.data = payload;

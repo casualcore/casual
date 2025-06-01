@@ -7,8 +7,10 @@
 #include "domain/manager/admin/cli.h"
 
 #include "domain/manager/admin/model.h"
-#include "domain/manager/admin/server.h"
+#include "domain/manager/admin/service/name.h"
 #include "domain/common.h"
+
+#include "service/protocol/call.h"
 
 #include "configuration/model.h"
 #include "configuration/model/load.h"
@@ -28,8 +30,7 @@
 #include "common/chronology.h"
 #include "common/result.h"
 
-#include "serviceframework/service/protocol/call.h"
-#include "serviceframework/log.h"
+
 
 #include "casual/cli/state.h"
 
@@ -115,7 +116,7 @@ namespace casual
 
                admin::model::State state()
                {
-                  serviceframework::service::protocol::binary::Call call;
+                  casual::service::protocol::binary::Call call;
                   return call( admin::service::name::state).extract< admin::model::State>();
                }
 
@@ -123,7 +124,7 @@ namespace casual
                {
                   auto aliases( const std::vector< admin::model::scale::Alias>& aliases)
                   {
-                     serviceframework::service::protocol::binary::Call call;
+                     casual::service::protocol::binary::Call call;
                      auto reply = call( admin::service::name::scale::aliases, aliases);
                      return reply.extract< std::vector< common::strong::correlation::id>>();
                   }
@@ -133,18 +134,18 @@ namespace casual
                {
                   auto aliases( const std::vector< admin::model::restart::Alias>& aliases)
                   {
-                     serviceframework::service::protocol::binary::Call call;
+                     casual::service::protocol::binary::Call call;
                      auto reply = call( admin::service::name::restart::aliases, aliases);
                      return reply.extract< std::vector< common::strong::correlation::id>>();
                   }
 
                   auto groups( const std::vector< admin::model::restart::Group>& groups)
                   {
-                     serviceframework::service::protocol::binary::Call call;
+                     casual::service::protocol::binary::Call call;
                      auto reply = call( admin::service::name::restart::groups, groups);
                      return reply.extract< std::vector< common::strong::correlation::id>>();
                   }
-                  
+
                } // restart
 
                std::vector< common::strong::correlation::id> boot( const std::vector< std::string>& pattern)
@@ -184,7 +185,7 @@ namespace casual
 
                auto shutdown()
                {
-                  serviceframework::service::protocol::binary::Call call;
+                  casual::service::protocol::binary::Call call;
                   return call( admin::service::name::shutdown).extract< std::vector< common::strong::correlation::id>>();
                }
 
@@ -192,13 +193,13 @@ namespace casual
                {
                   auto set( const admin::model::set::Environment& environment)
                   {
-                     serviceframework::service::protocol::binary::Call call;
+                     casual::service::protocol::binary::Call call;
                      return call( admin::service::name::environment::set, environment).extract< std::vector< std::string>>();
                   }
 
                   auto unset( const admin::model::unset::Environment& environment)
                   {
-                     serviceframework::service::protocol::binary::Call call;
+                     casual::service::protocol::binary::Call call;
                      return call( admin::service::name::environment::unset, environment).extract< std::vector< std::string>>();
                   }
                } // environment

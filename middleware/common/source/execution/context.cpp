@@ -56,6 +56,7 @@ namespace casual
             local::context().span = {};
             local::context().service = {};
             local::context().parent = {};
+            local::context().trid = {};
          }
 
          void reset()
@@ -64,6 +65,7 @@ namespace casual
             local::context().span = {};
             local::context().service = {};
             local::context().parent = {};
+            local::context().trid = {};
          };
 
          namespace id
@@ -130,6 +132,20 @@ namespace casual
             } // span
             
          } // parent
+
+         namespace trid
+         {
+            void set( const transaction::ID& trid)
+            {
+               local::context().trid = trid;
+            }
+
+            void clear()
+            {
+               local::context().trid = {};
+            }
+            
+         } // trid
          
       } // context
 

@@ -6,10 +6,10 @@
 
 #include "service/manager/admin/api.h"
 #include "service/manager/admin/server.h"
-
+#include "service/protocol/call.h"
 #include "service/common.h"
 
-#include "serviceframework/service/protocol/call.h"
+
 
 namespace casual
 {
@@ -19,7 +19,7 @@ namespace casual
       {
          Trace trace{ "service::manager::admin::api::state"};
 
-         return serviceframework::service::protocol::binary::Call{}( service::name::state).extract< model::State>();
+         return casual::service::protocol::binary::Call{}( service::name::state).extract< model::State>();
       }
 
    } // service::manager::admin::api

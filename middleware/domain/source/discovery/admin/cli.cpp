@@ -9,8 +9,10 @@
 #include "domain/discovery/api.h"
 #include "domain/discovery/common.h"
 #include "domain/discovery/admin/model.h"
-#include "domain/discovery/admin/server.h"
+#include "domain/discovery/admin/service/name.h"
 #include "domain/discovery/instance.h"
+
+#include "service/protocol/call.h"
 
 #include "common/terminal.h"
 #include "common/communication/ipc.h"
@@ -23,7 +25,6 @@
 
 #include "casual/assert.h"
 
-#include "serviceframework/service/protocol/call.h"
 
 
 namespace casual
@@ -40,7 +41,7 @@ namespace casual
             {
                admin::model::State state()
                {
-                  return serviceframework::service::protocol::binary::Call{}( 
+                  return casual::service::protocol::binary::Call{}( 
                      admin::service::name::state).extract< admin::model::State>();
                }
 

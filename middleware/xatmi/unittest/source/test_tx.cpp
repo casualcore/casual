@@ -17,7 +17,6 @@
 
 #include "tx.h"
 
-#include "common/transaction/context.h"
 
 namespace casual
 {

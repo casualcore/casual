@@ -7,6 +7,8 @@
 
 #pragma once
 
+#include "domain/discovery/admin/service/name.h"
+
 #include "casual/manager/service.h"
 
 namespace casual
@@ -18,12 +20,6 @@ namespace casual
 
    namespace domain::discovery::admin
    {
-      namespace service::name
-      {
-         constexpr std::string_view state = ".casual/discovery/state";
-
-      } // service::name
-
       std::vector< casual::manager::Service> services( discovery::State& state);
 
    } // domain::discovery::admin

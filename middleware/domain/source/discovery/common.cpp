@@ -11,9 +11,7 @@ namespace casual
 {
    namespace domain::discovery
    {
-
       common::log::Stream log{ "casual.domain.discovery"};
-
 
    } // domain::discovery
 } // casual

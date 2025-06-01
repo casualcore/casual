@@ -86,7 +86,8 @@ target = make.LinkLibrary( 'bin/casual-gateway-admin-cli',
     ],
     [
         common_archive,
-        'casual-serviceframework', 
+        'casual-service',
+        'casual-transaction',
         'casual-common', 
     ])
 
@@ -188,9 +189,15 @@ protocol_objects = [
 
 # Unittest
 
-unittest_archive = make.LinkArchive( 'bin/casual-gateway-unittest', 
+unittest_lib = make.LinkLibrary( 'bin/casual-gateway-unittest', 
     [
         make.Compile( 'unittest/source/utility.cpp'),
+    ],
+    [
+        common_archive,
+        'casual-unittest',
+        'casual-common',
+        'casual-service',
     ]
 )
 
@@ -206,11 +213,12 @@ target_unittest = make.LinkUnittest( 'bin/test-casual-gateway',
         make.Compile( 'unittest/source/protocol/1.0/test_manager.cpp'),
    ] + protocol_objects, 
    [    
-        unittest_archive,
+        unittest_lib,
         outbound_archive,
         inbound_archive,
         common_archive, 
-        'casual-serviceframework',
+        'casual-transaction',
+        'casual-service',
         'casual-queue-api',
         'casual-common',
         'casual-domain-discovery',

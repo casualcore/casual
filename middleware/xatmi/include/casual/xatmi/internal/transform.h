@@ -7,7 +7,8 @@
 #pragma once
 
 #include "casual/xatmi/xa.h"
-#include "common/server/start.h"
+
+#include "server/start.h"
 
 namespace casual
 {
@@ -17,7 +18,7 @@ namespace casual
       {
          inline auto resources( const casual_xa_switch_map* xa)
          {
-            std::vector< common::server::argument::transaction::Resource> result;
+            std::vector< server::argument::transaction::Resource> result;
 
             while( xa->xa_switch != nullptr)
             {
@@ -32,7 +33,7 @@ namespace casual
 
          inline auto resources( const casual_xa_switch_mapping* xa)
          {
-            std::vector< common::server::argument::transaction::Resource> result;
+            std::vector< server::argument::transaction::Resource> result;
 
             while( xa->xa_switch != nullptr)
             {

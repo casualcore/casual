@@ -29,8 +29,7 @@
 #include "casual/cli/message.h"
 #include "casual/cli/state.h"
 
-#include "serviceframework/service/protocol/call.h"
-#include "serviceframework/log.h"
+#include "service/protocol/call.h"
 
 #include <iostream>
 #include <string_view>
@@ -50,7 +49,7 @@ namespace casual
             {
                struct
                {
-                  transaction::ID trid;
+                  casual::transaction::ID trid;
                } state;
 
             } // global
@@ -148,20 +147,20 @@ namespace casual
             {
                manager::admin::model::State state()
                {
-                  serviceframework::service::protocol::binary::Call call;
+                  casual::service::protocol::binary::Call call;
                   return call( manager::admin::service::name::state).extract< manager::admin::model::State>();
                }
 
                std::vector< manager::admin::model::Message> messages( std::string_view queue)
                {
-                  serviceframework::service::protocol::binary::Call call;
+                  casual::service::protocol::binary::Call call;
                   return call( manager::admin::service::name::messages::list, queue).extract< std::vector< manager::admin::model::Message>>();
                }
 
                std::vector< common::transaction::global::ID> recover( const std::vector< common::transaction::global::ID>& gtrids,
                   ipc::message::group::message::recovery::Directive directive)
                {
-                  using Call = serviceframework::service::protocol::binary::Call;
+                  using Call = casual::service::protocol::binary::Call;
                   return Call{}( manager::admin::service::name::recover,
                      std::move( gtrids),
                      std::move( directive)).extract< std::vector< common::transaction::global::ID>>();
@@ -1704,7 +1703,7 @@ casual queue --clear a b c)"
                         return result;
                      });
 
-                     serviceframework::service::protocol::binary::Call call;
+                     casual::service::protocol::binary::Call call;
                      call << CASUAL_NAMED_VALUE( aliases);
                      call( manager::admin::service::name::forward::scale::aliases);
                   };
@@ -1746,7 +1745,7 @@ casual queue --forward-scale-aliases a 2 b 0 c 10)"
                {
                   auto invoke = []( const std::vector< std::string>& queues)
                   {
-                     serviceframework::service::protocol::binary::Call call;
+                     casual::service::protocol::binary::Call call;
                      call << CASUAL_NAMED_VALUE( queues);
                      auto reply = call( manager::admin::service::name::metric::reset);
                   };

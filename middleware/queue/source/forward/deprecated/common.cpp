@@ -14,13 +14,15 @@
 #include "common/communication/ipc.h"
 #include "common/message/dispatch.h"
 #include "common/message/dispatch/handle.h"
-#include "common/transaction/context.h"
+
 #include "common/execute.h"
 
 #include "common/code/raise.h"
 #include "common/code/casual.h"
 
 #include "common/communication/instance.h"
+
+#include "transaction/context.h"
 
 namespace casual
 {
@@ -38,12 +40,12 @@ namespace casual
                   {
                      Trace trace{ "queue::forward::local::perform"};
 
-                     if( common::transaction::context().begin() != common::code::tx::ok)
+                     if( casual::transaction::context().begin() != common::code::tx::ok)
                         return false;
 
                      // Rollback unless we commit
                      auto rollback = common::execute::scope( [](){
-                        (void)common::transaction::context().rollback();
+                        (void)casual::transaction::context().rollback();
                      });
 
                      task.dispatch( blocking::available::dequeue( task.queue));
@@ -51,11 +53,11 @@ namespace casual
                      // Check what we should do with the transaction
                      {
                         TXINFO txinfo;
-                        common::transaction::context().info( &txinfo);
+                        casual::transaction::context().info( &txinfo);
 
                         if( txinfo.transaction_state == TX_ACTIVE)
                         {
-                           if( common::transaction::context().commit() == common::code::tx::ok)
+                           if( casual::transaction::context().commit() == common::code::tx::ok)
                               rollback.release();
                         }
                      }

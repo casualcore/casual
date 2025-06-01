@@ -15,7 +15,7 @@
 
 #include "casual/cli/state.h"
 
-#include "serviceframework/service/protocol/call.h"
+#include "service/protocol/call.h"
 
 #include <iostream>
 #include <ranges>
@@ -32,7 +32,7 @@ namespace casual
             {
                namespace call
                {
-                  using Call = serviceframework::service::protocol::binary::Call;
+                  using Call = casual::service::protocol::binary::Call;
 
                   manager::admin::model::State state()
                   {

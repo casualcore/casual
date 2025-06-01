@@ -12,7 +12,7 @@
 #include "file/create.h"
 #include "file/instance.h"
 
-#include "serviceframework/service/protocol/call.h"
+#include "service/protocol/call.h"
 
 #include "common/unittest.h"
 
@@ -25,7 +25,7 @@ namespace casual
          // wait for the service to be advertised
          common::unittest::service::wait::until::advertised( manager::admin::service::name::state);
 
-         serviceframework::service::protocol::binary::Call call;
+         casual::service::protocol::binary::Call call;
          auto reply = call( manager::admin::service::name::state);
 
          decltype( state()) result;

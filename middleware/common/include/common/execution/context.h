@@ -7,6 +7,8 @@
 #pragma once
 
 #include "common/strong/id.h"
+#include "common/transaction/id.h"
+
 #include <string>
 
 namespace casual
@@ -39,12 +41,15 @@ namespace casual
          strong::execution::span::id span;
          std::string service;
          context::Parent parent;
+         std::optional< transaction::ID> trid;
+
 
          CASUAL_LOG_SERIALIZE(
             CASUAL_SERIALIZE( id);
             CASUAL_SERIALIZE( span);
             CASUAL_SERIALIZE( service);
             CASUAL_SERIALIZE( parent);  
+            CASUAL_SERIALIZE( trid);
          )
       };
 
@@ -96,6 +101,16 @@ namespace casual
             } // span
             
          } // parent
+
+         namespace trid
+         {
+            //! sets the current transaction id
+            void set( const transaction::ID& trid);
+
+            //! clear the trid
+            void clear();
+
+         } // trid
          
       } // context
 

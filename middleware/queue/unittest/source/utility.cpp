@@ -10,7 +10,7 @@
 #include "queue/common/queue.h"
 #include "queue/manager/admin/services.h"
 
-#include "serviceframework/service/protocol/call.h"
+#include "service/protocol/call.h"
 
 #include "common/unittest.h"
 
@@ -21,13 +21,13 @@ namespace casual
       manager::admin::model::State state()
       {
          common::unittest::service::wait::until::advertised( queue::manager::admin::service::name::state);
-         return serviceframework::service::protocol::binary::Call{}( queue::manager::admin::service::name::state).extract< manager::admin::model::State>();
+         return casual::service::protocol::binary::Call{}( queue::manager::admin::service::name::state).extract< manager::admin::model::State>();
       }
 
 
       std::vector< manager::admin::model::Message> messages( const std::string& queue)
       {
-         using Call = serviceframework::service::protocol::binary::Call;
+         using Call = casual::service::protocol::binary::Call;
          return Call{}( manager::admin::service::name::messages::list, Call::Flag{}, queue).extract< std::vector< manager::admin::model::Message>>();
       }
 
@@ -35,7 +35,7 @@ namespace casual
       {
          void aliases( const std::vector< manager::admin::model::scale::Alias>& aliases)
          {
-            using Call = serviceframework::service::protocol::binary::Call;
+            using Call = casual::service::protocol::binary::Call;
             Call{}( manager::admin::service::name::forward::scale::aliases, Call::Flag{}, aliases);
          }
 

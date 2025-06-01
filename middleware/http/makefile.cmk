@@ -11,6 +11,7 @@ make.IncludePaths([
     '../domain/unittest/include',
     '../service/include',
     '../service/unittest/include',
+    '../transaction/include',
     '../configuration/include',
     ]
     + make.optional_include_paths()

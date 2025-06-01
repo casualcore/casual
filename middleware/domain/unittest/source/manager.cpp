@@ -8,6 +8,7 @@
 #include "domain/manager/admin/server.h"
 #include "domain/manager/task/message.h"
 #include "domain/discovery/api.h"
+#include "domain/discovery/instance.h"
 
 #include "common/environment.h"
 #include "common/communication/ipc.h"
@@ -92,7 +93,7 @@ namespace casual
                   exception::guard( [](){ communication::instance::outbound::service::manager::device().connector().clear();});
                   exception::guard( [](){ communication::instance::outbound::transaction::manager::device().connector().clear();});
 
-                  exception::guard( [](){ casual::domain::discovery::instance::device::clear();});
+                  exception::guard( [](){ casual::domain::discovery::instance::device().connector().clear();});
                }
 
             } // instance::devices

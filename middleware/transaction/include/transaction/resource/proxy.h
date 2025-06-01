@@ -9,51 +9,48 @@
 
 
 #include "casual/transaction/resource/proxy/server.h"
+#include "casual/transaction/id.h"
+
+#include "transaction/resource.h"
 
 #include "casual/platform.h"
-#include "common/strong/id.h"
-#include "common/transaction/resource.h"
 
 
 #include "common/serialize/macro.h"
 
 namespace casual
 {
-   namespace transaction
+   namespace transaction::resource
    {
-
-      namespace resource
+      namespace proxy 
       {
-         namespace proxy 
+         struct Settings
          {
-            struct Settings
-            {
-               common::strong::resource::id::value_type id;
-            };
-
-            struct State
-            {
-               common::transaction::Resource resource;
-            };
-         } // proxy 
-
-
-         class Proxy
-         {
-         public:
-
-            Proxy( proxy::Settings settings, casual_xa_switch_mapping* switches);
-            ~Proxy();
-
-            void start();
-
-            proxy::State& state() { return m_state;}
-
-         private:
-            proxy::State m_state;
+            resource::id id{};
          };
 
-      } // resource
-   } // transaction
+         struct State
+         {
+            Resource resource;
+         };
+      } // proxy 
+
+
+      class Proxy
+      {
+      public:
+
+         Proxy( proxy::Settings settings, casual_xa_switch_mapping* switches);
+         ~Proxy();
+
+         void start();
+
+         proxy::State& state() { return m_state;}
+
+      private:
+         proxy::State m_state;
+      };
+
+   } // transaction::resource
 } // casual
 

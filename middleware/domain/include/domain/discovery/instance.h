@@ -16,6 +16,8 @@ namespace casual
    {
       inline const common::communication::instance::Identity identity{ 0x2b889f4387e74d799d24291efeb7e2fe_uuid, "CASUAL_DOMAIN_DISCOVERY_PROCESS"};
 
+      common::communication::instance::outbound::detail::optional::Device& device();
+
    } // domain::discovery::instance
 } // casual
 

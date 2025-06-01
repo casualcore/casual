@@ -12,7 +12,10 @@ if [[ "$platform" != "Darwin" ]]; then
     ngx_module_libs="$ngx_module_libs \
         -Wl,-rpath-link=$CASUAL_MAKE_SOURCE_ROOT/middleware/buffer/bin \
         -Wl,-rpath-link=$CASUAL_MAKE_SOURCE_ROOT/middleware/xatmi/bin \
-        -Wl,-rpath-link=$CASUAL_MAKE_SOURCE_ROOT/middleware/common/bin"
+        -Wl,-rpath-link=$CASUAL_MAKE_SOURCE_ROOT/middleware/common/bin \
+        -Wl,-rpath-link=$CASUAL_MAKE_SOURCE_ROOT/middleware/server/bin \
+        -Wl,-rpath-link=$CASUAL_MAKE_SOURCE_ROOT/middleware/service/bin \
+        -Wl,-rpath-link=$CASUAL_MAKE_SOURCE_ROOT/middleware/transaction/bin"
 fi
 
 . auto/module

@@ -5,8 +5,7 @@ import os
 make.IncludePaths( ['server/include',
     '../xatmi/include',
     '../common/include',
-    '../domain/unittest/include',
-    '../serviceframework/include']
+    '../domain/unittest/include']
     + make.optional_include_paths()
     + dsl.paths().include.gtest
     )
@@ -17,10 +16,12 @@ library_paths = [ 'server/bin',
     '../buffer/bin',
     '../configuration/bin',
     '../domain/bin',
-    '../gateway/bin',
     '../service/bin',
+    '../server/bin',
     '../serviceframework/bin',
-    '../xatmi/bin'] + make.optional_library_paths() + dsl.paths().library.gtest
+    '../transaction/bin',
+    '../xatmi/bin'
+    ] + make.optional_library_paths() + dsl.paths().library.gtest
 
 
 make.LibraryPaths( library_paths)
@@ -101,8 +102,6 @@ make.LinkUnittest( 'unittest/bin/test-casual-example',
       'casual-unittest',
       'casual-domain-unittest',
       'casual-service-unittest',
-      'casual-gateway-unittest',
-      'casual-serviceframework',
    ])
 
 # Install

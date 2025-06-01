@@ -21,11 +21,11 @@ namespace casual
                auto transform_fields = []( auto& model)
                {
                   return common::algorithm::transform( model, []( auto& field){
-                     return common::service::header::Field{ field.name, field.value};
+                     return casual::header::Field{ field.name, field.value};
                   });
                };
 
-               return std::make_shared< const common::service::header::Fields>( transform_fields( model));
+               return std::make_shared< const casual::header::Fields>( transform_fields( model));
             }
          } // <unnamed>
       } // local

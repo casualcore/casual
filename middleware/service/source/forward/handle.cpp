@@ -12,7 +12,6 @@
 #include "common/message/dispatch.h"
 #include "common/message/dispatch/handle.h"
 
-#include "common/server/handle/call.h"
 #include "common/communication/instance.h"
 #include "common/communication/ipc/flush/send.h"
 #include "common/flag.h"

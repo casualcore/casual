@@ -8,18 +8,19 @@
 #include "casual/xatmi/internal/log.h"
 
 #include "common/instance.h"
-#include "common/server/context.h"
 #include "common/log/stream.h"
 
 #include "common/execution/context.h"
 #include "common/uuid.h"
+
+#include "server/context.h"
 
 #include <array>
 #include <vector>
 
 void casual_service_forward( const char* service, char* data, long size)
 {
-   casual::common::server::context().forward( service, data, size);
+   casual::server::context().forward( service, data, size);
 }
 
 namespace local
@@ -199,7 +200,7 @@ void casual_instance_browse_services( casual_instance_browse_callback callback, 
    using namespace casual;
    xatmi::Trace trace{ "casual_instance_browse_services"};
 
-   const auto& services = common::server::context().state().services;
+   const auto& services = server::context().state().services;
 
    common::algorithm::for_each_while( services, [callback, context]( auto& service)
    {

@@ -12,7 +12,6 @@
 #include "casual/xatmi/explicit.h"
 
 #include "common/buffer/pool.h"
-#include "common/server/context.h"
 #include "casual/platform.h"
 #include "common/log.h"
 #include "common/memory.h"

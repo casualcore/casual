@@ -10,8 +10,7 @@
 #include "casual/xatmi/internal/code.h"
 #include "casual/xatmi/internal/transform.h"
 
-
-#include "common/server/start.h"
+#include "server/start.h"
 
 #include "common/code/raise.h"
 #include "common/code/xatmi.h"
@@ -52,7 +51,7 @@ namespace casual
                {
                   casual::xatmi::Trace trace{ "casual::xatmi::server::local::transform::services"};
 
-                  std::vector< common::server::argument::xatmi::Service> result;
+                  std::vector< casual::server::argument::xatmi::Service> result;
 
                   auto service = value.services;
 
@@ -90,7 +89,7 @@ namespace casual
                   // We block child so users can spawn stuff without actions/errors from casual
                   common::signal::thread::scope::Block block( { common::code::signal::child});
 
-                  common::server::start(
+                  casual::server::start(
                      transform::services( argument),
                      xatmi::transform::resources( argument.xa_switches),
                      [&]()

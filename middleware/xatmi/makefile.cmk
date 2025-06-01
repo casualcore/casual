@@ -4,6 +4,9 @@ import sys
 
 make.IncludePaths([
 	'include', 
+   '../service/include',
+   '../transaction/include',
+   '../server/include',
 	'../common/include']
     + make.optional_include_paths()
     + dsl.paths().include.gtest
@@ -11,6 +14,9 @@ make.IncludePaths([
 
 make.LibraryPaths([
 	'bin',
+   '../service/bin',
+   '../transaction/bin',
+   '../server/bin',
     '../common/bin']
     + make.optional_library_paths()
     + dsl.paths().library.gtest
@@ -27,7 +33,7 @@ lib_xatmi_explicit = make.LinkLibrary( 'bin/casual-xatmi-explicit',
       make.Compile( 'source/xatmi/internal/code.cpp'),
       make.Compile( 'source/xatmi/internal/log.cpp'),
 	],
-	['casual-common'])
+	[ 'casual-service', 'casual-transaction', 'casual-server', 'casual-common'])
 
 install_lib.append( lib_xatmi_explicit)
 
@@ -42,7 +48,7 @@ lib_xatmi = make.LinkLibrary( 'bin/casual-xatmi',
       make.Compile( 'source/xa.cpp'),
       make.Compile( 'source/tx.cpp'),
 	],
-	[ lib_xatmi_explicit, 'casual-common'])
+	[ lib_xatmi_explicit, 'casual-transaction', 'casual-service', 'casual-server', 'casual-common'])
 
 install_lib.append( lib_xatmi)
 

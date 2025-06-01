@@ -19,13 +19,13 @@
 #include "common/sink.h"
 #include "common/message/transaction.h"
 
-#include "serviceframework/service/protocol/call.h"
-
 #include "gateway/unittest/utility.h"
 
 #include "domain/unittest/utility.h"
 #include "domain/unittest/configuration.h"
 
+//#include "service/protocol/call.h"
+#include "service/lookup.h"
 #include "service/unittest/utility.h"
 
 #include "transaction/unittest/utility.h"
@@ -3812,12 +3812,12 @@ domain:
          // a 'wait' lookup for casual/example/echo 
          auto lookup = []()
          {
-            auto context = common::service::lookup::Context{ common::message::service::lookup::request::context::Semantic::wait};
-            return common::service::Lookup{ "casual/example/echo", {}, context};
+            auto context = casual::service::lookup::Context{ common::message::service::lookup::request::context::Semantic::wait};
+            return casual::service::Lookup{ "casual/example/echo", {}, context};
          }();
 
          // expect no service to be found
-         EXPECT_TRUE( ! common::service::lookup::non::blocking::reply( lookup));
+         EXPECT_TRUE( ! casual::service::lookup::non::blocking::reply( lookup));
          
          // we scale example in b
          {
@@ -3833,7 +3833,7 @@ domain:
          // from the scale operation
          common::unittest::eventually::succeed( [ &lookup]()
          {
-            if( auto reply = common::service::lookup::non::blocking::reply( lookup))
+            if( auto reply = casual::service::lookup::non::blocking::reply( lookup))
             {
                EXPECT_TRUE( reply->state == decltype( reply->state)::idle);
 

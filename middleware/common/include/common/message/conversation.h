@@ -65,7 +65,7 @@ namespace casual
                      service::call::v1_2::Service service;
                      std::string parent;
                      common::transaction::ID trid;
-                     common::service::header::Fields header;
+                     header::Fields header;
                      platform::time::unit pending{};
                      duplex::Type duplex{};
                      common::buffer::Payload buffer;
@@ -96,7 +96,7 @@ namespace casual
                service::call::Deadline deadline;
 
                common::transaction::ID trid;
-               common::service::header::Fields header;
+               header::Fields header;
 
                //! pending time, only to be return in the "ACK", to collect
                //! metrics

@@ -21,7 +21,6 @@
 #include "common/event/send.h"
 #include "common/message/internal.h"
 #include "common/algorithm/sorted.h"
-#include "common/server/handle/call.h"
 #include "common/communication/instance.h"
 #include "common/signal/timer.h"
 
@@ -802,20 +801,6 @@ namespace casual
 
                }
             } // service::manager::lookup
-
-            namespace server
-            {
-               using base_type = common::server::handle::policy::call::Admin;
-               struct Policy : base_type
-               {
-                  void configure( common::server::Arguments&& arguments)
-                  {
-                     // no-op, we'll advertise our services when the service-manager comes online.
-                  }
-               };
-
-               using Handle = common::server::handle::basic_call< Policy>;
-            } // server
 
          } // <unnamed>
       } // local

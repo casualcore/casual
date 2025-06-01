@@ -6,8 +6,9 @@
 
 #include "transaction/manager/admin/cli.h"
 #include "transaction/manager/admin/model.h"
-#include "transaction/manager/admin/server.h"
+#include "transaction/manager/admin/service/name.h"
 
+#include "service/protocol/call.h"
 
 #include "casual/argument.h"
 #include "common/environment.h"
@@ -21,7 +22,6 @@
 #include "common/range/adapter.h"
 #include "common/algorithm/sorted.h"
 
-#include "serviceframework/service/protocol/call.h"
 
 #include "casual/cli/pipe.h"
 #include "casual/cli/state.h"
@@ -42,7 +42,7 @@ namespace casual
             {
                auto state()
                {
-                  serviceframework::service::protocol::binary::Call call;
+                  casual::service::protocol::binary::Call call;
                   return call( service::name::state).extract< admin::model::State>();
                }
 
@@ -50,7 +50,7 @@ namespace casual
                {
                   auto instances( const std::vector< admin::model::scale::resource::proxy::Instances>& instances)
                   {
-                     serviceframework::service::protocol::binary::Call call;
+                     casual::service::protocol::binary::Call call;
                      return call( service::name::scale::resource::proxies, instances).extract< std::vector< admin::model::resource::Proxy>>();
                   }
                } // update

@@ -9,8 +9,8 @@
 #include "http/code.h"
 
 #include "common/serialize/macro.h"
-#include "common/service/header.h"
 #include "common/strong/id.h"
+#include "casual/header.h"
 
 #include <vector>
 #include <string>
@@ -23,7 +23,7 @@ namespace casual
    {  
       namespace header
       {
-         using Field = common::service::header::Field;
+         using Field = casual::header::Field;
       } // header
 
       namespace detail

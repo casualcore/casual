@@ -20,7 +20,6 @@
 #include "common/communication/instance.h" 
 
 #include "common/message/dispatch/handle.h"
-#include "common/server/handle/call.h"
 #include "common/environment.h"
 #include "common/algorithm/compare.h"
 #include "common/algorithm.h"

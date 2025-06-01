@@ -19,13 +19,13 @@
 #include "common/buffer/pool.h"
 #include "common/message/dispatch.h"
 #include "common/message/dispatch/handle.h"
-#include "common/transaction/context.h"
 #include "common/communication/ipc.h"
 #include "common/execute.h"
 #include "common/array.h"
 
-#include "serviceframework/service/protocol/call.h"
-#include "serviceframework/log.h"
+#include "service/protocol/call.h"
+
+#include "transaction/context.h"
 
 namespace casual
 {
@@ -49,7 +49,7 @@ namespace casual
                   Trace trace( "casual::queue::enqueue");
                   common::log::debug( "message: ", message);
 
-                  auto& transaction = common::transaction::context().current();
+                  auto& transaction = transaction::context().current();
 
                   if( transaction)
                   {
@@ -131,7 +131,7 @@ namespace casual
                      {
                         Trace trace{ "casual::queue::local::dequeue::non::blocking"};
 
-                        auto& transaction = common::transaction::context().current();
+                        auto& transaction = transaction::context().current();
                         auto group = lookup();
 
                         if( ! group)
@@ -172,7 +172,7 @@ namespace casual
                   {
                      Trace trace{ "casual::queue::local::dequeue::blocking"};
 
-                     auto& transaction = common::transaction::context().current();
+                     auto& transaction = transaction::context().current();
                      auto group = lookup();
 
                      if( ! group)
@@ -614,7 +614,7 @@ namespace casual
 
                for( auto& queue : queues)
                {
-                  serviceframework::service::protocol::binary::Call call;
+                  casual::service::protocol::binary::Call call;
                   call << CASUAL_NAMED_VALUE( queue);
 
                   auto reply = call( manager::admin::service::name::restore);
@@ -641,7 +641,7 @@ namespace casual
                Trace trace{ "casual::queue::clear::queue"};
                common::log::debug( "queues: ", queues);
 
-               serviceframework::service::protocol::binary::Call call;
+               casual::service::protocol::binary::Call call;
                call << CASUAL_NAMED_VALUE( queues);
 
                auto reply = call( manager::admin::service::name::clear);
@@ -666,7 +666,7 @@ namespace casual
                Trace trace{ "casual::queue::messages::remove"};
                common::log::debug( "queue: ", queue, ", messages: ", messages);
 
-               serviceframework::service::protocol::binary::Call call;
+               casual::service::protocol::binary::Call call;
                call << CASUAL_NAMED_VALUE( queue);
                call << CASUAL_NAMED_VALUE( messages);
                call << CASUAL_NAMED_VALUE( force);

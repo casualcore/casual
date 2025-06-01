@@ -10,7 +10,7 @@
 #include "common/unittest/file.h"
 #include "domain/unittest/manager.h"
 
-#include "common/transaction/context.h"
+#include "transaction/context.h"
 
 #include "file/api/file.h"
 
@@ -70,10 +70,10 @@ domain:
          std::ofstream{ path} << afore;
 
          {
-            EXPECT_EQ( common::transaction::context().begin(), common::code::tx::ok);
+            EXPECT_EQ( transaction::context().begin(), common::code::tx::ok);
             const auto reserved = file::blocking::reserve( path);
             std::ofstream{ reserved} << after;
-            EXPECT_EQ( common::transaction::context().commit(), common::code::tx::ok);
+            EXPECT_EQ( transaction::context().commit(), common::code::tx::ok);
          }
 
          std::string result;
@@ -95,10 +95,10 @@ domain:
          std::ofstream{ path} << afore;
 
          {
-            EXPECT_EQ( common::transaction::context().begin(), common::code::tx::ok);
+            EXPECT_EQ( transaction::context().begin(), common::code::tx::ok);
             const auto reserved = file::blocking::reserve( path);
             std::ofstream{ reserved} << after;
-            EXPECT_EQ( common::transaction::context().rollback(), common::code::tx::ok);
+            EXPECT_EQ( transaction::context().rollback(), common::code::tx::ok);
          }
 
          std::string result;
@@ -115,10 +115,10 @@ domain:
          const auto path = common::unittest::file::temporary::content( ".txt", "aaa");
 
          {
-            EXPECT_EQ( common::transaction::context().begin(), common::code::tx::ok);
+            EXPECT_EQ( transaction::context().begin(), common::code::tx::ok);
             const auto reserved = file::blocking::reserve( path);
             std::filesystem::remove( reserved);
-            EXPECT_EQ( common::transaction::context().commit(), common::code::tx::ok);
+            EXPECT_EQ( transaction::context().commit(), common::code::tx::ok);
          }
 
          EXPECT_FALSE( std::filesystem::exists( path)) << path;
@@ -133,10 +133,10 @@ domain:
          const auto path = common::unittest::file::temporary::content( ".txt", "aaa");
 
          {
-            EXPECT_EQ( common::transaction::context().begin(), common::code::tx::ok);
+            EXPECT_EQ( transaction::context().begin(), common::code::tx::ok);
             const auto reserved = file::blocking::reserve( path);
             std::filesystem::remove( reserved);
-            EXPECT_EQ( common::transaction::context().rollback(), common::code::tx::ok);
+            EXPECT_EQ( transaction::context().rollback(), common::code::tx::ok);
          }
 
          EXPECT_TRUE( std::filesystem::exists( path)) << path;
@@ -154,11 +154,11 @@ domain:
          std::ofstream{ source} << "aaa";
 
          {
-            EXPECT_EQ( common::transaction::context().begin(), common::code::tx::ok);
+            EXPECT_EQ( transaction::context().begin(), common::code::tx::ok);
             const auto first = file::blocking::reserve( source);
             const auto other = file::blocking::reserve( target);
             std::filesystem::rename( first, other);
-            EXPECT_EQ( common::transaction::context().commit(), common::code::tx::ok);
+            EXPECT_EQ( transaction::context().commit(), common::code::tx::ok);
          }
 
          EXPECT_FALSE( std::filesystem::exists( source)) << source;
@@ -177,11 +177,11 @@ domain:
          std::ofstream{ source} << "aaa";
 
          {
-            EXPECT_EQ( common::transaction::context().begin(), common::code::tx::ok);
+            EXPECT_EQ( transaction::context().begin(), common::code::tx::ok);
             const auto first = file::blocking::reserve( source);
             const auto other = file::blocking::reserve( target);
             std::filesystem::rename( first, other);
-            EXPECT_EQ( common::transaction::context().rollback(), common::code::tx::ok);
+            EXPECT_EQ( transaction::context().rollback(), common::code::tx::ok);
          }
 
          EXPECT_TRUE( std::filesystem::exists( source)) << source;
@@ -196,9 +196,9 @@ domain:
 
          const auto original = common::unittest::file::temporary::content( ".txt", "abc");
 
-         EXPECT_EQ( common::transaction::context().begin(), common::code::tx::ok);
+         EXPECT_EQ( transaction::context().begin(), common::code::tx::ok);
          const auto reserved = file::blocking::reserve( original);
-         EXPECT_EQ( common::transaction::context().commit(), common::code::tx::ok);
+         EXPECT_EQ( transaction::context().commit(), common::code::tx::ok);
 
          EXPECT_TRUE( std::filesystem::exists( original)) << original;
          EXPECT_FALSE( std::filesystem::exists( reserved)) << reserved;
@@ -212,9 +212,9 @@ domain:
 
          const auto original = common::unittest::file::temporary::content( ".txt", "abc");
 
-         EXPECT_EQ( common::transaction::context().begin(), common::code::tx::ok);
+         EXPECT_EQ( transaction::context().begin(), common::code::tx::ok);
          const auto reserved = file::blocking::reserve( original);
-         EXPECT_EQ( common::transaction::context().rollback(), common::code::tx::ok);
+         EXPECT_EQ( transaction::context().rollback(), common::code::tx::ok);
 
          EXPECT_TRUE( std::filesystem::exists( original)) << original;
          EXPECT_FALSE( std::filesystem::exists( reserved)) << reserved;
@@ -245,10 +245,10 @@ domain:
 
          const auto path = common::unittest::file::temporary::name( ".txt");
 
-         EXPECT_EQ( common::transaction::context().begin(), common::code::tx::ok);
+         EXPECT_EQ( transaction::context().begin(), common::code::tx::ok);
          const auto first = file::blocking::reserve( path);
          const auto other = file::blocking::reserve( path);
-         EXPECT_EQ( common::transaction::context().rollback(), common::code::tx::ok);
+         EXPECT_EQ( transaction::context().rollback(), common::code::tx::ok);
 
          EXPECT_FALSE( first.empty());
          EXPECT_FALSE( other.empty());
@@ -263,10 +263,10 @@ domain:
 
          const auto path = common::unittest::file::temporary::name( ".txt");
 
-         EXPECT_EQ( common::transaction::context().begin(), common::code::tx::ok);
+         EXPECT_EQ( transaction::context().begin(), common::code::tx::ok);
          const auto first = file::blocking::reserve( path);
          const auto other = file::blocking::reserve( path);
-         EXPECT_EQ( common::transaction::context().rollback(), common::code::tx::ok);
+         EXPECT_EQ( transaction::context().rollback(), common::code::tx::ok);
 
          EXPECT_FALSE( first.empty());
          EXPECT_FALSE( other.empty());

@@ -15,7 +15,6 @@
 #include "common/message/dispatch/handle.h"
 #include "common/event/listen.h"
 #include "common/event/send.h"
-#include "common/server/handle/call.h"
 
 #include "common/code/raise.h"
 #include "common/code/convert.h"

@@ -23,7 +23,7 @@ namespace casual
       {
          namespace pending
          {
-            void Request::State::Header::Request::add( const common::service::header::Fields& header)
+            void Request::State::Header::Request::add( const casual::header::Fields& header)
             {
                Trace trace{ "http::outbound::state::pending::Request::header_t::request_t::add Header"};
 
@@ -32,7 +32,7 @@ namespace casual
 
             }
 
-            void Request::State::Header::Request::add( const common::service::header::Field& field)
+            void Request::State::Header::Request::add( const casual::header::Field& field)
             {
                add( field.string());
             }

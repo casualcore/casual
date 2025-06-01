@@ -12,14 +12,15 @@
 #include "casual/xatmi/internal/signal.h"
 
 #include "common/buffer/pool.h"
-#include "common/server/context.h"
-#include "common/service/call/context.h"
 #include "casual/platform.h"
 #include "common/log.h"
 #include "common/memory.h"
 #include "common/exception/capture.h"
-
 #include "common/string.h"
+
+#include "service/call/context.h"
+
+#include "server/context.h"
 
 #include <array>
 #include <cstdarg>
@@ -58,7 +59,7 @@ int casual_service_call( const char* const service, char* idata, const long ilen
 
    try
    {
-      using Flag = casual::common::service::call::sync::Flag;
+      using Flag = casual::service::call::sync::Flag;
 
       auto flags = Flag{ bitmap};
 
@@ -75,7 +76,7 @@ int casual_service_call( const char* const service, char* idata, const long ilen
 
       auto maybe_block = casual::xatmi::internal::signal::maybe_block( flags);
 
-      auto result = casual::common::service::call::Context::instance().sync(
+      auto result = casual::service::call::context().sync(
             service,
             buffer,
             flags);
@@ -85,7 +86,7 @@ int casual_service_call( const char* const service, char* idata, const long ilen
 
       return 0;
    }
-   catch( casual::common::service::call::Fail& fail)
+   catch( casual::service::call::Fail& fail)
    {
       casual::xatmi::internal::error::set( casual::common::code::xatmi::service_fail);
       casual::xatmi::internal::user::code::set( fail.result.user);
@@ -114,7 +115,7 @@ int casual_service_asynchronous_send( const char* const service, char* idata, co
 
    try
    {
-      using Flag = casual::common::service::call::async::Flag;
+      using Flag = casual::service::call::async::Flag;
 
       auto flags = Flag{ bitmap};
 
@@ -131,7 +132,7 @@ int casual_service_asynchronous_send( const char* const service, char* idata, co
 
       auto maybe_block = casual::xatmi::internal::signal::maybe_block( flags);
 
-      return casual::common::service::call::Context::instance().async(
+      return casual::service::call::context().async(
             service,
             buffer,
             flags);
@@ -149,7 +150,7 @@ int casual_service_asynchronous_receive( int *const descriptor, char** odata, lo
 
    try 
    {
-      using Flag = casual::common::service::call::reply::Flag;
+      using Flag = casual::service::call::reply::Flag;
 
       auto flags = Flag{ bitmap};
       
@@ -164,7 +165,7 @@ int casual_service_asynchronous_receive( int *const descriptor, char** odata, lo
 
       auto maybe_block = casual::xatmi::internal::signal::maybe_block( flags);
 
-      auto result = casual::common::service::call::Context::instance().reply( *descriptor, flags);
+      auto result = casual::service::call::context().reply( *descriptor, flags);
 
       *descriptor = result.descriptor;
       casual::xatmi::internal::user::code::set( result.user);
@@ -173,7 +174,7 @@ int casual_service_asynchronous_receive( int *const descriptor, char** odata, lo
 
       return 0;
    }
-   catch( casual::common::service::call::Fail& fail)
+   catch( casual::service::call::Fail& fail)
    {
       casual::xatmi::internal::error::set( casual::common::code::xatmi::service_fail);
       casual::xatmi::internal::user::code::set( fail.result.user);
@@ -200,14 +201,14 @@ int casual_service_asynchronous_receive( int *const descriptor, char** odata, lo
 int casual_service_asynchronous_cancel( int id)
 {
    return casual::xatmi::internal::error::wrap( [id](){
-      casual::common::service::call::Context::instance().cancel( id);
+      casual::service::call::context().cancel( id);
    });
 }
 
 void casual_service_return( const int rval, const long rcode, char* const data, const long len, const long /* flags for future use */)
 {
    casual::xatmi::internal::error::wrap( [&](){
-      casual::common::server::context().jump_return( 
+      casual::server::context().jump_return( 
          static_cast< casual::common::flag::xatmi::Return>( rval), rcode, data, len);
    });
 }
@@ -216,14 +217,14 @@ void casual_service_return( const int rval, const long rcode, char* const data, 
 int casual_service_advertise( const char* service, void (*function)( TPSVCINFO *))
 {
    return casual::xatmi::internal::error::wrap( [&](){
-      casual::common::server::context().advertise( service, function);
+      casual::server::context().advertise( service, function);
    });
 }
 
 int casual_service_unadvertise( const char* const service)
 {
    return casual::xatmi::internal::error::wrap( [&](){
-      casual::common::server::context().unadvertise( service);
+      casual::server::context().unadvertise( service);
    });
 }
 

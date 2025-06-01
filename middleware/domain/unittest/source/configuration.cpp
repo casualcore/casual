@@ -7,8 +7,8 @@
 #include "domain/unittest/configuration.h"
 #include "domain/common.h"
 #include "domain/manager/admin/server.h"
+#include "domain/manager/admin/call.h"
 
-#include "serviceframework/service/protocol/call.h"
 
 #include "common/event/listen.h"
 
@@ -33,8 +33,7 @@ namespace casual
                auto condition = common::event::condition::compose(
                   common::event::condition::prelude( [&]()
                   {
-                     serviceframework::service::protocol::binary::Call call;
-                     tasks = call( service, wanted).extract< std::vector< common::strong::correlation::id>>();
+                     tasks = manager::admin::call::service< std::vector< common::strong::correlation::id>>( service, wanted);
                   }),
                   common::event::condition::done( [&tasks](){ return tasks.empty();})
                );
@@ -62,7 +61,7 @@ namespace casual
       {
          Trace trace{ "domain::unittest::configuration::get"};
 
-         return serviceframework::service::protocol::binary::Call{}( manager::admin::service::name::configuration::get).extract< casual::configuration::user::Model>();
+         return manager::admin::call::service< casual::configuration::user::Model>( manager::admin::service::name::configuration::get);
       }
 
       casual::configuration::user::Model post( casual::configuration::user::Model wanted)

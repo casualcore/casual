@@ -14,7 +14,8 @@
 #include "common/exception/guard.h"
 
 #include "common/buffer/pool.h"
-#include "common/service/call/context.h"
+
+#include "service/call/context.h"
 
 
 namespace casual
@@ -54,9 +55,9 @@ namespace casual
 
                try
                {
-                  auto result = common::service::call::Context::instance().sync( m_service,
+                  auto result = casual::service::call::Context::instance().sync( m_service,
                      payload,
-                     common::service::call::sync::Flag::no_time);
+                     casual::service::call::sync::Flag::no_time);
 
                   const auto& replyqueue = m_reply.value_or( message.attributes.reply);
 
@@ -68,7 +69,7 @@ namespace casual
                      queue::enqueue( replyqueue, reply);
                   }
                }
-               catch( const common::service::call::Fail& exception)
+               catch( const casual::service::call::Fail& exception)
                {
                   log::debug( "service call failed - rollback - ", exception);
                }

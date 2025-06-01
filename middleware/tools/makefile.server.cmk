@@ -1,0 +1,102 @@
+import casual.make.api as make
+import casual.middleware.make.api as dsl
+
+
+make.IncludePaths( ['include',
+      '../common/include',
+      '../xatmi/include',
+      '../configuration/include',
+      '../server/include',
+      '../service/include',
+      '../transaction/include',
+    ]
+    + make.optional_include_paths()
+    + dsl.paths().include.gtest
+    )
+
+make.LibraryPaths( ['bin',
+      '../buffer/bin',
+      '../common/bin',
+      '../configuration/bin',
+      #'../server/bin',
+    ]
+    + make.optional_library_paths()
+    + dsl.paths().library.gtest
+   )
+
+
+install_bin = []
+install_lib = []
+
+common_a = make.LinkArchive( 'bin/casual-tools-common',
+  [
+    make.Compile( 'source/common.cpp'),
+    make.Compile( 'source/service/describe/invoke.cpp'),
+   ])
+
+build_task_a = make.LinkArchive( 'bin/casual-tools-build-task',
+  [
+    make.Compile( 'source/build/task.cpp'),
+    make.Compile( 'source/build/generate.cpp'),
+    make.Compile( 'source/build/transform.cpp'),
+   ])
+
+target = make.LinkExecutable( 'bin/casual-build-server',
+   [ make.Compile( 'source/build/server/main.cpp')],
+   [ common_a, build_task_a, 'casual-common', 'casual-configuration'])
+
+# setup dependency to simpler name 'casual-build-server'
+make.Dependencies( make.model.register('casual-build-server'), [target])
+
+install_bin.append( target)
+
+target = make.LinkExecutable( 'bin/casual-build-server-generate',
+   [ make.Compile( 'source/build/server/generate/main.cpp')],
+   [ build_task_a, common_a, 'casual-common', 'casual-configuration'])
+
+install_bin.append( target)
+
+target = make.LinkExecutable( 'bin/casual-build-executable',
+   [ make.Compile( 'source/build/executable/main.cpp')],
+   [ build_task_a, common_a, 'casual-common', 'casual-configuration'])
+
+install_bin.append( target)
+
+target = make.LinkExecutable( 'bin/casual-build-resource-proxy',
+   [ make.Compile( 'source/build/resource/proxy/main.cpp')],
+   [ 
+    common_a,
+    'casual-common', 
+    #'casual-serviceframework', 
+    'casual-configuration',
+    ])
+
+install_bin.append( target)
+
+
+# TODO: if we keep the python implementation we need to package python "correct"?
+install_bin.append( 'log/casual-log')
+install_bin.append( 'log/casual-log-format')
+install_bin.append( 'log/color.py')
+
+#target = make.LinkExecutable( 'bin/casual-log-format',
+#   [ make.Compile( 'log/source/format.cpp')],
+#   [ 'casual-common'])
+#
+# install_bin.append( target)
+
+
+make.LinkUnittest( 'bin/test-casual-tools',
+	[   
+        make.Compile( 'unittest/source/build/test_server.cpp'),
+    ],
+	[  common_a, 'casual-common', 'casual-unittest'])
+
+
+
+
+make.Install( install_bin,  dsl.paths().install + '/bin')
+make.Install( install_lib,  dsl.paths().install + '/lib')
+
+
+

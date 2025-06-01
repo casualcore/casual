@@ -8,7 +8,8 @@
 
 #include "http/outbound/curl.h"
 
-#include "common/service/header.h"
+#include "casual/header.h"
+
 #include "common/strong/id.h"
 #include "common/memory.h"
 #include "common/process.h"
@@ -36,7 +37,7 @@ namespace casual
          struct Node
          {
             std::string url;
-            std::shared_ptr< const common::service::header::Fields> headers;
+            std::shared_ptr< const casual::header::Fields> headers;
             bool discard_transaction = false;
             
             CASUAL_LOG_SERIALIZE(
@@ -73,8 +74,8 @@ namespace casual
                      //! Take care of adding headers the curl way for the request.
                      struct Request
                      {
-                        void add( const common::service::header::Fields& header);
-                        void add( const common::service::header::Field& field);
+                        void add( const casual::header::Fields& header);
+                        void add( const casual::header::Field& field);
                         void add( const std::string& value);
                         
                         inline auto native() { return m_header.get();}
@@ -84,7 +85,7 @@ namespace casual
                      } request;
 
                      //! holds the reply headers, when the call is done
-                     common::service::header::Fields reply;
+                     casual::header::Fields reply;
 
                      CASUAL_LOG_SERIALIZE(
                         CASUAL_SERIALIZE( reply);

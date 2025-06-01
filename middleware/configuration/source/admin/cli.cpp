@@ -18,9 +18,10 @@
 #include "common/terminal.h"
 #include "common/event/listen.h"
 
-#include "serviceframework/service/protocol/call.h"
 
 #include "domain/manager/admin/service/name.h"
+
+#include "service/protocol/call.h"
 
 namespace casual
 {
@@ -108,19 +109,19 @@ namespace casual
                {
                   auto get()
                   {
-                     serviceframework::service::protocol::binary::Call call;
+                     casual::service::protocol::binary::Call call;
                      return call( casual::domain::manager::admin::service::name::configuration::get).extract< casual::configuration::user::Model>();
                   }
 
                   auto post( const casual::configuration::user::Model& model)
                   {
-                     serviceframework::service::protocol::binary::Call call;
+                     casual::service::protocol::binary::Call call;
                      return call( casual::domain::manager::admin::service::name::configuration::post, model).extract< std::vector< common::strong::correlation::id>>();
                   }
 
                   auto put( const casual::configuration::user::Model& model)
                   {
-                     serviceframework::service::protocol::binary::Call call;
+                     casual::service::protocol::binary::Call call;
                      return call( casual::domain::manager::admin::service::name::configuration::put, model).extract< std::vector< common::strong::correlation::id>>();
                   }
                

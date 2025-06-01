@@ -21,14 +21,6 @@ namespace casual
       {
          namespace
          {
-            namespace instance
-            {
-               auto& device()
-               {
-                  static communication::instance::outbound::detail::optional::Device device{ discovery::instance::identity};
-                  return device;
-               }
-            } // instance
 
             namespace flush
             {
@@ -37,7 +29,7 @@ namespace casual
                {
                   log::debug( "request: ", request);
 
-                  if( auto correlation = communication::ipc::flush::optional::send( device, local::instance::device(), request))
+                  if( auto correlation = communication::ipc::flush::optional::send( device, instance::device(), request))
                   {
                      auto reply = common::message::reverse::type( request);
                      communication::device::blocking::receive( device, reply, correlation);
@@ -81,7 +73,7 @@ namespace casual
          Trace trace{ "domain::discovery::request"};
          log::debug( "request: ", request);
          
-         return communication::ipc::flush::optional::send( local::instance::device(), request);
+         return communication::ipc::flush::optional::send( instance::device(), request);
       }
       
       common::strong::correlation::id request( Send& multiplex, const Request& request)
@@ -89,7 +81,7 @@ namespace casual
          Trace trace{ "domain::discovery::request"};
          log::debug( "request: ", request);
          
-         return multiplex.send( local::instance::device(), request);
+         return multiplex.send( instance::device(), request);
       }
 
       common::strong::correlation::id request(
@@ -100,7 +92,7 @@ namespace casual
          Trace trace{ "domain::discovery::request"};
          log::debug( "services: ", services, ", queues: ", queues);
 
-         return communication::ipc::flush::optional::send( local::instance::device(), local::request( std::move( services), std::move( queues), correlation));
+         return communication::ipc::flush::optional::send( instance::device(), local::request( std::move( services), std::move( queues), correlation));
       }
 
       common::strong::correlation::id request( 
@@ -112,7 +104,7 @@ namespace casual
          Trace trace{ "domain::discovery::request"};
          log::debug( "services: ", services, ", queues: ", queues);
          
-         return multiplex.send( local::instance::device(), local::request( std::move( services), std::move( queues), correlation));
+         return multiplex.send( instance::device(), local::request( std::move( services), std::move( queues), correlation));
       }
 
 
@@ -122,12 +114,12 @@ namespace casual
          {
             void update( Send& multiplex)
             {
-               multiplex.send( local::instance::device(), message::discovery::topology::direct::Update{});
+               multiplex.send( instance::device(), message::discovery::topology::direct::Update{});
             }
 
             void update( Send& multiplex, const message::discovery::topology::direct::Update& message)
             {
-               multiplex.send( local::instance::device(), message);
+               multiplex.send( instance::device(), message);
             }
 
          } // direct
@@ -136,7 +128,7 @@ namespace casual
          {
             void update( Send& multiplex, const message::discovery::topology::implicit::Update& message)
             {
-               multiplex.send( local::instance::device(), message);
+               multiplex.send( instance::device(), message);
             }
          } // implicit
       } // topology
@@ -145,7 +137,7 @@ namespace casual
       {
          void advertised( Send& multiplex)
          {
-            multiplex.send( local::instance::device(), message::discovery::discoverable::Advertised{});
+            multiplex.send( instance::device(), message::discovery::discoverable::Advertised{});
          }
       } // discoverable
 
@@ -153,17 +145,10 @@ namespace casual
       {
          common::strong::correlation::id request()
          {
-            return communication::ipc::flush::optional::send( local::instance::device(), message::discovery::api::rediscovery::Request{ common::process::handle()});
+            return communication::ipc::flush::optional::send( instance::device(), message::discovery::api::rediscovery::Request{ common::process::handle()});
          }
       } // rediscovery
 
-      namespace instance::device
-      {
-         void clear()
-         {
-            local::instance::device().connector().clear();
-         }
-      } // instance::device
 
    } // domain::discovery  
 } // casual

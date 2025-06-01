@@ -8,8 +8,7 @@
 #include "service/manager/state.h"
 #include "service/common.h"
 
-#include "common/server/service.h"
-#include "common/server/lifetime.h"
+
 #include "common/algorithm.h"
 #include "common/algorithm/random.h"
 #include "common/environment/normalize.h"
@@ -670,7 +669,7 @@ namespace casual
          return result;
       }
 
-      State::update_result_t State::update( common::message::service::Advertise&& message)
+      State::update_result_t State::update( message::service::Advertise&& message)
       {
          Trace trace{ "service::manager::State::update sequential"};
 
@@ -743,7 +742,7 @@ namespace casual
       }
 
 
-      std::vector< state::service::pending::Lookup> State::update( common::message::service::concurrent::Advertise&& message)
+      std::vector< state::service::pending::Lookup> State::update( message::service::concurrent::Advertise&& message)
       {
          Trace trace{ "service::manager::State::update concurrent"};
          
@@ -872,7 +871,7 @@ namespace casual
 
          auto transform_service = []( auto& service)
          {
-            common::message::service::advertise::Service result;
+            message::service::advertise::Service result;
             result.category = service.category;
             result.name = service.name;
             result.transaction = decltype( result.transaction)::none;
@@ -882,7 +881,7 @@ namespace casual
 
          // We advertise to our self
 
-         common::message::service::Advertise advertise{ process::handle()};
+         message::service::Advertise advertise{ process::handle()};
          advertise.alias = common::instance::alias();
          advertise.services.add = algorithm::transform( services, transform_service);
 

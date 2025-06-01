@@ -6,6 +6,8 @@
 
 #pragma once
 
+#include "transaction/manager/admin/service/name.h"
+
 #include "casual/manager/service.h"
 
 #include <vector>
@@ -17,17 +19,6 @@ namespace casual
       struct State;
       namespace admin
       {
-         namespace service::name
-         {
-            constexpr std::string_view state = ".casual/transaction/state";
-
-            namespace scale::resource
-            {
-               constexpr std::string_view proxies = ".casual/transaction/scale/resource/proxies";
-            } // update
-
-         } // service::name
-
          std::vector< casual::manager::Service> services( manager::State& state);
       } // admin
 

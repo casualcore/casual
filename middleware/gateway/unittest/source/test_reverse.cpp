@@ -14,7 +14,6 @@
 #include "domain/unittest/discover.h"
 #include "service/unittest/utility.h"
 
-#include "serviceframework/service/protocol/call.h"
 
 #include "common/communication/instance.h"
 

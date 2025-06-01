@@ -11,7 +11,7 @@
 
 #include "casual/platform.h"
 #include "common/buffer/type.h"
-#include "common/service/header.h"
+#include "casual/header.h"
 #include "common/pimpl.h"
 
 #include "common/message/service.h"
@@ -111,7 +111,7 @@ namespace casual
          namespace header::prepare
          {
             //! only exposed for testing
-            common::service::header::Field trace( const common::strong::execution::id& execution, const common::strong::execution::span::id& span);
+            casual::header::Field trace( const common::strong::execution::id& execution, const common::strong::execution::span::id& span);
          } // header::prepare
 
       } // detail

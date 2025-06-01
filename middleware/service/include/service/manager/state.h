@@ -9,8 +9,8 @@
 #include "service/manager/admin/server.h"
 
 #include "common/message/service.h"
+
 #include "common/metric.h"
-#include "common/server/service.h"
 #include "common/communication/ipc.h"
 #include "common/event/dispatch.h"
 #include "common/state/machine.h"

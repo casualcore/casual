@@ -7,8 +7,8 @@
 #include "domain/unittest/utility.h"
 
 #include "domain/manager/admin/server.h"
+#include "domain/manager/admin/call.h"
 
-#include "serviceframework/service/protocol/call.h"
 
 #include "common/unittest.h"
 
@@ -34,10 +34,7 @@ namespace casual
 
       manager::admin::model::State state()
       {
-         common::unittest::service::wait::until::advertised( manager::admin::service::name::state);
-         serviceframework::service::protocol::binary::Call call;
-         auto reply = call( manager::admin::service::name::state);
-         return reply.extract< manager::admin::model::State>();
+         return manager::admin::call::service< manager::admin::model::State>( manager::admin::service::name::state);
       }
 
       common::process::Handle server( const manager::admin::model::State& state, std::string_view alias, platform::size::type index)

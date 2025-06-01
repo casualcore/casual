@@ -6,7 +6,6 @@
 
 #include "casual/xatmi/internal/code.h"
 
-#include "common/service/call/context.h"
 #include "common/exception/capture.h"
 #include "common/code/category.h"
 #include "common/log.h"

@@ -13,7 +13,6 @@
 #include "common/process.h"
 #include "common/environment.h"
 #include "common/environment/normalize.h"
-#include "common/server/handle/call.h"
 #include "common/event/send.h"
 #include "common/communication/instance.h"
 #include "common/communication/ipc/flush/send.h"

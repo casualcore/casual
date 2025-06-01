@@ -17,6 +17,7 @@ make.IncludePaths( ['include',
     '../middleware/transaction/unittest/include',
     '../middleware/service/include',
     '../middleware/service/unittest/include',
+    '../middleware/server/include',
     '../middleware/xatmi/include',
     '../middleware/queue/include',
     '../middleware/queue/unittest/include',
@@ -31,6 +32,7 @@ make.LibraryPaths( [ 'bin',
     '../middleware/common/bin',
     '../middleware/domain/bin',
     '../middleware/service/bin',
+    '../middleware/server/bin',
     '../middleware/queue/bin',
     '../middleware/buffer/bin',
     '../middleware/transaction/bin',
@@ -55,7 +57,7 @@ target = make.LinkExecutable( 'bin/casual-test-mockup-string-server',
    [
       make.Compile( 'source/mockup/string/server.cpp')
    ],
-   ['casual-common', 'casual-xatmi', 'casual-serviceframework'],
+   ['casual-common', 'casual-xatmi', 'casual-service', 'casual-server'],
 )
 
 
@@ -93,13 +95,14 @@ make.LinkUnittest( 'unittest/bin/test-casual',
       'casual-mockup-rm',
       'casual-domain-unittest',
       'casual-domain-discovery',
+      'casual-service',
       'casual-service-unittest',
       'casual-transaction-unittest',
       'casual-gateway-unittest',
       'casual-administration-unittest',
       'casual-configuration',
       'casual-domain-admin-cli',
-      'casual-serviceframework',
+      'casual-transaction',
    ])
 	
 

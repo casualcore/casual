@@ -17,7 +17,6 @@ namespace casual
 
       using Trace = common::Trace;
 
-
    } // domain::discovery
 } // casual
 

@@ -6,7 +6,8 @@
 
 
 #include "xa.h"
-#include "common/transaction/context.h"
+
+#include "transaction/context.h"
 
 #include "common/code/xa.h"
 #include "common/code/category.h"
@@ -36,7 +37,7 @@ extern "C"
       try
       {
          return std::to_underlying( 
-            casual::common::transaction::context().resource_registration( casual::common::strong::resource::id{ rmid}, xid));
+            casual::transaction::context().resource_registration( casual::common::strong::resource::id{ rmid}, xid));
       }
       catch( ...)
       {
@@ -49,7 +50,7 @@ extern "C"
       try
       {
          return std::to_underlying( 
-            casual::common::transaction::context().resource_unregistration( casual::common::strong::resource::id{ rmid}));
+            casual::transaction::context().resource_unregistration( casual::common::strong::resource::id{ rmid}));
       }
       catch( ...)
       {

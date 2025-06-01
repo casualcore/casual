@@ -56,36 +56,36 @@ casual_common_objectfiles = [
     make.Compile( 'source/flag/xa.cpp'),
     make.Compile( 'source/flag/xatmi.cpp'),
 
-    make.Compile( 'source/server/context.cpp'),
-    make.Compile( 'source/server/lifetime.cpp'),
-    make.Compile( 'source/server/service.cpp'),
-    make.Compile( 'source/server/argument.cpp'),
-    make.Compile( 'source/server/start.cpp'),
-    make.Compile( 'source/server/handle/service.cpp'),
-    make.Compile( 'source/server/handle/conversation.cpp'),
-    make.Compile( 'source/server/handle/policy.cpp', directive=[ '-ftemplate-backtrace-limit=0']),
+    #make.Compile( 'source/server/context.cpp'),
+    #make.Compile( 'source/server/lifetime.cpp'),
+    #make.Compile( 'source/server/service.cpp'),
+    #make.Compile( 'source/server/argument.cpp'),
+    #make.Compile( 'source/server/start.cpp'),
+    #make.Compile( 'source/server/handle/service.cpp'),
+    #make.Compile( 'source/server/handle/conversation.cpp'),
+    #make.Compile( 'source/server/handle/policy.cpp', directive=[ '-ftemplate-backtrace-limit=0']),
     
-    make.Compile( 'source/executable/start.cpp'),
+    #make.Compile( 'source/executable/start.cpp'),
 
-    make.Compile( 'source/service/call/context.cpp'),
-    make.Compile( 'source/service/call/state.cpp'),
-    make.Compile( 'source/service/conversation/context.cpp'),
+    #make.Compile( 'source/service/call/context.cpp'),
+    #make.Compile( 'source/service/call/state.cpp'),
+    #make.Compile( 'source/service/conversation/context.cpp'),
     
-    make.Compile( 'source/service/lookup.cpp'),
-    make.Compile( 'source/service/header.cpp'),
+    #make.Compile( 'source/service/lookup.cpp'),
+    #make.Compile( 'source/service/invoke.cpp'),
     make.Compile( 'source/service/type.cpp'),
-    make.Compile( 'source/service/invoke.cpp'),
+
+    make.Compile( 'source/header.cpp'),
     
     make.Compile( 'source/buffer/x_octet.cpp'),
     make.Compile( 'source/buffer/pool.cpp'),
     make.Compile( 'source/buffer/transport.cpp'),
     make.Compile( 'source/buffer/type.cpp'),
     
-    make.Compile( 'source/transaction/context.cpp'),
+    #make.Compile( 'source/transaction/context.cpp'),
     make.Compile( 'source/transaction/id.cpp'),
     make.Compile( 'source/transaction/global.cpp'),
-
-    make.Compile( 'source/transaction/resource.cpp'),
+    #make.Compile( 'source/transaction/resource.cpp'),
     make.Compile( 'source/transaction/transaction.cpp'),
     
     make.Compile( 'source/communication/ipc.cpp'),
@@ -193,15 +193,7 @@ target_unittest = make.LinkLibrary( 'bin/casual-unittest',
      ],
      [ common, "gtest"])
 
-# The mockup-rm, only for testing.
-lib_mockup_rm = make.LinkLibrary( 'bin/casual-mockup-rm', 
-     [
-       make.Compile( 'source/unittest/rm.cpp')
-     ],
-     [ common, target_unittest])
 
-# Since we use this in our example-servers we "install it"
-install_libs.append( lib_mockup_rm)
 install_libs.append( target_unittest)
 
 
@@ -264,13 +256,12 @@ unittest_objectfiles = [
     make.Compile( 'unittest/source/message/test_dispatch.cpp'),
     make.Compile( 'unittest/source/message/test_coordinate.cpp'),
     
-    make.Compile( 'unittest/source/server/test_service.cpp'),
-    make.Compile( 'unittest/source/server/test_arguments.cpp'),
+#    make.Compile( 'unittest/source/server/test_service.cpp'),
+#    make.Compile( 'unittest/source/server/test_arguments.cpp'),
     
     make.Compile( 'unittest/source/service/test_header.cpp'),
     
     make.Compile( 'unittest/source/transaction/test_id.cpp'),
-    make.Compile( 'unittest/source/transaction/test_context.cpp'),
    
     make.Compile( 'unittest/source/event/test_dispatch.cpp'),
     make.Compile( 'unittest/source/event/test_listen.cpp'),
@@ -314,8 +305,7 @@ target_test_common = make.LinkUnittest( 'bin/test-casual-common-isolated',
 	unittest_objectfiles,
 	[
       common,
-      target_unittest,
-      lib_mockup_rm,
+      target_unittest
     ])		
 
 # We execute 'simple_process' from test-casual-common-isolated, so

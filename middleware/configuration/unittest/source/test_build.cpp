@@ -13,7 +13,6 @@
 
 #include "common/file.h"
 
-#include "serviceframework/log.h"
 
 namespace casual
 {

@@ -18,8 +18,6 @@
 #include "configuration/message.h"
 
 #include "common/process.h"
-#include "common/server/lifetime.h"
-#include "common/server/handle/call.h"
 #include "common/event/listen.h"
 #include "common/event/send.h"
 #include "common/algorithm/compare.h"

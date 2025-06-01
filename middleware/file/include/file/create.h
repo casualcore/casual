@@ -1,7 +1,14 @@
+//!
+//! Copyright (c) 2025, The casual project
+//!
+//! This software is licensed under the MIT license, https://opensource.org/licenses/MIT
+//!
+
 #include "file/message.h"
 
+#include "transaction/context.h"
+
 #include "common/process.h"
-#include "common/transaction/context.h"
 
 namespace casual
 {
@@ -14,7 +21,7 @@ namespace casual
          {
             auto request( std::filesystem::path path)
             {
-               auto& transaction = common::transaction::context().current();
+               auto& transaction = transaction::context().current();
 
                if( transaction)
                {

@@ -95,9 +95,9 @@ namespace casual
 
             auto condition( State& state)
             {
-               return message::dispatch::condition::compose(
-                  message::dispatch::condition::done( [&state]() { return state.done();}),
-                  message::dispatch::condition::idle( [&state]()
+               return common::message::dispatch::condition::compose(
+                  common::message::dispatch::condition::done( [&state]() { return state.done();}),
+                  common::message::dispatch::condition::idle( [&state]()
                   {
                      // the input socket is empty, we can't know if there ever gonna be any more 
                      // messages to read, we need to send metric, if any...

@@ -1,12 +1,22 @@
+//!
+//! Copyright (c) 2025, The casual project
+//!
+//! This software is licensed under the MIT license, https://opensource.org/licenses/MIT
+//!
+
+
 #include "casual/argument.h"
 #include "common/communication/ipc.h"
 #include "common/communication/instance.h"
 #include "common/exception/guard.h"
 #include "common/message/dispatch.h"
 #include "common/message/dispatch/handle.h"
-#include "common/server/argument.h"
-#include "common/server/handle/call.h"
+
+//#include "common/server/handle/call.h"
 #include "queue/api/queue.h"
+
+#include "server/argument.h"
+#include "server/handle/call.h"
 
 namespace casual
 {
@@ -25,34 +35,34 @@ namespace casual
             {
                auto enqueue( const std::string& queue)
                {
-                  return [queue]( common::service::invoke::Parameter&& parameter)
+                  return [queue]( server::service::invoke::Parameter&& parameter)
                   {
                      queue::Message message;
                      message.payload.data = std::move(parameter.payload.data);
                      message.payload.type = parameter.payload.type;
                      queue::enqueue(queue, message);
-                     return common::service::invoke::Result{ nullptr };
+                     return server::service::invoke::Result{ nullptr };
                   };
                }
 
                auto dequeue( const std::string& queue)
                {
-                  return [queue]( common::service::invoke::Parameter&& parameter)
+                  return [queue]( server::service::invoke::Parameter&& parameter)
                   {
                      if (auto message = queue::dequeue( queue); ! message.empty())
                      {
                         common::buffer::Payload payload { message.front().payload.type };
                         payload.data = std::move( message.front().payload.data);
-                        return common::service::invoke::Result{ std::move(payload) };
+                        return server::service::invoke::Result{ std::move(payload) };
                      }
-                     return common::service::invoke::Result{ nullptr };
+                     return server::service::invoke::Result{ nullptr };
                   };
                }
             }
 
-            common::server::Arguments services( std::vector<std::string> queues)
+            server::Arguments services( std::vector<std::string> queues)
             {
-               auto to_services = [](const auto& queue) -> std::vector<common::server::Service>
+               auto to_services = [](const auto& queue) -> std::vector< server::Service>
                {
                   return {
                      {
@@ -74,7 +84,7 @@ namespace casual
 
                auto services = common::algorithm::accumulate(
                   common::algorithm::transform( queues, to_services),
-                  std::vector<common::server::Service>{},
+                  std::vector< server::Service>{},
                   [](auto&& a, auto&& b) {
                      return common::algorithm::container::append( b, a);
                   });
@@ -95,7 +105,7 @@ namespace casual
                auto handler = common::message::dispatch::handler(
                   common::communication::ipc::inbound::device(),
                   common::message::dispatch::handle::defaults(),
-                  common::server::handle::Call{services(settings.queues)}
+                  server::handle::Call{ services( settings.queues)}
                );
 
                common::message::dispatch::pump( handler, common::communication::ipc::inbound::device());

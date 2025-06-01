@@ -6,6 +6,7 @@ make.IncludePaths( [
     'unittest/include',
 	'../common/include',
     '../manager/include',
+    '../transaction/include',
     '../configuration/include',
     '../configuration/unittest/include',
     '../domain/include',
@@ -22,11 +23,10 @@ make.LibraryPaths( [
     'bin',
     '../common/bin',
     '../manager/bin',
-    '../serviceframework/bin',
     '../domain/bin',
-	'../buffer/bin',
-	'../configuration/bin',
-   '../xatmi/bin']
+    '../transaction/bin',
+    '../serviceframework/bin',
+	'../configuration/bin']
     + make.optional_library_paths()
     + dsl.paths().library.gtest
    )
@@ -88,6 +88,24 @@ target = make.LinkExecutable( 'bin/casual-service-forward',
     ])
 
 install_bins.append( target)
+
+
+service_call = make.LinkLibrary( 'bin/casual-service',
+    [
+        make.Compile( 'source/call/context.cpp'),
+        make.Compile( 'source/call/state.cpp'),
+        make.Compile( 'source/conversation/context.cpp'),
+
+        make.Compile( 'source/call.cpp'),
+        make.Compile( 'source/lookup.cpp'),
+    ],
+    [
+        common_library,
+        'casual-common',
+        'casual-transaction'
+    ])
+
+install_libs.append( service_call)
 	
 	
 # admin-terminal
@@ -97,9 +115,11 @@ admin_api_lib = make.LinkLibrary( 'bin/casual-service-admin-api',
       make.Compile( 'source/manager/admin/api.cpp')
    ],
    [
-       common_library,
-       'casual-common',
-       'casual-serviceframework'
+        service_call,
+        common_library,
+        'casual-common',
+        'casual-transaction',
+        'casual-serviceframework'
    ])
 install_libs.append( admin_api_lib)
 
@@ -108,6 +128,7 @@ target = make.LinkLibrary( 'bin/casual-service-admin-cli',
     [ 
         common_library,
         admin_api_lib, 
+        service_call,
         'casual-common', 
         'casual-serviceframework', 
     ])
@@ -115,6 +136,7 @@ target = make.LinkLibrary( 'bin/casual-service-admin-cli',
 install_libs.append( target)
 
 # public api
+# TODO we should remove this
 api_lib = make.LinkLibrary( 'bin/casual-service-api',
     [ 
         make.Compile( 'source/manager/api/state.cpp'),
@@ -141,9 +163,11 @@ service_unittest = make.LinkLibrary( 'bin/casual-service-unittest',
         make.Compile( 'unittest/source/utility.cpp'),
     ],
     [
+        service_call,
         common_library, 
         'casual-unittest',
         'casual-common',
+        'casual-transaction',
         'casual-serviceframework',
     ])
 
@@ -157,9 +181,11 @@ test_service = make.LinkUnittest( 'unittest/bin/test-casual-service',
     ],
     [
         manager_archive,
+        service_call,
         common_library,
         api_lib,
         service_unittest,
+        'casual-transaction',
         'casual-domain-utility',
         'casual-domain-discovery',
         'casual-common',

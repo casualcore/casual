@@ -350,16 +350,11 @@ namespace casual
                   EXPECT_TRUE( algorithm::equal( common::binary::span::Fixed< std::byte>{ std::begin( payload.data), info.size()}, common::binary::span::make( info))) << CASUAL_NAMED_VALUE( payload);
 
                   message::service::call::caller::Request message{ buffer::payload::Send{ payload, 100, 100}};
-                  message.header.add( service::header::Field{ "casual.header.test.1: 42"});
-                  message.header.add( service::header::Field{ "casual.header.test.2: poop"});
+                  message.header.add( header::Field{ "casual.header.test.1: 42"});
+                  message.header.add( header::Field{ "casual.header.test.2: poop"});
 
                   output << message;
 
-                  // header
-                  {
-                     service::header::fields().clear();
-                     EXPECT_TRUE( service::header::fields().empty());
-                  }
                }
 
                // unmarshal

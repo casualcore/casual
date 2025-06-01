@@ -162,7 +162,7 @@ namespace casual
 
 
                      if( range)                        
-                        state.header.reply.add( common::service::header::Field{ std::string{ std::begin( range), std::end( range)}});
+                        state.header.reply.add( casual::header::Field{ std::string{ std::begin( range), std::end( range)}});
 
                      // else:
                      // Think this is an "empty header" that we'll be invoked as the "last header"
@@ -240,7 +240,7 @@ namespace casual
          const auto span = common::strong::execution::span::id::generate();
 
          request.state().header.request.add( *node.headers);
-         request.state().header.request.add( common::service::header::Field{ http::header::name::execution::id, common::uuid::string( message.execution.value())});
+         request.state().header.request.add( casual::header::Field{ http::header::name::execution::id, common::uuid::string( message.execution.value())});
          request.state().header.request.add( detail::header::prepare::trace( message.execution, span));
 
          request.state().destination = message.process;
@@ -412,13 +412,13 @@ namespace casual
 
       namespace detail::header::prepare
       {
-         common::service::header::Field trace( const common::strong::execution::id& execution, const common::strong::execution::span::id& span)
+         casual::header::Field trace( const common::strong::execution::id& execution, const common::strong::execution::span::id& span)
          {
             // https://www.w3.org/TR/trace-context/#examples-of-http-traceparent-headers
             // example:
             // 00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-00
 
-            return common::service::header::Field{
+            return casual::header::Field{
                http::header::name::execution::trace::parent,
                string::compose( "00-", execution.underlying().range(), "-" ,span.underlying(), "-00")};
          }

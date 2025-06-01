@@ -16,12 +16,9 @@
 #include "common/signal/timer.h"
 #include "common/unittest/environment.h"
 
-#include "common/transaction/context.h"
-#include "common/transaction/resource.h"
 
 #include "common/serialize/macro.h"
 #include "common/communication/instance.h"
-
 
 #include "domain/unittest/manager.h"
 #include "domain/unittest/configuration.h"

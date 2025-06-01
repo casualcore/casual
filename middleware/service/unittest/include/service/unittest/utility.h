@@ -12,7 +12,6 @@
 
 #include "common/message/service.h"
 #include "common/process.h"
-#include "common/service/lookup.h"
 
 #include <string>
 #include <vector>

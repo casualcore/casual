@@ -15,7 +15,6 @@
 #include "common/file.h"
 #include "common/execute.h"
 #include "common/environment.h"
-#include "common/server/service.h"
 #include "common/exception/guard.h"
 
 #include "configuration/system.h"

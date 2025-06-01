@@ -18,6 +18,7 @@ make.IncludePaths( [
     '../domain/include',
     '../domain/unittest/include',
     '../service/include',
+    '../server/include',
     '../../thirdparty/database/include',
     '../service/unittest/include'
     ]
@@ -37,6 +38,7 @@ make.LibraryPaths( [
     '../buffer/bin',
     '../domain/bin',
     '../service/bin',
+    '../server/bin',
     '../xatmi/bin']
     + make.optional_library_paths()
     + dsl.paths().library.gtest
@@ -127,8 +129,9 @@ queue_api = make.LinkLibrary( 'bin/casual-queue-api',
        make.Compile( 'source/api/queue.cpp'),
    ],
    [
-    common, 
-    'casual-serviceframework', 
+    common,
+    'casual-transaction',
+    'casual-service', 
     'casual-common', 
     ])
 
@@ -172,6 +175,9 @@ example_server = make.LinkExecutable( 'bin/casual-queue-example-server',
     common,
     queue_api,
     queue_c_api,
+    'casual-service',
+    'casual-server',
+    'casual-transaction',
     'casual-common',
     'casual-buffer'
 ])
@@ -183,7 +189,7 @@ target = make.LinkLibrary( 'bin/casual-queue-admin-cli',
     [
         make.Compile( 'source/manager/admin/cli.cpp'),
      ], 
-   [common, queue_api, 'casual-cli', 'casual-common', 'casual-serviceframework'])
+   [common, queue_api, 'casual-service', 'casual-cli', 'casual-common' ]) #, 'casual-serviceframework'])
  
 install_lib.append( target)
 
@@ -200,9 +206,16 @@ install_bin.append( target)
 
 # Unittest
 
-unittest_utility_archive = make.LinkArchive( 'bin/casual-queue-unittest',
+unittest_lib = make.LinkLibrary( 'bin/casual-queue-unittest',
     [
         make.Compile( 'unittest/source/utility.cpp'),
+    ],
+    [
+        common,
+        'casual-common',
+        'casual-unittest',
+        'casual-service',
+        'casual-service-unittest',
     ]
 )
 
@@ -221,10 +234,11 @@ test_casual_queue = make.LinkUnittest( 'unittest/bin/test-casual-queue',
      common,
      queue_api,
      queue_c_api,
-     unittest_utility_archive,
+     unittest_lib,
      'casual-common',
-     'casual-serviceframework',
      'casual-configuration',
+     'casual-transaction',
+     'casual-service',
      'sqlite3',
      'casual-unittest',
      'casual-service-unittest',
@@ -249,13 +263,13 @@ forward_service = make.LinkExecutable( 'bin/casual-queue-forward-service',
     [
         make.Compile( 'source/forward/deprecated/service.cpp'),
     ],
-    [ forward_common, common, queue_api, 'casual-common', 'casual-buffer', 'casual-serviceframework'])
+    [ forward_common, common, queue_api, 'casual-common', 'casual-buffer', 'casual-service', 'casual-transaction'])
 
 forward_queue = make.LinkExecutable( 'bin/casual-queue-forward-queue',
     [
         make.Compile( 'source/forward/deprecated/queue.cpp'),
     ],
-    [ forward_common, common, queue_api, 'casual-common', 'casual-buffer'])
+    [ forward_common, common, queue_api, 'casual-common', 'casual-buffer', 'casual-service', 'casual-transaction'])
 
 install_bin.append( forward_service)
 install_bin.append( forward_queue)

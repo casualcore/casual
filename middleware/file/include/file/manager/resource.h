@@ -6,10 +6,11 @@
 
 #pragma once
 
-#include "common/transaction/context.h"
 
 #include "file/message.h"
 #include "file/manager/state.h"
+
+#include "common/message/transaction.h"
 
 namespace casual::file::resource
 {

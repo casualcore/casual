@@ -14,26 +14,25 @@
 #include "gateway/message.h"
 
 #include "common/environment.h"
-#include "common/service/lookup.h"
 #include "common/communication/instance.h"
 #include "common/event/listen.h"
 #include "common/message/event.h"
-#include "common/transaction/context.h"
 
 #include "common/message/domain.h"
 #include "common/algorithm/is.h"
 #include "common/result.h"
 #include "common/sink.h"
 
-#include "serviceframework/service/protocol/call.h"
+#include "transaction/context.h"
+
+#include "service/call/context.h"
+#include "service/unittest/utility.h"
 
 #include "domain/unittest/manager.h"
 #include "domain/unittest/configuration.h"
 #include "domain/unittest/discover.h"
 #include "domain/unittest/utility.h"
 #include "domain/discovery/api.h"
-
-#include "service/unittest/utility.h"
 
 #include "queue/api/queue.h"
 
@@ -1586,13 +1585,13 @@ domain:
          {
             using namespace std::literals;
 
-            EXPECT_EQ( transaction::context().begin(), code::tx::ok);
+            EXPECT_EQ( casual::transaction::context().begin(), code::tx::ok);
 
             buffer::Payload payload;
             payload.type = "X_OCTET/";
             common::algorithm::copy( binary::span::make( "casual"sv), std::back_inserter( payload.data));
 
-            auto result = common::service::call::context().sync( "casual/example/domain/echo/B", common::buffer::payload::Send{ payload}, {});
+            auto result = casual::service::call::context().sync( "casual/example/domain/echo/B", common::buffer::payload::Send{ payload}, {});
 
             EXPECT_TRUE( result.buffer.data == payload.data);
 
@@ -1602,7 +1601,7 @@ domain:
          signal::send( inbound.pid, code::signal::terminate);
 
          // We expect hazard.
-         EXPECT_EQ( transaction::context().commit(), code::tx::fail);
+         EXPECT_EQ( casual::transaction::context().commit(), code::tx::fail);
       }
 
       // TODO the pending call hack has been removed and need to be replaced with some sort of _pending timeout_
@@ -1671,7 +1670,7 @@ domain:
             payload.type = "X_OCTET/";
             payload.data = common::unittest::random::binary( 512);
 
-            return common::service::call::context().async( service, common::buffer::payload::Send{ payload}, {});
+            return casual::service::call::context().async( service, common::buffer::payload::Send{ payload}, {});
          };
 
          [[maybe_unused]] auto send_reply = []( auto& request)
@@ -1788,7 +1787,7 @@ domain:
             buffer::Payload payload;
             payload.type = "X_OCTET/";
             payload.data = common::unittest::random::binary( 512);
-            common::service::call::context().async( "casual/example/resource/nested/calls/B", common::buffer::payload::Send{ payload}, {});
+            casual::service::call::context().async( "casual/example/resource/nested/calls/B", common::buffer::payload::Send{ payload}, {});
          }
 
          {

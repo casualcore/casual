@@ -7,7 +7,7 @@
 
 #include "common/unittest.h"
 
-#include "common/service/header.h"
+#include "casual/header.h"
 
 
 namespace casual
@@ -39,15 +39,6 @@ namespace casual
             EXPECT_TRUE( field == "a");
             EXPECT_TRUE( field == "A");
             EXPECT_TRUE( field != "b");
-         }
-
-         TEST( common_service_header, clear)
-         {
-            common::unittest::Trace trace;
-
-            header::fields().clear();
-
-            EXPECT_TRUE( header::fields().empty());
          }
 
          TEST( common_service_header, empty__replace_add__expect_contains)

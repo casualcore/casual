@@ -8,7 +8,8 @@
 
 #include "common/unittest.h"
 #include "common/unittest/file.h"
-#include "common/transaction/context.h"
+
+#include "transaction/context.h"
 
 #include "administration/unittest/cli/command.h"
 
@@ -80,7 +81,7 @@ path                                                  pid     gtrid             
 
          const auto file = common::unittest::file::temporary::name( ".txt");
 
-         ASSERT_EQ( common::transaction::context().begin(), common::code::tx::ok);
+         ASSERT_EQ( casual::transaction::context().begin(), common::code::tx::ok);
 
          const auto reserved = file::blocking::reserve( file);
 
@@ -90,7 +91,7 @@ path                                                  pid     gtrid             
          EXPECT_TRUE( capture.contains( "working")) << capture;
          EXPECT_TRUE( capture.contains( file.native())) << capture;
 
-         ASSERT_EQ( common::transaction::context().commit(), common::code::tx::ok);
+         ASSERT_EQ( casual::transaction::context().commit(), common::code::tx::ok);
       }
 
       TEST( cli_file, recover_transaction)
@@ -101,7 +102,7 @@ path                                                  pid     gtrid             
 
          const auto file = common::unittest::file::temporary::name( ".txt");
 
-         ASSERT_EQ( common::transaction::context().begin(), common::code::tx::ok);
+         ASSERT_EQ( casual::transaction::context().begin(), common::code::tx::ok);
 
          const auto reserved = file::blocking::reserve( file);
 
@@ -113,7 +114,7 @@ path                                                  pid     gtrid             
          }
 
          TXINFO info{};
-         ASSERT_TRUE( common::transaction::context().info( &info));
+         ASSERT_TRUE( casual::transaction::context().info( &info));
 
          // Commit the reservaton and check that something is returned
          {
@@ -128,7 +129,7 @@ path                                                  pid     gtrid             
             EXPECT_TRUE( capture.empty()) << capture;
          }
 
-         ASSERT_EQ( common::transaction::context().commit(), common::code::tx::ok);
+         ASSERT_EQ( casual::transaction::context().commit(), common::code::tx::ok);
       }
 
    } // administration

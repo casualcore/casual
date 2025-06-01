@@ -9,6 +9,7 @@ make.IncludePaths( [
    '../common/include',
    '../cli/include',
    '../manager/include',
+   '../service/include',
    '../transaction/include',
    '../serviceframework/include', 
    '../xatmi/include',
@@ -28,6 +29,7 @@ make.LibraryPaths(
       '../serviceframework/bin',
       '../configuration/bin',
       '../service/bin',
+      '../transaction/bin',
       '../xatmi/bin',
    ]
    + make.optional_library_paths()
@@ -67,6 +69,7 @@ file_api = make.LinkLibrary( 'bin/casual-file-api',
    ],
    [
       'casual-common',
+      'casual-transaction',
    ])
 
 install_lib.append( file_api)
@@ -87,7 +90,7 @@ file_cli = make.LinkLibrary( 'bin/casual-file-admin-cli',
    [
       make.Compile( 'source/manager/admin/cli.cpp'),
    ], 
-   [file_api, 'casual-cli', 'casual-common', 'casual-serviceframework'])
+   [file_api, 'casual-cli', 'casual-common', 'casual-service'])
  
 install_lib.append( file_cli)
 
@@ -103,7 +106,8 @@ test_casual_file = make.LinkUnittest( 'unittest/bin/test-casual-file',
       'casual-unittest',
       'casual-domain-unittest',
       'casual-xatmi',
-      'casual-serviceframework',
+      'casual-service',
+      'casual-transaction',
    ]  
 )
 

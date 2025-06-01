@@ -11,7 +11,6 @@
 #include "common/terminal.h"
 #include "common/exception/capture.h"
 
-#include "serviceframework/log.h"
 #include "common/serialize/create.h"
 
 #include "service/manager/admin/api.h"
@@ -51,11 +50,11 @@ namespace casual
                      namespace cli
                      {
 
-                        const char* type_name( serviceframework::service::model::type::Category category)
+                        const char* type_name( server::service::model::type::Category category)
                         {
                            switch( category)
                            {
-                              using Enum = serviceframework::service::model::type::Category;
+                              using Enum = server::service::model::type::Category;
                               case Enum::unknown: return "unknown";
                               case Enum::container: return "container";
                               case Enum::composite: return "composite";
@@ -72,13 +71,13 @@ namespace casual
                            }
                            return "<unknown>";
                         }
-                        void types( std::ostream& out, const std::vector< serviceframework::service::Model::Type>& types, std::size_t indent);
+                        void types( std::ostream& out, const std::vector< server::service::Model::Type>& types, std::size_t indent);
 
-                        void type( std::ostream& out, const serviceframework::service::Model::Type& type, std::size_t indent)
+                        void type( std::ostream& out, const server::service::Model::Type& type, std::size_t indent)
                         {
                            switch( type.category)
                            {
-                              case serviceframework::service::model::type::Category::container:
+                              case server::service::model::type::Category::container:
                               {
                                  indentation( out, indent) << common::terminal::color::cyan << "container";
                                  out << " " << type.role << '\n';
@@ -86,7 +85,7 @@ namespace casual
                                  types( out, type.attributes, indent + 1);
                                  break;
                               }
-                              case serviceframework::service::model::type::Category::composite:
+                              case server::service::model::type::Category::composite:
                               {
                                  indentation( out, indent) << common::terminal::color::cyan << "composite";
                                  out << " " << type.role << '\n';
@@ -104,13 +103,13 @@ namespace casual
 
                         }
 
-                        void types( std::ostream& out, const std::vector< serviceframework::service::Model::Type>& types, std::size_t indent)
+                        void types( std::ostream& out, const std::vector< server::service::Model::Type>& types, std::size_t indent)
                         {
                            for( auto& type : types)
                               cli::type( out, type, indent);
                         }
 
-                        void print( std::ostream& out, const serviceframework::service::Model& model)
+                        void print( std::ostream& out, const server::service::Model& model)
                         {
                            out << common::terminal::color::white << "service: " << model.service << '\n';
 

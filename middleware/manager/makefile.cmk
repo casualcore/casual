@@ -32,13 +32,14 @@ archive = make.LinkArchive( 'bin/casual-manager',
    ]
 )
 
-make.LinkUnittest( 'bin/test-casual-gateway',
+make.LinkUnittest( 'bin/test-casual-manager',
    [
         make.Compile( 'unittest/source/test_manager.cpp'),
    ],
    [
       archive,
       'casual-common',
+      'casual-unittest',
       'casual-serviceframework',
    ]
 )

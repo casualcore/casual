@@ -16,8 +16,14 @@ make.IncludePaths( [
 make.LibraryPaths([
     'bin',
     '../common/bin',
+    '../transaction/bin',
+    '../service/bin',
+    '../server/bin',
+    '../serviceframework/bin',
     '../cli/bin',
-    '../xatmi/bin'] + make.optional_library_paths() + dsl.paths().library.gtest
+    '../xatmi/bin'
+    ] 
+    + make.optional_library_paths() + dsl.paths().library.gtest
    )
 
 

@@ -19,9 +19,10 @@
 #include "common/communication/instance.h"
 #include "common/message/event.h"
 #include "common/event/listen.h"
-#include "common/service/lookup.h"
 #include "common/communication/ipc/send.h"
-#include "common/service/call/context.h"
+
+#include "service/lookup.h"
+#include "service/call/context.h"
 
 #include "configuration/unittest/utility.h"
 #include "configuration/model/transform.h"
@@ -404,7 +405,7 @@ domain:
 )");
 
          // lookup / reserve the instance
-         auto lookup = common::service::lookup::reply( common::service::Lookup{ "casual/example/echo", {}});
+         auto lookup = casual::service::lookup::reply( casual::service::Lookup{ "casual/example/echo", {}});
 
          communication::ipc::inbound::Device inbound;
 
@@ -617,7 +618,7 @@ domain:
             // we fake that we are a real service, and set some stuff that a real service would do
             {
                // set deadline (if any) for further service calls downstream
-               common::service::call::context().deadline( platform::time::clock::type::now(), request.deadline.remaining);
+               casual::service::call::context().deadline( platform::time::clock::type::now(), request.deadline.remaining);
             }
 
             // do another nested call to our self
@@ -626,6 +627,10 @@ domain:
             // send ack to SM
             casual::service::unittest::send::ack( request);
          });
+
+         // we need to clear the service call context, so that we don't have a pending deadline
+         // for the next tests
+         casual::service::call::context().clear();
 
 
       }

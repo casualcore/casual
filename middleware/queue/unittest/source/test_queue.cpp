@@ -20,8 +20,7 @@
 #include "common/message/domain.h"
 #include "common/environment.h"
 
-#include "common/transaction/context.h"
-#include "common/transaction/resource.h"
+
 #include "common/transaction/global.h"
 
 #include "common/code/signal.h"
@@ -34,8 +33,11 @@
 #include "domain/unittest/configuration.h"
 
 #include "queue/manager/admin/services.h"
-#include "serviceframework/service/protocol.h"
-#include "serviceframework/service/protocol/call.h"
+
+#include "service/protocol/call.h"
+
+#include "transaction/context.h"
+#include "transaction/resource.h"
 
 #include "configuration/model/transform.h"
 #include "configuration/unittest/utility.h"
@@ -707,9 +709,9 @@ domain:
 
          // dequeue, and rollback
          {
-            EXPECT_EQ( common::transaction::context().begin(), common::code::tx::ok);
+            EXPECT_EQ( casual::transaction::context().begin(), common::code::tx::ok);
             ASSERT_TRUE( ! queue::dequeue( name).empty());
-            EXPECT_EQ( common::transaction::context().rollback(), common::code::tx::ok);
+            EXPECT_EQ( casual::transaction::context().rollback(), common::code::tx::ok);
          }  
 
          // not available yet
@@ -758,9 +760,9 @@ domain:
 
          // dequeue, and rollback
          {
-            EXPECT_EQ( common::transaction::context().begin(), common::code::tx::ok);
+            EXPECT_EQ( casual::transaction::context().begin(), common::code::tx::ok);
             ASSERT_TRUE( ! queue::dequeue( name).empty());
-            EXPECT_EQ( common::transaction::context().rollback(), common::code::tx::ok);
+            EXPECT_EQ( casual::transaction::context().rollback(), common::code::tx::ok);
          }  
 
          // removed from original queue
@@ -941,7 +943,7 @@ domain:
 
          // dequeue without committing
          {
-            EXPECT_EQ( common::transaction::context().begin(), common::code::tx::ok);
+            EXPECT_EQ( casual::transaction::context().begin(), common::code::tx::ok);
             auto dequeued = queue::dequeue( "a1");
             EXPECT_TRUE( ! dequeued.empty());
             EXPECT_TRUE( dequeued.front().id == messages.front().id);
@@ -955,7 +957,7 @@ domain:
 
          EXPECT_TRUE( unittest::messages( "a1").size() == 1);
 
-         EXPECT_EQ( common::transaction::context().rollback(), common::code::tx::ok);
+         EXPECT_EQ( casual::transaction::context().rollback(), common::code::tx::ok);
       }
 
       TEST( casual_queue, enqueue_1__dequeue__force_remove_message__expect_0_message_in_queue)
@@ -979,7 +981,7 @@ domain:
 
          // dequeue without committing
          {
-            EXPECT_EQ( common::transaction::context().begin(), common::code::tx::ok);
+            EXPECT_EQ( casual::transaction::context().begin(), common::code::tx::ok);
             auto dequeued = queue::dequeue( "a1");
             EXPECT_TRUE( ! dequeued.empty());
             EXPECT_TRUE( dequeued.front().id == messages.front().id);
@@ -994,7 +996,7 @@ domain:
 
          EXPECT_TRUE( unittest::messages( "a1").empty());
 
-         EXPECT_EQ( common::transaction::context().rollback(), common::code::tx::ok);
+         EXPECT_EQ( casual::transaction::context().rollback(), common::code::tx::ok);
       }
 
       namespace local
@@ -1004,7 +1006,7 @@ domain:
             std::vector< common::transaction::global::ID> recover( const std::vector< common::transaction::global::ID>& gtrids,
                ipc::message::group::message::recovery::Directive directive)
             {
-               using Call = serviceframework::service::protocol::binary::Call;
+               using Call = casual::service::protocol::binary::Call;
                return Call{}( manager::admin::service::name::recover,
                   std::move( gtrids),
                   std::move( directive)).extract< std::vector< common::transaction::global::ID>>();
@@ -1033,7 +1035,7 @@ domain:
 
          {
             // simulate a uncommitted dequeue
-            EXPECT_EQ( common::transaction::context().begin(), common::code::tx::ok);
+            EXPECT_EQ( casual::transaction::context().begin(), common::code::tx::ok);
             EXPECT_TRUE( ! queue::dequeue( "a1").empty());
             {
                auto messages = unittest::messages( "a1");
@@ -1054,7 +1056,7 @@ domain:
          }
 
          // rollback simulated uncommited dequeue, otherwise casual-queue-group has ongoing transactions
-         EXPECT_EQ( common::transaction::context().rollback(), common::code::tx::ok);
+         EXPECT_EQ( casual::transaction::context().rollback(), common::code::tx::ok);
       }
 
       TEST( casual_queue, enqueue_1___dequeue_message___recover_rollback____expect_1_message_in_queue)
@@ -1078,7 +1080,7 @@ domain:
 
          {
             // simulate a uncommitted dequeue
-            EXPECT_EQ( common::transaction::context().begin(), common::code::tx::ok);
+            EXPECT_EQ( casual::transaction::context().begin(), common::code::tx::ok);
             EXPECT_TRUE( ! queue::dequeue( "a1").empty());
             {
                auto messages = unittest::messages( "a1");
@@ -1105,7 +1107,7 @@ domain:
             }
 
             // rollback simulated uncommited dequeue, otherwise casual-queue-group has ongoing transactions
-            EXPECT_EQ( common::transaction::context().rollback(), common::code::tx::ok);
+            EXPECT_EQ( casual::transaction::context().rollback(), common::code::tx::ok);
          }
 
      }
@@ -1800,7 +1802,7 @@ domain:
 
          auto domain = local::capacity::domain();
 
-         EXPECT_EQ( common::transaction::context().begin(), common::code::tx::ok);
+         EXPECT_EQ( casual::transaction::context().begin(), common::code::tx::ok);
          queue::enqueue( "a1", local::capacity::message( 30));
 
          {
@@ -1809,7 +1811,7 @@ domain:
             EXPECT_TRUE( current_size.value() == 30);
          }
 
-         EXPECT_EQ( common::transaction::context().commit(), common::code::tx::ok);
+         EXPECT_EQ( casual::transaction::context().commit(), common::code::tx::ok);
 
          {
             auto current_size = local::capacity::group_size( "A");
@@ -1826,7 +1828,7 @@ domain:
 
          queue::enqueue( "a1", local::capacity::message( 30));
 
-         EXPECT_EQ( common::transaction::context().begin(), common::code::tx::ok);
+         EXPECT_EQ( casual::transaction::context().begin(), common::code::tx::ok);
 
          // dequeue not committed - message should not be subtracted from size
          {
@@ -1836,7 +1838,7 @@ domain:
             EXPECT_TRUE( current_size.value() == 30);
          }
 
-         EXPECT_EQ( common::transaction::context().commit(), common::code::tx::ok);
+         EXPECT_EQ( casual::transaction::context().commit(), common::code::tx::ok);
 
          // dequeue rollbacked - expect message subtracted from size
          {
@@ -1852,7 +1854,7 @@ domain:
 
          auto domain = local::capacity::domain();
 
-         EXPECT_EQ( common::transaction::context().begin(), common::code::tx::ok);
+         EXPECT_EQ( casual::transaction::context().begin(), common::code::tx::ok);
          queue::enqueue( "a1", local::capacity::message( 30));
 
          {
@@ -1861,7 +1863,7 @@ domain:
             EXPECT_TRUE( current_size.value() == 30);
          }
 
-         EXPECT_EQ( common::transaction::context().rollback(), common::code::tx::ok);
+         EXPECT_EQ( casual::transaction::context().rollback(), common::code::tx::ok);
 
          {
             auto current_size = local::capacity::group_size( "A");
@@ -1878,7 +1880,7 @@ domain:
 
          queue::enqueue( "a1", local::capacity::message( 30));
 
-         EXPECT_EQ( common::transaction::context().begin(), common::code::tx::ok);
+         EXPECT_EQ( casual::transaction::context().begin(), common::code::tx::ok);
 
          // dequeue not committed - message should not be subtracted from size
          {
@@ -1888,7 +1890,7 @@ domain:
             EXPECT_TRUE( current_size.value() == 30);
          }
 
-         EXPECT_EQ( common::transaction::context().rollback(), common::code::tx::ok);
+         EXPECT_EQ( casual::transaction::context().rollback(), common::code::tx::ok);
 
          // dequeue rollbacked - expect message still included in size
          {
@@ -1906,14 +1908,14 @@ domain:
 
          queue::enqueue( "a1", local::capacity::message( 30));
 
-         EXPECT_EQ( common::transaction::context().begin(), common::code::tx::ok);
+         EXPECT_EQ( casual::transaction::context().begin(), common::code::tx::ok);
 
          // dequeue committed - messages should be subtracted from size
          {
             queue::enqueue( "a1", local::capacity::message( 30));
             queue::enqueue( "a1", local::capacity::message( 30));
 
-            auto gtrids = local::recover( { common::transaction::id::range::global( common::transaction::context().current().trid)}, ipc::message::group::message::recovery::Directive::commit);
+            auto gtrids = local::recover( { common::transaction::id::range::global( casual::transaction::context().current().trid)}, ipc::message::group::message::recovery::Directive::commit);
             EXPECT_FALSE( gtrids.size() == 2);
 
             auto current_size = local::capacity::group_size( "A");
@@ -1921,7 +1923,7 @@ domain:
             EXPECT_TRUE( current_size.value() == 90);
          }
 
-         EXPECT_EQ( common::transaction::context().commit(), common::code::tx::ok);
+         EXPECT_EQ( casual::transaction::context().commit(), common::code::tx::ok);
 
          {
             auto current_size = local::capacity::group_size( "A");
@@ -1938,14 +1940,14 @@ domain:
 
          queue::enqueue( "a1", local::capacity::message( 30));
 
-         EXPECT_EQ( common::transaction::context().begin(), common::code::tx::ok);
+         EXPECT_EQ( casual::transaction::context().begin(), common::code::tx::ok);
 
          // dequeue rollbacked - messages should NOT be subtracted from size
          {
             queue::enqueue( "a1", local::capacity::message( 30));
             queue::enqueue( "a1", local::capacity::message( 30));
 
-            auto gtrids = local::recover( { common::transaction::id::range::global( common::transaction::context().current().trid)}, ipc::message::group::message::recovery::Directive::rollback);
+            auto gtrids = local::recover( { common::transaction::id::range::global( casual::transaction::context().current().trid)}, ipc::message::group::message::recovery::Directive::rollback);
             EXPECT_FALSE( gtrids.size() == 2);
 
             auto current_size = local::capacity::group_size( "A");
@@ -1953,7 +1955,7 @@ domain:
             EXPECT_TRUE( current_size.value() == 30);
          }
 
-         EXPECT_EQ( common::transaction::context().commit(), common::code::tx::ok);
+         EXPECT_EQ( casual::transaction::context().commit(), common::code::tx::ok);
 
          {
             auto current_size = local::capacity::group_size( "A");
@@ -1972,14 +1974,14 @@ domain:
          queue::enqueue( "a1", local::capacity::message( 30));
          queue::enqueue( "a1", local::capacity::message( 30));
 
-         EXPECT_EQ( common::transaction::context().begin(), common::code::tx::ok);
+         EXPECT_EQ( casual::transaction::context().begin(), common::code::tx::ok);
 
          // dequeue committed - messages should be subtracted from size
          {
             EXPECT_FALSE( queue::dequeue( "a1").empty());
             EXPECT_FALSE( queue::dequeue( "a1").empty());
 
-            auto gtrids = local::recover( { common::transaction::id::range::global( common::transaction::context().current().trid)}, ipc::message::group::message::recovery::Directive::commit);
+            auto gtrids = local::recover( { common::transaction::id::range::global( casual::transaction::context().current().trid)}, ipc::message::group::message::recovery::Directive::commit);
             EXPECT_FALSE( gtrids.size() == 2);
 
             auto current_size = local::capacity::group_size( "A");
@@ -1987,7 +1989,7 @@ domain:
             EXPECT_TRUE( current_size.value() == 30);
          }
 
-         EXPECT_EQ( common::transaction::context().commit(), common::code::tx::ok);
+         EXPECT_EQ( casual::transaction::context().commit(), common::code::tx::ok);
 
          {
             auto current_size = local::capacity::group_size( "A");
@@ -2006,14 +2008,14 @@ domain:
          queue::enqueue( "a1", local::capacity::message( 30));
          queue::enqueue( "a1", local::capacity::message( 30));
 
-         EXPECT_EQ( common::transaction::context().begin(), common::code::tx::ok);
+         EXPECT_EQ( casual::transaction::context().begin(), common::code::tx::ok);
 
          // dequeue rollbacked - messages should NOT be subtracted from size
          {
             EXPECT_FALSE( queue::dequeue( "a1").empty());
             EXPECT_FALSE( queue::dequeue( "a1").empty());
 
-            auto gtrids = local::recover( { common::transaction::id::range::global( common::transaction::context().current().trid)}, ipc::message::group::message::recovery::Directive::rollback);
+            auto gtrids = local::recover( { common::transaction::id::range::global( casual::transaction::context().current().trid)}, ipc::message::group::message::recovery::Directive::rollback);
             EXPECT_FALSE( gtrids.size() == 2);
 
             auto current_size = local::capacity::group_size( "A");
@@ -2021,7 +2023,7 @@ domain:
             EXPECT_TRUE( current_size.value() == 90);
          }
 
-         EXPECT_EQ( common::transaction::context().commit(), common::code::tx::ok);
+         EXPECT_EQ( casual::transaction::context().commit(), common::code::tx::ok);
 
          {
             auto current_size = local::capacity::group_size( "A");

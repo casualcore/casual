@@ -14,7 +14,6 @@
 
 #include "configuration/message.h"
 
-#include "common/server/handle/call.h"
 #include "common/message/dispatch/handle.h"
 #include "common/message/internal.h"
 #include "common/instance.h"

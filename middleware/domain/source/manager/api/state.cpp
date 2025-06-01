@@ -8,14 +8,12 @@
 #include "casual/domain/manager/api/internal/transform.h"
 
 #include "domain/manager/admin/server.h"
+#include "domain/manager/admin/call.h"
 
-#include "serviceframework/service/protocol/call.h"
 
 
 namespace casual
 {
-   using namespace common;
-
    namespace domain
    {
       namespace manager
@@ -26,11 +24,7 @@ namespace casual
             {
                Model state()
                {
-                  serviceframework::service::protocol::binary::Call call;
-                  auto reply = call( casual::domain::manager::admin::service::name::state);
-
-                  casual::domain::manager::admin::model::State result;
-                  reply >> CASUAL_NAMED_VALUE( result);
+                  auto result = domain::manager::admin::call::service< admin::model::State>( admin::service::name::state);
 
                   return internal::transform::state( std::move( result));
                }

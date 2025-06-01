@@ -11,9 +11,6 @@
 #include "casual/platform.h"
 #include "common/process.h"
 #include "common/chronology.h"
-#include "common/server/context.h"
-#include "common/transaction/context.h"
-#include "common/service/call/context.h"
 #include "common/execution/context.h"
 #include "common/algorithm.h"
 #include "common/string.h"
@@ -74,7 +71,7 @@ namespace casual
                      '|', process::id(),
                      '|', std::this_thread::get_id(),
                      '|', m_alias,
-                     '|', transaction::Context::instance().current().trid,
+                     '|', execution::context::get().trid,
                      '|', execution::context::get().parent.service,
                      '|', execution::context::get().service,
                      '|', category,

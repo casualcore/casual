@@ -18,7 +18,7 @@
 #include "common/code/xatmi.h"
 #include "common/algorithm/compare.h"
 
-#include "common/service/header.h"
+#include "casual/header.h"
 
 #include "common/serialize/line.h"
 
@@ -493,7 +493,7 @@ namespace casual
                   common::transaction::ID trid;
                   request::Flag flags{};
 
-                  common::service::header::Fields header;
+                  header::Fields header;
 
                   //! pending time, only to be return in the "ACK", to collect
                   //! metrics
@@ -557,7 +557,7 @@ namespace casual
                common::transaction::ID trid;
                request::Flag flags{};
 
-               common::service::header::Fields header;
+               header::Fields header;
 
                //! pending time, only to be return in the "ACK", to collect
                //! metrics

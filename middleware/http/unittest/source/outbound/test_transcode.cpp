@@ -31,7 +31,7 @@ namespace casual
                      state::Node value;
                      value.discard_transaction = true;
                      value.url = "http://casual.laz.se/some/service";
-                     value.headers = std::make_shared< const common::service::header::Fields>();
+                     value.headers = std::make_shared< const casual::header::Fields>();
                      return value;
                   }();
 

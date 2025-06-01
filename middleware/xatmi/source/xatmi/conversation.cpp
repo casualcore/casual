@@ -9,7 +9,8 @@
 #include "casual/xatmi/internal/code.h"
 #include "casual/xatmi/internal/signal.h"
 
-#include "common/service/conversation/context.h"
+#include "service/conversation/context.h"
+
 #include "common/buffer/pool.h"
 
 int tpconnect( const char* svc, const char* idata, long ilen, long bitmap)
@@ -26,7 +27,7 @@ int tpconnect( const char* svc, const char* idata, long ilen, long bitmap)
    {
       auto buffer = casual::common::buffer::pool::holder().get( casual::common::buffer::handle::type{ idata}, ilen);
 
-      using Flag = casual::common::service::conversation::connect::Flag;
+      using Flag = casual::service::conversation::connect::Flag;
 
       auto flags = Flag{ bitmap};
 
@@ -42,7 +43,7 @@ int tpconnect( const char* svc, const char* idata, long ilen, long bitmap)
 
       auto maybe_block = casual::xatmi::internal::signal::maybe_block( flags);
 
-      return casual::common::service::conversation::context().connect(
+      return casual::service::conversation::context().connect(
             svc,
             buffer,
             flags).value();
@@ -77,7 +78,7 @@ namespace local
                   return -1;
                }
             }
-            catch( const casual::common::exception::conversation::Event& exception)
+            catch( const casual::exception::conversation::Event& exception)
             {
                event = std::to_underlying( exception);
                casual::xatmi::internal::error::set( casual::common::code::xatmi::event);
@@ -101,7 +102,7 @@ int tpsend( int id, const char* idata, long ilen, long bitmap, long* event)
    {
       auto buffer = casual::common::buffer::pool::holder().get( casual::common::buffer::handle::type{ idata}, ilen);
 
-      using Flag = casual::common::service::conversation::send::Flag;
+      using Flag = casual::service::conversation::send::Flag;
 
       auto flags = Flag{ bitmap};
 
@@ -115,7 +116,7 @@ int tpsend( int id, const char* idata, long ilen, long bitmap, long* event)
 
       auto maybe_block = casual::xatmi::internal::signal::maybe_block( flags);
 
-      auto result = casual::common::service::conversation::context().send(
+      auto result = casual::service::conversation::context().send(
             casual::common::strong::conversation::descriptor::id{ id},
             std::move( buffer),
             flags);
@@ -154,7 +155,7 @@ int tprecv( int id, char ** odata, long *olen, long bitmap, long* event)
 
       auto buffer = casual::common::buffer::pool::holder().get( casual::common::buffer::handle::type{ *odata});
 
-      using Flag = casual::common::service::conversation::receive::Flag;
+      using Flag = casual::service::conversation::receive::Flag;
 
       auto flags = Flag{ bitmap};
 
@@ -168,7 +169,7 @@ int tprecv( int id, char ** odata, long *olen, long bitmap, long* event)
 
       auto maybe_block = casual::xatmi::internal::signal::maybe_block( flags);
 
-      auto result = casual::common::service::conversation::context().receive(
+      auto result = casual::service::conversation::context().receive(
             casual::common::strong::conversation::descriptor::id{ id},
             flags);
 
@@ -194,6 +195,6 @@ int tprecv( int id, char ** odata, long *olen, long bitmap, long* event)
 int tpdiscon( int id)
 {
    return casual::xatmi::internal::error::wrap( [&](){
-      casual::common::service::conversation::context().disconnect( casual::common::strong::conversation::descriptor::id{ id});
+      casual::service::conversation::context().disconnect( casual::common::strong::conversation::descriptor::id{ id});
    });
 }

@@ -37,7 +37,7 @@ namespace casual
             {
                namespace
                {
-                  bool describe( const common::service::header::Fields& headers)
+                  bool describe( const header::Fields& headers)
                   {
                      return headers.contains( "casual-service-describe") &&
                         headers.at( "casual-service-describe").value() != "false";
@@ -61,7 +61,7 @@ namespace casual
                registration< service::protocol::implementation::Ini>();
             }
 
-            Protocol Factory::create( protocol::payload_type&& payload, const common::service::header::Fields& headers)
+            Protocol Factory::create( protocol::payload_type&& payload, const header::Fields& headers)
             {
                Trace trace{ "service::protocol::Factory::create"};
                common::log::debug( "payload: ", payload);
@@ -86,7 +86,7 @@ namespace casual
             }
 
 
-            Protocol deduce( protocol::payload_type&& payload, const common::service::header::Fields& headers)
+            Protocol deduce( protocol::payload_type&& payload, const header::Fields& headers)
             {
                return Factory::instance().create( std::move( payload), headers);
             }

@@ -11,12 +11,14 @@
 #include "common/file.h"
 #include "casual/argument.h"
 #include "common/exception/guard.h"
-#include "common/server/start.h"
-#include "common/server/service.h"
-
 
 #include "common/serialize/macro.h"
 #include "common/serialize/create.h"
+
+
+#include "server/start.h"
+#include "server/service.h"
+
 
 #include <xatmi.h>
 
@@ -75,7 +77,7 @@ namespace casual
                      struct Entry 
                      {
                         std::regex match;
-                        common::service::invoke::Result result;
+                        server::service::invoke::Result result;
 
                         friend bool operator == ( const Entry& lhs, const common::buffer::Payload& rhs) 
                         {
@@ -85,7 +87,7 @@ namespace casual
                         }
                      };
 
-                     common::service::invoke::Result operator() ( common::service::invoke::Parameter&& parmeter)
+                     server::service::invoke::Result operator() ( server::service::invoke::Parameter&& parmeter)
                      {
                         common::log::line( local::log, "mockup service invoked: ", parmeter.service.name);
 
@@ -114,7 +116,7 @@ namespace casual
                         return mockup;
                      }
 
-                     std::vector< common::server::argument::Service> services( configuration::Model&& model)
+                     std::vector< server::argument::Service> services( configuration::Model&& model)
                      {
                         // group the configuration per service
 
@@ -147,11 +149,11 @@ namespace casual
 
                            callable.entries = common::algorithm::transform( group, transform_entry);
 
-                           return common::server::argument::Service{ 
+                           return server::argument::Service{ 
                               .name = name,
                               .function = std::move( callable), 
-                              .transaction = common::service::transaction::Type::none, 
-                              .visibility = common::service::visibility::Type::discoverable,
+                              .transaction = server::service::transaction::Type::none, 
+                              .visibility = server::service::visibility::Type::discoverable,
                               .category = "mockup"
                            };
                         };
@@ -171,7 +173,7 @@ namespace casual
                      }, argc, argv);
 
                      // transform services and start server
-                     common::server::start( transform::services( transform::configuration( file)));
+                     server::start( transform::services( transform::configuration( file)));
 
                   }    
                } // <unnamed>

@@ -8,7 +8,6 @@
 
 #define CASUAL_NO_XATMI_UNDEFINE
 
-#include "common/transaction/context.h"
 
 #include "domain/unittest/manager.h"
 #include "domain/unittest/discover.h"
@@ -16,6 +15,8 @@
 #include "administration/unittest/cli/command.h"
 
 #include "gateway/unittest/utility.h"
+
+#include "transaction/context.h"
 
 #include "casual/tx.h"
 #include "casual/xatmi.h"
@@ -161,7 +162,7 @@ domain:
          // gtrid
          {
             const auto capture = administration::unittest::cli::command::execute( R"(casual transaction --list-transactions --porcelain true | awk -F'|' '{printf $1}')");
-            auto& trid = common::transaction::context().current().trid;
+            auto& trid = casual::transaction::context().current().trid;
             EXPECT_EQ( capture.standard.out, common::string::compose( common::transaction::id::range::global( trid))) << CASUAL_NAMED_VALUE( capture) << "\nexpected: " << trid;
          }
 

@@ -15,7 +15,6 @@
 #include "gateway/unittest/utility.h"
 
 #include "common/communication/instance.h"
-#include "common/transaction/context.h"
 #include "common/execute.h"
 #include "common/sink.h"
 

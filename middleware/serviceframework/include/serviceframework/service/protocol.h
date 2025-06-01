@@ -11,8 +11,10 @@
 
 #include "common/serialize/archive.h"
 
-#include "common/service/invoke.h"
+//#include "common/service/invoke.h"
 #include "common/functional.h"
+#include "casual/header.h"
+#include "common/buffer/type.h"
 
 
 #include <vector>
@@ -25,7 +27,7 @@ namespace casual
       namespace protocol
       {
          using payload_type = common::buffer::Payload;
-         using headers_type = common::service::header::Fields;
+         using headers_type = header::Fields;
          //using parameter_type = common::service::invoke::Parameter;
          //using result_type = common::service::invoke::Result;
 
@@ -193,7 +195,7 @@ namespace casual
 
             using creator_type = std::function< Protocol( protocol::payload_type&&)>;
 
-            Protocol create( protocol::payload_type&& parameter, const common::service::header::Fields& headers);
+            Protocol create( protocol::payload_type&& parameter, const header::Fields& headers);
 
             template< typename Protocol>
             std::string_view registration( std::string_view type)
@@ -230,7 +232,7 @@ namespace casual
          };
 
          //! @returns a protocol deduced from `payload`
-         Protocol deduce( protocol::payload_type&& payload, const common::service::header::Fields& headers);
+         Protocol deduce( protocol::payload_type&& payload, const header::Fields& headers);
 
       } // protocol
 

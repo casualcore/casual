@@ -25,7 +25,12 @@ namespace casual
          {
             namespace 
             {
-               common::communication::instance::outbound::detail::optional::Device device{ instance::identity};
+               auto& device()
+               {
+                  static common::communication::instance::outbound::detail::optional::Device device{ instance::identity};
+                  return device;
+               }
+               
             } //
          } // local
 
@@ -33,8 +38,10 @@ namespace casual
          {
             auto reserve( std::filesystem::path path) -> std::filesystem::path
             {
+               common::Trace trace{ "file::blocking::reserve"};
+
                auto reply = common::communication::ipc::call( 
-                  local::device, 
+                  local::device(), 
                   message::create::blocking::request( std::move( path)));
 
                switch( reply.code)
@@ -53,8 +60,10 @@ namespace casual
             {
                auto reserve( std::filesystem::path path) -> std::optional< std::filesystem::path>
                {
+                  common::Trace trace{ "file::non::blocking::reserve"};
+
                   auto reply = common::communication::ipc::call( 
-                     local::device, 
+                     local::device(), 
                      message::create::non::blocking::request( std::move( path)));
 
                   switch( reply.code)

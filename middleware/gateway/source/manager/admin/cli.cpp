@@ -17,8 +17,7 @@
 #include "common/event/listen.h"
 #include "common/serialize/create.h"
 
-#include "serviceframework/service/protocol/call.h"
-#include "serviceframework/log.h"
+#include "service/protocol/call.h"
 
 #include "casual/cli/state.h"
 
@@ -41,7 +40,7 @@ namespace casual
             {
                manager::admin::model::State state()
                {
-                  serviceframework::service::protocol::binary::Call call;
+                  casual::service::protocol::binary::Call call;
                   auto reply = call( manager::admin::service::name::state);
 
                   manager::admin::model::State result;
