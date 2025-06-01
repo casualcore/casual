@@ -8,6 +8,7 @@
 
 #include "common/log/stream.h"
 #include "common/log/category.h"
+#include "common/code/casual.h"
 
 namespace casual
 {
@@ -78,6 +79,12 @@ namespace casual
       auto warning( Code code, Args&&... args)
       {
          log::code( log::category::warning, code, std::forward< Args>( args)...);
+      }
+
+      template< typename... Args>
+      void deprecated( Args&&... args)
+      {
+         log::warning( code::casual::deprecated, std::forward< Args>( args)...);
       }
       
    } // common::log

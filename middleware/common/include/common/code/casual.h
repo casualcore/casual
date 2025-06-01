@@ -24,6 +24,7 @@ namespace casual
             interrupted,
 
             preconditions,
+            deprecated,
 
             invalid_configuration,
             invalid_document,
