@@ -1,0 +1,96 @@
+publiccodeYmlVersion: "0.4"
+
+name: casual
+applicationSuite: casual
+url: "https://github.com/casualcore/casual.git"
+landingURL: "https://casual-software.com/"
+softwareVersion: "1.7"
+logo: "resources/casual-box-left.png"
+platforms:
+  - linux
+
+categories:
+  - it-development
+
+intendedAudience:
+  scope:
+    - agriculture
+    - culture
+    - defence
+    - education
+    - emergency-services
+    - employment
+    - energy
+    - environment
+    - finance-and-economic-development
+    - foreign-affairs
+    - government
+    - healthcare
+    - infrastructures
+    - justice
+    - local-authorities
+    - manufacturing
+    - research
+    - science-and-technology
+    - security
+    - society
+    - sport
+    - tourism
+    - transportation
+    - welfare
+
+usedBy:
+  - Försäkringskassan (Swedish Social Insurance Agency)
+  - Bolagsverket (Swedish Companies Registration Office)
+
+developmentStatus: stable
+
+softwareType: "standalone/backend"
+
+description:
+  en:
+    shortDescription: >
+          A SOA plattform and distributed transaction manager
+
+    longDescription: >
+          In general terms casual is a distributed application server. A platform to build applications on top of,
+          that can interact with each other in a distributed manner, with or without transactional context.
+          Users build servers that advertise arbitrary named services. Servers are deployed in a domain. Domains 
+          can be connected with each other, on different machines, in arbitrary topologies. A server is just an 
+          executable with an entry point for each advertised service. A server is scaled by spawning processes of 
+          the executable. Hence, servers can be dynamically scaled to meet load requirements. Resources such as databases 
+          can also be associated with a server. A service can call other services, and casual will find where these services 
+          reside in the topology. casual provides a queue implementation together with queue-to-service and queue-to-queue forward functionality.
+                              
+          Implementation of (hence conformant to):
+            XATMI specification (http://pubs.opengroup.org/onlinepubs/9694999399/toc.pdf)
+            XA specification (http://pubs.opengroup.org/onlinepubs/009680699/toc.pdf)
+            TX specification (http://pubs.opengroup.org/onlinepubs/9694999599/toc.pdf)
+    
+    documentation: "https://casualcore.github.io/docs/release/1.7/index.html"
+    apiDocumentation: "https://casualcore.github.io/docs/release/1.7/index.html"
+
+    features:
+       - XATMI compliance.
+       - Cloud compatibility.
+       - Automatic service discovery.
+       - Built in queues, as well as queue-to-service and queue-to-queue forward functionality.
+       - UNIX-friendly CLI.
+       - Asynchronous service calls provide massive concurrency without the hassle of threads.
+
+legal:
+  license: MIT
+
+maintenance:
+  type: "community"
+
+  contacts:
+    - name: Fredrik Eriksson
+      email: casual@laz.se 
+    - name: Hans Bergkvist
+      email: hans.bergkvist@ymail.com
+
+localisation:
+  localisationReady: false
+  availableLanguages:
+    - en
