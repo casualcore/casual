@@ -32,14 +32,14 @@ system:
                -  "${CASUAL_MAKE_SOURCE_ROOT}/middleware/transaction/include"
                -  "${CASUAL_MAKE_SOURCE_ROOT}/middleware/xatmi/include"
             library: 
-               -  "${CASUAL_MAKE_SOURCE_ROOT}/middleware/transaction/bin"
-               -  "${CASUAL_MAKE_SOURCE_ROOT}/middleware/common/bin"
-               -  "${CASUAL_MAKE_SOURCE_ROOT}/middleware/xatmi/bin"
+               -  "${CASUAL_MAKE_BUILD_ROOT}/middleware/transaction/bin"
+               -  "${CASUAL_MAKE_BUILD_ROOT}/middleware/common/bin"
+               -  "${CASUAL_MAKE_BUILD_ROOT}/middleware/xatmi/bin"
 )");
          
          auto output = common::unittest::file::temporary::name( ".exe");
 
-         auto build_rm_path = "${CASUAL_MAKE_SOURCE_ROOT}/middleware/tools/bin/casual-build-resource-proxy";
+         auto build_rm_path = "${CASUAL_MAKE_BUILD_ROOT}/middleware/tools/bin/casual-build-resource-proxy";
          
          auto capture = administration::unittest::cli::command::execute(
             build_rm_path, " --output ", output.string(), " --resource-key rm-mockup --system-configuration ", system.string(), " --compile-directives -O3");

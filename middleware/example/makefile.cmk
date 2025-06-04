@@ -1,4 +1,5 @@
 import casual.make.api as make
+from casual.make.platform.common import use_build_directory
 import casual.middleware.make.api as dsl
 import os
 
@@ -12,26 +13,27 @@ make.IncludePaths( ['server/include',
     )
 
 
-library_paths = [ 'server/bin',
-    '../common/bin',
-    '../buffer/bin',
-    '../configuration/bin',
-    '../domain/bin',
-    '../gateway/bin',
-    '../service/bin',
-    '../serviceframework/bin',
-    '../xatmi/bin'] + make.optional_library_paths() + dsl.paths().library.gtest
+library_paths = [ make.build_root() + '/server/bin',
+    make.build_root() + '/middleware/common/bin',
+    make.build_root() + '/middleware/buffer/bin',
+    make.build_root() + '/middleware/configuration/bin',
+    make.build_root() + '/middleware/domain/bin',
+    make.build_root() + '/middleware/gateway/bin',
+    make.build_root() + '/middleware/service/bin',
+    make.build_root() + '/middleware/serviceframework/bin',
+    make.build_root() + '/middleware/xatmi/bin'] + make.optional_library_paths() + dsl.paths().library.gtest
 
 
 make.LibraryPaths( library_paths)
 
 install_bin = []
 
-casual_middleware_path = make.source_root() + '/middleware'
+casual_middleware_build_path = make.build_root() + '/middleware'
+casual_middleware_source_path = make.source_root() + '/middleware'
 
 
 # make sure we use the tools we've built
-make.Environment( 'PATH', casual_middleware_path + '/tools/bin' + os.pathsep + os.getenv('PATH'))
+make.Environment( 'PATH', use_build_directory( casual_middleware_build_path) + '/tools/bin' + os.pathsep + os.getenv('PATH'))
 make.Environment( 'LD_LIBRARY_PATH', os.pathsep.join( library_paths) + os.pathsep + os.getenv('LD_LIBRARY_PATH', ''))
 
 target = dsl.LinkServer( 'server/bin/casual-example-server',
@@ -48,7 +50,7 @@ target = dsl.LinkServer( 'server/bin/casual-example-server',
 install_bin.append( target)
 
 # make sure we got a resource property file available when we build with a resource 
-make.Environment( 'CASUAL_RESOURCE_CONFIGURATION_FILE', casual_middleware_path + '/example/resources/resources.yaml')
+make.Environment( 'CASUAL_RESOURCE_CONFIGURATION_FILE', casual_middleware_source_path + '/example/resources/resources.yaml')
 
 resource_objects = [ make.Compile( 'server/source/example/resource.cpp')]
 

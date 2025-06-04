@@ -49,7 +49,7 @@ domain:
    name: service-domain
 
    servers:
-      - path: bin/casual-service-manager
+      - path: "${CASUAL_MAKE_BUILD_ROOT}/middleware/service/bin/casual-service-manager"
 )";
 
                auto manager = casual::domain::unittest::manager( configuration);

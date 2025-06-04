@@ -1,0 +1,448 @@
+{ 
+  "configuration" : 
+  {
+    "version" : 1.0,
+    "system":
+    [
+      {
+        "name" : "Linux",
+        "compiler" : "g++",
+        "profile" : 
+        [
+          { 
+            "name" : "normal",
+            "cpp_standard" : 
+            {
+              "directive" : [ "-std=c++2b"]
+            },
+            "dependency": 
+            { 
+              "command" : [ "g++"],
+              "directive" : [ "-E", "-MMD"]
+            },
+            "compile" : 
+            {
+              "command" : ["g++"],
+              "directive" :
+              [ 
+                "-c",
+                "-O3",
+                "-fPIC",
+                "-pthread"
+              ],
+              "warning" : 
+              {
+                "directive":
+                [
+                  "-Wall",
+                  "-Wextra",
+                  "-Werror",
+                  "-Wsign-compare",
+                  "-Wuninitialized",
+                  "-Winit-self",
+                  "-Wno-unused-parameter",
+                  "-Wno-missing-declarations",
+                  "-Wno-noexcept-type",
+                  "-Wno-implicit-fallthrough",
+                  "-Wno-missing-field-initializers",
+                  "-Wno-dangling-reference",
+                  "-Wno-unknown-warning-option"                ]
+              }
+            },
+            "link" : 
+            {
+              "executable" :
+              {
+                "command" : ["g++"],
+                "directive" :
+                [
+                  "-pthread",
+                  "-O3",
+                  "-fPIC"
+                ]
+              },
+              "library" :
+              {
+                "command" : ["g++"],
+                "directive" :
+                [
+                  "-pthread", 
+                  "-shared",
+                  "-O3",
+                  "-fPIC"
+                ]
+              },
+              "archive" : 
+              {
+                "command" : [ "ar", "rcs"],
+                "directive" :
+                [
+                ]
+              }
+            }
+          },
+          { 
+            "name" : "debug",
+            "cpp_standard" : 
+            {
+              "directive" : [ "-std=c++2b"]
+            },
+            "dependency": 
+            { 
+              "command" : [ "g++"],
+              "directive" : [ "-E", "-MMD"]
+            },
+            "compile" : 
+            {
+              "command" : ["g++"],
+              "directive" :
+              [ 
+                "-ggdb",
+                "-c",
+                "-fPIC"
+              ],
+              "warning" : 
+              {
+                "directive" :
+                [
+                  "-Wall",
+                  "-Wextra",
+                  "-Werror",
+                  "-Wsign-compare",
+                  "-Wuninitialized",
+                  "-Winit-self",
+                  "-Wno-unused-parameter",
+                  "-Wno-missing-declarations",
+                  "-Wno-noexcept-type",
+                  "-Wno-implicit-fallthrough",
+                  "-Wno-missing-field-initializers",
+                  "-Wno-dangling-reference"
+                ]
+              }
+            },
+            "link" : 
+            {
+              "executable" :
+              {
+                "command" : ["g++"],
+                "directive" :
+                [
+                  "-g",
+                  "-pthread",
+                  "-fPIC"
+                ]
+              },
+              "library" :
+              {
+                "command" : ["g++"],
+                "directive" :
+                [
+                  "-g",
+                  "-pthread", 
+                  "-shared",
+                  "-fPIC"
+                ]
+              },
+              "archive" : 
+              {
+                "command" : [ "ar", "rcs"],
+                "directive" :
+                [
+                ]
+              }
+            }
+          },
+          { 
+            "name" : "analyze",
+            "cpp_standard" : 
+            {
+              "directive" : [ "-std=c++2b"]
+            },
+            "dependency": 
+            { 
+              "command" : [ "g++"],
+              "directive" : [ "-E", "-MMD"]
+            },
+            "compile" : 
+            {
+              "command" : ["g++"],
+              "directive" :
+              [ 
+                "-ggdb",
+                "-c",
+                "-fPIC",
+                "-fprofile-arcs", 
+                "-ftest-coverage"
+              ],
+              "warning" : 
+              {
+                "directive":
+                [
+                  "-Wall",
+                  "-Wextra",
+                  "-Werror",
+                  "-Wsign-compare",
+                  "-Wuninitialized",
+                  "-Winit-self",
+                  "-Wno-unused-parameter",
+                  "-Wno-missing-declarations",
+                  "-Wno-noexcept-type",
+                  "-Wno-implicit-fallthrough",
+                  "-Wno-missing-field-initializers",
+                  "-Wno-dangling-reference"
+                ]
+              }
+            },
+            "link" : 
+            {
+              "executable" :
+              {
+                "command" : ["g++"],
+                "directive" :
+                [
+                  "-g",
+                  "-pthread",
+                  "-fPIC",
+                  "-O0", 
+                  "-coverage"
+                ]
+              },
+              "library" :
+              {
+                "command" : ["g++"],
+                "directive" :
+                [
+                  "-g",
+                  "-pthread", 
+                  "-shared",
+                  "-fPIC",
+                  "-O0", 
+                  "-coverage"
+                ]
+              },
+              "archive" : 
+              {
+                "command" : [ "ar", "rcs"],
+                "directive" :
+                [
+                ]
+              }
+            }
+          }
+        ]
+      },
+      {
+        "name" : "Darwin",
+        "compiler" : "g++",
+        "profile" : 
+        [
+          { 
+            "name" : "normal",
+            "cpp_standard" : 
+            {
+              "directive" : [ "-std=c++2b"]
+            },
+            "dependency": 
+            { 
+              "command" : [ "g++"],
+              "directive" : [ "-E", "-MMD"]
+            },
+            "compile" : 
+            {
+              "command" : ["g++"],
+              "directive" :
+              [ 
+                "-c",
+                "-O3",
+                "-fPIC",
+                "-pthread"
+              ],
+              "warning" : 
+              {
+                "directive":
+                [
+                  "-Wall",
+                  "-Wextra",
+                  "-Werror",
+                  "-Wsign-compare",
+                  "-Wuninitialized",
+                  "-Winit-self",
+                  "-Wno-unused-parameter",
+                  "-Wno-missing-declarations",
+                  "-Wno-noexcept-type",
+                  "-Wno-implicit-fallthrough",
+                  "-Wno-missing-field-initializers",
+                  "-Wno-deprecated-declarations"
+                ]
+              }
+            },
+            "link" : 
+            {
+              "executable" :
+              {
+                "command" : ["g++"],
+                "directive" :
+                [
+                  "-O3"
+                ]
+              },
+              "library" :
+              {
+                "command" : ["g++"],
+                "directive" :
+                [
+                  "-O3",
+                  "-dynamiclib"
+                ]
+              },
+              "archive" : 
+              {
+                "command" : [ "ar", "rcs"],
+                "directive" :
+                [
+                ]
+              }
+            }
+          },
+          { 
+            "name" : "debug",
+            "cpp_standard" : 
+            {
+              "directive" : [ "-std=c++2b"]
+            },
+            "dependency": 
+            { 
+              "command" : [ "g++"],
+              "directive" : [ "-E", "-MMD"]
+            },
+            "compile" : 
+            {
+              "command" : ["g++"],
+              "directive" :
+              [ 
+                "-ggdb",
+                "-c",
+                "-fPIC"
+              ],
+              "warning" : 
+              {
+                "directive" :
+                [
+                  "-Wall",
+                  "-Wextra",
+                  "-Werror",
+                  "-Wsign-compare",
+                  "-Wuninitialized",
+                  "-Winit-self",
+                  "-Wno-unused-parameter",
+                  "-Wno-missing-declarations",
+                  "-Wno-noexcept-type",
+                  "-Wno-implicit-fallthrough",
+                  "-Wno-missing-field-initializers"
+                ]
+              }
+            },
+            "link" : 
+            {
+              "executable" :
+              {
+                "command" : ["g++"],
+                "directive" :
+                [
+                  "-ggdb"
+                ]
+              },
+              "library" :
+              {
+                "command" : ["g++"],
+                "directive" :
+                [
+                  "-ggdb", 
+                  "-dynamiclib"
+                ]
+              },
+              "archive" : 
+              {
+                "command" : [ "ar", "rcs"],
+                "directive" :
+                [
+                ]
+              }
+            }
+          },
+          { 
+            "name" : "analyze",
+            "cpp_standard" : 
+            {
+              "directive" : [ "-std=c++2b"]
+            },
+            "dependency": 
+            { 
+              "command" : [ "g++"],
+              "directive" : [ "-E", "-MMD"]
+            },
+            "compile" : 
+            {
+              "command" : ["g++"],
+              "directive" :
+              [ 
+                "-ggdb",
+                "-c",
+                "-fPIC",
+                "-fprofile-arcs", 
+                "-ftest-coverage"
+              ],
+              "warning" : 
+              {
+                "directive" :
+                [
+                  "-Wall",
+                  "-Wextra",
+                  "-Werror",
+                  "-Wsign-compare",
+                  "-Wuninitialized",
+                  "-Winit-self",
+                  "-Wno-unused-parameter",
+                  "-Wno-missing-declarations",
+                  "-Wno-noexcept-type",
+                  "-Wno-implicit-fallthrough",
+                  "-Wno-missing-field-initializers"
+                ]
+              }
+            },
+            "link" : 
+            {
+              "executable" :
+              {
+                "command" : ["g++"],
+                "directive" :
+                [
+                  "-ggdb",
+                  "-lgcov", 
+                  "-fprofile-arcs"
+                ]
+              },
+              "library" :
+              {
+                "command" : ["g++"],
+                "directive" :
+                [
+                  "-ggdb", 
+                  "-dynamiclib",
+                  "-fprofile-arcs"
+                ]
+              },
+              "archive" : 
+              {
+                "command" : [ "ar", "rcs"],
+                "directive" :
+                [
+                ]
+              }
+            }
+          }
+        ]
+      }
+    ]
+  }
+}

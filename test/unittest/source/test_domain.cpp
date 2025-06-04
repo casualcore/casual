@@ -41,9 +41,9 @@ domain:
          dependencies: [ user]
    
    servers:
-      - path: "${CASUAL_MAKE_SOURCE_ROOT}/middleware/service/bin/casual-service-manager"
+      - path: "${CASUAL_MAKE_BUILD_ROOT}/middleware/service/bin/casual-service-manager"
         memberships: [ base]
-      - path: "${CASUAL_MAKE_SOURCE_ROOT}/middleware/transaction/bin/casual-transaction-manager"
+      - path: "${CASUAL_MAKE_BUILD_ROOT}/middleware/transaction/bin/casual-transaction-manager"
         memberships: [ base]
 )";
 
@@ -70,7 +70,7 @@ domain:
 domain:
    servers:
       -  alias: example
-         path: "${CASUAL_MAKE_SOURCE_ROOT}/middleware/example/server/bin/casual-example-server"
+         path: "${CASUAL_MAKE_BUILD_ROOT}/middleware/example/server/bin/casual-example-server"
          memberships: [ user]
          instances: 4
 )");
@@ -94,7 +94,7 @@ domain:
          auto domain = casual::domain::unittest::manager( local::configuration::base, R"(
 domain:
    servers:
-      - path: "${CASUAL_MAKE_SOURCE_ROOT}/middleware/queue/bin/casual-queue-manager"
+      - path: "${CASUAL_MAKE_BUILD_ROOT}/middleware/queue/bin/casual-queue-manager"
         memberships: [ base]
         restart: true
 )");

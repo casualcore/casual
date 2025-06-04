@@ -37,13 +37,13 @@ domain:
          dependencies: [ queue]
    
    servers:
-      -  path: "${CASUAL_MAKE_SOURCE_ROOT}/middleware/service/bin/casual-service-manager"
+      -  path: "${CASUAL_MAKE_BUILD_ROOT}/middleware/service/bin/casual-service-manager"
          memberships: [ base]
-      -  path: "${CASUAL_MAKE_SOURCE_ROOT}/middleware/transaction/bin/casual-transaction-manager"
+      -  path: "${CASUAL_MAKE_BUILD_ROOT}/middleware/transaction/bin/casual-transaction-manager"
          memberships: [ base]
-      -  path: "${CASUAL_MAKE_SOURCE_ROOT}/middleware/queue/bin/casual-queue-manager"
+      -  path: "${CASUAL_MAKE_BUILD_ROOT}/middleware/queue/bin/casual-queue-manager"
          memberships: [ queue]
-      -  path: "${CASUAL_MAKE_SOURCE_ROOT}/middleware/example/server/bin/casual-example-server"
+      -  path: "${CASUAL_MAKE_BUILD_ROOT}/middleware/example/server/bin/casual-example-server"
          memberships: [ user]
 )";
             } // configuration
@@ -156,7 +156,7 @@ domain:
 domain:
    name: A
    servers:
-      -  path: "${CASUAL_MAKE_SOURCE_ROOT}/middleware/example/server/bin/casual-example-error-server"
+      -  path: "${CASUAL_MAKE_BUILD_ROOT}/middleware/example/server/bin/casual-example-error-server"
          memberships: [ user]
    queue:
       groups:

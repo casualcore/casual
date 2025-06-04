@@ -37,7 +37,7 @@ domain:
       - name: second
         dependencies: [ first]
    servers:
-      - path: ${CASUAL_MAKE_SOURCE_ROOT}/middleware/service/bin/casual-service-manager
+      - path: ${CASUAL_MAKE_BUILD_ROOT}/middleware/service/bin/casual-service-manager
         memberships: [ first]        
 )";
             } // configuration
@@ -67,7 +67,7 @@ domain:
          auto domain = domain::unittest::manager( local::configuration::base, R"(
 domain:
    executables:
-      - path: bin/casual-event-service-log
+      - path: ${CASUAL_MAKE_BUILD_ROOT}/middleware/event/bin/casual-event-service-log
         arguments: [ --file, "${SERVICE_LOG_FILE}"]
         memberships: [ second]
 )");
@@ -114,7 +114,7 @@ domain:
          auto domain = domain::unittest::manager( local::configuration::base, R"(
 domain:
    executables:
-      - path: bin/casual-event-service-log
+      - path: ${CASUAL_MAKE_BUILD_ROOT}/middleware/event/bin/casual-event-service-log
         arguments: [ --file, "${SERVICE_LOG_FILE}"]
         memberships: [ second]   
 )");
@@ -181,7 +181,7 @@ domain:
          auto domain = domain::unittest::manager( local::configuration::base, R"(
 domain:
    executables:
-      - path: bin/casual-event-service-log
+      - path: ${CASUAL_MAKE_BUILD_ROOT}/middleware/event/bin/casual-event-service-log
         arguments: [ --file, "${SERVICE_LOG_FILE}", --filter-exclusive, '^[.].*$']
         memberships: [ second]
 )");
@@ -210,7 +210,7 @@ domain:
          auto domain = domain::unittest::manager( local::configuration::base, R"(
 domain:
    executables:
-      - path: bin/casual-event-service-log
+      - path: ${CASUAL_MAKE_BUILD_ROOT}/middleware/event/bin/casual-event-service-log
         arguments: [ --file, "${SERVICE_LOG_FILE}", --filter-inclusive, '^[.].*$']
         memberships: [ second]   
 )");
@@ -235,7 +235,7 @@ domain:
          auto domain = domain::unittest::manager( local::configuration::base, R"(
 domain:
    executables:
-      - path: bin/casual-event-service-log
+      - path: ${CASUAL_MAKE_BUILD_ROOT}/middleware/event/bin/casual-event-service-log
         arguments: [ --file, "${SERVICE_LOG_FILE}", --filter-inclusive, '.*state', --filter-exclusive, ".*foo.*"]
         memberships: [ second]
 )");
@@ -261,11 +261,11 @@ domain:
 domain:
    name: A
    servers:
-      - path: "${CASUAL_MAKE_SOURCE_ROOT}/middleware/example/server/bin/casual-example-server"
+      - path: "${CASUAL_MAKE_BUILD_ROOT}/middleware/example/server/bin/casual-example-server"
         memberships: [ second]
         arguments: [ --forward, casual/example/echo]
         instances: 2
-      - path: bin/casual-event-service-log
+      - path: ${CASUAL_MAKE_BUILD_ROOT}/middleware/event/bin/casual-event-service-log
         arguments: [ --file, "${SERVICE_LOG_FILE}"]
         memberships: [ second]
 )");

@@ -42,11 +42,11 @@ domain:
         dependencies: [ base]
 
    servers:
-      - path: ${CASUAL_MAKE_SOURCE_ROOT}/middleware/service/bin/casual-service-manager
+      - path: ${CASUAL_MAKE_BUILD_ROOT}/middleware/service/bin/casual-service-manager
         memberships: [ base]
-      - path: ${CASUAL_MAKE_SOURCE_ROOT}/middleware/transaction/bin/casual-transaction-manager
+      - path: ${CASUAL_MAKE_BUILD_ROOT}/middleware/transaction/bin/casual-transaction-manager
         memberships: [ base]
-      - path: bin/casual-file-manager
+      - path: ${CASUAL_MAKE_BUILD_ROOT}/middleware/file/bin/casual-file-manager
         memberships: [ file]
 )";
 

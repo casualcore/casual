@@ -40,7 +40,7 @@ domain:
          dependencies: [ user]
    
    servers:
-      -  path: "${CASUAL_MAKE_SOURCE_ROOT}/middleware/service/bin/casual-service-manager"
+      -  path: "${CASUAL_MAKE_BUILD_ROOT}/middleware/service/bin/casual-service-manager"
          memberships: [ base]
 )";
 

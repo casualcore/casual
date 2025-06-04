@@ -63,11 +63,11 @@ domain:
         dependencies: [ base]
    
    servers:
-      - path: ${CASUAL_MAKE_SOURCE_ROOT}/middleware/service/bin/casual-service-manager
+      - path: ${CASUAL_MAKE_BUILD_ROOT}/middleware/service/bin/casual-service-manager
         memberships: [ base]
-      - path: ${CASUAL_MAKE_SOURCE_ROOT}/middleware/transaction/bin/casual-transaction-manager
+      - path: ${CASUAL_MAKE_BUILD_ROOT}/middleware/transaction/bin/casual-transaction-manager
         memberships: [ base]
-      - path: bin/casual-queue-manager
+      - path: ${CASUAL_MAKE_BUILD_ROOT}/middleware/queue/bin/casual-queue-manager
         memberships: [ queue]
 )";
 
@@ -876,7 +876,7 @@ domain:
         dependencies: [ queue]
    
    servers:
-      - path: bin/casual-queue-forward-queue
+      - path: ${CASUAL_MAKE_BUILD_ROOT}/middleware/queue/bin/casual-queue-forward-queue
         arguments: [ --forward, a3, b3]
         memberships: [ forward]
 )";   

@@ -202,7 +202,7 @@ jobs:
 
       - name: Build
         run: |
-          docker run --rm -v ${{ github.workspace }}:/git/casual:Z -i ${{ env.suse_image}}:${{ needs.calculate-version.outputs.major_minor }}
+          docker run --pull always --rm -v ${{ github.workspace }}:/git/casual:Z -i ${{ env.suse_image}}:${{ needs.calculate-version.outputs.major_minor }}
 
       - name: Logpublisher
         if: ${{ failure() || cancelled() }}

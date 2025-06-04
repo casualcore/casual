@@ -12,10 +12,11 @@ from shutil import copyfile
 NGINX_VERSION = "1.22.1"
 BASENAME = "nginx-" + NGINX_VERSION
 SOURCE_ROOT = os.getenv("CASUAL_MAKE_SOURCE_ROOT")
+BUILD_ROOT = os.getenv("CASUAL_MAKE_BUILD_ROOT")
 CASUAL_THIRDPARTY = os.getenv("CASUAL_THIRDPARTY")
 
-if not SOURCE_ROOT or not CASUAL_THIRDPARTY:
-	raise SystemError("CASUAL_MAKE_SOURCE_ROOT and CASUAL_THIRDPARTY need to be set")
+if not SOURCE_ROOT or not CASUAL_THIRDPARTY or not BUILD_ROOT:
+	raise SystemError("CASUAL_MAKE_SOURCE_ROOT, CASUAL_MAKE_BUILD_ROOT and CASUAL_THIRDPARTY need to be set")
 
 os.chdir(CASUAL_THIRDPARTY + '/nginx/' + BASENAME)
 
@@ -27,6 +28,7 @@ print("Running configure")
 print( subprocess.check_output(['./configure',
    '--with-debug',
    '--prefix=' + prefix,
+   '--builddir=' + BUILD_ROOT + '/../casual-thirdparty/nginx',
    '--with-cc-opt=-Wno-deprecated',
    '--add-module=' + SOURCE_ROOT + '/middleware/http/source/inbound/nginx/plugin',
    '--without-http_rewrite_module']).decode())

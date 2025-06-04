@@ -71,11 +71,11 @@ domain:
          dependencies: [ base]
 
    servers:
-      -  path: ${CASUAL_MAKE_SOURCE_ROOT}/middleware/service/bin/casual-service-manager
+      -  path: ${CASUAL_MAKE_BUILD_ROOT}/middleware/service/bin/casual-service-manager
          memberships: [ base]
-      -  path: ${CASUAL_MAKE_SOURCE_ROOT}/middleware/transaction/bin/casual-transaction-manager
+      -  path: ${CASUAL_MAKE_BUILD_ROOT}/middleware/transaction/bin/casual-transaction-manager
          memberships: [ base]
-      -  path: bin/casual-http-outbound
+      -  path: ${CASUAL_MAKE_BUILD_ROOT}/middleware/http/bin/casual-http-outbound
          arguments: [ --configuration, "${CASUAL_UNITTEST_HTTP_CONFIGURATION}"]
          memberships: [ http]
 

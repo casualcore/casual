@@ -7,6 +7,8 @@
 
 #include "common/unittest.h"
 
+#include "common/unittest/environment.h"
+
 #include "common/process.h"
 
 #include "common/code/signal.h"
@@ -22,11 +24,21 @@ namespace casual
       {
          namespace
          {
+            namespace build
+            {
+               auto root()
+               {
+                  if( auto value = environment::variable::get< std::filesystem::path>( "CASUAL_MAKE_BUILD_ROOT"))
+                     return *value;
+
+                  code::raise::error( code::casual::invalid_argument, "CASUAL_MAKE_BUILD_ROOTs has to be set");
+               }
+            } // build
             namespace process
             {
                auto path()
                {
-                  return std::filesystem::path{ "./bin/simple_process"};
+                  return build::root() / "middleware/common/bin/simple_process";
                }
             } // process
 

@@ -27,7 +27,7 @@ namespace casual
 system:
    resources:
       -  key: rm-mockup
-         server: "${CASUAL_MAKE_SOURCE_ROOT}/middleware/transaction/bin/rm-proxy-casual-mockup"
+         server: "${CASUAL_MAKE_BUILD_ROOT}/middleware/transaction/bin/rm-proxy-casual-mockup"
          xa_struct_name: casual_mockup_xa_switch_static
          libraries:
             -  casual-mockup-rm
@@ -52,13 +52,13 @@ domain:
             - name: example.q3
 
    servers:
-      - path: "${CASUAL_MAKE_SOURCE_ROOT}/middleware/service/bin/casual-service-manager"
+      - path: "${CASUAL_MAKE_BUILD_ROOT}/middleware/service/bin/casual-service-manager"
         memberships: [ base]
-      - path: "${CASUAL_MAKE_SOURCE_ROOT}/middleware/transaction/bin/casual-transaction-manager"
+      - path: "${CASUAL_MAKE_BUILD_ROOT}/middleware/transaction/bin/casual-transaction-manager"
         memberships: [ base]
-      - path: "${CASUAL_MAKE_SOURCE_ROOT}/middleware/gateway/bin/casual-gateway-manager"
+      - path: "${CASUAL_MAKE_BUILD_ROOT}/middleware/gateway/bin/casual-gateway-manager"
         memberships: [ gateway]
-      - path: "${CASUAL_MAKE_SOURCE_ROOT}/middleware/queue/bin/casual-queue-manager"
+      - path: "${CASUAL_MAKE_BUILD_ROOT}/middleware/queue/bin/casual-queue-manager"
         memberships: [ queue]
 )";
             } // configuration
@@ -87,7 +87,7 @@ domain:
          constexpr auto example_server = R"(
 domain:
    servers:
-      - path: "${CASUAL_MAKE_SOURCE_ROOT}/middleware/queue/bin/casual-queue-example-server"
+      - path: "${CASUAL_MAKE_BUILD_ROOT}/middleware/queue/bin/casual-queue-example-server"
         memberships: [ user]
         arguments: [ --queues, non-existing]
 )";
@@ -108,7 +108,7 @@ domain:
          constexpr auto example_server = R"(
 domain:
    servers:
-      - path: "${CASUAL_MAKE_SOURCE_ROOT}/middleware/queue/bin/casual-queue-example-server"
+      - path: "${CASUAL_MAKE_BUILD_ROOT}/middleware/queue/bin/casual-queue-example-server"
         memberships: [ user]
         arguments: [ --queues, example.q1]
 )";
@@ -142,7 +142,7 @@ domain:
          constexpr auto example_server = R"(
 domain:
    servers:
-      - path: "${CASUAL_MAKE_SOURCE_ROOT}/middleware/queue/bin/casual-queue-example-server"
+      - path: "${CASUAL_MAKE_BUILD_ROOT}/middleware/queue/bin/casual-queue-example-server"
         memberships: [ user]
         arguments: [ --queues, example.q1]
 )";
@@ -175,7 +175,7 @@ domain:
          constexpr auto example_server = R"(
 domain:
    servers:
-      - path: "${CASUAL_MAKE_SOURCE_ROOT}/middleware/queue/bin/casual-queue-example-server"
+      - path: "${CASUAL_MAKE_BUILD_ROOT}/middleware/queue/bin/casual-queue-example-server"
         memberships: [ user]
         arguments: [ --queues, non-existing]
 )";
@@ -194,7 +194,7 @@ domain:
          constexpr auto example_server = R"(
 domain:
    servers:
-      - path: "${CASUAL_MAKE_SOURCE_ROOT}/middleware/queue/bin/casual-queue-example-server"
+      - path: "${CASUAL_MAKE_BUILD_ROOT}/middleware/queue/bin/casual-queue-example-server"
         memberships: [ user]
         arguments: [ --queues, example.q1]
 )";
@@ -214,7 +214,7 @@ domain:
          constexpr auto example_server = R"(
 domain:
    servers:
-      - path: "${CASUAL_MAKE_SOURCE_ROOT}/middleware/queue/bin/casual-queue-example-server"
+      - path: "${CASUAL_MAKE_BUILD_ROOT}/middleware/queue/bin/casual-queue-example-server"
         memberships: [ user]
         arguments: [ --queues, example.q1]
 )";
@@ -257,7 +257,7 @@ domain:
          constexpr auto example_server = R"(
 domain:
    servers:
-      - path: "${CASUAL_MAKE_SOURCE_ROOT}/middleware/queue/bin/casual-queue-example-server"
+      - path: "${CASUAL_MAKE_BUILD_ROOT}/middleware/queue/bin/casual-queue-example-server"
         memberships: [ user]
         arguments: [ --queues, example.q1, example.q2, example.q3]
 )";

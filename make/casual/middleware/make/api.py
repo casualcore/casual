@@ -59,7 +59,7 @@ def paths():
             ]
             self.gtest = [ thirdparty + '/googletest/bin']
 
-      library = Library( thirdparty)
+      library = Library( common.use_build_directory( thirdparty))
 
    paths.state = Paths()
    return paths.state
@@ -90,8 +90,8 @@ def LinkServer( name, objects, libraries, serverdefinition, resources=None, conf
    makefile = caller()
    directory, dummy = os.path.split( makefile.filename())
 
-   full_executable_name = selector.expanded_executable_name(name, directory)
-   executable_target = model.register( full_executable_name, full_executable_name, makefile = makefile.filename())
+   full_executable_name = common.create_absolute_filename( selector.expanded_executable_name(name), directory, common.FileType.DESTINATION)
+   executable_target = model.register( 'link-executable' + full_executable_name, full_executable_name, makefile = makefile.filename())
 
    directive = []
    if resources:
@@ -170,7 +170,7 @@ def GenerateDocumentation( path, dependencies=[], generator_function=default_gen
    directory, dummy = os.path.split( makefile.filename())
 
    full_path_name = os.path.abspath( os.path.join( directory, path))
-   documentation_target = model.register( 'documentation' + full_path_name, 'documentation' + full_path_name, makefile = makefile.filename())
+   documentation_target = model.register( 'documentation' + full_path_name, full_path_name, makefile = makefile.filename())
 
    if dependencies:
       for dependency in dependencies:

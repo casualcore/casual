@@ -34,7 +34,7 @@ domain:
          dependencies: [ base]
    
    servers:
-      - path: "${CASUAL_MAKE_SOURCE_ROOT}/middleware/service/bin/casual-service-manager"
+      - path: "${CASUAL_MAKE_BUILD_ROOT}/middleware/service/bin/casual-service-manager"
         memberships: [ base]
 
 )";
@@ -58,7 +58,7 @@ domain:
 domain:
    servers:
       -  alias: example-server
-         path: "${CASUAL_MAKE_SOURCE_ROOT}/middleware/example/server/bin/casual-example-server"
+         path: "${CASUAL_MAKE_BUILD_ROOT}/middleware/example/server/bin/casual-example-server"
          memberships: [ user]
          instances: 1
 )");

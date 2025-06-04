@@ -45,8 +45,8 @@ domain:
          arguments: [ -p, "${CASUAL_DOMAIN_HOME}", -c, "${CASUAL_UNITTEST_HTTP_INBOUND_CONFIG}", -e, "${CASUAL_DOMAIN_HOME}/error.log"]
 
    servers:
-      - path: ${CASUAL_MAKE_SOURCE_ROOT}/middleware/service/bin/casual-service-manager
-      - path: ${CASUAL_MAKE_SOURCE_ROOT}/middleware/example/server/bin/casual-example-server
+      - path: ${CASUAL_MAKE_BUILD_ROOT}/middleware/service/bin/casual-service-manager
+      - path: ${CASUAL_MAKE_BUILD_ROOT}/middleware/example/server/bin/casual-example-server
 )";
    
                   constexpr std::string_view b = R"(
@@ -56,8 +56,8 @@ domain:
       log: ":memory:"
 
    servers:
-      - path: ${CASUAL_MAKE_SOURCE_ROOT}/middleware/service/bin/casual-service-manager
-      - path: ${CASUAL_MAKE_SOURCE_ROOT}/middleware/http/bin/casual-http-outbound
+      - path: ${CASUAL_MAKE_BUILD_ROOT}/middleware/service/bin/casual-service-manager
+      - path: ${CASUAL_MAKE_BUILD_ROOT}/middleware/http/bin/casual-http-outbound
         arguments: [ --configuration, "${CASUAL_UNITTEST_HTTP_OUTBOUND_CONFIG}"]
 )";
 

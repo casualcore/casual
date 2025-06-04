@@ -45,9 +45,9 @@ domain:
         dependencies: [ user]
    
    servers:
-      - path: ${CASUAL_MAKE_SOURCE_ROOT}/middleware/service/bin/casual-service-manager
+      - path: ${CASUAL_MAKE_BUILD_ROOT}/middleware/service/bin/casual-service-manager
         memberships: [ base]
-      - path: ${CASUAL_MAKE_SOURCE_ROOT}/middleware/transaction/bin/casual-transaction-manager
+      - path: ${CASUAL_MAKE_BUILD_ROOT}/middleware/transaction/bin/casual-transaction-manager
         memberships: [ base]
 )";
      
@@ -76,7 +76,7 @@ domain:
 domain:
    name: A
    servers:
-      - path: bin/casual-gateway-manager
+      - path: ${CASUAL_MAKE_BUILD_ROOT}/middleware/gateway/bin/casual-gateway-manager
         memberships: [ gateway]
    gateway:
       reverse:
@@ -162,7 +162,7 @@ domain:
 domain:
    name: A
    servers:
-      - path: bin/casual-gateway-manager
+      - path: ${CASUAL_MAKE_BUILD_ROOT}/middleware/gateway/bin/casual-gateway-manager
         memberships: [ gateway]
    gateway:
       inbound:

@@ -61,7 +61,7 @@ namespace casual
 system:
    resources:
       -  key: rm-mockup
-         server: bin/rm-proxy-casual-mockup
+         server: ${CASUAL_MAKE_BUILD_ROOT}/middleware/transaction/bin/rm-proxy-casual-mockup
          xa_struct_name: casual_mockup_xa_switch_static
          libraries:
             -  casual-mockup-rm
@@ -75,9 +75,9 @@ domain:
         dependencies: [ first]
 
    servers:
-      - path: ${CASUAL_MAKE_SOURCE_ROOT}/middleware/service/bin/casual-service-manager
+      - path: ${CASUAL_MAKE_BUILD_ROOT}/middleware/service/bin/casual-service-manager
         memberships: [ first]
-      - path: bin/casual-transaction-manager
+      - path: ${CASUAL_MAKE_BUILD_ROOT}/middleware/transaction/bin/casual-transaction-manager
         memberships: [ second]
          
 )";

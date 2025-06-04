@@ -56,7 +56,7 @@ namespace casual
 domain:
   name: simple-server
   servers:
-    - path: ./bin/test-simple-server
+    - path: ${CASUAL_MAKE_BUILD_ROOT}/middleware/domain/bin/test-simple-server
       instances: 1
 
 )";

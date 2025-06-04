@@ -45,7 +45,7 @@ namespace casual
             Trace trace{ "administration::unittest::cli::command::execute"};
 
             // make sure we've got casual stuff in the path
-            auto path = string::compose( "PATH=", environment::expand( "${CASUAL_MAKE_SOURCE_ROOT}/middleware/administration/bin:${PATH}")); 
+            auto path = string::compose( "PATH=", environment::expand( "${CASUAL_MAKE_BUILD_ROOT}/middleware/administration/bin:${PATH}")); 
 
             // ignore child signals
             auto guard = local::signal::handler();
