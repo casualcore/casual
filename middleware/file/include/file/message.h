@@ -8,10 +8,9 @@
 
 #include "common/message/type.h"
 #include "common/serialize/macro.h"
+#include "common/transaction/id.h"
 
 #include "file/code.h"
-
-#include "common/transaction/id.h"
 
 #include <filesystem>
 

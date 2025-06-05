@@ -25,6 +25,7 @@ name           value(s)                          description
 domain         -                                 local casual domain related administration                                              
 service        -                                 service related administration                                                          
 queue          -                                 queue related administration                                                            
+file           -                                 file related administration                                                             
 transaction    -                                 transaction related administration                                                      
 gateway        -                                 gateway related administration                                                          
 discovery      -                                 responsible for discovery stuff                                                         

@@ -4,12 +4,10 @@
 //! This software is licensed under the MIT license, https://opensource.org/licenses/MIT
 //!
 
-
 #pragma once
 
-
+#include "common/transaction/id.h"
 #include "common/serialize/macro.h"
-#include "casual/platform.h"
 #include "common/domain.h"
 
 #include <vector>
@@ -21,29 +19,73 @@ namespace casual
    {
       inline namespace v1 
       {
+         enum class Stage : int
+         {
+            working,
+            pending,
+         };
+
+         inline constexpr std::string_view description( const Stage value) noexcept
+         {
+            switch( value)
+            {
+            case admin::model::Stage::working:
+               return "working";
+            case admin::model::Stage::pending:
+               return "pending";
+            default:
+               return "unknown";
+            }
+         };
+
+
          struct Request
          {
-            common::process::Handle process;
-            platform::binary::type trid;
+            common::strong::process::id pid;
+            common::transaction::global::ID gtrid;
+            Stage stage;
             std::filesystem::path path;
+            std::chrono::system_clock::time_point time;
 
             CASUAL_CONST_CORRECT_SERIALIZE(
-               CASUAL_SERIALIZE( process);
-               CASUAL_SERIALIZE( trid);
+               CASUAL_SERIALIZE( pid);
+               CASUAL_SERIALIZE( gtrid);
+               CASUAL_SERIALIZE( stage);
                CASUAL_SERIALIZE( path);
+               CASUAL_SERIALIZE( time);
             )
          };
 
          struct State
          {
-            std::vector< Request> working;
-            std::vector< Request> pending;
+            std::vector< Request> requests;
 
             CASUAL_CONST_CORRECT_SERIALIZE(
-               CASUAL_SERIALIZE( working);
-               CASUAL_SERIALIZE( pending);
+               CASUAL_SERIALIZE( requests);
             )
          };
+
+         namespace recovery
+         {
+            enum class Directive : int
+            {
+               commit,
+               rollback,
+            };
+
+            inline constexpr std::string_view description( Directive value) noexcept
+            {
+               switch( value)
+               {
+                  case Directive::commit: 
+                     return "commit";
+                  case Directive::rollback: 
+                     return "rollback";
+                  default: 
+                     return "unknown";
+               }
+            }
+         } // recovery
 
       } // v1
 

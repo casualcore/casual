@@ -14,6 +14,7 @@
 namespace casual::file::resource
 {
    using State = file::manager::State;
+   using Request = file::manager::State::Request;
 
    using Reserve = file::message::reserve::Request;
    using Reply = file::message::reserve::Reply;
@@ -25,10 +26,17 @@ namespace casual::file::resource
 
    using Shutdown = common::message::shutdown::Request;
 
-   void reserve( State& state, Reserve request);
+   void reserve( State& state, const Reserve& request);
    void prepare( State& state, const Prepare& request);
    void commit( State& state, const Commit& request);
    void rollback( State& state, const Rollback& request);
    void mitigate( State& state, const Exit& request);
    void shutdown( State& state, const Shutdown& request);
+
+   namespace recovery
+   {
+      std::vector< common::transaction::global::ID> commit( State& state, std::vector< common::transaction::global::ID> gtrids);
+      std::vector< common::transaction::global::ID> rollback( State& state, std::vector< common::transaction::global::ID> gtrids);
+   } // recovery
+
 } // casual::file::resource

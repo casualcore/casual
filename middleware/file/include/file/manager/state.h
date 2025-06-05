@@ -12,6 +12,7 @@
 
 #include "file/message.h"
 
+#include <chrono>
 #include <vector>
 
 namespace casual
@@ -26,13 +27,18 @@ namespace casual
             shutdown,
          };
 
+         struct Request : file::message::reserve::Request
+         {
+            std::chrono::system_clock::time_point time;
+         };
+
          common::communication::select::Directive directive;
          common::communication::ipc::send::Coordinator multiplex{ directive};
 
          common::state::Machine< Runlevel, Runlevel::running> runlevel;
 
-         std::vector< file::message::reserve::Request> working;
-         std::vector< file::message::reserve::Request> pending;
+         std::vector< Request> working;
+         std::vector< Request> pending;
 
          bool done() const;
 

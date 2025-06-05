@@ -22,6 +22,7 @@
 #include "domain/discovery/admin/cli.h"
 #include "service/manager/admin/cli.h"
 #include "queue/manager/admin/cli.h"
+#include "file/manager/admin/cli.h"
 #include "transaction/manager/admin/cli.h"
 #include "gateway/manager/admin/cli.h"
 #include "casual/buffer/admin/cli.h"
@@ -31,8 +32,6 @@
 
 namespace casual
 {
-   using namespace common;
-
    namespace administration::cli
    {
       namespace local
@@ -43,7 +42,7 @@ namespace casual
             {
 
                using namespace std::string_view_literals;
-               constexpr auto names() noexcept { return array::make( 
+               constexpr auto names() noexcept { return common::array::make( 
                   "information-domain"sv, 
                   "information-service"sv, 
                   "information-queue"sv, 
@@ -55,7 +54,7 @@ namespace casual
                   {
                      if( help)
                         return { "<value>"};
-                     return algorithm::container::create< std::vector< std::string>>( information::names());
+                     return common::algorithm::container::create< std::vector< std::string>>( information::names());
                   };
 
                   auto invoke = [ complete]( std::vector< std::string> managers)
@@ -70,7 +69,7 @@ namespace casual
                      {
                         return [ callback]( auto& information)
                         {
-                           algorithm::container::append( callback(), information);
+                           common::algorithm::container::append( callback(), information);
                         };
                      };
 
@@ -90,14 +89,14 @@ namespace casual
                            return std::get< 0>( dispatch) == key;
                         };
 
-                        if( auto found = algorithm::find_if( mapping, is_key))
+                        if( auto found = common::algorithm::find_if( mapping, is_key))
                            std::get< 1>( *found)( information);
                         else
-                           code::raise::error( code::casual::invalid_argument, "not a valid information context: ", key);
+                           common::code::raise::error( common::code::casual::invalid_argument, "not a valid information context: ", key);
                      };
-                     algorithm::for_each( managers, dispatch);
+                     common::algorithm::for_each( managers, dispatch);
 
-                     terminal::formatter::key::value().print( std::cout, information);
+                     common::terminal::formatter::key::value().print( std::cout, information);
                   };
 
                   constexpr auto description = R"(collect general aggregated information about the domain
@@ -129,7 +128,7 @@ valid directives:
                {
                   auto invoke = []()
                   {
-                     build::Version build_version = build::version();
+                     auto build_version = common::build::version();
 
                      std::vector< std::tuple< std::string, std::string>> version{
                         { "casual", build_version.casual},
@@ -137,7 +136,7 @@ valid directives:
                         { "compiler", build_version.compiler}
                      };
 
-                     terminal::formatter::key::value().print( std::cout, version);
+                     common::terminal::formatter::key::value().print( std::cout, version);
                   };
                   return argument::Option{
                      std::move( invoke),
@@ -154,9 +153,9 @@ valid directives:
                   {
                      auto fetch_handles( const std::vector< common::strong::process::id>& pids)
                      {
-                        return algorithm::accumulate( pids, std::vector< process::Handle>{}, []( auto result, auto pid)
+                        return common::algorithm::accumulate( pids, std::vector< common::process::Handle>{}, []( auto result, auto pid)
                         {
-                           if( auto handle = communication::instance::fetch::handle( pid, communication::instance::fetch::Directive::direct))
+                           if( auto handle = common::communication::instance::fetch::handle( pid, common::communication::instance::fetch::Directive::direct))
                               result.push_back( handle);
 
                            return result;
@@ -171,10 +170,10 @@ valid directives:
                      {
                         auto send_message = []( auto&& handle)
                         {
-                           communication::device::blocking::optional::send( handle.ipc, common::message::internal::dump::State{});
+                           common::communication::device::blocking::optional::send( handle.ipc, common::message::internal::dump::State{});
                         };
 
-                        algorithm::for_each( detail::fetch_handles( pids), send_message);
+                        common::algorithm::for_each( detail::fetch_handles( pids), send_message);
                      };
 
                      return argument::Option{
@@ -193,10 +192,10 @@ valid directives:
 
                         auto send_message = [ &message]( auto&& handle)
                         {
-                           communication::device::blocking::optional::send( handle.ipc, message);
+                           common::communication::device::blocking::optional::send( handle.ipc, message);
                         };
 
-                        algorithm::for_each( detail::fetch_handles( pids), send_message);
+                        common::algorithm::for_each( detail::fetch_handles( pids), send_message);
                      };
 
                      auto complete = []( bool help, auto values) -> std::vector< std::string>
@@ -225,10 +224,10 @@ Note: only works for 'servers' with a message pump)"
 
                         auto send_message = [ &message]( auto&& handle)
                         {
-                           communication::device::blocking::optional::send( handle.ipc, message);
+                           common::communication::device::blocking::optional::send( handle.ipc, message);
                         };
 
-                        algorithm::for_each( detail::fetch_handles( pids), send_message);
+                        common::algorithm::for_each( detail::fetch_handles( pids), send_message);
                      };
 
                      auto complete = []( auto help, auto values) -> std::vector< std::string>
@@ -258,12 +257,12 @@ Note: only works for 'servers' with a message pump)"
                         if( address.empty() || ! address.at( 0).ipc)
                            return;
 
-                        auto reply = communication::ipc::call( address.at( 0).ipc, message::counter::Request( process::handle()));
+                        auto reply = common::communication::ipc::call( address.at( 0).ipc, common::message::counter::Request( common::process::handle()));
 
-                        auto formatter = terminal::format::formatter< message::counter::Entry>::construct(
-                           terminal::format::column( "type", []( auto& entry){ return entry.type;}, terminal::color::yellow),
-                           terminal::format::column( "sent", []( auto& entry){ return entry.sent;}, terminal::color::cyan, terminal::format::Align::right),
-                           terminal::format::column( "received", []( auto& entry){ return entry.received;}, terminal::color::cyan, terminal::format::Align::right)
+                        auto formatter = common::terminal::format::formatter< common::message::counter::Entry>::construct(
+                           common::terminal::format::column( "type", []( auto& entry){ return entry.type;}, common::terminal::color::yellow),
+                           common::terminal::format::column( "sent", []( auto& entry){ return entry.sent;}, common::terminal::color::cyan, common::terminal::format::Align::right),
+                           common::terminal::format::column( "received", []( auto& entry){ return entry.received;}, common::terminal::color::cyan, common::terminal::format::Align::right)
                         );  
 
                         formatter.print( std::cout, reply.entries);
@@ -303,7 +302,7 @@ The pid needs to be a casual server)"
                   {
                      auto invoke = []()
                      {
-                        Trace trace{ "administration::local::pipe::option::human_sink::invoke"};
+                        common::Trace trace{ "administration::local::pipe::option::human_sink::invoke"};
 
                         casual::cli::pipe::done::Detector done;
 
@@ -314,7 +313,7 @@ The pid needs to be a casual server)"
                         );
 
                         // consume from casual-pipe
-                        communication::stream::inbound::Device in{ std::cin};
+                        common::communication::stream::inbound::Device in{ std::cin};
                         common::message::dispatch::pump( 
                            casual::cli::pipe::condition::done( done), 
                            handler, in);
@@ -359,10 +358,11 @@ Where <option> is one of the listed below
 
       std::vector< argument::Option> options()
       {
-         return algorithm::container::compose(
+         return common::algorithm::container::compose(
             casual::domain::manager::admin::cli::options(),
             casual::service::manager::admin::cli::options(),
             queue::manager::admin::cli::options(),
+            file::manager::admin::cli::options(),
             casual::transaction::manager::admin::cli::options(),
             gateway::manager::admin::cli::options(),
             casual::domain::discovery::admin::cli::options(),

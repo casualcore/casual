@@ -11,10 +11,13 @@
 
 #include "file/manager/handle.h"
 
+#include "file/manager/resource.h"
+
 #include "common/transaction/id.h"
 
 #include "serviceframework/service/protocol.h"
 
+#include <ranges>
 
 namespace casual
 {
@@ -28,26 +31,42 @@ namespace casual
             {
                namespace detail
                {
-                  admin::model::State state( const manager::State& state)
+                  auto transform( const admin::model::Stage stage)
                   {
-                     auto transform = []( const message::reserve::Request& value)
+                     return [stage=stage]( const manager::State::Request& value)
                      {
-                        const auto trid = common::transaction::id::range::data( value.trid);
-
                         return admin::model::Request
                         {
-                           .process = value.process,
-                           .trid = platform::binary::type{ std::begin( trid), std::end( trid)},
+                           .pid = value.process.pid,
+                           .gtrid = common::transaction::id::range::global( value.trid),
+                           .stage = stage,
                            .path = value.path,
+                           .time = value.time,
                         };
                      };
+                  }
 
+                  auto state( const manager::State& state)
+                  {
                      admin::model::State result;
 
-                     std::ranges::transform( state.working, std::back_inserter( result.working), transform);
-                     std::ranges::transform( state.pending, std::back_inserter( result.pending), transform);
+                     std::ranges::transform( state.working, std::back_inserter( result.requests), transform( admin::model::Stage::working));
+                     std::ranges::transform( state.pending, std::back_inserter( result.requests), transform( admin::model::Stage::pending));
 
                      return result;
+                  }
+
+                  std::vector< common::transaction::global::ID> recover( manager::State& state, const std::vector< common::transaction::global::ID>& gtrids, const model::recovery::Directive directive)
+                  {
+                     switch( directive)
+                     {
+                     case model::recovery::Directive::commit:
+                        return resource::recovery::commit( state, gtrids);
+                     case model::recovery::Directive::rollback:
+                        return resource::recovery::rollback( state, gtrids);
+                     default:
+                        return {};
+                     }
                   }
 
                } // detail
@@ -62,6 +81,19 @@ namespace casual
                   };
                }
 
+               auto recover( manager::State& state)
+               {
+                  return [&state]( common::service::invoke::Parameter&& parameter)
+                  {
+                     auto protocol = serviceframework::service::protocol::deduce( std::move( parameter));
+
+                     const auto gtrids = protocol.extract< std::vector< common::transaction::global::ID>>( "gtrids");
+                     const auto directive = protocol.extract< model::recovery::Directive>( "directive");
+
+                     return serviceframework::service::user( std::move( protocol), &detail::recover, state, gtrids, directive);
+                  };
+               }
+
             } // service
          } //
       } // local
@@ -71,13 +103,20 @@ namespace casual
       {
          return 
          {{
-              { 
-                 service::name::state,
-                 local::service::state( state),
-                 common::service::transaction::Type::none,
-                 common::service::visibility::Type::undiscoverable,
-                 common::service::category::admin
-              },
+            { 
+               service::name::state,
+               local::service::state( state),
+               common::service::transaction::Type::none,
+               common::service::visibility::Type::undiscoverable,
+               common::service::category::admin
+            },
+            { 
+               service::name::recover,
+               local::service::recover( state),
+               common::service::transaction::Type::none,
+               common::service::visibility::Type::undiscoverable,
+               common::service::category::admin
+            },
          }};
       }
 

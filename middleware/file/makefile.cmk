@@ -7,6 +7,7 @@ make.IncludePaths( [
    'include',
    'unittest/include',
    '../common/include',
+   '../cli/include',
    '../transaction/include',
    '../serviceframework/include', 
    '../xatmi/include',
@@ -20,6 +21,7 @@ make.LibraryPaths(
    [ 
       'bin',
       '../common/bin',
+      '../cli/bin',
       '../domain/bin',
       '../serviceframework/bin',
       '../configuration/bin',
@@ -76,6 +78,16 @@ file_c_api = make.LinkLibrary( 'bin/casual-file-c-api',
    ])
 
 install_lib.append( file_c_api)
+
+
+file_cli = make.LinkLibrary( 'bin/casual-file-admin-cli', 
+   [
+      make.Compile( 'source/manager/admin/cli.cpp'),
+   ], 
+   [file_api, 'casual-cli', 'casual-common', 'casual-serviceframework'])
+ 
+install_lib.append( file_cli)
+
 
 test_casual_file = make.LinkUnittest( 'unittest/bin/test-casual-file', 
    [
