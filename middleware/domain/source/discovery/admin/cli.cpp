@@ -20,6 +20,7 @@
 #include "common/message/counter.h"
 
 #include "casual/cli/state.h"
+
 #include "casual/assert.h"
 
 #include "serviceframework/service/protocol/call.h"

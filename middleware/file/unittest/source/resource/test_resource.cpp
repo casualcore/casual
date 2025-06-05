@@ -310,40 +310,48 @@ domain:
 
          const auto path = common::unittest::file::temporary::name( ".txt");
 
-         auto expect_state = []( const std::size_t working, const std::size_t pending)
+         auto expect_stage_count = []( const auto working, const auto pending)
          {
+            using file::manager::admin::model::Stage;
+
+            auto count = []( const auto& requests, const Stage stage)
+            {
+               return std::ranges::count_if( requests, [stage]( const auto& r){ return r.stage == stage;});
+            };
+
             const auto state = file::resource::unittest::state();
-            EXPECT_EQ( working, state.working.size()) << state.working.size();
-            EXPECT_EQ( pending, state.pending.size()) << state.pending.size();
+
+            EXPECT_EQ( working, count( state.requests, Stage::working));
+            EXPECT_EQ( pending, count( state.requests, Stage::pending));
          };
 
-         expect_state( 0, 0);
+         expect_stage_count( 0, 0);
 
          XID first;
          ASSERT_EQ( TX_OK, tx_begin());
          file::resource::unittest::blocking::reserve::send( path);
          ASSERT_EQ( TX_OK, tx_suspend( &first));
 
-         expect_state( 1, 0);
+         expect_stage_count( 1, 0);
 
          XID other;
          ASSERT_EQ( TX_OK, tx_begin());
          file::resource::unittest::blocking::reserve::send( path);
          ASSERT_EQ( TX_OK, tx_suspend( &other));
 
-         expect_state( 1, 1);
+         expect_stage_count( 1, 1);
 
          ASSERT_EQ( TX_OK, tx_resume( &first));
          EXPECT_FALSE( file::resource::unittest::blocking::reserve::receive().empty());
          ASSERT_EQ( TX_OK, tx_commit());
 
-         expect_state( 1, 0);
+         expect_stage_count( 1, 0);
 
          ASSERT_EQ( TX_OK, tx_resume( &other));
          EXPECT_FALSE( file::resource::unittest::blocking::reserve::receive().empty());
          ASSERT_EQ( TX_OK, tx_commit());
 
-         expect_state( 0, 0);
+         expect_stage_count( 0, 0);
       }
 
 

@@ -12,6 +12,7 @@ namespace casual
    {
 
       constexpr auto state = ".casual/file/state";
+      constexpr auto recover = ".casual/file/recover";
 
    } // file::manager::admin::service::name
 } // casual

@@ -47,6 +47,13 @@ namespace casual::file::resource
             content.erase( first, last);
          }
 
+         auto copy( const auto& content, const auto& value, auto&& projection)
+         {
+            std::remove_cvref_t<decltype( content)> result;
+            std::ranges::copy_if( content, std::back_inserter( result), [&] ( const auto& element) { return value == std::invoke( projection, element);});
+            return result;
+         }
+
       } //
    } // local
 
@@ -56,104 +63,113 @@ namespace casual::file::resource
       {
          namespace detail
          {
-            auto reserve( const Reserve& request)
+            auto reserve( const Request& request)
             {
                auto result = local::temporary( request.trid, request.path);
 
+               //
+               // potentially copy existing file
                if( std::filesystem::exists( request.path))
-               {
-                  //
-                  // copy any existing file
                   std::filesystem::copy_file( request.path, result);
-               }
 
                return result;
             }
 
-            void commit( const Reserve& request)
+            void commit( const Request& request)
             {
                const auto rushes = local::temporary( request.trid, request.path);
 
                if( std::filesystem::exists( rushes))
-               {
                   std::filesystem::rename( rushes, request.path);
-               }
                else
-               {
                   std::filesystem::remove_all( request.path);
-               }
             }
 
-            void rollback( const Reserve& request)
+            void rollback( const Request& request)
             {
                const auto rushes = local::temporary( request.trid, request.path);
 
                if( std::filesystem::exists( rushes))
-               {
                   std::filesystem::remove_all( rushes);
-               }
             }
 
-            void mitigate( const Reserve& request)
+            void mitigate( const Request& request)
             {
                rollback( request);
             }
-         } // detail
 
-
-         auto reserve( State& state, const Reserve& request) -> std::expected<std::filesystem::path, code>
-         {
-            if( state.runlevel == State::Runlevel::shutdown)
+            auto reserve( State& state, const Request& request) -> std::expected<std::filesystem::path, code>
             {
-               common::log::error( common::exception::capture(), "failed to reserve due to shutdown");
-               return std::unexpected( code::error);
-            }
-
-            if( const auto work = std::ranges::find( state.working, request.path, &Reserve::path); work != state.working.end())
-            {
-               //
-               // requested path is involved
-
-               if( work->trid == request.trid)
+               if( state.runlevel == State::Runlevel::shutdown)
                {
-                  return local::temporary( request.trid, request.path);
+                  common::log::error( common::code::casual::shutdown, "failed to reserve due to shutdown");
+                  return std::unexpected( code::error);
                }
-               else
-               {
-                  return std::unexpected( code::busy);
-               }
-            }
-
-            try
-            {
-               auto result = detail::reserve( request);
-
-               if( std::ranges::find( state.working, request.trid, &Reserve::trid) == state.working.end())
+   
+               if( const auto work = std::ranges::find( state.working, request.path, &Request::path); work != state.working.end())
                {
                   //
-                  // no request in this transaction seems to be involved earlier
-                  common::communication::device::blocking::send( 
-                     common::communication::instance::outbound::transaction::manager::device(),
-                     common::message::transaction::resource::external::involved::create( request));
+                  // requested path is involved
+   
+                  if( work->trid == request.trid)
+                     return temporary( request.trid, request.path);
+                  else
+                     return std::unexpected( code::busy);
                }
-
-               return result;
+   
+               try
+               {
+                  auto result = reserve( request);
+   
+                  if( std::ranges::find( state.working, request.trid, &Request::trid) == state.working.end())
+                  {
+                     //
+                     // no request in this transaction seems to be involved earlier
+                     common::communication::device::blocking::send( 
+                        common::communication::instance::outbound::transaction::manager::device(),
+                        common::message::transaction::resource::external::involved::create( request));
+                  }
+   
+                  return result;
+               }
+               catch( ...)
+               {
+                  common::log::error( common::exception::capture(), "failed to aqcuire ", request.path);
+                  return std::unexpected( code::error);
+               }
             }
-            catch( ...)
+   
+         } // detail
+
+         void reserve( State& state, Request request)
+         {
+            auto reply = common::message::reverse::type( static_cast<const Reserve&>(request));
+
+            if(auto result = detail::reserve( state, request))
+               reply.path = std::move( result.value());
+            else
+               reply.code = std::move( result.error());
+      
+            switch( reply.code)
             {
-               common::log::error( common::exception::capture(), "failed to aqcuire ", request.path);
-               return std::unexpected( code::error);
+            break; case code::ok:
+               // push to work load
+               state.working.push_back( std::move( request));
+               // send the reply
+               state.multiplex.send( request.process.ipc, std::move( reply));
+            break; case code::busy:
+               if( request.wait)
+                  // push to wait list
+                  state.pending.push_back( std::move( request));
+               else
+                  // send the reply
+                  state.multiplex.send( request.process.ipc, std::move( reply));
+            break; default:
+               // just send the reply
+               state.multiplex.send( request.process.ipc, std::move( reply));
             }
          }
 
-      } //
-   } // local
-
-
-   namespace local
-   {
-      namespace
-      {
          auto release( auto& state, const auto& value, auto&& projection, auto&& operation)
          {
             //
@@ -162,7 +178,7 @@ namespace casual::file::resource
 
             //
             // make sure to handle paths just one time
-            tidy( working, &Reserve::path);
+            tidy( working, &Request::path);
 
             auto result = common::code::xa::ok;
 
@@ -180,66 +196,26 @@ namespace casual::file::resource
 
                //
                // free related (potentially) pending requests for this path (for real)
-               for(auto&& wait : pull( state.pending, work.path, &Reserve::path))
+               for(auto&& wait : pull( state.pending, work.path, &Request::path))
                {
                   //
                   // start all over
-                  resource::reserve( state, std::move( wait));
+                  reserve( state, std::move( wait));
                }
             }
 
             return result;
          }
-
       } // 
    } // local
 
-   void reserve( State& state, Reserve request)
+   void reserve( State& state, const Reserve& request)
    {
-      request.path = request.path.lexically_normal();
+      Request work{request};
+      work.path = work.path.lexically_normal();
+      work.time = std::chrono::system_clock::now();
 
-      auto reply = common::message::reverse::type( request);
-
-      if(auto result = local::reserve( state, request))
-      {
-         reply.path = std::move( result.value());
-      }
-      else
-      {
-         reply.code = std::move( result.error());
-      }
-
-      switch( reply.code)
-      {
-      case code::ok:
-      {
-         // push to work load
-         state.working.push_back( std::move( request));
-         // send the reply
-         state.multiplex.send( request.process.ipc, std::move( reply));
-         break;
-      }
-      case code::busy:
-      {
-         if( request.wait)
-         {
-            // push to wait list
-            state.pending.push_back( std::move( request));
-         }
-         else
-         {
-            // send the reply
-            state.multiplex.send( request.process.ipc, std::move( reply));
-         }
-         break;
-      }
-      default:
-      {
-         // just send the reply
-         state.multiplex.send( request.process.ipc, std::move( reply));
-         break;
-      }
-      }
+      local::reserve( state, std::move( work));
    }
 
    void prepare( State& state, const Prepare& request)
@@ -255,7 +231,7 @@ namespace casual::file::resource
 
       //
       // pick the requests involved and finalize them
-      reply.state = local::release( state, request.trid, &Reserve::trid, &local::detail::commit);
+      reply.state = local::release( state, request.trid, &Request::trid, &local::detail::commit);
 
       //
       // send the reply to the transaction manager
@@ -270,7 +246,7 @@ namespace casual::file::resource
 
       //
       // pick the requests involved and finalize them
-      reply.state = local::release( state, request.trid, &Reserve::trid, &local::detail::rollback);
+      reply.state = local::release( state, request.trid, &Request::trid, &local::detail::rollback);
 
       //
       // send the reply to the transaction manager
@@ -281,11 +257,11 @@ namespace casual::file::resource
    {
       //
       // drop potential pending requests
-      local::drop( state.pending, request.process, &Reserve::process);
+      local::drop( state.pending, request.process, &Request::process);
 
       //
       // pick the requests involved and finalize them
-      local::release( state, request.process, &Reserve::process, &local::detail::mitigate);
+      local::release( state, request.process, &Request::process, &local::detail::mitigate);
    }
 
    void shutdown( State& state, const Shutdown& request)
@@ -303,5 +279,47 @@ namespace casual::file::resource
       // drop all pending requests
       state.pending.clear();
    }
+
+   namespace recovery
+   {
+      namespace detail
+      {
+         namespace
+         {
+            auto recover( State& state, auto gtrids, auto&& operation)
+            {
+               std::erase_if( gtrids, [&]( const auto& gtrid) 
+                  {
+                     const auto requests = local::copy( state.working, gtrid, &Request::trid);
+
+                     if( requests.empty())
+                     {
+                        // not affected
+                        return true;
+                     }
+      
+                     // make sure to try all
+                     return std::ranges::count_if( 
+                        requests, [&] ( const auto& request) 
+                        { 
+                           return local::release( state, request.trid, &Request::trid, operation) == common::code::xa::ok;
+                        }) != std::ssize( requests);
+                  });
+      
+               return gtrids;
+            }
+         } //
+      } // detail
+
+      std::vector< common::transaction::global::ID> commit( State& state, std::vector< common::transaction::global::ID> gtrids)
+      {
+         return detail::recover( state, std::move( gtrids), &local::detail::commit);
+      }
+
+      std::vector< common::transaction::global::ID> rollback( State& state, std::vector< common::transaction::global::ID> gtrids)
+      {
+         return detail::recover( state, std::move( gtrids), &local::detail::rollback);
+      }
+   } // recovery
 
 } // casual::file::resource

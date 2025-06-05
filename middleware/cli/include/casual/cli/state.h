@@ -8,6 +8,7 @@
 
 #include "common/log/stream.h"
 #include "casual/argument.h"
+#include "common/serialize/create.h"
 
 #include <string>
 #include <optional>
