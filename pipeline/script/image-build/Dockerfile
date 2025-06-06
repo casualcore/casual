@@ -2,9 +2,9 @@ FROM redhat/ubi8
 LABEL org.casualcore.image.authors="casual@laz.se"
 
 RUN yum --exclude=iputils -y update && yum -y install wget cmake make libuuid-devel zlib-devel libcurl-devel
-RUN yum -y install gcc-toolset-13-gcc* && scl enable gcc-toolset-13 bash
+RUN yum -y install gcc-toolset-14-gcc* && scl enable gcc-toolset-14 bash
 ADD sqlite-autoconf-3470100.tar.gz /tmp/.
-RUN cd /tmp/sqlite-autoconf-3470100 && source scl_source enable gcc-toolset-13 && ./configure && make && make install
+RUN cd /tmp/sqlite-autoconf-3470100 && source scl_source enable gcc-toolset-14 && ./configure && make && make install
 
 ARG CASUAL_RPM
 COPY ${CASUAL_RPM} /tmp/casual-middleware.rpm
