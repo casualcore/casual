@@ -51,7 +51,8 @@ namespace casual::common
          if( string.size() % 2 == 1)
             code::raise::error( code::casual::invalid_argument, "invalid format on gtrid: ", string, ", needs to be even length");
 
-         assertion( string.size() <= 64, "trid: ", string, " has larger gtrid size than 64");
+         if( string.size() > 128)
+            code::raise::error( code::casual::invalid_argument, "invalid format on gtrid: ", string, ", exceeds maximum size of 64 bytes (128 hex characters)");
 
          common::transcode::hex::decode( string, gtrid.m_gtrid);
          gtrid.m_size = string.size() / 2;

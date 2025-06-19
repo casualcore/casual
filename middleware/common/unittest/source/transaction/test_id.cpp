@@ -113,6 +113,46 @@ namespace casual
          EXPECT_TRUE( algorithm::equal( bqual.range(), transaction::id::range::branch( id.xid)));
       }
 
+      TEST( common_transaction_global_id, istream_operator)
+      {
+         common::unittest::Trace trace;
+
+         // longer hex gtrid than 64 bytes
+         const std::string hex_id{ "00000000000000000000ffff0a82176e877949d1684dda18002d377c756b6f2d72616b75722d363864376336356437632d6d35"};
+         
+         std::istringstream stream{ hex_id};
+
+         transaction::global::ID gtrid;
+         stream >> gtrid;
+
+         EXPECT_TRUE( gtrid.range().size() == hex_id.size() / 2);
+         EXPECT_TRUE( transcode::hex::encode( gtrid.range()) == hex_id);
+      }
+
+      TEST( common_transaction_global_id, istream_operator_invalid_hex)
+      {
+         common::unittest::Trace trace;
+
+         auto deserialize = []( const std::string& hex_id)
+         {
+            std::istringstream stream{ hex_id};
+
+            transaction::global::ID gtrid;
+            stream >> gtrid;
+
+            return gtrid;
+         };
+
+         // uneven length
+         EXPECT_CODE( deserialize( "12345"), code::casual::invalid_argument) << "expected invalid hex gtrid to throw";
+         // invalid characters
+         EXPECT_CODE( deserialize( "1234gn"), code::casual::invalid_argument);
+         // too long
+         EXPECT_CODE( deserialize( std::string( 129, 'a')), code::casual::invalid_argument) << "expected invalid hex gtrid to throw";
+
+      }
+ 
+
    } // common
 
 } // casual
