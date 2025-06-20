@@ -123,7 +123,10 @@ namespace casual
 
                common::algorithm::transform( names, result, [mode]( auto& name)
                {
-                  return model::Service{ .name = name, .transaction = mode};
+                  return model::Service{ 
+                     .name = name,
+                     .function = name,
+                     .transaction = mode};
                });
 
                return result;

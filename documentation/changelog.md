@@ -1,6 +1,12 @@
 # Changelog
 This is the changelog for `casual` and all changes are listed in this document.
 
+## [1.7.8] - 2025-06-18
+
+### Fixes
+- tools: build-server does not generate function name via argument ([#568](https://github.com/casualcore/casual/issues/568))
+- common: transaction::global::ID istream asserts on hex <= 64B ([#570](https://github.com/casualcore/casual/issues/570))
+
 ## [1.7.7] - 2025-05-27
 
 ### Fixes
