@@ -543,8 +543,9 @@ namespace casual
 
       private:
          std::vector< common::environment::Variable> variables( const std::vector< common::environment::Variable>& variables);
-      
       };
+
+      static_assert( std::is_move_constructible_v< State>);
 
    } // domain::manager
 } // casual

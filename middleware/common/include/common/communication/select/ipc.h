@@ -59,7 +59,7 @@ namespace casual
                using handler_type = decltype( handler_creator( state));
 
                // make sure we set the select fd-set
-               state.directive.read.add( communication::ipc::inbound::device().descriptor());
+               state.directive.read_add( communication::ipc::inbound::device().descriptor());
 
                return detail::basic_dispatcher< handler_type, Policy>( handler_creator( state));
             }

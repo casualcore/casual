@@ -52,7 +52,7 @@ namespace casual
             {
                auto listeners = std::exchange( actives, {});
 
-               directive.read.remove( descriptors( listeners));
+               directive.read_remove( descriptors( listeners));
 
                for( auto& listener : listeners)
                   offline.push_back( std::move( listener.configuration));
@@ -73,7 +73,7 @@ namespace casual
                if( auto found = common::algorithm::find( actives, id))
                {
                   auto active = common::algorithm::container::extract( actives, std::begin( found));
-                  directive.read.remove( active.socket.descriptor());
+                  directive.read_remove( active.socket.descriptor());
                   return active.configuration;
                }
                return {};
@@ -86,7 +86,7 @@ namespace casual
                if( auto found = common::algorithm::find_if( actives, is_address))
                {
                   auto active = common::algorithm::container::extract( actives, std::begin( found));
-                  directive.read.remove( active.socket.descriptor());
+                  directive.read_remove( active.socket.descriptor());
                   return active;
                }
                return {};
@@ -184,7 +184,7 @@ namespace casual
                   communication::tcp::socket::listen( configuration.address),
                   std::move( configuration));
 
-               state.directive.read.add( listener.socket.descriptor());
+               state.directive.read_add( listener.socket.descriptor());
 
                // we need the socket to not block in 'accept'
                listener.socket.set( communication::socket::option::File::no_block);

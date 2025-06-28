@@ -406,7 +406,7 @@ namespace casual
             {
                // add all inbounds to read directive
                for( auto& device : destinations)
-                  directive.read.add( device.connector().descriptor());
+                  directive.read_add( device.connector().descriptor());
             }
 
             communication::select::Directive directive;

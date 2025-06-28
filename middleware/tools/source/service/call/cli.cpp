@@ -381,7 +381,7 @@ namespace casual
                      communication::select::Directive directive;
                      auto create_select_handler = [ &directive]( auto fd, auto handler, auto& device)
                      {
-                        directive.read.add( fd);
+                        directive.read_add( fd);
                         return [fd, handler = std::move( handler), &device]( auto descriptor, communication::select::tag::read) mutable
                         {
                            if( fd != descriptor)

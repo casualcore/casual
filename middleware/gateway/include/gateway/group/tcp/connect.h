@@ -194,7 +194,7 @@ namespace casual
 
                   auto socket = std::move( pending).socket();
 
-                  state.directive.write.add( socket.descriptor());
+                  state.directive.write_add( socket.descriptor());
                   state.connect.pending.emplace_back( std::move( socket), std::move( prospect));
                   
                   return true;
@@ -227,7 +227,7 @@ namespace casual
                   log::debug( "pending: ", pending);
 
                   // we don't multiplex any more
-                  state.directive.write.remove( pending.socket.descriptor());
+                  state.directive.write_remove( pending.socket.descriptor());
 
                   if( auto error = pending.socket.error())
                   {

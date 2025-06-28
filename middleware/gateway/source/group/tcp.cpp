@@ -30,7 +30,7 @@ namespace casual
                return;
          }
 
-         directive.write.remove( descriptor());
+         directive.write_remove( descriptor());
       }
       
       common::strong::correlation::id Connection::send( common::communication::select::Directive& directive, complete_type&& complete)
@@ -42,7 +42,7 @@ namespace casual
             if( common::communication::device::non::blocking::send( m_device, complete))
                return complete.correlation();
 
-            directive.write.add( descriptor());
+            directive.write_add( descriptor());
          }
 
          // we just push it to unsent and wait for 'select' to trigger 'unsent'

@@ -41,7 +41,7 @@ namespace casual
       {
          inline State()
          {
-            directive.read.add( common::communication::ipc::inbound::device().descriptor());
+            directive.read_add( common::communication::ipc::inbound::device().descriptor());
          }
 
          common::state::Machine< state::Runlevel> runlevel;

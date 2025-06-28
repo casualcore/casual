@@ -41,6 +41,12 @@ namespace casual
          { *std::begin( a)} -> concepts::decayed::same_as< V>;
       };
 
+      template< typename R, typename V>
+      concept range_value_convertible_to = concepts::range< R> && requires( R& a, V v)
+      {
+         { v = *std::begin( a)};
+      };
+
       template< typename T>
       concept arithmetic = std::integral< T> || std::floating_point< T>;
 

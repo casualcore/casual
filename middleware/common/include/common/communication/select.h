@@ -14,104 +14,18 @@
 
 #include <vector>
 
+#if defined(CASUAL_PLATFORM_BSD)
+#include "common/communication/select/kqueue.h"
+#elif defined(CASUAL_PLATFORM_LINUX)
+#include "common/communication/select/epoll.h"
+#else
+#error "Unsupported platform"
+#endif
+
 namespace casual
 {
    namespace common::communication::select
    {
-      namespace directive
-      {
- 
-         using range_type = range::type_t< std::vector< strong::file::descriptor::id>>;
-         
-         struct Set
-         {
-            void add( strong::file::descriptor::id descriptor) noexcept;
-            void remove( strong::file::descriptor::id descriptor) noexcept;
-
-            template< typename Range>
-            auto add( Range&& descriptors) noexcept
-               -> decltype( add( range::front( descriptors)))
-            {
-               algorithm::for_each( descriptors, [&]( auto descriptor){ add( descriptor);});
-            }
-
-            template< typename Range>
-            auto remove( Range&& descriptors) noexcept
-               -> decltype( remove( range::front( descriptors)))
-            {
-               algorithm::for_each( descriptors, [&]( auto descriptor){ remove( descriptor);});
-            }
-
-            inline auto descriptors() const noexcept
-            { 
-               return range::make( m_descriptors);
-            }
-
-            //! @returns the highest value descriptor in the `Set`, 'nil' descriptor if empty.
-            inline auto highest() const noexcept { return m_highest;}
-            
-            CASUAL_LOG_SERIALIZE(
-               CASUAL_SERIALIZE_NAME( m_descriptors, "descriptors");
-            )
-
-         private:
-            // mutable so we can 'filter' for ready - semantically we don't change the state
-            mutable std::vector< strong::file::descriptor::id> m_descriptors;
-            strong::file::descriptor::id m_highest{};
-         };
-
-         struct Ready
-         {
-            Ready( range_type read_ready, range_type write_ready)
-               : m_descriptors( read_ready.size() + write_ready.size()), 
-                  read{ range::make( std::begin( m_descriptors), read_ready.size())},
-                  write{ range::make( std::end( read), write_ready.size())} 
-            {
-               algorithm::copy( read_ready, std::begin( read));
-               algorithm::copy( write_ready, std::begin( write));
-            }
-
-         private:
-            std::vector< strong::file::descriptor::id> m_descriptors;
-
-         public:
-            range_type read;
-            range_type write;
-
-            inline explicit operator bool() const noexcept { return read || write;}
-
-            CASUAL_LOG_SERIALIZE(
-               CASUAL_SERIALIZE( read);
-               CASUAL_SERIALIZE( write);
-            )
-
-         };
-
-      } // directive
-
-
-      struct Directive 
-      {
-         directive::Set read;
-         directive::Set write;
-
-         //! removes `descriptor` from _read_ and _write_
-         template< typename D>
-         void remove( D&& descriptors) noexcept 
-         { 
-            read.remove( descriptors);
-            write.remove( descriptors);
-         }
-
-         //! @returns the highest value descriptor in the `Directive`, 'nil' descriptor if empty.
-         inline auto highest() const noexcept { return std::max( read.highest(), write.highest());}
-
-         CASUAL_LOG_SERIALIZE(
-            CASUAL_SERIALIZE( read);
-            CASUAL_SERIALIZE( write);
-         )
-      };
-
       namespace tag
       {
          struct read{};
@@ -128,8 +42,6 @@ namespace casual
 
          namespace detail
          {
-            directive::Ready select( const Directive& directive);
-
             namespace consume
             {
                template< typename H>
@@ -160,12 +72,12 @@ namespace casual
                   //! blocking read handler
                   template< typename H> 
                   auto dispatch( directive::Ready& ready, H& handler, traits::priority::tag< 1>)
-                     -> decltype( predicate::boolean( handler( range::front( ready.read), tag::read{})))
+                     -> decltype( predicate::boolean( handler( strong::file::descriptor::id{}, tag::read{})))
                   {
                      // keep the reads that did not find a handler.
-                     ready.read = algorithm::filter( ready.read, [ &handler]( auto descriptor)
+                     ready.read = algorithm::filter( ready.read, [ &handler]( const auto& event)
                      {
-                        return ! handler( descriptor, tag::read{});
+                        return ! handler( directive::ready::descriptor( event), tag::read{});
                      });
                      return predicate::boolean( ready);
                   }
@@ -180,12 +92,12 @@ namespace casual
                   //! blocking write handler
                   template< typename H> 
                   auto dispatch( directive::Ready& ready, H& handler, traits::priority::tag< 1>)
-                     -> decltype( predicate::boolean( handler( range::front( ready.write), tag::write{})))
+                     -> decltype( predicate::boolean( handler( strong::file::descriptor::id{}, tag::write{})))
                   {
                      // keep the writes that did not find a handler.
-                     ready.write = algorithm::filter( ready.write, [ &handler]( auto descriptor)
+                     ready.write = algorithm::filter( ready.write, [ &handler]( const auto& event)
                      {
-                        return ! handler( descriptor, tag::write{});
+                        return ! handler( directive::ready::descriptor( event), tag::write{});
                      });
                      return predicate::boolean( ready);
                   }
@@ -214,7 +126,7 @@ namespace casual
             namespace pump
             {
                template< typename C, typename... Ts>
-               auto dispatch( C&& condition, const Directive& directive, Ts&&... handlers) 
+               auto dispatch( C&& condition, Directive& directive, Ts&&... handlers) 
                {
                   condition::detail::invoke< condition::detail::tag::prelude>( condition);
 
@@ -264,13 +176,13 @@ namespace casual
          //!      * return true a message is consumed from _cache_ - do not use this for _read_ or _write_! 
          //! @{
          template< typename C, typename... Ts>  
-         void pump( C&& condition, const Directive& directive, Ts&&... handlers)
+         void pump( C&& condition, Directive& directive, Ts&&... handlers)
          {
             detail::pump::dispatch( std::forward< C>( condition), directive, std::forward< Ts>( handlers)...);
          }
 
          template< typename... Ts>  
-         void pump( const Directive& directive, Ts&&... handlers)
+         void pump( Directive& directive, Ts&&... handlers)
          {
             detail::pump::dispatch( condition::compose(), directive, std::forward< Ts>( handlers)...);
          }

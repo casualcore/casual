@@ -65,14 +65,14 @@ namespace casual
                m_mapping.push_back( connection::descriptor::Pair{ ipc_descriptor, tcp_descriptor});
                m_internal.emplace( ipc_descriptor, std::move( inbound));
 
-               directive.read.add( ipc_descriptor);
+               directive.read_add( ipc_descriptor);
             }
 
             {
                m_external.emplace( tcp_descriptor, tcp::Connection{ std::move( connector.socket), message.version});
                m_information.emplace_back( tcp_descriptor, message.domain, std::move( connector.configuration));
                
-               directive.read.add( tcp_descriptor);
+               directive.read_add( tcp_descriptor);
             }
 
             return common::range::back( m_mapping);
@@ -215,7 +215,7 @@ namespace casual
             auto ipc = partner( descriptor);
             common::algorithm::container::erase( m_internal, ipc);
             // make sure we remove from read directive (ipc only reads)
-            directive.read.remove( ipc);
+            directive.read_remove( ipc);
 
             // make sure we remove from read and write
             directive.remove( descriptor);

@@ -63,7 +63,7 @@ namespace casual
                : m_destination{ std::move( destination)}
             {
                m_queue.emplace_back( std::move( message));
-               directive.write.add( descriptor());
+               directive.write_add( descriptor());
             }
 
             strong::file::descriptor::id descriptor() const noexcept { return m_destination.socket().descriptor();}

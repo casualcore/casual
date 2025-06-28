@@ -429,7 +429,7 @@ namespace casual
 
       State::State()
       {
-         directive.read.add( communication::ipc::inbound::device().descriptor());
+         directive.read_add( communication::ipc::inbound::device().descriptor());
       }
 
       bool State::done() const noexcept

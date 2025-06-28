@@ -90,10 +90,19 @@ constexpr auto operator & ( T lhs, T rhs)
    return static_cast< T>( std::to_underlying( lhs) & std::to_underlying( rhs));
 }
 
+//! @returns `lhs` with all bits set that are not set in `rhs`
+template< casual::common::flag::enum_flag_like T>
+constexpr auto operator - ( T lhs, T rhs)
+{
+   return static_cast< T>( std::to_underlying( lhs) & ~std::to_underlying( rhs));
+}
+
+//! removes all bits set in `rhs` from `lhs` and returns the result
 template< casual::common::flag::enum_flag_like T>
 constexpr auto& operator -= ( T& lhs, T rhs)
 {
-   return lhs = static_cast< T>( std::to_underlying( lhs) & ~std::to_underlying( rhs));
+   return lhs = ( lhs - rhs);
 }
+
 
 

@@ -201,7 +201,7 @@ namespace casual
       State::State()
       {
          // make sure we add the inbound ipc for read.
-         directive.read.add( communication::ipc::inbound::device().descriptor());
+         directive.read_add( communication::ipc::inbound::device().descriptor());
       }
 
       void State::failed( strong::process::id pid)

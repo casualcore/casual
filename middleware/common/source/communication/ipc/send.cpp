@@ -48,7 +48,7 @@ namespace casual
                }
 
                // we're done with this "remote"
-               directive.write.remove( descriptor());
+               directive.write_remove( descriptor());
                return true;
             }
             catch( ...)
@@ -64,7 +64,7 @@ namespace casual
             for( auto& message : m_queue)
                message.error( m_destination.ipc());
 
-            directive.write.remove( descriptor());
+            directive.write_remove( descriptor());
          }
          
       } // coordinator

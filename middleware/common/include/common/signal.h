@@ -257,6 +257,7 @@ namespace casual
 
       //! @return true if there are signals that hasn't been consumed/dispatched on.
       bool pending( signal::Set mask);
+      bool pending();
 
       //! Clears all pending signals, only for unittests...
       void clear();

@@ -306,6 +306,11 @@ namespace casual
          return local::global_handler.pending( mask);
       }
 
+      bool pending()
+      {
+         return pending( signal::mask::current());
+      }
+
       void clear()
       {
          local::global_handler.clear();

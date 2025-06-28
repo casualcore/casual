@@ -4,6 +4,10 @@
 //! This software is licensed under the MIT license, https://opensource.org/licenses/MIT
 //!
 
+#include "casual/platform.h"
+#if defined(CASUAL_PLATFORM_LINUX)
+
+
 #include "common/communication/select.h"
 #include "common/communication/device.h"
 
@@ -112,8 +116,8 @@ namespace casual
                   }
                };
 
-               set_set( directive.read.descriptors(), read);
-               set_set( directive.write.descriptors(), write);
+               set_set( directive.m_read.descriptors(), read);
+               set_set( directive.m_write.descriptors(), write);
 
                // takes care of atomic signals...
                local::select( directive.highest(), &read, &write);
@@ -127,8 +131,8 @@ namespace casual
                };
 
                return directive::Ready{
-                  filter_ready( directive.read.descriptors(), read),
-                  filter_ready( directive.write.descriptors(), write),
+                  filter_ready( directive.m_read.descriptors(), read),
+                  filter_ready( directive.m_write.descriptors(), write),
                };
             }
          } // detail
@@ -163,3 +167,5 @@ namespace casual
 
    } // common::communication::select
 } // casual
+
+#endif // CASUAL_PLATFORM_LINUX

@@ -57,6 +57,7 @@ namespace casual
             internal_unexpected_value,
             internal_correlation,
 
+            system = 1000,
             fatal_terminate,
          };
 

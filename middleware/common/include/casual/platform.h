@@ -60,6 +60,15 @@
 #include <chrono>
 #include <iosfwd>
 
+
+// platform macros
+#if defined(__FreeBSD__) || defined(__APPLE__) || defined(__NetBSD__) || defined(__OpenBSD__)
+#define CASUAL_PLATFORM_BSD
+#elif defined(__linux__)
+#define CASUAL_PLATFORM_LINUX
+#endif
+
+
 namespace casual
 {
    using namespace std::literals::chrono_literals;
