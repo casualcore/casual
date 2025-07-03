@@ -116,3 +116,6 @@ make.Dependencies(
    test_casual_file, 
    install_bin,
    )
+
+make.Install( install_lib,  dsl.paths().install + '/lib')
+make.Install( install_bin,  dsl.paths().install + '/bin')
