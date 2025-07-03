@@ -93,6 +93,14 @@ domain:
          const auto payload = unittest::random::binary( 1000);
          const auto trid = common::transaction::id::create();
 
+         // make sure outbound has register as discover provider
+         {
+            using Ability = casual::domain::message::discovery::api::provider::registration::Ability;
+
+            casual::domain::unittest::discover::fetch::until( 
+               casual::domain::unittest::discover::fetch::predicate::provider( Ability::discover, 1));
+         }
+
          // send service lookup
          {
             common::message::service::lookup::Request request{ common::process::handle()}; 
