@@ -441,6 +441,7 @@ namespace casual
 
                if( auto error = socket.error())
                {
+                  log::debug( "socket.error: ", error);
                   if( non::blocking::error::recoverable( error.value()))
                      return {};
                   else

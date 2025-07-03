@@ -213,14 +213,17 @@ namespace casual
 
             // make sure we remove the ipc partner.
             auto ipc = partner( descriptor);
+
+            // clean up directive
+            {
+               // make sure we remove from read directive (ipc only reads)
+               directive.read_remove( ipc);
+               // make sure we remove from read and write
+               directive.remove( descriptor);
+            }
+
             common::algorithm::container::erase( m_internal, ipc);
-            // make sure we remove from read directive (ipc only reads)
-            directive.read_remove( ipc);
-
-            // make sure we remove from read and write
-            directive.remove( descriptor);
             common::algorithm::container::erase( m_external, descriptor);
-
             common::algorithm::container::erase( m_mapping, descriptor);
             
             auto found = common::algorithm::find( m_information, descriptor);

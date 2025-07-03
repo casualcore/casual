@@ -13,11 +13,13 @@
 #include "common/strong/id.h"
 #include "common/functional.h"
 #include "common/algorithm.h"
-#include "common/communication/log.h"
 #include "common/message/dispatch.h"
 
-
 #include <vector>
+#include <span>
+#include <string_view>
+
+#include <sys/epoll.h>
 
 namespace casual
 {
@@ -25,135 +27,130 @@ namespace casual
    {
       namespace directive
       {
- 
-         using range_type = range::type_t< std::vector< strong::file::descriptor::id>>;
-         
-         struct Set
+         namespace ready
          {
-            void add( strong::file::descriptor::id descriptor) noexcept;
-            void remove( strong::file::descriptor::id descriptor) noexcept;
-
-            template< typename Range>
-            auto add( Range&& descriptors) noexcept
-               -> decltype( add( range::front( descriptors)))
+            inline strong::file::descriptor::id descriptor( const ::epoll_event& event) noexcept
             {
-               algorithm::for_each( descriptors, [&]( auto descriptor){ add( descriptor);});
+               return strong::file::descriptor::id{ event.data.fd};
             }
-
-            template< typename Range>
-            auto remove( Range&& descriptors) noexcept
-               -> decltype( remove( range::front( descriptors)))
-            {
-               algorithm::for_each( descriptors, [&]( auto descriptor){ remove( descriptor);});
-            }
-
-            inline auto descriptors() const noexcept
-            { 
-               return range::make( m_descriptors);
-            }
-
-            //! @returns the highest value descriptor in the `Set`, 'nil' descriptor if empty.
-            inline auto highest() const noexcept { return m_highest;}
             
-            CASUAL_LOG_SERIALIZE(
-               CASUAL_SERIALIZE_NAME( m_descriptors, "descriptors");
-            )
-
-         private:
-            // mutable so we can 'filter' for ready - semantically we don't change the state
-            mutable std::vector< strong::file::descriptor::id> m_descriptors;
-            strong::file::descriptor::id m_highest{};
-         };
-
+         } // ready
+         
+         //! view type of the read and write events
          struct Ready
          {
-            Ready( range_type read_ready, range_type write_ready)
-               : m_descriptors( read_ready.size() + write_ready.size()), 
-                  read{ range::make( std::begin( m_descriptors), read_ready.size())},
-                  write{ range::make( std::end( read), write_ready.size())} 
-            {
-               algorithm::copy( read_ready, std::begin( read));
-               algorithm::copy( write_ready, std::begin( write));
-            }
+            std::span< ::epoll_event> read;
+            std::span< ::epoll_event> write;
 
-         private:
-            std::vector< strong::file::descriptor::id> m_descriptors;
-
-         public:
-            range_type read;
-            range_type write;
-
-            inline explicit operator bool() const noexcept { return read || write;}
+            inline explicit operator bool() const noexcept { return ! read.empty() || ! write.empty();}
 
             CASUAL_LOG_SERIALIZE(
                CASUAL_SERIALIZE( read);
                CASUAL_SERIALIZE( write);
             )
-
          };
+
+         namespace detail
+         {
+
+            enum struct Flags : std::uint32_t
+            {
+               none = 0,
+               in = EPOLLIN,
+               out = EPOLLOUT,
+               rd_hup = EPOLLRDHUP, // read half closed
+               prio = EPOLLPRI, // high priority data available
+               error = EPOLLERR, // error condition
+               hup = EPOLLHUP, // hang up
+               edge = EPOLLET, // edge triggered
+               oneshot = EPOLLONESHOT, // only report one occurrence
+               wakeup = EPOLLWAKEUP, // wake up the process when the event is ready
+               exclusive = EPOLLEXCLUSIVE // exclusive wakeup for this event
+            };
+
+            [[maybe_unused]] consteval void casual_enum_as_flag( Flags){};
+
+            std::string_view description( Flags flag);
+
+            struct Entry
+            {
+               strong::file::descriptor::id descriptor;
+               Flags event{};
+               
+               inline friend bool operator == ( const Entry& lhs, strong::file::descriptor::id rhs) { return lhs.descriptor == rhs;}
+
+               CASUAL_LOG_SERIALIZE(
+                  CASUAL_SERIALIZE( descriptor);
+                  CASUAL_SERIALIZE( event);
+               )
+            };
+            
+         } // detail
 
       } // directive
 
 
       struct Directive 
       {
+         Directive();
+         ~Directive();
 
-         void read_add( strong::file::descriptor::id descriptor)
-         { 
-            m_read.add( descriptor); 
-         }
+         Directive( Directive&&) noexcept;
+         Directive& operator = ( Directive&&) noexcept;
+         void read_add( strong::file::descriptor::id descriptor);
+         void read_remove( strong::file::descriptor::id descriptor);
 
-         template< typename R>
+
+         template< concepts::range_value_convertible_to< strong::file::descriptor::id> R>
          void read_remove( R&& descriptors)
          { 
-            m_read.remove( std::forward< R>( descriptors)); 
+            for( auto descriptor : descriptors)
+               read_remove( descriptor);
          }
 
-         void read_remove( strong::file::descriptor::id descriptor)
-         { 
-            m_read.remove( descriptor); 
-         }
+         void write_add( strong::file::descriptor::id descriptor);
+         void write_remove( strong::file::descriptor::id descriptor);
 
-         void write_add( strong::file::descriptor::id descriptor)
-         { 
-            m_write.add( descriptor); 
-         }
-
-         template< typename R>
+         template< concepts::range_value_convertible_to< strong::file::descriptor::id> R>
          void write_remove( R&& descriptors)
          {
-            m_write.remove( std::forward< R>( descriptors));
-         }
-
-         void write_remove( strong::file::descriptor::id descriptor)
-         { 
-            m_write.remove( descriptor); 
+            for( auto descriptor : descriptors)
+               write_remove( descriptor);
          }
 
          //! removes `descriptor` from _read_ and _write_
-         template< typename D>
-         void remove( D&& descriptors) 
+         template< typename R>
+         void remove( R&& descriptors) 
          { 
-            m_read.remove( descriptors);
-            m_write.remove( descriptors);
+            read_remove( descriptors);
+            write_remove( descriptors);
          }
 
-         //! @returns the highest value descriptor in the `Directive`, 'nil' descriptor if empty.
-         inline auto highest() const noexcept { return std::max( m_read.highest(), m_write.highest());}
-
-         directive::Set m_read;
-         directive::Set m_write;
+         inline auto descriptor() const { return m_epoll;}
+         inline auto& events() { return m_events; }
 
          CASUAL_LOG_SERIALIZE(
-            CASUAL_SERIALIZE( m_read);
-            CASUAL_SERIALIZE( write);
+            CASUAL_SERIALIZE( m_epoll);
+            CASUAL_SERIALIZE( m_entries);
          )
+
+
+      private:
+
+         void add( strong::file::descriptor::id descriptor, directive::detail::Flags flag);
+         void remove( strong::file::descriptor::id descriptor, directive::detail::Flags flag);
+
+         strong::file::descriptor::id m_epoll;
+         std::vector< directive::detail::Entry> m_entries;
+
+         //! this is more like a "buffer" for the events
+         std::vector< ::epoll_event> m_events;
       };
 
 
       namespace dispatch::detail
       {
-         directive::Ready select( const Directive& directive);
+         directive::Ready select( Directive& directive);
 
       } // dispatch::detail
 

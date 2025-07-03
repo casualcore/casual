@@ -73,7 +73,7 @@ namespace casual
                if( auto found = common::algorithm::find( actives, id))
                {
                   auto active = common::algorithm::container::extract( actives, std::begin( found));
-                  directive.read_remove( active.socket.descriptor());
+                  directive.remove( active.socket.descriptor());
                   return active.configuration;
                }
                return {};
