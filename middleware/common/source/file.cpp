@@ -18,7 +18,7 @@
 #include "common/code/casual.h"
 #include "common/code/system.h"
 #include "common/code/convert.h"
-#include "common/result.h"
+#include "common/posix.h"
 
 // std
 #include <cstdio>

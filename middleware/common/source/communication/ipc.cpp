@@ -7,7 +7,7 @@
 #include "common/communication/ipc.h"
 #include "common/communication/select.h"
 
-#include "common/result.h"
+#include "common/posix.h"
 #include "common/log.h"
 #include "common/signal.h"
 #include "common/environment.h"

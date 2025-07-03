@@ -16,7 +16,7 @@
 #include "common/communication/instance.h"
 #include "common/communication/select.h"
 #include "common/signal.h"
-#include "common/result.h"
+#include "common/posix.h"
 #include "common/environment.h"
 #include "common/message/event.h"
 

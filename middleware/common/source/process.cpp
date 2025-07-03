@@ -19,7 +19,7 @@
 #include "common/environment.h"
 #include "common/environment/normalize.h"
 #include "common/uuid.h"
-#include "common/result.h"
+#include "common/posix.h"
 
 #include "common/message/domain.h"
 #include "common/communication/ipc.h"

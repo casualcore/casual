@@ -12,7 +12,7 @@
 #include "common/code/system.h"
 #include "common/exception/capture.h"
 
-#include "common/result.h"
+#include "common/posix.h"
 
 #include <cppcodec/base64_rfc4648.hpp>
 

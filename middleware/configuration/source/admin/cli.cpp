@@ -14,7 +14,7 @@
 #include "common/environment.h"
 #include "common/message/dispatch.h"
 #include "common/communication/ipc.h"
-#include "common/result.h"
+#include "common/posix.h"
 #include "common/terminal.h"
 #include "common/event/listen.h"
 

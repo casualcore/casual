@@ -13,7 +13,7 @@
 #include "common/communication/device.h"
 
 #include "common/signal.h"
-#include "common/result.h"
+#include "common/posix.h"
 #include "common/memory.h"
 #include "common/code/raise.h"
 #include "common/code/casual.h"

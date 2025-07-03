@@ -16,7 +16,7 @@
 #include "common/code/raise.h"
 #include "common/code/signal.h"
 #include "common/code/system.h"
-#include "common/result.h"
+#include "common/posix.h"
 #include "common/stream.h"
 
 

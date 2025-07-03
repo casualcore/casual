@@ -15,6 +15,7 @@
 
 #include <system_error>
 #include <string>
+#include <expected>
 
 namespace casual
 {
@@ -84,6 +85,15 @@ namespace casual
                return {};
 
             return { code::system::last::error()};
+         }
+
+         template< typename R>
+         std::expected< R, std::errc> expected( R result)
+         {
+            if( detail::predicate( result))
+               return result;
+
+            return std::unexpected{ code::system::last::error()};
          }
 
    } // common::posix

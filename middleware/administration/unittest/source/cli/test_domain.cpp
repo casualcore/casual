@@ -9,7 +9,7 @@
 #include "administration/unittest/cli/command.h"
 
 #include "common/execute.h"
-#include "common/result.h"
+#include "common/posix.h"
 #include "common/signal.h"
 #include "common/environment.h"
 

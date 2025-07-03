@@ -20,7 +20,7 @@
 
 #include "common/message/domain.h"
 #include "common/algorithm/is.h"
-#include "common/result.h"
+#include "common/posix.h"
 #include "common/sink.h"
 
 #include "transaction/context.h"

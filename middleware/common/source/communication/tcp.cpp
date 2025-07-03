@@ -8,7 +8,7 @@
 #include "common/communication/tcp.h"
 #include "common/communication/select.h"
 
-#include "common/result.h"
+#include "common/posix.h"
 
 #include "common/code/convert.h"
 #include "common/code/raise.h"
