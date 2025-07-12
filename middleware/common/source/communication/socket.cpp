@@ -5,7 +5,6 @@
 //!
 
 #include "common/communication/socket.h"
-#include "common/communication/log.h"
 
 #include "common/result.h"
 #include "common/flag.h"
@@ -40,7 +39,7 @@ namespace casual
          : m_descriptor( std::move( descriptor)) 
       {
          if( *this)
-            common::log::line( log, "Socket::adopted - descriptor: ", m_descriptor);
+            log::debug( "Socket::adopted - descriptor: ", m_descriptor);
       }
 
       Socket::~Socket() noexcept
@@ -48,7 +47,7 @@ namespace casual
          if( *this)
          {
             if( posix::log::result( ::close( m_descriptor.value()), "failed to close socket"))
-               common::log::line( log, "Socket::close - descriptor: ", m_descriptor);
+               log::debug( "Socket::close - descriptor: ", m_descriptor);
          }
       }
 
@@ -96,7 +95,7 @@ namespace casual
 
       strong::socket::id Socket::release() noexcept
       {
-         common::log::line( log, "Socket::release - descriptor: ", m_descriptor);
+         log::debug( "Socket::release - descriptor: ", m_descriptor);
 
          return std::exchange( m_descriptor, {});
       }

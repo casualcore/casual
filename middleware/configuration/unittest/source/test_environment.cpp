@@ -168,20 +168,21 @@ namespace casual
          first.variables = local::variables();
          auto first_file = local::serialize( first, GetParam());
 
-         common::log::line( configuration::log, "first: ", first);
+
+         trace.line( "first: ", first);
 
          user::domain::Environment second;
          second.variables = local::variables();
          second.files.emplace().push_back( first_file);
          auto second_file = local::serialize( second, GetParam());
 
-         common::log::line( configuration::log, "second: ", second);
+         trace.line( "second: ", second);
 
          user::domain::Environment third;
          third.variables = local::variables();
          third.files.emplace().push_back( second_file);
 
-         common::log::line( configuration::log, "third: ", third);
+         trace.line( "third: ", third);
 
 
          auto expected = first.variables.value();

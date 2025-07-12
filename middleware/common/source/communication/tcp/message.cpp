@@ -7,7 +7,6 @@
 
 
 #include "common/communication/tcp/message.h"
-#include "common/communication/log.h"
 #include "common/transcode.h"
 
 namespace casual

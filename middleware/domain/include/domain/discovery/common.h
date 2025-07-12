@@ -13,8 +13,6 @@ namespace casual
 {
    namespace domain::discovery
    {
-      extern common::log::Stream log;
-
       using Trace = common::Trace;
 
    } // domain::discovery

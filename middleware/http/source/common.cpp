@@ -23,7 +23,6 @@ namespace casual
 
    namespace http
    {
-      log::Stream log{ "casual.http"};
 
       namespace header
       {

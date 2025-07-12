@@ -193,8 +193,8 @@ namespace casual
          {
             Trace trace{ "protocol::implementation::parameter::Log::call"};
 
-            m_writer.consume( log::parameter);
-            static_cast< std::ostream&>( log::parameter) << "\n";
+            m_writer.consume( common::log::category::parameter);
+            static_cast< std::ostream&>( common::log::category::parameter) << "\n";
 
             return m_protocol.call();
          }
@@ -203,8 +203,8 @@ namespace casual
          { 
             Trace trace{ "protocol::implementation::parameter::Log::finalize"};
 
-            m_writer.consume( log::parameter);
-            static_cast< std::ostream&>( log::parameter) << "\n";
+            m_writer.consume( common::log::category::parameter);
+            static_cast< std::ostream&>( common::log::category::parameter) << "\n";
 
             return m_protocol.finalize();
          }

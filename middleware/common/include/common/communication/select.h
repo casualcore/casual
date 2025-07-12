@@ -9,7 +9,6 @@
 #include "common/strong/id.h"
 #include "common/functional.h"
 #include "common/algorithm.h"
-#include "common/communication/log.h"
 #include "common/message/dispatch.h"
 
 

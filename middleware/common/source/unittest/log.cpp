@@ -22,9 +22,6 @@ namespace casual
    namespace common::unittest
    {
 
-      common::log::Stream log{ "casual.unittest"};
-      common::log::Stream trace{ "casual.unittest.trace"};
-
       namespace clean
       {
          Scope::Scope() 

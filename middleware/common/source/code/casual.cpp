@@ -12,7 +12,6 @@
 
 #include "common/log.h"
 #include "common/string.h"
-#include "common/communication/log.h"
 
 #include <string>
 

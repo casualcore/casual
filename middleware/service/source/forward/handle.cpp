@@ -83,7 +83,7 @@ namespace casual
                            return;
                         }
 
-                        log::line( log, "send request - to: ", message.process, " - request: ", request);
+                        log::debug( "send request - to: ", message.process, " - request: ", request);
 
                         state.multiplex.send( message.process.ipc, request, [ &state, request, service_name = message.service.name]( auto& destination, auto& complete)
                         {

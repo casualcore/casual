@@ -8,7 +8,6 @@
 #pragma once
 
 #include "common/communication/tcp/message.h"
-#include "common/communication/log.h"
 #include "common/communication/socket.h"
 #include "common/communication/device.h"
 

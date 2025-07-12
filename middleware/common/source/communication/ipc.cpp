@@ -5,7 +5,6 @@
 //!
 
 #include "common/communication/ipc.h"
-#include "common/communication/log.h"
 #include "common/communication/select.h"
 
 #include "common/result.h"
@@ -37,7 +36,7 @@ namespace casual
 
       Handle::Handle( Socket&& socket, strong::ipc::id ipc) : m_socket( std::move( socket)), m_ipc(std::move( ipc))
       {
-         log::line( communication::verbose::log, "created handle: ", *this);
+         log::debug( "created handle: ", *this);
       }
 
       Handle::Handle( Handle&& other) noexcept 

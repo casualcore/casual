@@ -8,9 +8,6 @@
 #pragma once
 
 
-
-
-#include "common/log/stream.h"
 #include "common/log.h"
 
 
@@ -18,8 +15,6 @@ namespace casual
 {
    namespace transaction
    {
-      extern common::log::Stream& log; // = common::log::category::transaction;
-
 
       using Trace = common::Trace;
 

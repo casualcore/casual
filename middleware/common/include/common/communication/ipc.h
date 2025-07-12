@@ -9,7 +9,6 @@
 #include "common/communication/ipc/message.h"
 #include "common/communication/device.h"
 #include "common/communication/socket.h"
-#include "common/communication/log.h"
 
 #include "casual/platform.h"
 #include "common/strong/id.h"

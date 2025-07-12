@@ -49,7 +49,7 @@ namespace casual
                      curl::check( curl_global_init( CURL_GLOBAL_DEFAULT));
 
                      auto version = curl_version_info( CURLVERSION_NOW);
-                     common::log::line( http::log, "curl version: ", version->version);
+                     common::log::debug( "curl version: ", version->version);
                   }
 
                   ~Initializer()

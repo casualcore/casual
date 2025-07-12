@@ -150,7 +150,7 @@ namespace casual
 
                auto version = sql::database::version::get( connection);
 
-               common::log::line( log, "queue-base version: ", version);
+               common::log::debug( "queue-base version: ", version);
 
                if( ( ! version && connection.table( "queue")) || ( version && version != required))
                {
@@ -207,7 +207,7 @@ namespace casual
          local::check_version( m_connection);
 
          // log the actual pragma settings
-         m_connection.pragma_information( queue::log);
+         m_connection.pragma_information( common::log::category::debug);
 
          log::debug( "pre_statements_path: ", m_connection.pre_statements_path());
          m_connection.pre_statements( log::category::information);
@@ -308,7 +308,7 @@ namespace casual
          m_connection.execute( statement, queue.name, queue.retry.count, queue.retry.delay, queue.error.value(), now);
          queue.id = common::strong::queue::id{ m_connection.rowid()};
 
-         common::log::line( log, "queue: ", queue);
+         common::log::debug( "queue: ", queue);
 
          return queue;
       }
@@ -452,7 +452,7 @@ namespace casual
          }
          else
          {
-            common::log::line( log, "dequeue - qid: ", message.queue, " - no message");
+            common::log::debug( "dequeue - qid: ", message.queue, " - no message");
             auto reply = common::message::reverse::type( message);
             reply.code = decltype( reply.code)::no_message;
             return reply;
@@ -502,7 +502,7 @@ namespace casual
                reply.messages.push_back( std::move( result.message));
             }
             else
-               log::line( log, "failed to find message with id: ", id);
+               common::log::debug( "failed to find message with id: ", id);
          }
 
          return reply;
@@ -667,7 +667,7 @@ namespace casual
       {
          Trace trace{ "queue::Queuebase::commit"};
 
-         log::line( log, "commit xid: ", id);
+         common::log::debug( "commit xid: ", id);
 
          auto gtrid = common::transaction::id::range::global( id);
          m_statement.commit1.execute( gtrid);
@@ -680,7 +680,7 @@ namespace casual
       {
          Trace trace{ "queue::Queuebase::rollback"};
 
-         log::line( log, "rollback xid: ", id);
+         common::log::debug( "rollback xid: ", id);
 
          auto gtrid = common::transaction::id::range::global( id);
 
@@ -776,9 +776,9 @@ namespace casual
       void Queuebase::persist() 
       { 
          Trace trace{ "queue::Queuebase::persist"};
-         log::line( log, "commit");
+         common::log::debug( "commit");
          m_connection.commit();
-         log::line( log, "exclusive_begin");
+         common::log::debug( "exclusive_begin");
          m_connection.exclusive_begin();
       }
       void Queuebase::rollback() 

@@ -121,7 +121,7 @@ namespace casual
                               return;
                            }
                            else
-                              log::line( log, "transaction discarded for '", message.service.name, "'");
+                              log::debug( "transaction discarded for '", message.service.name, "'");
                         }
 
                         // prepare and add the curl call

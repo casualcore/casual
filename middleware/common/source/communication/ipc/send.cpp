@@ -5,7 +5,6 @@
 //!
 
 #include "common/communication/ipc/send.h"
-#include "common/communication/log.h"
 
 namespace casual
 {
@@ -20,7 +19,7 @@ namespace casual
             
             if( ! callback)
             {
-               log::line( log, "no callback for 'message': ", *this);
+               log::debug( "no callback for 'message': ", *this);
                return;
             }
 
@@ -54,7 +53,7 @@ namespace casual
             }
             catch( ...)
             {
-               log::line( log, exception::capture(), " failed to send to destination: ", m_destination, " - action: invoke callback (if any) and discard for all pending messages to the destination");
+               log::debug( exception::capture(), " failed to send to destination: ", m_destination, " - action: invoke callback (if any) and discard for all pending messages to the destination");
                failed( directive);
                return true;
             }
@@ -139,7 +138,7 @@ namespace casual
             }
             catch( ...)
             {
-               log::line( log, exception::capture(), " failed to send to destination: ", ipc, " - action: invoke callback (if any) and discard for all pending messages to the destination");
+               log::debug( exception::capture(), " failed to send to destination: ", ipc, " - action: invoke callback (if any) and discard for all pending messages to the destination");
                message.error( ipc);
 
                return {};

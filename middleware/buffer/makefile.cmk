@@ -38,7 +38,6 @@ lib_buffer = make.LinkLibrary( 'bin/casual-buffer',
      make.Compile( 'source/order.cpp'),
      make.Compile( 'source/string.cpp'),
      
-     make.Compile( 'source/common.cpp'),
      make.Compile( 'source/internal/field/string.cpp'),
     ],
     [

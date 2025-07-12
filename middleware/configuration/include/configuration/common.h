@@ -80,9 +80,6 @@ namespace casual
 
       } // alias
 
-
-      extern common::log::Stream log;
-
       using Trace = common::Trace;
 
    } // configuration

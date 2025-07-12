@@ -52,7 +52,6 @@ install_lib.append( api_library)
 # make.Compile and link the transaction manager
 manager_archive = make.LinkArchive( 'bin/manager-archive',
     [
-        make.Compile( 'source/common.cpp'),
         make.Compile( 'source/manager/state.cpp'),
         make.Compile( 'source/manager/action.cpp'),
         make.Compile( 'source/manager/transform.cpp'),

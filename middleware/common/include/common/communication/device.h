@@ -8,8 +8,6 @@
 #pragma once
 
 
-#include "common/communication/log.h"
-
 #include "common/serialize/native/binary.h"
 #include "common/serialize/native/complete.h"
 #include "common/signal.h"
@@ -644,7 +642,7 @@ namespace casual
                {
                   if( exception::capture().code() == code::casual::communication_unavailable)
                   {
-                     log::line( communication::log, code::casual::communication_unavailable, " failed to send message - action: ignore");
+                     log::debug( code::casual::communication_unavailable, " failed to send message - action: ignore");
                      return {};
                   }
                   // propagate other errors
@@ -693,7 +691,7 @@ namespace casual
                {
                   if( exception::capture().code() == code::casual::communication_unavailable)
                   {
-                     log::line( communication::log, code::casual::communication_unavailable, " failed to send message - action: ignore");
+                     log::debug( code::casual::communication_unavailable, " failed to send message - action: ignore");
                      return {};
                   }
                   // propagate other errors

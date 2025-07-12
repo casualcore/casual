@@ -24,9 +24,9 @@ namespace casual
          : m_connection( std::move( file))
       {
          // log the actual pragma settings
-         m_connection.pragma_information( log);
+         m_connection.pragma_information( common::log::category::transaction);
          
-         common::log::line( log, "transaction log version: ",  sql::database::version::get( m_connection));
+         common::log::line( common::log::category::event::transaction, "log-version|",  sql::database::version::get( m_connection));
 
          sql::database::version::set( m_connection, sql::database::Version{ 1, 0});
 

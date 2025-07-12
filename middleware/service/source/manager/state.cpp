@@ -110,7 +110,7 @@ namespace casual
             {
                if( algorithm::find( m_sequential, instance))
                {
-                  log::line( casual::service::log, "instance already known to service - ", instance);
+                  common::log::debug( "instance already known to service - ", instance);
                   return false;
                }
 
@@ -122,7 +122,7 @@ namespace casual
             {
                if( algorithm::find( m_concurrent, instance))
                {
-                  log::line( casual::service::log, "instance already known to service - ", instance);
+                  common::log::debug( "instance already known to service - ", instance);
                   return;
                }
 

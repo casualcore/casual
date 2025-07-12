@@ -88,7 +88,7 @@ namespace casual
                   state.forward = common::Process( process::path().parent_path() / "casual-service-forward");
                   state.forward.ipc = common::communication::instance::fetch::handle( forward::instance::identity.id).ipc;
 
-                  log::line( log, "forward: ", state.forward);
+                  log::debug( "forward: ", state.forward);
                }
             }
 

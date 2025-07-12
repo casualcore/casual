@@ -71,7 +71,7 @@ namespace casual
                   auto protocol = found->second( std::move( payload));
 
                   // should we wrap it in 'adapters'?
-                  if( log::parameter)
+                  if( common::log::category::parameter)
                      protocol = Protocol::emplace< protocol::implementation::parameter::Log>( std::move( protocol));
                   
                   if( local::describe( headers))

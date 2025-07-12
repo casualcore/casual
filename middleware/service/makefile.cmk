@@ -37,15 +37,6 @@ install_libs = []
 install_headers = []
 
 
-common_library = make.LinkLibrary( 'bin/casual-service-common',
-    [
-        make.Compile( 'source/common.cpp'),
-    ],
-    [
-        'casual-common',
-    ])
-
-install_libs.append( common_library)
 
 manager_archive = make.LinkArchive( 'bin/casual-service-manager-archive',
     [
@@ -62,7 +53,6 @@ target = make.LinkExecutable( 'bin/casual-service-manager',
         make.Compile( 'source/manager/configuration.cpp'),
     ],
 	[
-        common_library,
         manager_archive,
         'casual-common',
         'casual-manager',
@@ -82,7 +72,6 @@ target = make.LinkExecutable( 'bin/casual-service-forward',
         make.Compile( 'source/forward/handle.cpp')
     ],
     [
-        common_library,
         'casual-domain-utility',
         'casual-common'
     ])
@@ -100,7 +89,6 @@ service_call = make.LinkLibrary( 'bin/casual-service',
         make.Compile( 'source/lookup.cpp'),
     ],
     [
-        common_library,
         'casual-common',
         'casual-transaction'
     ])
@@ -116,7 +104,6 @@ admin_api_lib = make.LinkLibrary( 'bin/casual-service-admin-api',
    ],
    [
         service_call,
-        common_library,
         'casual-common',
         'casual-transaction',
         'casual-serviceframework'
@@ -126,7 +113,6 @@ install_libs.append( admin_api_lib)
 target = make.LinkLibrary( 'bin/casual-service-admin-cli',
     [ make.Compile( 'source/manager/admin/cli.cpp')],
     [ 
-        common_library,
         admin_api_lib, 
         service_call,
         'casual-common', 
@@ -143,7 +129,6 @@ api_lib = make.LinkLibrary( 'bin/casual-service-api',
         make.Compile( 'source/manager/api/model.cpp')
     ],
     [
-        common_library, 
         admin_api_lib,
         'casual-common',
         'casual-serviceframework', 
@@ -164,7 +149,6 @@ service_unittest = make.LinkLibrary( 'bin/casual-service-unittest',
     ],
     [
         service_call,
-        common_library, 
         'casual-unittest',
         'casual-common',
         'casual-transaction',
@@ -182,7 +166,6 @@ test_service = make.LinkUnittest( 'unittest/bin/test-casual-service',
     [
         manager_archive,
         service_call,
-        common_library,
         api_lib,
         service_unittest,
         'casual-transaction',

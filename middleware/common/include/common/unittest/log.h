@@ -20,12 +20,6 @@ namespace casual
 {
    namespace common::unittest
    {
-      //! Log with category 'casual.unittest'
-      extern common::log::Stream log;
-
-      //! Log with category 'casual.unittest.trace'
-      extern common::log::Stream trace;
-
 
       namespace clean
       {
@@ -45,18 +39,18 @@ namespace casual
          Trace()
          {
             auto test_info = casual::assertion( ::testing::UnitTest::GetInstance()->current_test_info());
-            log::line( unittest::trace, "TEST( ", test_info->test_case_name(), ".", test_info->name(), ") - in");
+            log::line( log::category::trace , "TEST( ", test_info->test_case_name(), ".", test_info->name(), ") - in");
          }
          ~Trace()
          {
             auto test_info = ::testing::UnitTest::GetInstance()->current_test_info();
-            log::line( unittest::trace, "TEST( ", test_info->test_case_name(), ".", test_info->name(), ") - out");
+            log::line( log::category::trace, "TEST( ", test_info->test_case_name(), ".", test_info->name(), ") - out");
          }  
 
          template< typename... Ts>
          static void line( Ts&&... ts)
          {
-            log::line( unittest::log, "TEST - ", std::forward< Ts>( ts)...);
+            log::debug( "TEST - ", std::forward< Ts>( ts)...);
          }
 
          template< typename S>

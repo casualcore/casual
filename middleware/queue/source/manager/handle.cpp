@@ -232,7 +232,7 @@ namespace casual
 
                      if( state.runlevel > decltype( state.runlevel())::running)
                      {
-                        common::log::line( log, "runlevel [", state.runlevel, "] - action: reply with absent queue");
+                        common::log::debug( "runlevel [", state.runlevel, "] - action: reply with absent queue");
                         local::lookup::detail::dispatch::lookup::reply_absent_queue( state, std::move( message));
                         return;
                      }

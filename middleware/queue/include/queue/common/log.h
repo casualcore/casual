@@ -15,8 +15,6 @@ namespace casual
 {
    namespace queue
    {
-      extern common::log::Stream log;
-
       using Trace = common::Trace;
 
       namespace event

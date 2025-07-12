@@ -25,8 +25,6 @@ lib_serviceframework = make.LinkLibrary( 'bin/casual-serviceframework',
         make.Compile( 'source/service/protocol.cpp'),
         make.Compile( 'source/service/protocol/implementation.cpp'),
         make.Compile( 'source/service/protocol/describe.cpp'),
-        #make.Compile( 'source/service/call.cpp'),
-        make.Compile( 'source/log.cpp'),
         
     ],
     ['casual-common',])

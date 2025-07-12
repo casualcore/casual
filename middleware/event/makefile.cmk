@@ -8,6 +8,7 @@ make.IncludePaths([
     '../configuration/include',
 	'../service/include',
     '../service/unittest/include',
+    '../serviceframework/include',
 	'../xatmi/include',
     '../domain/include',
     '../domain/unittest/include',
@@ -35,17 +36,12 @@ install_lib = []
 install_bin = []
 install_header = []
 
-common_archive = make.LinkArchive( 'bin/casual-event-common',
-    [
-        make.Compile( 'source/common.cpp')
-    ])
 
 lib_api = make.LinkLibrary( 'bin/casual-event-api',
     [
         make.Compile( 'source/dispatch.cpp')
     ],
     [
-        common_archive,
         'casual-common',
     ])
 
@@ -62,7 +58,6 @@ target = make.LinkExecutable( 'bin/casual-event-service-monitor',
         make.Compile( 'source/service/monitor/database.cpp')
 	],
 	[
-        common_archive,
         'casual-common',
         'sqlite3'
     ] )
@@ -74,7 +69,6 @@ target = make.LinkExecutable( 'bin/casual-event-service-log',
 	    make.Compile( 'source/service/log/main.cpp')
 	],
 	[
-        common_archive,
         'casual-common'
    ] )
 
@@ -85,7 +79,6 @@ target = make.LinkExecutable( 'bin/casual-event-service-monitor-server',
 	    make.Compile( 'source/service/monitor/server.cpp')
 	],
 	[
-        common_archive,
         'casual-common',
         'casual-manager',
         'casual-serviceframework',

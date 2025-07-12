@@ -72,7 +72,7 @@ namespace casual
 
                   void reopen()
                   {  
-                     common::log::line( event::log, "reopen service event log: ", file);
+                     common::log::debug( "reopen service event log: ", file);
                      file = std::move( file).reopen();
 
                      if( ! file)
@@ -173,7 +173,7 @@ namespace casual
 
             void pump( Settings settings)
             {
-               common::log::line( event::log, "settings: ", settings);
+               common::log::debug( "settings: ", settings);
 
                state::Log log{ std::move( settings.file), std::move( settings.delimiter)};
 

@@ -43,7 +43,5 @@ namespace casual
 
       } // alias
 
-      common::log::Stream log{ "casual.configuration"};
-
    } // configuration
 } // casual

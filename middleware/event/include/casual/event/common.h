@@ -8,7 +8,6 @@
 #pragma once
 
 
-#include "common/log/stream.h"
 #include "common/log.h"
 
 
@@ -16,8 +15,6 @@ namespace casual
 {
    namespace event
    {
-      extern common::log::Stream log;
-
       using Trace = common::Trace;
 
    } // traffic

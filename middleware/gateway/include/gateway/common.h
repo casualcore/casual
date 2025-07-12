@@ -14,8 +14,6 @@ namespace casual
 {
    namespace gateway
    {
-      extern common::log::Stream log;
-
       using Trace = common::Trace;
 
    } // gateway

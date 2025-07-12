@@ -49,14 +49,14 @@ namespace casual
                   {
                      if( state.runlevel > decltype( state.runlevel())::running)
                      {
-                        log::line( log, "outbound is in shutdown mode - action: reply with 'default'");
+                        log::debug( "outbound is in shutdown mode - action: reply with 'default'");
                         state.multiplex.send( message.process.ipc, create_reply( message));
                         return true;
                      }
 
                      if( algorithm::find( state.disconnecting, descriptor))
                      {
-                        log::line( log, "connection: ", descriptor, " is in disconnect mode - action: reply with 'default'");
+                        log::debug( "connection: ", descriptor, " is in disconnect mode - action: reply with 'default'");
                         state.multiplex.send( message.process.ipc, create_reply( message));
                         return true;
                      }

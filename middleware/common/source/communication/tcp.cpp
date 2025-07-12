@@ -6,7 +6,6 @@
 
 
 #include "common/communication/tcp.h"
-#include "common/communication/log.h"
 #include "common/communication/select.h"
 
 #include "common/result.h"
@@ -362,7 +361,7 @@ namespace casual
                }
                catch( ...)
                {
-                  log::line( communication::log, exception::capture(), " - failed to get host address from: ", descriptor);
+                  log::debug( exception::capture(), " - failed to get host address from: ", descriptor);
                   return {};
                }
             }
@@ -383,7 +382,7 @@ namespace casual
                }
                catch( ...)
                {
-                  log::line( communication::log, exception::capture(), " - failed to get peer address from: ", descriptor);
+                  log::debug( exception::capture(), " - failed to get peer address from: ", descriptor);
                   return {};
                }
             }
@@ -581,7 +580,7 @@ namespace casual
                         }
                      }
 
-                     log::line( log, "tcp send ---> descriptor: ", socket.descriptor(), ", complete: ", complete);
+                     log::debug( "tcp send ---> descriptor: ", socket.descriptor(), ", complete: ", complete);
 
                      return complete.complete();
                   }
@@ -642,7 +641,7 @@ namespace casual
                      log::line( log::category::event::message::part::received, complete.type(), '|', complete.correlation(), '|', count, '|', complete.offset - count, '|', complete.size());
                   }
 
-                  log::line( log, "tcp receive <---- descriptor: ", socket.descriptor(), " , complete: ", complete);
+                  log::debug( "tcp receive <---- descriptor: ", socket.descriptor(), " , complete: ", complete);
 
                   return complete.complete();
                }

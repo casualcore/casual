@@ -49,7 +49,7 @@ namespace casual
                if( exception::capture().code() != code::casual::communication_unavailable)
                   throw;
 
-               log::line( communication::log, code::casual::communication_unavailable, " failed to send message - action: ignore");
+               log::debug( code::casual::communication_unavailable, " failed to send message - action: ignore");
 
                return {};
             }

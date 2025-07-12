@@ -173,7 +173,7 @@ namespace casual
 
          proxy::local::handle::open( m_state);
 
-         common::log::line( log, "start message pump");
+         common::log::debug( "start message pump");
 
          common::message::dispatch::pump( 
             handler, 

@@ -423,7 +423,7 @@ namespace casual
 
                      auto send_reply = common::execute::scope( [&]()
                      {
-                        common::log::line( log, "no instances found for service: ", name);
+                        common::log::debug( "no instances found for service: ", name);
 
                         // Server that hosts the requested service is not found.
                         // We propagate this by having absent state
@@ -435,7 +435,7 @@ namespace casual
                      });
 
                      {
-                        common::log::line( log, "no instances found for service: ", name, " - action: ask neighbor domains");
+                        common::log::debug( "no instances found for service: ", name, " - action: ask neighbor domains");
 
                         if( local::discovery::send( state, { name}, message.correlation) || message.context.semantic == decltype( message.context.semantic)::wait)
                         {
@@ -713,7 +713,7 @@ namespace casual
 
                         if( auto found = common::algorithm::find( state.pending.lookups, message.correlation))
                         {
-                           common::log::line( log, "found pending to discard");
+                           common::log::debug( "found pending to discard");
                            common::log::debug( "pending: ", *found);
 
                            state.pending.lookups.erase( std::begin( found));
@@ -721,7 +721,7 @@ namespace casual
                         }
                         else 
                         {
-                           common::log::line( log, "failed to find pending to discard - check if we have reserved the service already");
+                           common::log::debug( "failed to find pending to discard - check if we have reserved the service already");
 
                            // we need to go through all sequential instances.
 

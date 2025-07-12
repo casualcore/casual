@@ -26,7 +26,6 @@ make.LibraryPaths([
     '../service/bin',
     '../transaction/bin',
     '../configuration/bin',
-    #'../serviceframework/bin'
     ]
     + make.optional_library_paths()
     + dsl.paths().library.gtest
@@ -45,7 +44,6 @@ target = make.LinkLibrary( 'bin/casual-domain-admin-cli',
    ],
    [
       'casual-domain-manager',
-      'casual-domain-common',
       'casual-common',
       'casual-configuration',
       'casual-configuration-cli',
@@ -62,9 +60,7 @@ domain_api = make.LinkLibrary( 'bin/casual-domain-api',
    ],
    [
       'casual-domain-manager-internal-api',
-      'casual-domain-common',
       'casual-common',
-      #'casual-serviceframework'
    ]
 )
 install_libs.append( domain_api)

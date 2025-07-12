@@ -12,8 +12,6 @@ namespace casual
 {
    namespace queue
    {
-      common::log::Stream log{ "casual.queue"};
-
 
       namespace event
       {

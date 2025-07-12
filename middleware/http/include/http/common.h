@@ -16,8 +16,6 @@ namespace casual
 {
    namespace http
    {
-      extern common::log::Stream log;
-
       using Trace = common::Trace;
 
       namespace header

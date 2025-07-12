@@ -13,8 +13,6 @@ namespace casual
 {
    namespace service
    {
-      extern common::log::Stream log;
-
       using Trace = common::Trace;
 
    } // service

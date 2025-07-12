@@ -8,7 +8,6 @@
 #include "common/instance.h"
 #include "common/communication/instance.h"
 #include "common/communication/ipc.h"
-#include "common/communication/log.h"
 
 #include "common/message/domain.h"
 #include "common/message/server.h"
@@ -67,7 +66,7 @@ namespace casual
          strong::correlation::id request( const Uuid& identity, Directive directive)
          {
             Trace trace{ "common::communication::instance::lookup::request"};
-            common::log::line( log, "identity: ", identity, ", directive: ", directive);
+            log::debug( "identity: ", identity, ", directive: ", directive);
 
             return local::send( directive, [ &identity]( auto& request)
             {
@@ -116,7 +115,7 @@ namespace casual
          process::Handle handle( const Uuid& identity, Directive directive)
          {
             Trace trace{ "common::communication::instance::fetch::handle"};
-            common::log::line( log, "identity: ", identity, ", directive: ", directive);
+            log::debug( "identity: ", identity, ", directive: ", directive);
             
             return local::call( directive, [ &identity]( auto& request)
             {
@@ -264,7 +263,7 @@ namespace casual
                         if( exception::capture().code() != code::casual::communication_unavailable)
                            throw;
 
-                        common::log::line( log, "failed to fetch instance with identity: ", identity);
+                        log::debug( "failed to fetch instance with identity: ", identity);
                         return {};
                      }
                   }
@@ -286,7 +285,7 @@ namespace casual
             basic_connector< directive>::basic_connector( instance::Identity identity)
                : m_identity{ identity}
             {
-               log::line( log, "instance created - identity: ", m_identity);
+               log::debug( "instance created - identity: ", m_identity);
                log::debug( "connector: ", *this);
             }
 
@@ -430,7 +429,7 @@ namespace casual
                               return process;
                            }
 
-                           common::log::line( log, "failed to locate via ", environment::variable::name::ipc::domain::manager);
+                           log::debug( "failed to locate via ", environment::variable::name::ipc::domain::manager);
                         }
 
                         process = singleton_policy();
@@ -444,7 +443,7 @@ namespace casual
                               return process;
                            }
 
-                           common::log::line( log, "failed to locate via 'singleton file'");
+                           log::debug( "failed to locate via 'singleton file'");
                         }
 
                         code::raise::error( code::casual::domain_unavailable, "failed to locate domain manager");

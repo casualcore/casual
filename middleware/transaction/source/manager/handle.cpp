@@ -249,7 +249,7 @@ namespace casual
                            if( auto reserved = state.try_reserve( request.resource))
                               return state.multiplex.send( reserved->process.ipc, request, create::resource::error::callback( request));
 
-                           common::log::line( log, "could not send to resource: ", request.resource, " - action: try later");
+                           common::log::debug( "could not send to resource: ", request.resource, " - action: try later");
                            // (we know message is an rvalue, so it's going to be a move)
                            return state.pending.requests.add( request.resource, std::forward< M>( request));
                         }
@@ -566,7 +566,7 @@ namespace casual
                   return [ &state]( const common::message::transaction::commit::Request& message)
                   {
                      Trace trace{ "transaction::manager::handle::local::commit::request"};
-                     common::log::line( log, "message: ", message);
+                     common::log::debug( "message: ", message);
 
                      auto& transaction = detail::transaction::find_or_add( state, message.trid);
                      
@@ -592,7 +592,7 @@ namespace casual
                      {
                         case 0:
                         {
-                           common::log::line( log, transaction.global, " no resources involved: ");
+                           common::log::debug( transaction.global, " no resources involved: ");
 
                            detail::send::reply( state, message, []( auto& reply)
                            { 
@@ -608,7 +608,7 @@ namespace casual
                         case 1:
                         {
                            // Only one resource involved, we do a one-phase-commit optimization.
-                           common::log::line( log, "global: ", transaction.global, " - only one resource involved");
+                           common::log::debug( "global: ", transaction.global, " - only one resource involved");
 
                            // start the commit phase directly
                            transaction.stage = state::transaction::Stage::commit;
@@ -624,7 +624,7 @@ namespace casual
                         default:
                         {
                            // More than one resource involved, we do the prepare stage
-                           common::log::line( log, "global: ", transaction.global, " more than one resource involved");
+                           common::log::debug( "global: ", transaction.global, " more than one resource involved");
                            
                            // start the prepare phase
                            transaction.stage = state::transaction::Stage::prepare;
@@ -701,7 +701,7 @@ namespace casual
 
                if( auto stale = common::algorithm::find( state.stale, trid))
                {
-                  common::log::line( log, "stale rollback: ", *stale);
+                  common::log::debug( "stale rollback: ", *stale);
                   CASUAL_ASSERT( stale->stage == state::transaction::Stage::involved);
 
                   state.transactions.push_back( common::algorithm::container::extract( state.stale, std::begin( stale)));
@@ -911,7 +911,7 @@ namespace casual
                      return [ &state]( common::message::transaction::resource::external::Instance& message)
                      {
                         Trace trace{ "transaction::manager::handle::local::resource::external::instance"};
-                        common::log::line( log, "message: ", message);
+                        common::log::debug( "message: ", message);
 
                         state::resource::external::instance::add( state, std::move( message));
                      };
@@ -923,7 +923,7 @@ namespace casual
                      return [ &state]( common::message::transaction::resource::external::Involved& message)
                      {
                         Trace trace{ "transaction::manager::handle::local::resource::external::involved"};
-                        common::log::line( log, "message: ", message);
+                        common::log::debug( "message: ", message);
 
                         auto id = state::resource::external::instance::id( state, message.process);
 
@@ -953,29 +953,29 @@ namespace casual
                         return [&state]( const common::message::transaction::resource::prepare::Request& message)
                         {
                            Trace trace{ "transaction::manager::handle::local::resource::external::prepare::request"};
-                           common::log::line( log, "message: ", message);
+                           common::log::debug( "message: ", message);
 
                            auto transaction = common::algorithm::find( state.transactions, message.trid);
 
                            if( ! transaction)
                            {
-                              common::log::line( log, "failed to find trid: ", message.trid, " - action: reply with read-only");
+                              common::log::debug( "failed to find trid: ", message.trid, " - action: reply with read-only");
                               detail::send::read::only::reply( state, message);
                               return;
                            }
 
-                           common::log::line( log, "transaction: ", *transaction);
+                           common::log::debug( "transaction: ", *transaction);
 
                            if( transaction->stage > state::transaction::Stage::involved)
                            {
-                              common::log::line( log, "transaction stage is passed the _involved_ - stage: ", transaction->stage, " - action: reply with read-only");
+                              common::log::debug( "transaction stage is passed the _involved_ - stage: ", transaction->stage, " - action: reply with read-only");
                               detail::send::read::only::reply( state, message);
                               return;
                            }
 
                            if( transaction->resource_count() == 0)
                            {
-                              common::log::line( log, transaction->global, " no resources involved: ");
+                              common::log::debug( transaction->global, " no resources involved: ");
 
                               detail::send::read::only::reply( state, message);
 
@@ -985,7 +985,7 @@ namespace casual
                            }
 
                            // we can't do any _one phase commit optimization_, since we're not the one in charge.
-                           common::log::line( log, "global: ", transaction->global, " preparing");
+                           common::log::debug( "global: ", transaction->global, " preparing");
 
                            // Start the prepare phase
                            transaction->stage = state::transaction::Stage::prepare;
@@ -1007,18 +1007,18 @@ namespace casual
                         return [&state]( const common::message::transaction::resource::commit::Request& message)
                         {
                            Trace trace{ "transaction::manager::handle::local::resource::external::commit::request"};
-                           common::log::line( log, "message: ", message);
+                           common::log::debug( "message: ", message);
 
                            auto transaction = common::algorithm::find( state.transactions, message.trid);
 
                            if( ! transaction)
                            {
-                              common::log::line( log, "failed to find trid: ", message.trid, " - action: reply with read-only");
+                              common::log::debug( "failed to find trid: ", message.trid, " - action: reply with read-only");
                               detail::send::read::only::reply( state, message);
                               return;
                            }
 
-                           common::log::line( log, "transaction: ", *transaction);
+                           common::log::debug( "transaction: ", *transaction);
                            
                            // Three possibilities:
                            //  * We're in the post_prepare stage of the transaction ->  we start commit.
@@ -1054,7 +1054,7 @@ namespace casual
                            else
                            {
                               // The transaction is already in "process", we assume this request is due to topology "complexity".
-                              common::log::line( log, "transaction already in commit progress: ", *transaction, " - action: reply with read-only");
+                              common::log::debug( "transaction already in commit progress: ", *transaction, " - action: reply with read-only");
                               detail::send::read::only::reply( state, message);
                            }
 
@@ -1076,7 +1076,7 @@ namespace casual
 
                            if( ! transaction)
                            {
-                              common::log::line( log, "failed to find trid: ", message.trid, " - action: reply with read-only");
+                              common::log::debug( "failed to find trid: ", message.trid, " - action: reply with read-only");
                               detail::send::read::only::reply( state, message);
                               return;
                            }
@@ -1114,7 +1114,7 @@ namespace casual
                      return [&state]( const common::message::transaction::resource::configuration::Request& message)
                      {
                         Trace trace{ "transaction::manager::handle::local::resource::configuration::request"};
-                        common::log::line( log, "message: ", message);
+                        common::log::debug( "message: ", message);
 
                         auto reply = common::message::reverse::type( message);
 
@@ -1137,7 +1137,7 @@ namespace casual
                   return [ &state]( const common::message::transaction::resource::Ready& message)
                   {
                      Trace trace{ "transaction::manager::handle::local::resource::ready"};
-                     common::log::line( log, "message: ", message);
+                     common::log::debug( "message: ", message);
 
                      state.task.coordinator( message);
 
@@ -1157,13 +1157,13 @@ namespace casual
                   return [ &state]( const common::message::transaction::inbound::branch::Request& message)
                   {
                      Trace trace{ "transaction::manager::handle::local::inbound::branch::request"};
-                     common::log::line( log, "message: ", message);
+                     common::log::debug( "message: ", message);
 
                      auto reply = common::message::reverse::type( message);
 
                      if( auto found = common::algorithm::find( state.transactions, message.gtrid))
                      {
-                        common::log::line( log, "found: ", *found);
+                        common::log::debug( "found: ", *found);
 
                         CASUAL_ASSERT( ! found->branches.empty());
                         reply.trid = common::range::front( found->branches).trid;
@@ -1173,7 +1173,7 @@ namespace casual
                         reply.trid = common::transaction::ID{ message.gtrid.range()};
                         auto& transaction = state.transactions.emplace_back( reply.trid);
 
-                        common::log::line( log, "added: ", transaction);
+                        common::log::debug( "added: ", transaction);
                      }
 
                      state.multiplex.send( message.process.ipc, reply);
