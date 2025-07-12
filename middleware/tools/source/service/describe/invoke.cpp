@@ -7,7 +7,6 @@
 #include "tools/service/describe/invoke.h"
 #include "tools/common.h"
 
-
 #include "service/protocol/call.h"
 
 
@@ -20,7 +19,7 @@ namespace casual
 
    namespace tools::service::describe
    {
-      std::vector< server::service::Model> invoke( const std::vector< std::string>& services)
+      std::vector< common::serialize::service::Model> invoke( const std::vector< std::string>& services)
       {
          Trace trace{ "tools::service::describe::incoke"};
 
@@ -30,7 +29,7 @@ namespace casual
          return algorithm::transform( services, []( const std::string& service){
             casual::service::protocol::binary::Call call;
             auto reply = call( service);
-            return reply.extract< server::service::Model>( "model");
+            return reply.extract< common::serialize::service::Model>( "model");
          });
       }
 

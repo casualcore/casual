@@ -5,13 +5,13 @@
 //!
 
 
-#include "serviceframework/service/protocol/describe.h"
+#include "common/serialize/service/protocol/describe.h"
 
 #include "casual/platform.h"
 
 namespace casual
 {
-   namespace serviceframework::service::protocol::describe
+   namespace common::serialize::service::protocol::describe
    {
 
       namespace local
@@ -25,7 +25,7 @@ namespace casual
                public:
                   constexpr static auto archive_properties() { return common::serialize::archive::Property::named | common::serialize::archive::Property::no_consume;}
                   
-                  using types_t = std::vector< serviceframework::service::Model::Type>;
+                  using types_t = std::vector< service::Model::Type>;
 
                   Writer( types_t& types) : m_stack{ &types} {}
 
@@ -33,7 +33,7 @@ namespace casual
                   {
                      auto& current = *m_stack.back();
 
-                     current.emplace_back( name, serviceframework::service::model::type::Category::container);
+                     current.emplace_back( name, service::model::type::Category::container);
 
                      m_stack.push_back( &current.back().attributes);
 
@@ -49,7 +49,7 @@ namespace casual
                   {
                      auto& current = *m_stack.back();
 
-                     current.emplace_back( name, serviceframework::service::model::type::Category::composite);
+                     current.emplace_back( name, service::model::type::Category::composite);
 
                      m_stack.push_back( &current.back().attributes);
                   }
@@ -62,7 +62,7 @@ namespace casual
                   template<typename T>
                   void write( T&& value, const char* name)
                   {
-                     m_stack.back()->emplace_back( name, serviceframework::service::model::type::traits< T>::category());
+                     m_stack.back()->emplace_back( name, service::model::type::traits< T>::category());
                   }
 
                private:
@@ -102,10 +102,10 @@ namespace casual
       
       common::serialize::Reader prepare() { return common::serialize::Reader::emplace< local::implementation::Prepare>();}
       
-      common::serialize::Writer writer( std::vector< serviceframework::service::Model::Type>& types)
+      common::serialize::Writer writer( std::vector< service::Model::Type>& types)
       {
          return common::serialize::Writer::emplace< local::implementation::Writer>( types);
       }
 
-   } // serviceframework::service::protocol::describe
+   } // common::serialize::service::protocol::describe
 } // casual

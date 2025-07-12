@@ -11,7 +11,6 @@ make.IncludePaths( ['include',
     '../configuration/unittest/include',
     '../domain/include',
     '../domain/unittest/include',
-    '../serviceframework/include',
     '../../thirdparty/database/include']
     + make.optional_include_paths()
     + dsl.paths().include.gtest
@@ -24,7 +23,6 @@ make.LibraryPaths( ['bin',
     '../configuration/bin',
     '../domain/bin',
     '../service/bin',
-    '../serviceframework/bin',
     '../xatmi/bin']
     + make.optional_library_paths()
     + dsl.paths().library.gtest
@@ -69,8 +67,8 @@ manager = make.LinkExecutable( 'bin/casual-transaction-manager',
     ],
     [ 
         manager_archive,
-        'casual-serviceframework', 
-        'casual-common', 
+        'casual-common',
+        'casual-common-serialize-service',
         'casual-manager',
         'casual-configuration',
         'casual-domain-utility',

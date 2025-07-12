@@ -18,7 +18,7 @@ library_paths = [ 'server/bin',
     '../domain/bin',
     '../service/bin',
     '../server/bin',
-    '../serviceframework/bin',
+     '../manager/bin',
     '../transaction/bin',
     '../xatmi/bin'
     ] + make.optional_library_paths() + dsl.paths().library.gtest

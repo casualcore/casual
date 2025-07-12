@@ -18,8 +18,9 @@
 
 namespace casual
 {
-   namespace server::service
+   namespace common::serialize::service
    {
+
       namespace model
       {
 
@@ -153,9 +154,6 @@ namespace casual
 
       };
 
-
-   } // server::service
+   } // common::serialize::service
 
 } // casual
-
-

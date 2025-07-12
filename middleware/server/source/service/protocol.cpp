@@ -12,9 +12,9 @@ namespace casual
    namespace server::service::protocol
    {
 
-      serviceframework::service::Protocol deduce( invoke::Parameter&& parameter)
+      common::serialize::service::Protocol deduce( invoke::Parameter&& parameter)
       {
-         return serviceframework::service::protocol::deduce( std::move( parameter.payload), parameter.header);
+         return common::serialize::service::protocol::deduce( std::move( parameter.payload), parameter.header);
       }
 
    } // server::service::protocol

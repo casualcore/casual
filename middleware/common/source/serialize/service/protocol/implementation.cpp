@@ -5,8 +5,8 @@
 //!
 
 
-#include "serviceframework/service/protocol/implementation.h"
-#include "serviceframework/log.h"
+#include "common/serialize/service/protocol/implementation.h"
+
 
 #include "common/serialize/binary.h"
 #include "common/serialize/json.h"
@@ -24,7 +24,7 @@
 
 namespace casual
 {
-   namespace serviceframework::service::protocol::implementation
+   namespace common::serialize::service::protocol::implementation
    {
 
       Base::Base( protocol::payload_type&& payload)

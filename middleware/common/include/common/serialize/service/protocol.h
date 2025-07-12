@@ -11,7 +11,6 @@
 
 #include "common/serialize/archive.h"
 
-//#include "common/service/invoke.h"
 #include "common/functional.h"
 #include "casual/header.h"
 #include "common/buffer/type.h"
@@ -21,15 +20,12 @@
 
 namespace casual
 {
-   namespace serviceframework::service
+   namespace common::serialize::service
    {
-
       namespace protocol
       {
          using payload_type = common::buffer::Payload;
          using headers_type = header::Fields;
-         //using parameter_type = common::service::invoke::Parameter;
-         //using result_type = common::service::invoke::Result;
 
          namespace io
          {
@@ -298,7 +294,7 @@ namespace casual
          return service::user( protocol::deduce( std::move( payload), headers), std::forward< Ts>( ts)...);
       }
 
-   } // serviceframework::service
+   } // common::serialize::service
 } // casual
 
 

@@ -13,7 +13,6 @@ make.IncludePaths( [
     '../domain/unittest/include',
 	'../xatmi/include',
     '../cli/include',
-	'../serviceframework/include',
     ]
     + make.optional_include_paths()
     + dsl.paths().include.gtest
@@ -25,7 +24,6 @@ make.LibraryPaths( [
     '../manager/bin',
     '../domain/bin',
     '../transaction/bin',
-    '../serviceframework/bin',
 	'../configuration/bin']
     + make.optional_library_paths()
     + dsl.paths().library.gtest
@@ -55,10 +53,10 @@ target = make.LinkExecutable( 'bin/casual-service-manager',
 	[
         manager_archive,
         'casual-common',
+        'casual-common-serialize-service',
         'casual-manager',
         'casual-domain-utility',
         'casual-domain-discovery',
-        'casual-serviceframework',
         'casual-configuration'
     ])
 
@@ -106,7 +104,6 @@ admin_api_lib = make.LinkLibrary( 'bin/casual-service-admin-api',
         service_call,
         'casual-common',
         'casual-transaction',
-        'casual-serviceframework'
    ])
 install_libs.append( admin_api_lib)
 
@@ -116,7 +113,6 @@ target = make.LinkLibrary( 'bin/casual-service-admin-cli',
         admin_api_lib, 
         service_call,
         'casual-common', 
-        'casual-serviceframework', 
     ])
  	
 install_libs.append( target)
@@ -131,7 +127,6 @@ api_lib = make.LinkLibrary( 'bin/casual-service-api',
     [
         admin_api_lib,
         'casual-common',
-        'casual-serviceframework', 
     ])
 
 install_libs.append( api_lib)
@@ -152,7 +147,6 @@ service_unittest = make.LinkLibrary( 'bin/casual-service-unittest',
         'casual-unittest',
         'casual-common',
         'casual-transaction',
-        'casual-serviceframework',
     ])
 
  
@@ -172,8 +166,8 @@ test_service = make.LinkUnittest( 'unittest/bin/test-casual-service',
         'casual-domain-utility',
         'casual-domain-discovery',
         'casual-common',
+        'casual-common-serialize-service',
         'casual-manager',
-        'casual-serviceframework',
         'casual-configuration', 
         'casual-unittest',
         'casual-domain-unittest',

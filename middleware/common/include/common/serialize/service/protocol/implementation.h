@@ -8,18 +8,17 @@
 #pragma once
 
 
-#include "serviceframework/service/protocol.h"
-#include "serviceframework/service/model.h"
+#include "common/serialize/service/protocol.h"
+#include "common/serialize/service/model.h"
 
-#include "serviceframework/service/protocol/describe.h"
-#include "serviceframework/log.h"
+#include "common/serialize/service/protocol/describe.h"
 
 #include "common/serialize/archive.h"
 #include "common/serialize/log.h"
 
 namespace casual
 {
-   namespace serviceframework::service::protocol::implementation
+   namespace common::serialize::service::protocol::implementation
    {
       struct Base : common::traits::unrelocatable
       {
@@ -164,7 +163,7 @@ namespace casual
          service::Protocol m_protocol;
       };
 
-   } // serviceframework::service::protocol::implementation
+   } // common::serialize::service::protocol::implementation
 } // casual
 
 

@@ -67,7 +67,6 @@ target = make.LinkExecutable( 'bin/casual-build-resource-proxy',
    [ 
     common_a,
     'casual-common', 
-    #'casual-serviceframework', 
     'casual-configuration',
     ])
 

@@ -10,7 +10,6 @@ make.IncludePaths( [
     '../configuration/include',
     '../configuration/unittest/include',
     '../xatmi/include',
-    '../serviceframework/include',
     '../common/include',
     '../manager/include',
     '../domain/include',
@@ -44,7 +43,6 @@ make.LibraryPaths( [
     '../gateway/bin',
     '../tools/bin',
     '../buffer/bin',
-    '../serviceframework/bin',
     '../xatmi/bin',
     '../cli/bin']
     + make.optional_library_paths()

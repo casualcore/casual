@@ -11,7 +11,6 @@ make.IncludePaths( [
     '../cli/include',
     '../configuration/include',
     '../configuration/unittest/include',
-    '../serviceframework/include', 
     '../xatmi/include',
     '../transaction/include',
     '../transaction/unittest/include',
@@ -31,7 +30,6 @@ make.LibraryPaths( [
     'bin',
     '../transaction/bin',
     '../configuration/bin',
-    '../serviceframework/bin',
     '../common/bin',
     '../manager/bin',
     '../cli/bin',
@@ -112,10 +110,10 @@ queue_manager = make.LinkExecutable( 'bin/casual-queue-manager',
      manager_archive,
      common,
      'casual-common',
+     'casual-common-serialize-service',
      'casual-manager',
      'casual-domain-utility',
      'casual-domain-discovery',
-     'casual-serviceframework',
      'casual-configuration'
      ])
 
@@ -189,7 +187,7 @@ target = make.LinkLibrary( 'bin/casual-queue-admin-cli',
     [
         make.Compile( 'source/manager/admin/cli.cpp'),
      ], 
-   [common, queue_api, 'casual-service', 'casual-cli', 'casual-common' ]) #, 'casual-serviceframework'])
+   [common, queue_api, 'casual-service', 'casual-cli', 'casual-common' ])
  
 install_lib.append( target)
 

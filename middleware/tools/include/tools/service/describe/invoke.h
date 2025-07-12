@@ -8,7 +8,7 @@
 #pragma once
 
 
-#include "server/service/model.h"
+#include "common/serialize/service/model.h"
 
 
 namespace casual
@@ -19,7 +19,7 @@ namespace casual
       {
          namespace describe
          {
-            std::vector< server::service::Model> invoke( const std::vector< std::string>& services);   
+            std::vector< common::serialize::service::Model> invoke( const std::vector< std::string>& services);   
          } // describe
       } // service
    } // tools

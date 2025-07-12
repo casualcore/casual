@@ -8,7 +8,6 @@ make.IncludePaths([
     '../configuration/include',
 	'../service/include',
     '../service/unittest/include',
-    '../serviceframework/include',
 	'../xatmi/include',
     '../domain/include',
     '../domain/unittest/include',
@@ -25,7 +24,6 @@ make.LibraryPaths([
     '../xatmi/bin',
     '../domain/bin',
     '../service/bin',
-    '../serviceframework/bin',
     '../configuration/bin']
     + make.optional_library_paths()
     + dsl.paths().library.gtest
@@ -80,8 +78,8 @@ target = make.LinkExecutable( 'bin/casual-event-service-monitor-server',
 	],
 	[
         'casual-common',
+        'casual-common-serialize-service',
         'casual-manager',
-        'casual-serviceframework',
         'sqlite3'
 	] )
 

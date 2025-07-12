@@ -15,8 +15,6 @@
 #include "transaction/manager/state.h"
 
 
-#include "serviceframework/log.h"
-
 namespace casual
 {
    namespace transaction

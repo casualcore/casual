@@ -27,7 +27,7 @@ make.LibraryPaths([
     '../domain/bin',
     '../service/bin',
     '../configuration/bin',
-    '../serviceframework/bin']
+    ]
     + make.optional_library_paths()
     + dsl.paths().library.gtest
    )
@@ -102,7 +102,6 @@ make.LinkUnittest( 'unittest/bin/test-http',
       'casual-unittest',
       'casual-xatmi',
       'casual-domain-discovery',
-      'casual-serviceframework',
       'curl'
    ])  
    

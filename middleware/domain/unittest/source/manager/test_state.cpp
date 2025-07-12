@@ -18,7 +18,6 @@
 #include "common/unittest/file.h"
 #include "common/algorithm/random.h"
 
-#include "serviceframework/log.h"
 
 namespace casual
 {

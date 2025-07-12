@@ -14,7 +14,7 @@ make.IncludePaths([
    '../configuration/include',
    '../xatmi/include',
    '../cli/include',
-   '../serviceframework/include']
+   ]
    + make.optional_include_paths()
    + dsl.paths().include.gtest
    )
@@ -25,7 +25,7 @@ make.LibraryPaths([
     '../common/bin',
     '../manager/bin',
     '../configuration/bin',
-    '../serviceframework/bin']
+    ]
     + make.optional_library_paths()
     + dsl.paths().library.gtest
    )
@@ -53,7 +53,6 @@ utility_library = make.LinkLibrary( 'bin/casual-domain-utility',
     ],
     [
         'casual-common',
-        'casual-serviceframework'
      ]
 )
 install_libs.append( utility_library)
@@ -69,7 +68,7 @@ target_domain_manager = make.LinkExecutable( 'bin/casual-domain-manager',
      'casual-common',
      'casual-manager',
      'casual-configuration',
-     'casual-serviceframework'
+     'casual-common-serialize-service',
     ] 
 )
 
@@ -104,8 +103,8 @@ discovery_executable = make.LinkExecutable( 'bin/casual-domain-discovery',
         discovery_archive,
         utility_library,
         'casual-common',
+        'casual-common-serialize-service',
         'casual-manager',
-        'casual-serviceframework',
     ]
 )
 install_bins.append( discovery_executable)
@@ -136,7 +135,6 @@ domain_unittest_library = make.LinkLibrary( 'bin/casual-domain-unittest',
         domain_discovery_library,
         'casual-common',
         'casual-unittest',
-        'casual-serviceframework',   
     ]
 )
 
@@ -166,7 +164,6 @@ target_test_domain = make.LinkUnittest( 'bin/test-casual-domain',
         domain_api_internal,
         'casual-common',
         'casual-configuration',
-        'casual-serviceframework',
         'casual-unittest',
         'casual-configuration-example',
     ]) 

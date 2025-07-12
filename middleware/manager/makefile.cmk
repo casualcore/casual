@@ -5,7 +5,6 @@ make.IncludePaths([
     'include',
     'unittest/include',
     '../common/include',
-    '../serviceframework/include',
     '../xatmi/include',
     ]    
     + make.optional_include_paths()
@@ -16,32 +15,40 @@ make.LibraryPaths(
    [
       'bin',
       '../common/bin',
-      '../serviceframework/bin',
    ]
     + make.optional_library_paths()
     + dsl.paths().library.gtest
    )
 
-archive = make.LinkArchive( 'bin/casual-manager', 
+install_libs = []
+
+manager_lib = make.LinkLibrary( 'bin/casual-manager', 
    [
       make.Compile( 'source/service/context.cpp'),
       make.Compile( 'source/service/handle.cpp'),
       make.Compile( 'source/service/policy.cpp'),
       make.Compile( 'source/service/protocol.cpp'),
       make.Compile( 'source/service.cpp'),
+   ],
+   [
+      'casual-common',
+      'casual-common-serialize-service',
+
    ]
 )
+
+install_libs.append( manager_lib)
 
 make.LinkUnittest( 'bin/test-casual-manager',
    [
         make.Compile( 'unittest/source/test_manager.cpp'),
    ],
    [
-      archive,
+      manager_lib,
       'casual-common',
       'casual-unittest',
-      'casual-serviceframework',
    ]
 )
 
+make.Install( install_libs, dsl.paths().install + '/lib')
 

@@ -21,8 +21,6 @@
 
 #include "common/communication/instance.h"
 
-#include "serviceframework/log.h"
-
 
 namespace casual
 {

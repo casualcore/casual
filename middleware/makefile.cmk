@@ -2,7 +2,6 @@ import casual.make.api as make
 
 make.Build( 'common/makefile.cmk')
 make.Build( 'cli/makefile.cmk')
-make.Build( 'serviceframework/makefile.cmk')
 make.Build( 'manager/makefile.cmk')
 
 make.Build( 'configuration/makefile.server.cmk')
