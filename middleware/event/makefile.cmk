@@ -78,7 +78,6 @@ target = make.LinkExecutable( 'bin/casual-event-service-monitor-server',
 	],
 	[
         'casual-common',
-        'casual-common-serialize-service',
         'casual-manager',
         'sqlite3'
 	] )

@@ -54,7 +54,6 @@ file_manager = make.LinkExecutable( 'bin/casual-file-manager',
    ], 
    [ 
       'casual-common',
-      'casual-common-serialize-service',
       'casual-manager',
    ]
 )

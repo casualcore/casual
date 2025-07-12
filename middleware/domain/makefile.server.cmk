@@ -68,7 +68,6 @@ target_domain_manager = make.LinkExecutable( 'bin/casual-domain-manager',
      'casual-common',
      'casual-manager',
      'casual-configuration',
-     'casual-common-serialize-service',
     ] 
 )
 
@@ -103,7 +102,6 @@ discovery_executable = make.LinkExecutable( 'bin/casual-domain-discovery',
         discovery_archive,
         utility_library,
         'casual-common',
-        'casual-common-serialize-service',
         'casual-manager',
     ]
 )

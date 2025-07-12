@@ -70,7 +70,6 @@ target = make.LinkExecutable( 'bin/casual-gateway-manager',
         common_archive,
         'casual-manager',
         'casual-common',
-        'casual-common-serialize-service',
         'casual-domain-utility',
     ])
 

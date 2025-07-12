@@ -20,35 +20,28 @@ make.LibraryPaths(
     + dsl.paths().library.gtest
    )
 
-install_libs = []
-
-manager_lib = make.LinkLibrary( 'bin/casual-manager', 
+# we can use an archive for casual-manager, since it's only used in
+# 'managers'
+# @attention: do not link this archive in a lib, only executables
+manager_archive = make.LinkArchive( 'bin/casual-manager', 
    [
       make.Compile( 'source/service/context.cpp'),
       make.Compile( 'source/service/handle.cpp'),
       make.Compile( 'source/service/policy.cpp'),
       make.Compile( 'source/service/protocol.cpp'),
       make.Compile( 'source/service.cpp'),
-   ],
-   [
-      'casual-common',
-      'casual-common-serialize-service',
-
    ]
 )
-
-install_libs.append( manager_lib)
 
 make.LinkUnittest( 'bin/test-casual-manager',
    [
         make.Compile( 'unittest/source/test_manager.cpp'),
    ],
    [
-      manager_lib,
+      manager_archive,
       'casual-common',
       'casual-unittest',
    ]
 )
 
-make.Install( install_libs, dsl.paths().install + '/lib')
 

@@ -44,7 +44,6 @@ server_lib = make.LinkLibrary( 'bin/casual-server',
    ],
    [
       'casual-common',
-      'casual-common-serialize-service',
       'casual-service',
       'casual-transaction',
    ])

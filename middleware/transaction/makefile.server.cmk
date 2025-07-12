@@ -68,7 +68,6 @@ manager = make.LinkExecutable( 'bin/casual-transaction-manager',
     [ 
         manager_archive,
         'casual-common',
-        'casual-common-serialize-service',
         'casual-manager',
         'casual-configuration',
         'casual-domain-utility',

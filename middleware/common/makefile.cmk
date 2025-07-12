@@ -148,6 +148,10 @@ casual_common_objectfiles = [
     make.Compile( 'source/serialize/binary.cpp'),
     make.Compile( 'source/serialize/create.cpp'),
     make.Compile( 'source/serialize/archive/type.cpp'),
+
+    make.Compile( 'source/serialize/service/protocol/describe.cpp'),
+    make.Compile( 'source/serialize/service/protocol/implementation.cpp'),
+    make.Compile( 'source/serialize/service/protocol.cpp'),
 ]
 
 
@@ -161,16 +165,6 @@ install_libs.append( common)
 install_headers += [ 
       ( 'include/casual/platform.h', 'casual'),
 ]
-
-serialize_service_lib = make.LinkLibrary( 'bin/casual-common-serialize-service',
-    [
-        make.Compile( 'source/serialize/service/protocol/describe.cpp'),
-        make.Compile( 'source/serialize/service/protocol/implementation.cpp'),
-        make.Compile( 'source/serialize/service/protocol.cpp'),
-    ],
-    [ common]
-)
-
 
 # Some help for unittest tracing
 target_unittest = make.LinkLibrary( 'bin/casual-unittest', 
