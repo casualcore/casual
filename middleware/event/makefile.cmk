@@ -5,10 +5,12 @@ make.IncludePaths([
 	'include',
 	'../common/include',
     '../manager/include',
-	'../serviceframework/include',
+    '../configuration/include',
+	'../service/include',
+    '../service/unittest/include',
 	'../xatmi/include',
-   '../domain/include',
-   '../domain/unittest/include',
+    '../domain/include',
+    '../domain/unittest/include',
 	'../../thirdparty/database/include']
     + make.optional_include_paths()
     + dsl.paths().include.gtest
@@ -105,6 +107,7 @@ make.LinkUnittest( 'bin/test-casual-event',
         'casual-domain-api',
         'casual-domain-utility',
         'casual-domain-unittest',
+        'casual-service-unittest',
    ])	
 
 

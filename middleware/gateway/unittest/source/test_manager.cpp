@@ -540,7 +540,7 @@ domain:
          // Expect us to reach service "b" via outbound -> inbound -> <service remote1>
          // we act as the server
          {
-            auto correlation = common::unittest::service::send( "b", data);
+            auto correlation = casual::service::unittest::send::request( "b", data);
 
             b.activate();
 
@@ -592,7 +592,7 @@ domain:
 
          const auto data = unittest::random::binary( 256);
 
-         const auto correlation = unittest::service::send( "b", data);
+         const auto correlation = casual::service::unittest::send::request( "b", data);
 
          auto loop_device = communication::ipc::inbound::Device{};
 
@@ -615,7 +615,7 @@ domain:
          
          trace.line( "receive the error reply");
          {
-            auto reply = unittest::service::receive< common::message::service::call::Reply>( loop_device, correlation);
+            auto reply = communication::device::receive< common::message::service::call::Reply>( loop_device, correlation);
             EXPECT_TRUE( reply.code.result == decltype( reply.code.result)::system) << CASUAL_NAMED_VALUE( reply.code);
          }
 
@@ -658,7 +658,7 @@ domain:
          {
             const auto data = common::unittest::random::binary( 128);
 
-            const auto correlation = unittest::service::send( "b", data, trid);
+            const auto correlation = casual::service::unittest::send::request( "b", data, trid);
             
             b.activate();
 
@@ -1133,7 +1133,7 @@ domain:
             
             auto correlations = algorithm::generate_n< count>( [ &data]()
             {
-               return common::unittest::service::send( "a", data);
+               return casual::service::unittest::send::request( "a", data);
             });
 
             b.activate();
@@ -1535,7 +1535,7 @@ domain:
          // for good measure, receive the reply
          {
             a.activate();
-            EXPECT_TRUE( payload == common::unittest::service::receive( correlation));
+            EXPECT_TRUE( payload == casual::service::unittest::receive( correlation));
          }
 
       }
@@ -1846,7 +1846,7 @@ domain:
          unittest::fetch::until( unittest::fetch::predicate::outbound::connected());
 
          const auto payload = unittest::random::binary( 1024);  
-         auto correlation = common::unittest::service::send( "casual/example/forward", payload);
+         auto correlation = casual::service::unittest::send::request( "casual/example/forward", payload);
          
          // receive the call to b. It won't have the same correlation, since "forward" does its own tpcall
          const auto b_request = common::communication::ipc::receive< common::message::service::call::callee::Request>();
@@ -1938,8 +1938,8 @@ domain:
 
          const auto payload = unittest::random::binary( 1024);
          
-         auto correlation_1 = common::unittest::service::send( "b", payload);
-         auto correlation_2 = common::unittest::service::send( "b", payload);
+         auto correlation_1 = casual::service::unittest::send::request( "b", payload);
+         auto correlation_2 = casual::service::unittest::send::request( "b", payload);
 
          // the first call will arrive
          auto first_request = communication::ipc::receive< common::message::service::call::callee::Request>( correlation_1);
@@ -1959,7 +1959,7 @@ domain:
          // This assumes that we're running the unittest on a machine that can
          // do a _remote call_ within 5ms (which is extremely long time).
          {
-            auto correlation = common::unittest::service::send( "b", payload);
+            auto correlation = casual::service::unittest::send::request( "b", payload);
             {
                b.activate();
                auto request = communication::ipc::receive< common::message::service::call::callee::Request>( correlation);

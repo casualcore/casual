@@ -198,6 +198,7 @@ unittest_lib = make.LinkLibrary( 'bin/casual-gateway-unittest',
         'casual-unittest',
         'casual-common',
         'casual-service',
+        'casual-service-unittest',
     ]
 )
 

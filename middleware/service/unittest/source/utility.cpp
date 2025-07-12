@@ -28,6 +28,38 @@ namespace casual
          } // <unnamed>
       } // local
 
+      namespace wait::until
+      {
+         void advertised( std::string_view service)
+         {
+            auto lookup = [ service]()
+            {
+               common::message::service::lookup::Request request{ common::process::handle()};
+               request.requested = service;
+
+               auto reply = common::communication::ipc::call( local::ipc::manager(), request);
+
+               if( reply.absent())
+                  return false;
+               
+               // the service is advertised, we need to discard the reservation.
+               {
+                  common::message::service::lookup::discard::Request discard{ common::process::handle()};
+                  discard.correlation = reply.correlation;
+                  discard.requested = service;
+                  discard.reply = false;
+                  common::communication::device::blocking::send( local::ipc::manager(), discard);
+               }
+               
+               return true;
+            };
+            
+            // we try a bunch of times, but we don't wait forever.
+            common::unittest::eventually::succeed( lookup);
+         }
+
+      } // wait::until
+
       void advertise( std::vector< std::string> services)
       {
          advertise( services, common::process::handle());
@@ -90,7 +122,7 @@ namespace casual
 
       manager::admin::model::State state()
       {
-         common::unittest::service::wait::until::advertised( manager::admin::service::name::state);
+         wait::until::advertised( manager::admin::service::name::state);
 
          casual::service::protocol::binary::Call call;
 
@@ -101,6 +133,39 @@ namespace casual
 
       namespace send
       {
+         [[nodiscard]] common::strong::correlation::id request( std::string service, platform::binary::type payload, const common::transaction::ID& trid)
+         {
+            auto send_lookup = []( auto service, auto& trid){
+               common::message::service::lookup::Request request{ common::process::handle()};
+               request.trid = trid;
+               request.requested = std::move( service);
+               request.context.semantic = decltype( request.context.semantic)::regular;
+               return common::communication::device::blocking::send( local::ipc::manager(), request);
+            };
+            
+            auto lookup = common::communication::ipc::receive< common::message::service::lookup::Reply>( send_lookup( std::move( service), trid));
+            
+            if( lookup.state == decltype( lookup.state)::absent)
+               common::code::raise::error( common::code::xatmi::no_entry);
+            if( lookup.state == decltype( lookup.state)::timeout)
+               common::code::raise::error( common::code::xatmi::timeout);
+
+            common::message::service::call::callee::Request message{ common::process::handle()};
+            message.correlation = lookup.correlation;
+            message.service = std::move( lookup.service);
+            message.trid = trid;
+            message.buffer.data = std::move( payload);
+            message.buffer.type = common::buffer::type::x_octet;
+
+            return common::communication::device::blocking::send( lookup.process.ipc, message);
+
+         }
+
+         common::strong::correlation::id request( std::string service, platform::binary::type payload)
+         {
+            return request( std::move( service), std::move( payload), {});
+         }
+
          namespace wait
          {
             auto request( std::string service, platform::binary::type payload) -> common::strong::correlation::id
@@ -156,6 +221,12 @@ namespace casual
 
          }
       } // send
+
+      platform::binary::type receive( const common::strong::correlation::id& correlation)
+      {
+         auto request = common::communication::ipc::receive< common::message::service::call::Reply>( correlation);
+         return request.buffer.data;
+      }
 
       namespace server
       {

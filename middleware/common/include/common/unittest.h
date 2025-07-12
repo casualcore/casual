@@ -55,32 +55,6 @@ namespace casual
          
       } // message::transport
       
-      //! @todo This should not be in common -> move to service unittest utility
-      namespace service
-      {
-         [[nodiscard]] strong::correlation::id send( std::string service, platform::binary::type payload, const transaction::ID& trid);
-         [[nodiscard]] strong::correlation::id send( std::string service, platform::binary::type payload);
-
-         //! @returns the received message of type `R`
-         template< typename R, typename... Ts>
-         R receive( communication::ipc::inbound::Device& device, Ts&&... ts)
-         {
-            R reply;
-            communication::device::blocking::receive( device, reply, std::forward< Ts>( ts)...);
-            return reply;
-         }
-         
-         platform::binary::type receive( const strong::correlation::id& correlation);
-
-         namespace wait::until
-         {
-            //! Waits until the service has been advertised. 
-            //! It is using `eventually::succeed` to try a bunch of times, but not forever.
-            void advertised( std::string_view service);
-         } // wait::until
-
-      } // service
-
 
       namespace random
       {

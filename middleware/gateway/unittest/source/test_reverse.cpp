@@ -12,8 +12,8 @@
 
 #include "domain/unittest/manager.h"
 #include "domain/unittest/discover.h"
-#include "service/unittest/utility.h"
 
+#include "service/unittest/utility.h"
 
 #include "common/communication/instance.h"
 
@@ -171,7 +171,7 @@ domain:
 
          // call b a few times
          auto correlations = algorithm::generate_n< 10>( [ &payload](){
-            return common::unittest::service::send( "b", payload);
+            return casual::service::unittest::send::request( "b", payload);
          });
 
          // we enter B and reply to to the request
@@ -179,7 +179,7 @@ domain:
 
          for( auto& correlation : correlations)
          {
-            auto request = common::unittest::service::receive< common::message::service::call::callee::Request>( communication::ipc::inbound::device(), correlation);
+            auto request = common::communication::ipc::receive< common::message::service::call::callee::Request>( correlation);
             casual::service::unittest::send::ack( request);
 
             auto reply = common::message::reverse::type( request);
@@ -192,7 +192,7 @@ domain:
 
          for( auto& correlation : correlations)
          {
-            auto reply = common::unittest::service::receive< common::message::service::call::Reply>( communication::ipc::inbound::device(), correlation);
+            auto reply = common::communication::ipc::receive< common::message::service::call::Reply>( correlation);
             EXPECT_TRUE( reply.buffer.data == payload);
          }
       }

@@ -7,9 +7,11 @@
 #include "common/unittest.h"
 #include "common/unittest/file.h"
 
-
 #include "domain/unittest/manager.h"
+
 #include "casual/domain/manager/api/state.h"
+
+#include "service/unittest/utility.h"
 
 #include "common/communication/instance.h"
 #include "common/communication/select.h"
@@ -275,7 +277,7 @@ domain:
          const auto payload = common::unittest::random::binary( 128);
          
          // call forward, this does not propagate any span from us.
-         EXPECT_TRUE( common::unittest::service::receive( common::unittest::service::send( "casual/example/forward", payload)) == payload);
+         EXPECT_TRUE( service::unittest::receive( service::unittest::send::request( "casual/example/forward", payload)) == payload);
 
          static constexpr auto fetch_rows = []( const auto& file)
          {

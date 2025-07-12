@@ -11,6 +11,7 @@
 #include "queue/manager/admin/services.h"
 
 #include "service/protocol/call.h"
+#include "service/unittest/utility.h"
 
 #include "common/unittest.h"
 
@@ -20,7 +21,7 @@ namespace casual
    {
       manager::admin::model::State state()
       {
-         common::unittest::service::wait::until::advertised( queue::manager::admin::service::name::state);
+         service::unittest::wait::until::advertised( queue::manager::admin::service::name::state);
          return casual::service::protocol::binary::Call{}( queue::manager::admin::service::name::state).extract< manager::admin::model::State>();
       }
 

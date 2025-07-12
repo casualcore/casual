@@ -8,8 +8,10 @@ make.IncludePaths( [
    'unittest/include',
    '../common/include',
    '../cli/include',
+   '../configuration/include',
    '../manager/include',
    '../service/include',
+   '../service/unittest/include',
    '../transaction/include',
    '../serviceframework/include', 
    '../xatmi/include',
@@ -107,6 +109,7 @@ test_casual_file = make.LinkUnittest( 'unittest/bin/test-casual-file',
       'casual-domain-unittest',
       'casual-xatmi',
       'casual-service',
+      'casual-service-unittest',
       'casual-transaction',
    ]  
 )

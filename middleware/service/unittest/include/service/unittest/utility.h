@@ -20,6 +20,16 @@ namespace casual
 {
    namespace service::unittest
    {
+         
+
+      namespace wait::until
+      {
+         //! Waits until the service has been advertised. 
+         //! It is using `eventually::succeed` to try a bunch of times, but not forever.
+         void advertised( std::string_view service);
+      } // wait::until
+
+
       //! advertise `services` to service-manager as current process
       void advertise( std::vector< std::string> services);
 
@@ -42,6 +52,9 @@ namespace casual
 
       namespace send
       {
+         [[nodiscard]] common::strong::correlation::id request( std::string service, platform::binary::type payload, const common::transaction::ID& trid);
+         [[nodiscard]] common::strong::correlation::id request( std::string service, platform::binary::type payload);
+
          namespace wait
          {
             //! sends lookup with _wait_ that will block until the service is available, then 
@@ -58,6 +71,8 @@ namespace casual
          //! @}
 
       } // send
+
+      platform::binary::type receive( const common::strong::correlation::id& correlation);
 
       namespace server
       {

@@ -18,6 +18,8 @@
 
 #include "transaction/context.h"
 
+#include "service/unittest/utility.h"
+
 #include "casual/tx.h"
 #include "casual/xatmi.h"
 
@@ -243,8 +245,8 @@ domain:
          // call casual/example/resource/echo -> distributed transaction. TM will do the 2pc (one involved resource -> one-phase-commit-optimisation),
          // and we should get pending request to resource-proxy since we only got one instance.
          auto correlations = common::array::make( 
-            common::unittest::service::send( "casual/example/resource/nested/calls/A", common::unittest::random::binary( 512)),
-            common::unittest::service::send( "casual/example/resource/nested/calls/A", common::unittest::random::binary( 512)));
+            casual::service::unittest::send::request( "casual/example/resource/nested/calls/A", common::unittest::random::binary( 512)),
+            casual::service::unittest::send::request( "casual/example/resource/nested/calls/A", common::unittest::random::binary( 512)));
 
          // collect and discard replies
          algorithm::for_each( correlations, []( auto& correlation)

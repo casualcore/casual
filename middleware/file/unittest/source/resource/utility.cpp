@@ -16,6 +16,8 @@
 
 #include "common/unittest.h"
 
+#include "service/unittest/utility.h"
+
 namespace casual
 {
    namespace file::resource::unittest
@@ -23,7 +25,7 @@ namespace casual
       manager::admin::model::State state()
       {
          // wait for the service to be advertised
-         common::unittest::service::wait::until::advertised( manager::admin::service::name::state);
+         service::unittest::wait::until::advertised( manager::admin::service::name::state);
 
          casual::service::protocol::binary::Call call;
          auto reply = call( manager::admin::service::name::state);

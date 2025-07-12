@@ -9,6 +9,7 @@
 #include "gateway/message.h"
 
 #include "service/protocol/call.h"
+#include "service/unittest/utility.h"
 
 #include "common/communication/ipc.h"
 
@@ -20,7 +21,7 @@ namespace casual
    {
       manager::admin::model::State state()
       {
-         common::unittest::service::wait::until::advertised( manager::admin::service::name::state);
+         casual::service::unittest::wait::until::advertised( manager::admin::service::name::state); 
          casual::service::protocol::binary::Call call;
          auto reply = call( manager::admin::service::name::state);
          return reply.extract< manager::admin::model::State>();

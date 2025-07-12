@@ -42,85 +42,8 @@ namespace casual
          
       } // message::transport
 
-      namespace service
-      {
-         [[nodiscard]] strong::correlation::id send( std::string service, platform::binary::type payload, const transaction::ID& trid)
-         {
-            auto send_lookup = []( auto service, auto& trid){
-               common::message::service::lookup::Request request{ process::handle()};
-               request.trid = trid;
-               request.requested = std::move( service);
-               request.context.semantic = decltype( request.context.semantic)::regular;
-               return communication::device::blocking::send( communication::instance::outbound::service::manager::device(), request);
-            };
-            
-            auto lookup = communication::ipc::receive< common::message::service::lookup::Reply>( send_lookup( std::move( service), trid));
-            
-            if( lookup.state == decltype( lookup.state)::absent)
-               code::raise::error( code::xatmi::no_entry);
-            if( lookup.state == decltype( lookup.state)::timeout)
-               code::raise::error( code::xatmi::timeout);
-
-            common::message::service::call::callee::Request message{ process::handle()};
-            message.correlation = lookup.correlation;
-            message.service = std::move( lookup.service);
-            message.trid = trid;
-            message.buffer.data = std::move( payload);
-            message.buffer.type = common::buffer::type::x_octet;
-
-            return communication::device::blocking::send( lookup.process.ipc, message);
-
-         }
-
-         strong::correlation::id send( std::string service, platform::binary::type payload)
-         {
-            return send( std::move( service), std::move( payload), {});
-         }
-
-         platform::binary::type receive( const strong::correlation::id& correlation)
-         {
-            auto request = communication::ipc::receive< common::message::service::call::Reply>( correlation);
-            return request.buffer.data;
-         }
-
-         namespace wait::until
-         {
-            void advertised( std::string_view service)
-            {
-               auto lookup = [ service]()
-               {
-                  common::message::service::lookup::Request request{ process::handle()};
-                  request.requested = service;
-
-                  auto reply = communication::ipc::call( communication::instance::outbound::service::manager::device(), request);
-
-                  if( reply.absent())
-                     return false;
-                  
-                  // the service is advertised, we need to discard the reservation.
-                  {
-                     common::message::service::lookup::discard::Request discard{ process::handle()};
-                     discard.correlation = reply.correlation;
-                     discard.requested = service;
-                     discard.reply = false;
-                     communication::device::blocking::send( communication::instance::outbound::service::manager::device(), discard);
-                  }
-                  
-                  return true;
-               };
-               
-               // we try a bunch of times, but we don't wait forever.
-               eventually::succeed( lookup);
-            }
-
-         } // wait::until
-
-      } // service
-
-
       namespace random
       {
-
          namespace local
          {
             namespace

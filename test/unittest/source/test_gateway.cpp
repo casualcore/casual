@@ -3387,7 +3387,7 @@ domain:
 
          // we haven't reply from 'a' yet. Let's involve our self as a resource.
          {
-            auto request = common::unittest::service::receive< common::message::service::call::callee::Request>( communication::ipc::inbound::device());
+            auto request = communication::ipc::receive< common::message::service::call::callee::Request>();
  
             auto involved = message::transaction::resource::external::involved::create( request);
             communication::device::blocking::send( communication::instance::outbound::transaction::manager::device(), involved);
@@ -3403,7 +3403,7 @@ domain:
 
          // reply to TM resource rollback, as we just involved our self as a resource (external)
          {
-            auto request = common::unittest::service::receive< common::message::transaction::resource::rollback::Request>( communication::ipc::inbound::device());
+            auto request = communication::ipc::receive< common::message::transaction::resource::rollback::Request>();
             auto reply = common::message::reverse::type( request);
             reply.trid = request.trid;
             reply.resource = request.resource;
