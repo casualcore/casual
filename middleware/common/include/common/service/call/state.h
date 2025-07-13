@@ -63,6 +63,10 @@ namespace casual
             //!  Thus, it's ok to do a service-forward
             bool empty() const;
 
+            //! @returns all in-flight correlations, and clear state.
+            std::vector< strong::correlation::id> finalize();
+
+
          private:
 
             pending::Descriptor& reserve();

@@ -366,6 +366,7 @@ namespace casual
       void Context::clear()
       {
          m_state.deadline = {}; 
+         m_state.pending.finalize();
          // TODO: Do some cleaning on buffers, pending replies and such...
       }
 
@@ -387,6 +388,36 @@ namespace casual
       std::optional< platform::time::point::type> Context::deadline() const
       {
          return m_state.deadline;
+      }
+
+      void Context::finalize( std::span< const strong::correlation::id> transaction_associated)
+      {
+         Trace trace( "service::call::Context::finalize");
+         
+         auto correlations = m_state.pending.finalize();
+
+         auto [ associated, discardable] = algorithm::intersection( correlations, transaction_associated);
+
+         log::line( log::debug, "associated: ", associated, " discardable: ", discardable);
+
+         for( auto& discard: discardable)
+            communication::ipc::inbound::device().discard( discard);
+
+         while( ! associated.empty())
+         {
+            auto reply = communication::ipc::receive< message::service::call::Reply>();
+            log::line( log::debug, "reply: ", reply);
+
+            // disassociate the the call from transaction
+            common::transaction::context().update( reply);
+
+            associated = algorithm::remove( associated, reply.correlation);
+         }
+      }
+
+      bool Context::empty() const
+      {
+         return m_state.pending.empty();
       }
 
 

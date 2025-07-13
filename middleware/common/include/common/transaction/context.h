@@ -110,6 +110,8 @@ namespace casual
 
          //! @return true if @p correlation is associated with an active transaction
          bool associated( const strong::correlation::id& correlation);
+         //! @return all associated correlations
+         std::vector< strong::correlation::id> associated() const;
 
          void configure( std::vector< resource::Link> resources);
 

@@ -85,6 +85,11 @@ namespace casual
          void deadline( platform::time::point::type now, std::optional< platform::time::unit> timeout);
          std::optional< platform::time::point::type> deadline() const;
 
+         //! Tries to finalize the context, wait for "all" pending replies that is found in `transaction_associated`.
+         void finalize( std::span< const strong::correlation::id> transaction_associated);
+
+         bool empty() const;
+
       private:
          Context();
          bool receive( message::service::call::Reply& reply, descriptor_type descriptor, reply::Flag);

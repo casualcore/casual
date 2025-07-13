@@ -113,6 +113,16 @@ namespace casual
             });
          }
 
+         std::vector< strong::correlation::id> Context::associated() const
+         {
+            std::vector< strong::correlation::id> result;
+
+            for( const auto& transaction : m_transactions)
+               algorithm::container::append( transaction.correlations(), result);
+
+            return result;
+         }
+
          namespace local
          {
             namespace

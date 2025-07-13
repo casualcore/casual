@@ -8,6 +8,7 @@
 #include "common/server/handle/policy.h"
 
 #include "common/transaction/context.h"
+#include "common/service/call/context.h"
 #include "common/buffer/pool.h"
 #include "common/service/lookup.h"
 #include "common/communication/instance.h"
@@ -187,6 +188,9 @@ namespace casual
 
          message::service::transaction::State Default::transaction( bool commit)
          {
+            // try to wait for all in-flights that are associated with transactions
+            common::service::call::context().finalize( transaction::context().associated());
+
             return transaction::context().finalize( commit);
          }
 
