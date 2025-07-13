@@ -30,27 +30,23 @@ namespace casual::common
       {
          inline ID() = default;
          ID( id::range gtrid);
-         ID( const std::string& gtrid);
+         ID( std::string_view hex_string);
 
-         inline id::range range() const noexcept { return id::range( m_gtrid.data(), m_gtrid.data() + m_size);}
+         inline id::range range() const noexcept { return id::range( m_gtrid);}
 
          inline friend bool operator == ( const ID& lhs, id::range rhs) { return algorithm::equal( lhs.range(), rhs);}
          inline friend bool operator == ( const ID& lhs, const ID& rhs) { return lhs == rhs.range();}
 
-         inline explicit operator bool () const noexcept { return m_size != 0;}
+         inline explicit operator bool () const noexcept { return ! m_gtrid.empty();}
 
          
-         CASUAL_CONST_CORRECT_SERIALIZE(
-            CASUAL_SERIALIZE_NAME( m_size, "size");
-            CASUAL_SERIALIZE_NAME( binary::span::fixed::make( std::begin( m_gtrid), std::begin( m_gtrid) + m_size), "gtrid");
-         )
+         CASUAL_FORWARD_SERIALIZE( m_gtrid);
 
          friend std::ostream& operator << ( std::ostream& out, const global::ID& value);
          friend std::istream& operator >> ( std::istream& in, global::ID& gtrid);
 
       private:
-         std::uint8_t m_size{};
-         std::array< std::byte, 64> m_gtrid{};       
+         platform::binary::type m_gtrid; 
       };
 
       // transparent hasher
