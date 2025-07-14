@@ -265,10 +265,10 @@ domain:
             
             branched_trid = request.trid;
 
-            EXPECT_TRUE( common::transaction::id::range::global( request.trid) == common::transaction::id::range::global( trid));
+            EXPECT_TRUE( request.trid.global() == trid.global());
             // the trid should be branched
-            EXPECT_TRUE( ! common::transaction::id::range::branch( request.trid).empty());
-            EXPECT_TRUE( common::transaction::id::range::branch( request.trid) != common::transaction::id::range::branch( trid));
+            EXPECT_TRUE( ! request.trid.branch().empty());
+            EXPECT_TRUE( request.trid.branch() != trid.branch());
 
             auto reply = common::message::reverse::type( request);
             reply.buffer.data = payload;

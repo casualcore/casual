@@ -609,7 +609,7 @@ namespace casual
                   return trids;
 
                common::message::transaction::active::Request request{ process::handle()};
-               request.gtrids = algorithm::transform( trids, []( auto& trid){ return transaction::global::ID{ transaction::id::range::global( trid)};});
+               request.gtrids = algorithm::transform( trids, []( auto& trid){ return transaction::global::ID{ trid.global()};});
                auto reply = communication::ipc::call( ipc::manager::transaction(), request);
 
                algorithm::container::erase_if( trids, [ &reply]( auto& trid)

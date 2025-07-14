@@ -1915,7 +1915,9 @@ domain:
             queue::enqueue( "a1", local::capacity::message( 30));
             queue::enqueue( "a1", local::capacity::message( 30));
 
-            auto gtrids = local::recover( { common::transaction::id::range::global( casual::transaction::context().current().trid)}, ipc::message::group::message::recovery::Directive::commit);
+            auto gtrids = local::recover( { 
+               common::transaction::global::ID{ casual::transaction::context().current().trid.global()}
+               }, ipc::message::group::message::recovery::Directive::commit);
             EXPECT_FALSE( gtrids.size() == 2);
 
             auto current_size = local::capacity::group_size( "A");
@@ -1947,7 +1949,8 @@ domain:
             queue::enqueue( "a1", local::capacity::message( 30));
             queue::enqueue( "a1", local::capacity::message( 30));
 
-            auto gtrids = local::recover( { common::transaction::id::range::global( casual::transaction::context().current().trid)}, ipc::message::group::message::recovery::Directive::rollback);
+            auto gtrids = local::recover( { common::transaction::global::ID{ casual::transaction::context().current().trid.global()}}, 
+               ipc::message::group::message::recovery::Directive::rollback);
             EXPECT_FALSE( gtrids.size() == 2);
 
             auto current_size = local::capacity::group_size( "A");
@@ -1981,7 +1984,7 @@ domain:
             EXPECT_FALSE( queue::dequeue( "a1").empty());
             EXPECT_FALSE( queue::dequeue( "a1").empty());
 
-            auto gtrids = local::recover( { common::transaction::id::range::global( casual::transaction::context().current().trid)}, ipc::message::group::message::recovery::Directive::commit);
+            auto gtrids = local::recover( { common::transaction::global::ID{ casual::transaction::context().current().trid.global()}}, ipc::message::group::message::recovery::Directive::commit);
             EXPECT_FALSE( gtrids.size() == 2);
 
             auto current_size = local::capacity::group_size( "A");
@@ -2015,7 +2018,7 @@ domain:
             EXPECT_FALSE( queue::dequeue( "a1").empty());
             EXPECT_FALSE( queue::dequeue( "a1").empty());
 
-            auto gtrids = local::recover( { common::transaction::id::range::global( casual::transaction::context().current().trid)}, ipc::message::group::message::recovery::Directive::rollback);
+            auto gtrids = local::recover( { common::transaction::global::ID{ casual::transaction::context().current().trid.global()}}, ipc::message::group::message::recovery::Directive::rollback);
             EXPECT_FALSE( gtrids.size() == 2);
 
             auto current_size = local::capacity::group_size( "A");

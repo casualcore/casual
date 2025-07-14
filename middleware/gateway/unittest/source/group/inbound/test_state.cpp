@@ -40,7 +40,7 @@ namespace casual
          state::transaction::Cache cache;
          EXPECT_TRUE( cache.associate( trid, descriptor) == nullptr);
 
-         cache.remove( transaction::id::range::global( trid));
+         cache.remove( trid.global());
 
          EXPECT_TRUE( cache.empty());
       }
@@ -57,12 +57,12 @@ namespace casual
          cache.add( branch, descriptor);
 
          {
-            auto found = cache.find( transaction::id::range::global( trid));
+            auto found = cache.find( trid.global());
             ASSERT_TRUE( found);
             EXPECT_TRUE( *found == branch);
          }
 
-         cache.remove( transaction::id::range::global( trid));
+         cache.remove( trid.global());
 
          EXPECT_TRUE( cache.empty());
       }
@@ -146,7 +146,7 @@ namespace casual
          // check that both descriptor is associated
          algorithm::for_each( calls, [ &cache]( auto& call)
          {
-            auto trid = cache.find( transaction::id::range::global( call.trid));
+            auto trid = cache.find( call.trid.global());
             ASSERT_TRUE( trid);
             EXPECT_TRUE( *trid == call.branched);
             EXPECT_TRUE( cache.associated( call.descriptors[ 0]));
@@ -156,10 +156,10 @@ namespace casual
          // remove the trid
          algorithm::for_each( calls, [ &cache]( auto& call)
          {
-            cache.remove( transaction::id::range::global( call.trid));
+            cache.remove( call.trid.global());
             EXPECT_TRUE( ! cache.associated( call.descriptors[ 0]));
             EXPECT_TRUE( ! cache.associated( call.descriptors[ 1]));
-            EXPECT_TRUE( ! cache.find( transaction::id::range::global( call.trid)));
+            EXPECT_TRUE( ! cache.find( call.trid.global()));
          });
 
          EXPECT_TRUE( cache.empty());

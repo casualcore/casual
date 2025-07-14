@@ -272,7 +272,7 @@ namespace casual
             Transaction& operator = ( Transaction&&) = default;
 
             inline explicit Transaction( const common::transaction::ID& trid) 
-               : global( common::transaction::id::range::global( trid))
+               : global( trid.global())
             {
                branches.emplace_back( trid);
             }

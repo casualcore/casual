@@ -268,7 +268,7 @@ namespace casual
 
                      // notify TM about the potential stale transaction.
                      common::message::transaction::potential::Stale message{ common::process::handle()};
-                     message.gtrid = gtrid;
+                     message.gtrid = common::transaction::global::ID{ gtrid};
                      optional::send( state, common::communication::instance::outbound::transaction::manager::device(), message);
                   }
                }
@@ -297,7 +297,7 @@ namespace casual
                            local::error::reply( state, reservation, common::code::xatmi::service_error);
 
                            // we might need to notify TM about a potential stale transaction
-                           detail::check_timeout_and_notify_TM( state, event.state.pid, common::transaction::id::range::global( reservation.caller.trid));
+                           detail::check_timeout_and_notify_TM( state, event.state.pid, reservation.caller.trid.global());
                         }
 
                         // It might be an assassinated instance. This should be taken care of by check_timeout_and_notify_TM
@@ -621,7 +621,7 @@ namespace casual
                         }
 
                         // check if the gtrid has associations before
-                        if( auto found = common::algorithm::find( state.transaction.associations, common::transaction::id::range::global( message.trid)))
+                        if( auto found = common::algorithm::find( state.transaction.associations, message.trid.global()))
                         {
                            if( auto instance_id = state.reserve_concurrent( service_id, common::range::make( found->second)))
                            {
@@ -639,7 +639,7 @@ namespace casual
                         if( auto instance_id = state.reserve_concurrent( service_id, {}))
                         {
                            state.transaction.associations.emplace(
-                              common::transaction::id::range::global( message.trid), std::vector< state::instance::concurrent::id::type>{ instance_id});
+                              message.trid.global(), std::vector< state::instance::concurrent::id::type>{ instance_id});
 
                            dispatch::lookup::reply( state, service_id, instance_id, message, pending);
                            return true;
@@ -1048,7 +1048,7 @@ namespace casual
                      common::signal::timer::set( deadline.value());
 
                   
-                  detail::check_timeout_and_notify_TM( state, message.metric.process.pid, common::transaction::id::range::global( message.metric.trid));
+                  detail::check_timeout_and_notify_TM( state, message.metric.process.pid, message.metric.trid.global());
 
                   // add metric event regardless
                   if( state.events.active< common::message::event::service::Calls>())

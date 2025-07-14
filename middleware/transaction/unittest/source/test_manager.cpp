@@ -1643,7 +1643,7 @@ domain:
 
          auto domain = local::domain( local::configuration::system, local::configuration::base);
 
-         auto trid = common::transaction::id::create( common::process::handle());
+         auto trid = common::transaction::id::create( common::process::id());
 
          // involved (new branch)
          {
@@ -1763,7 +1763,7 @@ domain:
          local::involved::Process rm1;
          local::involved::Process rm2;
 
-         auto trid = common::transaction::id::create( common::process::handle());
+         auto trid = common::transaction::id::create( common::process::id());
          auto branch = common::transaction::id::branch( trid);
 
          // involve resource 1 and 2, resource 2 is an outbound
@@ -1856,7 +1856,7 @@ domain:
          local::involved::Process rm1;
          local::involved::Process rm2;
 
-         auto trid = common::transaction::id::create( common::process::handle());
+         auto trid = common::transaction::id::create( common::process::id());
          auto branch = common::transaction::id::branch( trid);
 
          // involve resource 1 and 2, resource 2 is an outbound
@@ -1947,7 +1947,7 @@ domain:
 
          local::involved::Process rm1;
 
-         auto trid = common::transaction::id::create( common::process::handle());
+         auto trid = common::transaction::id::create( common::process::id());
 
          // involve resource 1, resource 1 is an outbound
          {
@@ -2049,7 +2049,7 @@ domain:
 
          auto resources = std::array< local::involved::Process, 2>();
 
-         auto trid = common::transaction::id::create( common::process::handle());
+         auto trid = common::transaction::id::create( common::process::id());
 
          local::involve_resources( resources, trid);
 
@@ -2057,7 +2057,7 @@ domain:
          // send the potentially stale message, this will trigger a rollback.
          {
             common::message::transaction::potential::Stale message{ common::process::handle()};
-            message.gtrid = common::transaction::id::range::global( trid);
+            message.gtrid = common::transaction::global::ID{ trid.global()};
             local::send::tm( message);
          }
 
@@ -2073,7 +2073,7 @@ domain:
 
          auto resources = std::array< local::involved::Process, 2>();
 
-         auto trid = common::transaction::id::create( common::process::handle());
+         auto trid = common::transaction::id::create( common::process::id());
 
          local::involve_resources( resources, trid);
 

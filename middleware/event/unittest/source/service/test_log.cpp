@@ -133,7 +133,7 @@ domain:
             .process = common::process::handle(),
             .correlation = common::strong::correlation::id::generate(),
             .execution = common::strong::execution::id::generate(),
-            .trid = common::transaction::id::create( common::process::handle()),
+            .trid = common::transaction::id::create( common::process::id()),
             .start = platform::time::clock::type::now() - std::chrono::milliseconds{ 42},
             .end = platform::time::clock::type::now(),
             .pending = std::chrono::milliseconds{ 6},

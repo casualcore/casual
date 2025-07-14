@@ -203,7 +203,7 @@ namespace casual
                      auto send_request =[ &]()
                      {
                         ipc::message::group::dequeue::Request request{ common::process::handle()};
-                        request.trid = common::transaction::id::create( common::process::handle());
+                        request.trid = common::transaction::id::create( common::process::id());
                         request.correlation = strong::correlation::id::generate();
                         request.queue = forward.source.id;
                         request.name = forward.source.queue;

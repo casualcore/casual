@@ -150,7 +150,11 @@ namespace casual
       {
          auto& state = local::global::state.at( id);
 
-         common::log::debug( "resource registration: ", transaction::context().resource_registration( id, &state.transactions.current.xid));
+         ::XID xid{};
+
+         common::log::debug( "resource registration: ", transaction::context().resource_registration( id, &xid));
+
+         state.transactions.current = common::transaction::ID{ xid };
 
       }
 

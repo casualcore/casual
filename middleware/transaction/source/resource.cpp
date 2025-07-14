@@ -40,10 +40,6 @@ namespace casual
       {
          namespace
          {
-            XID* non_const_xid( const transaction::ID& transaction)
-            {
-               return const_cast< XID*>( &transaction.xid);
-            }
 
             common::code::xa convert( int code)
             {
@@ -94,9 +90,11 @@ namespace casual
       {
          local::log::line( "start resource: ", m_id, " transaction: ", transaction, " flags: ", flags);
 
+         auto xid = transaction.to_xid();
+
          auto result = reopen_guard( [&]()
          { 
-            return local::convert( m_xa->xa_start_entry( local::non_const_xid( transaction), m_id.value(), std::to_underlying( flags)));
+            return local::convert( m_xa->xa_start_entry( &xid, m_id.value(), std::to_underlying( flags)));
          });
 
          // this is an extra fallback/try to mitigate possible race-conditions when 
@@ -108,7 +106,7 @@ namespace casual
             local::log::line( result, " - action: try to join instead");
 
             flags |= Flag::join;
-            result = local::convert( m_xa->xa_start_entry( local::non_const_xid( transaction), m_id.value(), std::to_underlying( flags)));
+            result = local::convert( m_xa->xa_start_entry( &xid, m_id.value(), std::to_underlying( flags)));
          }
 
          local::log::event( "resource-start|", m_id, '|', transaction, '|', result);
@@ -120,9 +118,11 @@ namespace casual
       {
          local::log::line( "end resource: ", m_id, ", transaction: ", transaction, ", flags: ", flags);
 
+         auto xid = transaction.to_xid();
+
          auto result = reopen_guard( [&]()
          {
-            return local::convert( m_xa->xa_end_entry( local::non_const_xid( transaction), m_id.value(), std::to_underlying( flags)));
+            return local::convert( m_xa->xa_end_entry( &xid, m_id.value(), std::to_underlying( flags)));
          });
 
          local::log::event( "resource-end|", m_id, '|', transaction, '|', result);
@@ -162,9 +162,11 @@ namespace casual
       {
          local::log::line( "prepare resource: ", m_id, " transaction: ", transaction, " flags: ", flags);
 
+         auto xid = transaction.to_xid();
+
          auto result = reopen_guard( [&]()
          {
-            return local::convert( m_xa->xa_prepare_entry( local::non_const_xid( transaction), m_id.value(), std::to_underlying( flags)));
+            return local::convert( m_xa->xa_prepare_entry( &xid, m_id.value(), std::to_underlying( flags)));
          });
 
          if( result == common::code::xa::protocol)
@@ -190,12 +192,14 @@ namespace casual
       {
          local::log::line( "commit resource: ", m_id, " transaction: ", transaction, " flags: ", flags);
 
+         auto xid = transaction.to_xid();
+
          auto result = reopen_guard( [&]()
          {
-            return local::convert( m_xa->xa_commit_entry( local::non_const_xid( transaction), m_id.value(), std::to_underlying( flags)));
+            return local::convert( m_xa->xa_commit_entry( &xid, m_id.value(), std::to_underlying( flags)));
          });
 
-         local::log::code( result, m_id, "error during commit - xid: ", transaction.xid);
+         local::log::code( result, m_id, "error during commit - xid: ", xid);
 
          local::log::event( "resource-commit|", m_id, '|', transaction, '|', result);
 
@@ -206,12 +210,14 @@ namespace casual
       {
          local::log::line( "rollback resource: ", m_id, " transaction: ", transaction, " flags: ", flags);
 
+         auto xid = transaction.to_xid();
+
          auto result = reopen_guard( [&]()
          {
-            return local::convert( m_xa->xa_rollback_entry( local::non_const_xid( transaction), m_id.value(), std::to_underlying( flags)));
+            return local::convert( m_xa->xa_rollback_entry( &xid, m_id.value(), std::to_underlying( flags)));
          });
 
-         local::log::code( result, m_id, " error during rollback - xid: ", transaction.xid);
+         local::log::code( result, m_id, " error during rollback - xid: ", xid);
 
          local::log::event( "resource-rollback|", m_id, '|', transaction, '|', result);
 
@@ -257,7 +263,8 @@ namespace casual
 
       bool Resource::prepared( const transaction::ID& transaction)
       {
-         std::array< XID, platform::batch::transaction::recover> xids;
+         std::array< ::XID, platform::batch::transaction::recover> xids;
+
 
          int count = xids.size();
          common::flag::xa::Flag flags = common::flag::xa::Flag::start_scan;
@@ -272,7 +279,7 @@ namespace casual
                return false;
             }
 
-            if( common::algorithm::find( common::range::make( std::begin( xids), count), transaction.xid))
+            if( common::algorithm::find( common::range::make( std::begin( xids), count), transaction))
             {
                // we found it. Make sure to end the scan if there are more.
                if( count == std::ssize( xids))

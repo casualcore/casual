@@ -73,7 +73,7 @@ namespace casual
 
          bool Transaction::local() const noexcept
          {
-            return trid.owner().pid == process::id() && ! m_external;
+            return trid.owner() == process::id() && ! m_external;
          }
 
          void Transaction::external()
@@ -87,7 +87,7 @@ namespace casual
 
          bool operator == ( const Transaction& lhs, const ID& rhs) noexcept { return lhs.trid == rhs;}
 
-         bool operator == ( const Transaction& lhs, const XID& rhs) noexcept { return lhs.trid.xid == rhs;}
+         //bool operator == ( const Transaction& lhs, const XID& rhs) noexcept { return lhs.trid.xid == rhs;}
 
          bool operator == ( const Transaction& lhs, const strong::correlation::id& rhs)
          {

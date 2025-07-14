@@ -34,7 +34,7 @@ namespace casual
 
             const common::transaction::ID* Cache::associate( const common::transaction::ID& external, common::strong::socket::id descriptor)
             {
-               if( auto found = algorithm::find( m_transactions, common::transaction::id::range::global( external)))
+               if( auto found = algorithm::find( m_transactions, external.global()))
                {
                   if( ! algorithm::contains( found->second.descriptors, descriptor))
                      found->second.descriptors.push_back( descriptor);
@@ -47,7 +47,7 @@ namespace casual
 
             void Cache::add( const common::transaction::ID& branched_trid, common::strong::socket::id descriptor)
             {
-               auto gtrid = common::transaction::id::range::global( branched_trid);
+               auto gtrid = branched_trid.global();
 
                if( auto found = algorithm::find( m_transactions, gtrid))
                {
@@ -98,7 +98,11 @@ namespace casual
 
             void Cache::remove( common::transaction::global::id::range gtrid)
             {
-               algorithm::container::erase( m_transactions, gtrid);
+               // should compile since c++23. 
+               // m_transactions.erase( gtrid);
+
+               if( auto found = algorithm::find( m_transactions, gtrid))
+                  m_transactions.erase( std::begin( found));
             }
         
          } // transaction

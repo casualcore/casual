@@ -343,14 +343,14 @@ domain:
                auto& trid = casual::transaction::context().current().trid;
                auto& transaction = state.transactions.front();
 
-               EXPECT_TRUE( transaction.global.id == common::string::compose( common::transaction::id::range::global( trid))) 
-                  << CASUAL_NAMED_VALUE( common::transaction::id::range::global( trid)) << '\n' << CASUAL_NAMED_VALUE( transaction.global.id);
+               EXPECT_TRUE( transaction.global.id == common::string::compose( trid.global())) 
+                  << CASUAL_NAMED_VALUE( trid.global()) << '\n' << CASUAL_NAMED_VALUE( transaction.global.id);
 
                ASSERT_TRUE( transaction.branches.size() == 1);
                auto& branch = transaction.branches.front();
 
                // expect a different branch
-               EXPECT_TRUE( branch.trid.branch != common::string::compose( common::transaction::id::range::branch( trid)));
+               EXPECT_TRUE( branch.trid.branch != common::string::compose( trid.branch()));
                
                ASSERT_TRUE( branch.resources.size() == 1);
                auto& resource = branch.resources.front();
@@ -362,7 +362,7 @@ domain:
             EXPECT_TRUE( tx_commit() == TX_OK);
 
             {  
-               EXPECT_TRUE( common::transaction::id::null( casual::transaction::context().current().trid));
+               EXPECT_TRUE( casual::transaction::context().current().trid.null());
 
                auto state = casual::transaction::unittest::state();
 

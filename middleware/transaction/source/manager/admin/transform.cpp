@@ -109,9 +109,9 @@ namespace casual
             {
                admin::model::transaction::Branch::ID result;
 
-               result.type = id.xid.formatID;
-               result.global = common::transcode::hex::encode( common::transaction::id::range::global( id));
-               result.branch = common::transcode::hex::encode( common::transaction::id::range::branch( id));
+               result.type = id.format();
+               result.global = common::transcode::hex::encode( id.global());
+               result.branch = common::transcode::hex::encode( id.branch());
 
                return result;
             }

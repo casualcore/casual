@@ -266,7 +266,7 @@ namespace casual
             {
                Transaction transaction()
                {
-                  Transaction transaction{ common::transaction::id::create( common::process::handle())};
+                  Transaction transaction{ common::transaction::id::create( common::process::id())};
                   transaction.state = Transaction::State::active;
                   return transaction;
                }
@@ -664,8 +664,9 @@ namespace casual
          if( ! transaction.associate_dynamic( rmid))
             code::raise::error( code::ax::resume, "resource id: ", rmid);
 
+         
          // Let the resource know the xid (if any)
-         *xid = transaction.trid.xid;
+         *xid = transaction.trid.to_xid();
 
          if( transaction)
          {
@@ -1010,7 +1011,7 @@ namespace casual
 
          if( info)
          {
-            info->xid = transaction.trid.xid;
+            info->xid = transaction.trid.to_xid();
             info->transaction_state = static_cast< decltype( info->transaction_state)>( transaction.state);
             info->transaction_timeout = std::chrono::duration_cast< std::chrono::seconds>( m_timeout).count();
             info->transaction_control = std::to_underlying( m_control);
@@ -1029,7 +1030,7 @@ namespace casual
                   if( xid == nullptr)
                      return local::log::code( code::tx::argument, "suspend: argument xid is null");
 
-                  if( id::null( current.trid))
+                  if( current.trid.null())
                      return local::log::code( code::tx::protocol, "suspend: attempt to suspend a null xid");
 
                   return code::tx::ok;
@@ -1073,7 +1074,7 @@ namespace casual
          if( auto code = local::resources::end::invoke( local::resources::end::policy::suspend(), ongoing, m_resources.all); code != code::tx::ok)
             return local::log::code( code::tx::protocol, "suspend: failed to suspend one or more resources");
 
-         *xid = ongoing.trid.xid;
+         *xid = ongoing.trid.to_xid();
 
          local::log::event( "suspend", ongoing.trid);
 

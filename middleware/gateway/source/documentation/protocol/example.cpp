@@ -49,7 +49,7 @@ namespace casual
                   return {
                      0x5b6c1bf6f24b480dbdbcdef54c3a0851_uuid,
                      0x5b6c1bf6f24b480dbdbcdef54c3a0852_uuid,
-                     common::process::Handle{ common::strong::process::id{ 42}, common::strong::ipc::id{ 0x57c9dcf039dc490baba9b957a39c87f1_uuid}}
+                     common::strong::process::id{ 42}
                   };
                }
 

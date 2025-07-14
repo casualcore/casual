@@ -212,7 +212,7 @@ namespace casual
                         // other "managers" might have state associated with the transaction, send an event
                         // to help them get rid of it.
                         common::message::event::transaction::Disassociate event{ common::process::handle()};
-                        event.gtrid = global;
+                        event.gtrid = common::transaction::global::ID{ global};
 
                         common::algorithm::container::erase( state.transactions, std::begin( found));
 
@@ -378,7 +378,7 @@ namespace casual
                         common::log::debug( "reply: ", reply);   
                         state.multiplex.send( destination.process.ipc, reply);
 
-                        remove::transaction( state, common::transaction::id::range::global( origin));
+                        remove::transaction( state, origin.global());
                      });
                   }
 
@@ -402,7 +402,7 @@ namespace casual
                         {
                            // we've started the rollback our self. There might be a pending rollback request from
                            // the user that we've received after we started the rollback (due to stale transaction).
-                           if( auto found = common::algorithm::find( state.pending.rollbacks, common::transaction::id::range::global( origin)))
+                           if( auto found = common::algorithm::find( state.pending.rollbacks, origin.global()))
                            {
                               common::log::debug( "pending rollback request found: ", *found);
 
@@ -438,7 +438,7 @@ namespace casual
                         common::log::debug( "reply: ", reply);
 
                         // remove transaction regardless
-                        remove::transaction( state, common::transaction::id::range::global( origin));
+                        remove::transaction( state, origin.global());
 
                         // send the reply, if we're not the originator of the transaction
                         rollback_send_reply( state, origin, std::move( reply), destination);
@@ -1216,7 +1216,7 @@ namespace casual
 
                      auto trids = common::algorithm::accumulate( state.transactions, std::vector< common::transaction::ID>{}, [ pid = message.state.pid]( auto result, auto& transaction)
                      {
-                        if( ! transaction.branches.empty() && transaction.branches.back().trid.owner().pid == pid)
+                        if( ! transaction.branches.empty() && transaction.branches.back().trid.owner() == pid)
                            result.push_back( transaction.branches.back().trid);
 
                         return result;

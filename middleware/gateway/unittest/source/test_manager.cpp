@@ -652,7 +652,7 @@ domain:
          a.activate();
 
       
-         const auto trid = common::transaction::id::create( common::process::handle());
+         const auto trid = common::transaction::id::create( common::process::id());
 
          // Expect us to reach service "b" via outbound -> inbound -> <service b>
          {

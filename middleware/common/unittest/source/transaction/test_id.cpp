@@ -21,13 +21,11 @@ namespace casual
 
          auto gtrid = uuid::make();
          auto bqual = uuid::make();
-         const transaction::ID id{ gtrid, bqual, process::handle()};
-
-         auto size = sizeof( Uuid::uuid_type);
+         const transaction::ID id{ gtrid, bqual, process::id()};
 
          // Check to see that the memory is exactly the same
-         EXPECT_TRUE( memcmp( id.xid.data, gtrid.get(), size) == 0);
-         EXPECT_TRUE( memcmp( id.xid.data + size, bqual.get(), size) == 0);
+         EXPECT_TRUE( algorithm::equal( id.global(), gtrid.range()));
+         EXPECT_TRUE( algorithm::equal( id.branch(), bqual.range()));
       }
 
 
@@ -42,14 +40,6 @@ namespace casual
 
       }
 
-      TEST( casual_common_transaction_id, equal_to_xid__expect_true)
-      {
-         common::unittest::Trace trace;
-
-         auto trid = transaction::id::create();
-
-         EXPECT_TRUE( trid.xid == trid.xid) << "trid: " << trid << '\n';
-      }
 
       TEST( casual_common_transaction_id, owner)
       {
@@ -57,7 +47,7 @@ namespace casual
 
          auto trid = transaction::id::create();
 
-         EXPECT_TRUE( trid.owner() == process::handle()) << trace.compose( CASUAL_NAMED_VALUE( trid), '\n', CASUAL_NAMED_VALUE( process::handle()));
+         EXPECT_TRUE( trid.owner() == process::id()) << trace.compose( CASUAL_NAMED_VALUE( trid), '\n', CASUAL_NAMED_VALUE( process::handle()));
 
       }
 
@@ -74,30 +64,15 @@ namespace casual
       }
 
 
-
-      TEST( casual_common_transaction_id, move)
-      {
-         common::unittest::Trace trace;
-
-         auto id = transaction::id::create();
-
-         transaction::ID moved{ std::move( id)};
-
-         // this will trigger use-after-move
-         EXPECT_TRUE( id.null()); // NOLINT
-         EXPECT_TRUE( ! moved.null());
-      }
-
       TEST( casual_common_transaction_id, global_id)
       {
          common::unittest::Trace trace;
 
          auto gtrid = uuid::make();
          auto bqual = uuid::make();
-         const transaction::ID id{ gtrid, bqual, process::handle()};
+         const transaction::ID id{ gtrid, bqual, process::id()};
 
-         EXPECT_TRUE( algorithm::equal( gtrid.range(), transaction::id::range::global( id))) << "id: " << id << " - gtrid: " << CASUAL_NAMED_VALUE( gtrid);
-         EXPECT_TRUE( algorithm::equal( gtrid.range(), transaction::id::range::global( id.xid)));
+         EXPECT_TRUE( algorithm::equal( gtrid.range(), id.global())) << "id: " << id << " - gtrid: " << CASUAL_NAMED_VALUE( gtrid);
 
       }
 
@@ -107,10 +82,9 @@ namespace casual
 
          auto gtrid = uuid::make();
          auto bqual = uuid::make();
-         const transaction::ID id{ gtrid, bqual, process::handle()};
+         const transaction::ID id{ gtrid, bqual, process::id()};
 
-         EXPECT_TRUE( algorithm::equal( bqual.range(), transaction::id::range::branch( id))) << "id: " << id << " - char_gtrid: " << CASUAL_NAMED_VALUE( bqual);
-         EXPECT_TRUE( algorithm::equal( bqual.range(), transaction::id::range::branch( id.xid)));
+         EXPECT_TRUE( algorithm::equal( bqual.range(), id.branch())) << "id: " << id << " - char_gtrid: " << CASUAL_NAMED_VALUE( bqual);
       }
 
       TEST( common_transaction_global_id, istream_operator)

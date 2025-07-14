@@ -146,8 +146,8 @@ domain:
          // receive the call to a from within 'B' domain
          auto request_a = communication::ipc::receive< common::message::service::call::callee::Request>( correlation_a);
          // check that the gtrid are the same and the branch differs
-         EXPECT_TRUE( common::transaction::id::range::global( request_a.trid) == common::transaction::id::range::global( trid)) << CASUAL_NAMED_VALUE( request_a.trid) << '\n' << CASUAL_NAMED_VALUE( trid);
-         EXPECT_TRUE( common::transaction::id::range::branch( request_a.trid) != common::transaction::id::range::branch( trid)) << CASUAL_NAMED_VALUE( trid);
+         EXPECT_TRUE( request_a.trid.global() == trid.global()) << CASUAL_NAMED_VALUE( request_a.trid) << '\n' << CASUAL_NAMED_VALUE( trid);
+         EXPECT_TRUE( request_a.trid.branch() != trid.branch()) << CASUAL_NAMED_VALUE( trid);
 
          // send another call to b with the exact same branched trid.
          auto correlation_b = send_call( device, request_a.trid);

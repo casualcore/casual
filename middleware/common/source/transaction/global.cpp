@@ -16,9 +16,9 @@
 #include <ostream>
 #include <regex>
 
-namespace casual::common
+namespace casual
 {
-   namespace transaction::global
+   namespace common::transaction::global
    {
       namespace local
       {
@@ -74,5 +74,5 @@ namespace casual::common
 
          return in;
       }
-   } // transaction::global
-} // casual::common
+   } // common::transaction::global
+} // casual

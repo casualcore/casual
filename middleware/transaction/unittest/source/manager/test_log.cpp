@@ -23,7 +23,7 @@ namespace casual
 
             auto create_transaction()
             {
-               manager::state::Transaction result{ common::transaction::id::create( common::process::handle())};
+               manager::state::Transaction result{ common::transaction::id::create( common::process::id())};
 
                result.started = platform::time::clock::type::now();
                result.deadline = result.started + std::chrono::seconds{ 10};

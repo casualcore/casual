@@ -42,7 +42,7 @@ namespace casual
 
                   common::message::transaction::inbound::branch::Request request{ process};
                   request.correlation = correlation;
-                  request.gtrid = gtrid;
+                  request.gtrid = common::transaction::global::ID{ gtrid};
 
                   state.multiplex.send( ipc::manager::transaction(), request);
                }
@@ -85,7 +85,7 @@ namespace casual
                   }
 
                   if( message.trid)
-                     request.gtrid = common::transaction::id::range::global( message.trid);
+                     request.gtrid = common::transaction::global::ID{ message.trid.global()};
 
                   //! if queue-manager is offline for some reason, we emulate "no-ent";
                   if( ! state.multiplex.send( ipc::manager::optional::queue(), request))
@@ -232,7 +232,7 @@ namespace casual
                   if( auto found = state.transaction_cache.associate( shared->origin_trid, descriptor))
                      shared->message.trid = *found;
                   else
-                     local::lookup::branch( state, shared->message.process, shared->message.correlation, transaction::id::range::global( shared->origin_trid));
+                     local::lookup::branch( state, shared->message.process, shared->message.correlation, shared->origin_trid.global());
                }
                
 
@@ -350,7 +350,7 @@ namespace casual
                   if( auto found = state.transaction_cache.associate( shared->origin_trid, descriptor))
                      shared->message.trid = *found;
                   else
-                     local::lookup::branch( state, shared->message.process, shared->message.correlation, transaction::id::range::global( shared->origin_trid));
+                     local::lookup::branch( state, shared->message.process, shared->message.correlation, shared->origin_trid.global());
                }
 
                return task_unit{ descriptor, message.correlation,
@@ -469,7 +469,7 @@ namespace casual
                   else
                   {
                      shared->wait_for_branch = true;
-                     local::lookup::branch( state, shared->message.process, shared->message.correlation, transaction::id::range::global( shared->message.trid));
+                     local::lookup::branch( state, shared->message.process, shared->message.correlation, shared->message.trid.global());
                   }
                }
 

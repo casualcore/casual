@@ -113,12 +113,13 @@ path                                                  pid     gtrid             
             EXPECT_FALSE( capture.empty()) << capture;
          }
 
-         TXINFO info{};
-         ASSERT_TRUE( casual::transaction::context().info( &info));
+         auto& transaction = casual::transaction::context().current();
+         
+         ASSERT_TRUE( transaction);
 
          // Commit the reservaton and check that something is returned
          {
-            const auto gtrid = common::string::compose( common::transaction::id::range::global( info.xid));
+            const auto gtrid = common::string::compose( transaction.trid.global());
             const auto capture = local::execute( "casual file --recover-transactions-commit " + gtrid).standard.out;
             EXPECT_FALSE( capture.empty()) << capture;
          }

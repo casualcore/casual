@@ -384,7 +384,7 @@ namespace casual
          // We create a unique id if none is provided.
          reply.id = message.message.id ? message.message.id : common::uuid::make();
 
-         auto gtrid = common::transaction::id::range::global( message.trid);
+         auto gtrid = message.trid.global();
 
          auto state = message.trid ? queuebase::message::State::added : queuebase::message::State::enqueued;
 
@@ -439,7 +439,7 @@ namespace casual
          {
             // Update state
             if( message.trid)
-               m_statement.state.xid.execute( common::transaction::id::range::global( message.trid), result.rowid);
+               m_statement.state.xid.execute( message.trid.global(), result.rowid);
             else
                m_statement.state.nullxid.execute( result.rowid);
 
@@ -669,7 +669,7 @@ namespace casual
 
          common::log::debug( "commit xid: ", id);
 
-         auto gtrid = common::transaction::id::range::global( id);
+         auto gtrid = id.global();
          m_statement.commit1.execute( gtrid);
 
          auto sizes = sql::database::query::fetch( m_statement.commit2.query( gtrid), local::transform::size());
@@ -682,7 +682,7 @@ namespace casual
 
          common::log::debug( "rollback xid: ", id);
 
-         auto gtrid = common::transaction::id::range::global( id);
+         auto gtrid = id.global();
 
          auto sizes = sql::database::query::fetch( m_statement.rollback1.query( gtrid), local::transform::size());
 

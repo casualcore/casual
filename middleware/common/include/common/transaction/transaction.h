@@ -97,7 +97,7 @@ namespace casual
          void external();
 
          friend bool operator == ( const Transaction& lhs, const ID& rhs) noexcept;
-         friend bool operator == ( const Transaction& lhs, const XID& rhs) noexcept;
+         //friend bool operator == ( const Transaction& lhs, const XID& rhs) noexcept;
          inline friend bool operator == ( const Transaction& lhs, const Transaction& rhs) noexcept { return lhs.trid == rhs.trid;}
          friend bool operator == ( const Transaction& lhs, const strong::correlation::id& rhs);
 

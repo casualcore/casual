@@ -165,7 +165,7 @@ domain:
          {
             const auto capture = administration::unittest::cli::command::execute( R"(casual transaction --list-transactions --porcelain true | awk -F'|' '{printf $1}')");
             auto& trid = casual::transaction::context().current().trid;
-            EXPECT_EQ( capture.standard.out, common::string::compose( common::transaction::id::range::global( trid))) << CASUAL_NAMED_VALUE( capture) << "\nexpected: " << trid;
+            EXPECT_EQ( capture.standard.out, common::string::compose( trid.global())) << CASUAL_NAMED_VALUE( capture) << "\nexpected: " << trid;
          }
 
          // branches

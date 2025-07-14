@@ -15,9 +15,9 @@
 #include <string>
 
 
-namespace casual::common
+namespace casual
 {
-   namespace transaction::global
+   namespace common::transaction::global
    {
       namespace id
       {
@@ -29,8 +29,8 @@ namespace casual::common
       struct ID 
       {
          inline ID() = default;
-         ID( id::range gtrid);
-         ID( std::string_view hex_string);
+         explicit ID( id::range gtrid);
+         explicit ID( std::string_view hex_string);
 
          inline id::range range() const noexcept { return id::range( m_gtrid);}
 
@@ -63,8 +63,8 @@ namespace casual::common
          inline std::size_t operator()( const casual::common::transaction::global::ID& value) const noexcept { return hash{}( value.range());}
       };
       
-   } // transaction::global
-} // casual::common
+   } // common::transaction::global
+} // casual
 
 namespace std 
 {

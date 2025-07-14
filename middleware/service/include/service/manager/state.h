@@ -546,7 +546,8 @@ namespace casual
 
          struct
          {
-            std::unordered_map< common::transaction::global::ID, std::vector< state::instance::concurrent::id::type>> associations;
+            
+            std::unordered_map< common::transaction::global::ID, std::vector< state::instance::concurrent::id::type>, common::transaction::global::hash, std::equal_to<>> associations;
 
             CASUAL_LOG_SERIALIZE(
                CASUAL_SERIALIZE( associations);

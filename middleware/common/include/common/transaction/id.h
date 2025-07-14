@@ -16,7 +16,6 @@
 #include "common/algorithm.h"
 #include "common/process.h"
 
-#include "common/serialize/value/customize.h"
 
 #include <tx.h>
 
@@ -24,194 +23,164 @@
 #include <ostream>
 
 
-//! Global scope compare operations for XID
-//! @{
-bool operator == ( const XID& lhs, const XID& rhs);
-bool operator < ( const XID& lhs, const XID& rhs);
-inline bool operator != ( const XID& lhs, const XID& rhs) { return ! ( lhs == rhs);}
-//! @}
-
 //! Global stream operator for XID
 std::ostream& operator << ( std::ostream& out, const XID& xid);
 
 namespace casual
 {
-   namespace common
+   namespace common::transaction
    {
-      namespace transaction
+
+      namespace xid
       {
-         using xid_type = XID;
+         bool null( const XID& id) noexcept;
+      } // xid
 
-
-         namespace xid
+      namespace id
+      {
+         namespace range::type
          {
-            XID null() noexcept;
-            bool null( const XID& id) noexcept;
-         } // xid
+            using global = transaction::global::id::range;
 
-         class ID
+            struct branch_tag{};
+            using branch = strong::Span< const std::byte, branch_tag>;
+         } // range::type
+
+      } // id
+
+      struct ID
+      {
+         struct Format
          {
-         public:
-
-            struct Format
+            enum 
             {
-               enum 
-               {
-                  null = -1,
-                  casual = 42,
-                  branch = 43,
-               };
+               null = -1,
+               casual = 42,
+               branch = 43,
             };
-
-            //! Initialize with null-xid
-            //! @{
-            ID() noexcept = default;
-            explicit ID( const process::Handle& owner);
-            //! @}
-
-            explicit ID( const xid_type& xid);
-
-            //! creates a new trid from gtrid and a generated bqual.
-            explicit ID( global::id::range gtrid);
-
-            //! Initialize with uuid, gtrid and bqual.
-            //! Sets the format id to "casual"
-            //!
-            //! @note not likely to be used other than unittesting
-            ID( Uuid gtrid, Uuid bqual, const process::Handle& owner);
-
-            ID( ID&&) noexcept;
-            ID& operator = ( ID&&) noexcept;
-
-            ID( const ID&) noexcept = default;
-            ID& operator = ( const ID&) noexcept = default;
-
-
-            //! @return true if XID is null
-            bool null() const;
-
-            //! @return true if XID is not null
-            explicit operator bool() const;
-
-
-            //! @return owner/creator of the transaction
-            const process::Handle& owner() const;
-            void owner( const process::Handle& handle);
-
-            friend bool operator < ( const ID& lhs, const ID& rhs);
-            friend bool operator == ( const ID& lhs, const ID& rhs);
-            friend bool operator == ( const ID& lhs, const xid_type& rhs);
-
-            friend bool operator == ( const ID& lhs, global::id::range rhs);
-            inline friend bool operator == ( const ID& lhs, const global::ID rhs) { return lhs == rhs.range();}
-
-            CASUAL_CONST_CORRECT_SERIALIZE(
-               CASUAL_SERIALIZE_NAME( m_owner, "owner");
-               CASUAL_SERIALIZE( xid);
-            )
-
-
-            //! The XA-XID object.
-            //!
-            //! We need to have access to the xid to communicate via xa and such,
-            //! no reason to keep it private and have getters..
-            xid_type xid = xid::null();
-
-            friend std::ostream& operator << ( std::ostream& out, const ID& id);
-
-         private:
-            process::Handle m_owner;
          };
 
-         namespace id
-         {
-            namespace max::size
-            {
-               inline constexpr auto global = MAXGTRIDSIZE;
-               inline constexpr auto branch = MAXBQUALSIZE;
-               
-            } // max::size
+         //! Initialize with null-xid
+         //! @{
+         ID() noexcept = default;
+         explicit ID( strong::process::id owner);
+         //! @}
 
-            //! Creates a new unique transaction id, global and branch
-            ID create();
-            ID create( const process::Handle& owner);
+         explicit ID( const ::XID& xid);
 
-            //! @return true if trid is null, false otherwise
-            //! @{
-            bool null( const ID& id);
-            //! @}
+         //! creates a new trid from gtrid and a generated bqual.
+         explicit ID( global::id::range gtrid);
 
-            //! Creates a new Id with same global transaction id but a new branch id.
-            //! if the transaction is _null_ then a _null_ xid is returned 
-            ID branch( const ID& id);
-            
-            namespace range
-            {
-               namespace type
-               {
-                  using global = transaction::global::id::range;
+         explicit ID( global::id::range gtrid, id::range::type::branch bqual, long format_id = Format::casual);
 
-                  struct branch_tag{};
-                  using branch = strong::Span< const std::byte, branch_tag>;
-               } // type
+         //! Initialize with uuid, gtrid and bqual.
+         //! Sets the format id to "casual"
+         //!
+         //! @note not likely to be used other than unittesting
+         ID( Uuid gtrid, Uuid bqual, strong::process::id owner);
 
-               namespace detail
-               {
-                  template< typename X>
-                  auto data( X&& xid) 
-                  {
-                     return binary::span::fixed::make( xid.data, xid.data + xid.gtrid_length + xid.bqual_length);
-                  }
-               } // detail
+         ID( ID&&) noexcept;
+         ID& operator = ( ID&&) noexcept;
 
-               //! @return a (binary) range that represent the data part of the xid, global + branch
-               //! @{
-               inline auto data( const xid_type& xid) { return detail::data( xid);}
-               inline auto data( const ID& id) { return data( id.xid);}
-               inline auto data( xid_type& xid) { return detail::data( xid);}
-               inline auto data( ID& id) { return data( id.xid);}
-               //! @}
+         ID( const ID&) noexcept = default;
+         ID& operator = ( const ID&) noexcept = default;
 
-               //! @return a (binary) range that represent the global part of the xid
-               //! @{
-               type::global global( const ID& id);
-               type::global global( const xid_type& id);
-               //! @}
+         long format() const noexcept { return m_format_id;}
 
-               //! @return a (binary) range that represent the branch part of the xid
-               //! @{
-               type::branch branch( const ID& id);
-               type::branch branch( const xid_type& id);
-               //! @}
+         //! @return true if XID is null
+         bool null() const;
 
-            } // range
-         } // id
+         //! @return true if XID is not null
+         explicit operator bool() const;
+
+
+         //! @return owner/creator of the transaction
+         strong::process::id owner() const;
+         void owner( strong::process::id handle);
+
+         friend bool operator < ( const ID& lhs, const ID& rhs);
+         friend bool operator == ( const ID& lhs, const ID& rhs);
+         friend bool operator == ( const ID& lhs, const ::XID& rhs);
+
+         friend bool operator == ( const ID& lhs, global::id::range rhs);
+         inline friend bool operator == ( const ID& lhs, const global::ID& rhs) { return lhs == rhs.range();}
+
+
+         inline auto data() const { return binary::span::fixed::make( m_data.data(), m_data.size());}
+         inline auto data() { return binary::span::fixed::make( m_data.data(), m_data.size());}
+         inline auto global() const { return id::range::type::global( m_data.data(), m_bqual_pivot);}
+         inline auto branch() const { return id::range::type::branch{ m_data.data() + m_bqual_pivot, m_data.data() + m_data.size()};}
+
+         //! @return a XID object based on this ID
+         XID to_xid() const;
          
-      } // transaction
 
-      namespace serialize::customize::composite
-      {
-         //! specialization for XID
-         template< typename A>
-         struct Value< XID, A>
-         {
-            template< typename V>  
-            static void serialize( A& archive, V&& xid)
+         friend std::ostream& operator << ( std::ostream& out, const ID& id);
+
+         CASUAL_CONST_CORRECT_SERIALIZE(
+            
+            CASUAL_SERIALIZE_NAME( m_format_id, "formatID");
+
+            if( ! null())
             {
-               CASUAL_SERIALIZE_NAME( xid.formatID, "formatID");
+               long gtrid_length = global().size();
+               long bqual_length = branch().size();
 
-               if( ! transaction::xid::null( xid))
+               CASUAL_SERIALIZE( gtrid_length);
+               CASUAL_SERIALIZE( bqual_length);
+
+               // maybe resize.
+               resize( gtrid_length, bqual_length);
+
+               CASUAL_SERIALIZE_NAME( data(), "data");
+
+               if constexpr( ! serialize::archive::is::network::normalizing< std::decay_t< decltype( archive)>>)
                {
-                  CASUAL_SERIALIZE_NAME( xid.gtrid_length, "gtrid_length");
-                  CASUAL_SERIALIZE_NAME( xid.bqual_length, "bqual_length");
-                  CASUAL_SERIALIZE_NAME( transaction::id::range::data( xid), "data");
+                  // we only serialize the owner if it't not over 'network'
+                  CASUAL_SERIALIZE_NAME( m_owner, "owner");
                }
             }
-         };
+         )
 
-      } // serialize::customize::composite
+      private:
 
-   } // common
+         inline void resize( platform::size::type gtrid_length, platform::size::type bqual_length) 
+         {
+               m_data.resize( gtrid_length + bqual_length);
+               m_bqual_pivot = static_cast< short>( gtrid_length);
+         }
+         inline void resize( platform::size::type gtrid_length, platform::size::type bqual_length) const { /* no op*/}
+
+         
+         long m_format_id = Format::null;
+         platform::binary::type m_data;
+
+         // pivot between gtrid and bqual in m_data
+         short m_bqual_pivot = {}; 
+         //! owner/creator of the transaction
+         strong::process::id m_owner;
+      };
+
+      namespace id
+      {
+         namespace max::size
+         {
+            inline constexpr auto global = MAXGTRIDSIZE;
+            inline constexpr auto branch = MAXBQUALSIZE;
+            
+         } // max::size
+
+         //! Creates a new unique transaction id, global and branch
+         ID create();
+         ID create( strong::process::id owner);
+
+         //! Creates a new Id with same global transaction id but a new branch id.
+         //! if the transaction is _null_ then a _null_ xid is returned 
+         ID branch( const ID& id);
+
+      } // id
+      
+   } // common::transaction
 } // casual
 
 
@@ -222,7 +191,7 @@ namespace std
    {
       std::size_t operator()( const casual::common::transaction::ID& value) const noexcept
       {
-         auto range = casual::common::transaction::id::range::data( value);
+         auto range = value.data();
          return std::hash< std::string_view>{}( std::string_view( reinterpret_cast< const char*>( range.data()), range.size()));
       }
    };

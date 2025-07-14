@@ -82,7 +82,7 @@ namespace casual
             // global...
             ASSERT_TRUE( tx_begin() == TX_OK);
 
-            std::vector< XID> xids( 10);
+            std::array< ::XID, 10> xids{};
 
             // start 10 new ones...
             for( auto& xid : xids)
@@ -100,7 +100,7 @@ namespace casual
 
                TXINFO txinfo;
                EXPECT_TRUE( tx_info( &txinfo) == 1);
-               EXPECT_TRUE( txinfo.xid == xid);
+               EXPECT_TRUE( txinfo.xid == common::transaction::ID{ xid});
             }
 
             EXPECT_TRUE( tx_rollback() == TX_OK);
@@ -113,7 +113,7 @@ namespace casual
             // global...
             ASSERT_TRUE( tx_begin() == TX_OK);
 
-            std::vector< XID> xids( 10);
+            std::array< XID, 10> xids{};
 
             // start 10 new ones...
             for( auto& xid : xids)
@@ -131,7 +131,7 @@ namespace casual
 
                TXINFO txinfo;
                EXPECT_TRUE( tx_info( &txinfo) == 1);
-               EXPECT_TRUE( txinfo.xid == xid);
+               EXPECT_TRUE( txinfo.xid == common::transaction::ID{ xid});
             }
 
             EXPECT_TRUE( tx_rollback() == TX_OK);

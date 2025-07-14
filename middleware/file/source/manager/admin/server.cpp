@@ -33,12 +33,12 @@ namespace casual
                {
                   auto transform( const admin::model::Stage stage)
                   {
-                     return [stage=stage]( const manager::State::Request& value)
+                     return [ stage]( const manager::State::Request& value)
                      {
                         return admin::model::Request
                         {
                            .pid = value.process.pid,
-                           .gtrid = common::transaction::id::range::global( value.trid),
+                           .gtrid = common::transaction::global::ID{ value.trid.global()},
                            .stage = stage,
                            .path = value.path,
                            .time = value.time,

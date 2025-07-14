@@ -16,17 +16,6 @@ namespace casual
 
    namespace gateway::group::outbound
    {
-      namespace local
-      {
-         namespace
-         {
-            namespace global
-            {
-               const transaction::ID trid;
-            } // global
-            
-         } // <unnamed>
-      } // local
 
       namespace state
       {
@@ -46,7 +35,7 @@ namespace casual
             
             bool Transactions::associate( const common::transaction::ID& trid, common::strong::socket::id descriptor)
             {
-               auto gtrid = transaction::id::range::global( trid);
+               auto gtrid = trid.global();
 
                if( auto found = algorithm::find( m_transactions, gtrid))
                {
@@ -63,7 +52,7 @@ namespace casual
 
             void Transactions::remove( const common::transaction::ID& trid, common::strong::socket::id descriptor)
             {
-               auto gtrid = transaction::id::range::global( trid);
+               auto gtrid = trid.global();
 
                if( auto found = algorithm::find( m_transactions, gtrid))
                   if( algorithm::container::erase( found->second, descriptor).empty())
@@ -72,12 +61,16 @@ namespace casual
 
             void Transactions::remove( common::transaction::global::id::range gtrid)
             {
-               algorithm::container::erase( m_transactions, gtrid);
+               // should compile since c++23.
+               // m_transactions.erase( gtrid);
+
+               if( auto found = algorithm::find( m_transactions, gtrid))
+                  m_transactions.erase( std::begin( found));
             }
 
             bool Transactions::is_associated( const common::transaction::ID& trid, common::strong::socket::id descriptor)
             {
-               auto gtrid = transaction::id::range::global( trid);
+               auto gtrid = trid.global();
 
                if( auto found = algorithm::find( m_transactions, gtrid))
                   if( algorithm::find( found->second, descriptor))

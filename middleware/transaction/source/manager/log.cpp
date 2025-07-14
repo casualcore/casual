@@ -67,10 +67,10 @@ namespace casual
          auto prepare_branch = [&]( auto& branch)
          {
             m_statement.insert.execute(
-               common::transaction::id::range::global( branch.trid),
-               common::transaction::id::range::branch( branch.trid),
-               branch.trid.xid.formatID,
-               branch.trid.owner().pid.value(),
+               branch.trid.global(),
+               branch.trid.branch(),
+               branch.trid.format(),
+               branch.trid.owner().value(),
                State::prepared,
                transaction.started,
                transaction.deadline
@@ -119,29 +119,11 @@ namespace casual
             {
                common::transaction::ID trid( sql::database::Row& row, int index = 0)
                {
-                  common::transaction::ID result;
+                  auto gtrid = row.get< platform::binary::type>( index);
+                  auto bqual = row.get< platform::binary::type>( index + 1);
+                  auto format_id = row.get< long>( index + 2);
 
-                  {
-                     auto gtrid = row.get< platform::binary::type>( index);
-
-                     common::algorithm::copy( common::binary::span::to_string_like( gtrid), std::begin( result.xid.data));
-
-                     result.xid.gtrid_length = gtrid.size();
-                  }
-
-                  {
-                     auto bqual = row.get< platform::binary::type>( index + 1);
-
-                     common::algorithm::copy(
-                        common::binary::span::to_string_like( bqual),
-                        std::begin( result.xid.data) + result.xid.gtrid_length);
-
-                     result.xid.bqual_length = bqual.size();
-                  }
-
-                  result.xid.formatID = row.get< long>( index + 2);
-
-                  return result;
+                  return common::transaction::ID{ gtrid, bqual, format_id};
                }
 
                Log::Row row( sql::database::Row& row)

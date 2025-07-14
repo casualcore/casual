@@ -705,7 +705,7 @@ struct Value< type, A>  \
             CASUAL_CUSTOMIZATION_POINT_SERIALIZE( service.name);
             CASUAL_CUSTOMIZATION_POINT_SERIALIZE( deadline.remaining);
             CASUAL_CUSTOMIZATION_POINT_SERIALIZE( parent);
-            CASUAL_SERIALIZE_NAME( value.trid.xid, "xid");
+            CASUAL_SERIALIZE_NAME( value.trid, "xid");
             CASUAL_CUSTOMIZATION_POINT_SERIALIZE( flags);
             CASUAL_CUSTOMIZATION_POINT_SERIALIZE( buffer);
          })
@@ -725,7 +725,7 @@ struct Value< type, A>  \
             CASUAL_CUSTOMIZATION_POINT_SERIALIZE( service.name);
             CASUAL_CUSTOMIZATION_POINT_SERIALIZE( service.timeout.duration);
             CASUAL_CUSTOMIZATION_POINT_SERIALIZE( parent);
-            CASUAL_SERIALIZE_NAME( value.trid.xid, "xid");
+            CASUAL_SERIALIZE_NAME( value.trid, "xid");
             CASUAL_CUSTOMIZATION_POINT_SERIALIZE( flags);
             CASUAL_CUSTOMIZATION_POINT_SERIALIZE( buffer);
          })
@@ -735,7 +735,7 @@ struct Value< type, A>  \
             CASUAL_CUSTOMIZATION_POINT_SERIALIZE( execution);
             CASUAL_CUSTOMIZATION_POINT_SERIALIZE( code.result);
             CASUAL_CUSTOMIZATION_POINT_SERIALIZE( code.user);
-            CASUAL_SERIALIZE_NAME( value.transaction.trid.xid, "transaction.xid");
+            CASUAL_SERIALIZE_NAME( value.transaction.trid, "transaction.xid");
             CASUAL_CUSTOMIZATION_POINT_SERIALIZE( transaction.state);
             CASUAL_CUSTOMIZATION_POINT_SERIALIZE( buffer);
          })
@@ -746,7 +746,7 @@ struct Value< type, A>  \
             CASUAL_CUSTOMIZATION_POINT_SERIALIZE( service.name);
             CASUAL_CUSTOMIZATION_POINT_SERIALIZE( service.timeout.duration);
             CASUAL_CUSTOMIZATION_POINT_SERIALIZE( parent);
-            CASUAL_SERIALIZE_NAME( value.trid.xid, "xid");
+            CASUAL_SERIALIZE_NAME( value.trid, "xid");
             CASUAL_CUSTOMIZATION_POINT_SERIALIZE( duplex);
             CASUAL_CUSTOMIZATION_POINT_SERIALIZE( buffer);
          })
@@ -757,7 +757,7 @@ struct Value< type, A>  \
             CASUAL_CUSTOMIZATION_POINT_SERIALIZE( service.name);
             CASUAL_CUSTOMIZATION_POINT_SERIALIZE( deadline.remaining);
             CASUAL_CUSTOMIZATION_POINT_SERIALIZE( parent);
-            CASUAL_SERIALIZE_NAME( value.trid.xid, "xid");
+            CASUAL_SERIALIZE_NAME( value.trid, "xid");
             CASUAL_CUSTOMIZATION_POINT_SERIALIZE( duplex);
             CASUAL_CUSTOMIZATION_POINT_SERIALIZE( buffer);
          })
@@ -790,7 +790,7 @@ struct Value< type, A>  \
             void transaction_request( T& value, A& archive)
             {
                CASUAL_CUSTOMIZATION_POINT_SERIALIZE( execution);
-               CASUAL_SERIALIZE_NAME( value.trid.xid, "xid");
+               CASUAL_SERIALIZE_NAME( value.trid, "xid");
                CASUAL_CUSTOMIZATION_POINT_SERIALIZE( resource);
                CASUAL_CUSTOMIZATION_POINT_SERIALIZE( flags);
             }
@@ -799,7 +799,7 @@ struct Value< type, A>  \
             void transaction_reply( T& value, A& archive)
             {
                CASUAL_CUSTOMIZATION_POINT_SERIALIZE( execution);
-               CASUAL_SERIALIZE_NAME( value.trid.xid, "xid");
+               CASUAL_SERIALIZE_NAME( value.trid, "xid");
                CASUAL_CUSTOMIZATION_POINT_SERIALIZE( resource);
                CASUAL_CUSTOMIZATION_POINT_SERIALIZE( state);
             }
@@ -840,7 +840,7 @@ struct Value< type, A>  \
          {
             CASUAL_CUSTOMIZATION_POINT_SERIALIZE( execution);
             CASUAL_CUSTOMIZATION_POINT_SERIALIZE( name);
-            CASUAL_SERIALIZE_NAME( value.trid.xid, "xid");
+            CASUAL_SERIALIZE_NAME( value.trid, "xid");
             CASUAL_CUSTOMIZATION_POINT_SERIALIZE( message);
          })
 
@@ -862,7 +862,7 @@ struct Value< type, A>  \
          {
             CASUAL_CUSTOMIZATION_POINT_SERIALIZE( execution);
             CASUAL_CUSTOMIZATION_POINT_SERIALIZE( name);
-            CASUAL_SERIALIZE_NAME( value.trid.xid, "xid");
+            CASUAL_SERIALIZE_NAME( value.trid, "xid");
             CASUAL_CUSTOMIZATION_POINT_SERIALIZE( selector);
             CASUAL_CUSTOMIZATION_POINT_SERIALIZE( block);
          })

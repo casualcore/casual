@@ -87,7 +87,7 @@ namespace casual
                      metric.service,
                      metric.parent.service,
                      metric.execution.underlying().range(),
-                     common::transaction::id::range::global( metric.trid),
+                     metric.trid.global(),
                      metric.start,
                      metric.end);
                }

@@ -114,7 +114,7 @@ namespace casual
       {
          common::unittest::Trace trace;
 
-         auto trid = transaction::id::create( common::process::Handle{ common::strong::process::id{ 1}, {}});
+         auto trid = transaction::id::create( common::strong::process::id{ 1});
 
          ASSERT_NO_THROW( context().join( trid));
 

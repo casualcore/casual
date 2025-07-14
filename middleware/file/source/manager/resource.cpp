@@ -21,7 +21,7 @@ namespace casual::file::resource
          auto temporary( const common::transaction::ID& transaction, const std::filesystem::path& path)
          {
             std::filesystem::path result{ path};
-            result += common::string::compose( ".casual.", common::transaction::id::range::global( transaction));
+            result += common::string::compose( ".casual.", transaction.global());
             return result;
          }
 

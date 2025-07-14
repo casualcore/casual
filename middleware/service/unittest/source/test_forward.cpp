@@ -88,7 +88,7 @@ domain:
          {
             request.process = common::process::handle();
             request.service.name = "service2";
-            request.trid = common::transaction::id::create( common::process::handle());
+            request.trid = common::transaction::id::create( common::process::id());
             request.flags = common::message::service::call::request::Flag::no_transaction;
          }
 
@@ -119,7 +119,7 @@ domain:
             common::message::service::call::callee::Request request;
             request.process = common::process::handle();
             request.service.name = "non-existent-service";
-            request.trid = common::transaction::id::create( common::process::handle());
+            request.trid = common::transaction::id::create( common::process::id());
             return request;
          }();
 

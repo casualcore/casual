@@ -182,7 +182,7 @@ namespace casual
                {
                   // We don't start or join any transactions
                   // (technically we join a null-trid)
-                  transaction::Context::instance().join( transaction::ID{ common::process::handle()});
+                  transaction::Context::instance().join( transaction::ID{ common::process::id()});
                   break;
                }
             }

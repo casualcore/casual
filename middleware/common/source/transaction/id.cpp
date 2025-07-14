@@ -9,7 +9,6 @@
 #include "common/uuid.h"
 #include "common/process.h"
 #include "common/transcode.h"
-#include "common/memory.h"
 
 
 #include <ios>
@@ -17,26 +16,10 @@
 #include <iomanip>
 #include <iostream>
 
-#include <cassert>
-
-
-bool operator == ( const XID& lhs, const XID& rhs)
-{
-   if( lhs.formatID != rhs.formatID) return false;
-   if( lhs.formatID == casual::common::transaction::ID::Format::null) return true;
-   return std::memcmp( &lhs, &rhs, sizeof( XID) - ( XIDDATASIZE - ( lhs.gtrid_length + lhs.bqual_length))) == 0;
-}
-
-bool operator < ( const XID& lhs, const XID& rhs)
-{
-   if( lhs.formatID != rhs.formatID) return lhs.formatID < rhs.formatID;
-   if( lhs.formatID == casual::common::transaction::ID::Format::null) return false;
-   return std::memcmp( &lhs, &rhs, sizeof( XID) - ( XIDDATASIZE - ( lhs.gtrid_length + lhs.bqual_length))) < 0;
-}
 
 std::ostream& operator << ( std::ostream& out, const XID& xid)
 {
-   if( ! casual::common::transaction::xid::null( xid))
+   if( xid.formatID != casual::common::transaction::ID::Format::null)
    {
       // TODO: hack to get rid of concurrent xid read/write in a
       // unittest environment - We should get rid of threads in unittest also...
@@ -53,14 +36,15 @@ std::ostream& operator << ( std::ostream& out, const XID& xid)
          return out;
       }
 
-      casual::common::transcode::hex::encode( out, casual::common::transaction::id::range::global( xid));
+      casual::common::transcode::hex::encode( out, casual::common::binary::span::make( xid.data, xid.gtrid_length)); 
       out  << ':';
-      casual::common::transcode::hex::encode( out, casual::common::transaction::id::range::branch( xid));
+      casual::common::transcode::hex::encode( out, casual::common::binary::span::make( xid.data + xid.gtrid_length, xid.bqual_length));
       out << ':' << xid.formatID;
 
    }
    return out;
 }
+
 
 
 namespace casual
@@ -70,13 +54,6 @@ namespace casual
 
       namespace xid
       {
-         XID null() noexcept
-         {
-            XID xid{};
-            xid.formatID = ID::Format::null;
-            return xid;
-         }
-
          bool null( const XID& id) noexcept
          {
             return id.formatID == ID::Format::null;
@@ -100,147 +77,165 @@ namespace casual
                xid.formatID = ID::Format::casual;
             }
 
+            platform::binary::type create_data( auto&& gtrid, auto&& bqual)
+            {
+               platform::binary::type data;
+               data.resize( std::size( gtrid) + std::size( bqual));
+
+               algorithm::copy( gtrid, std::begin( data));
+               algorithm::copy( bqual, std::begin( data) + std::size( gtrid));
+
+               return data;
+            }
+
+            platform::binary::type xid_to_data( const XID& xid)
+            {
+               if( xid.formatID == ID::Format::null)
+                  return {};
+
+               auto span = binary::span::make( xid.data, xid.data + xid.gtrid_length + xid.bqual_length);
+
+               return platform::binary::type{ std::begin( span), std::end( span)};
+            }
+
          } // <unnamed>
       } // local
 
-      ID::ID( const process::Handle& owner) : m_owner( std::move( owner))
+      ID::ID( strong::process::id owner) : m_owner( std::move( owner))
       {}
 
-      ID::ID( const xid_type& xid) : xid( xid)
-      {}
+      ID::ID( const ::XID& xid)
+         :  m_format_id( xid.formatID),
+            m_data{ local::xid_to_data( xid)},
+            m_bqual_pivot( static_cast< short>( xid.gtrid_length))
+      {
+      }
 
       ID::ID( global::id::range gtrid)
+         : m_format_id( Format::casual),
+            m_data( local::create_data( gtrid, uuid::make().range())),
+            m_bqual_pivot( static_cast< short>( gtrid.size()))
       {
-         auto bqual = uuid::make();
-         local::casual_xid( gtrid, bqual.range(), xid);
       }
 
-      ID::ID( Uuid gtrid, Uuid bqual, const process::Handle& owner) : m_owner( std::move( owner))
+      ID::ID( Uuid gtrid, Uuid bqual, strong::process::id owner) 
+         : m_format_id( Format::casual),
+            m_data( local::create_data( gtrid.range(), bqual.range())),
+            m_bqual_pivot( static_cast< short>( gtrid.range().size())),
+            m_owner( std::move( owner))
       {
-         local::casual_xid( gtrid.range(), bqual.range(), xid);
       }
 
-      ID::ID( ID&& rhs) noexcept
+      ID::ID( global::id::range gtrid, id::range::type::branch bqual, long format_id)
+         : m_format_id( format_id),
+            m_data( local::create_data( gtrid, bqual)),
+            m_bqual_pivot( static_cast< short>( gtrid.size()))
       {
-         xid = std::exchange( rhs.xid, xid);
-         m_owner = std::exchange( rhs.m_owner, {});
 
       }
-      ID& ID::operator = ( ID&& rhs) noexcept
-      {
-         xid = std::exchange( rhs.xid, xid::null());
-         m_owner = std::exchange( rhs.m_owner, {});
 
-         return *this;
-      }
+      ID::ID( ID&& rhs) noexcept = default;
+      ID& ID::operator = ( ID&& rhs) noexcept = default;
 
       bool ID::null() const
       {
-         return xid.formatID == Format::null;
+         return m_format_id == Format::null;
       }
 
       ID::operator bool() const
       {
-         return ! xid::null( xid);
+         return ! null(); 
       }
 
 
-      const process::Handle& ID::owner() const
+      strong::process::id ID::owner() const
       {
          return m_owner;
       }
 
-      void ID::owner( const process::Handle& handle)
+      void ID::owner( strong::process::id handle)
       {
          m_owner = handle;
       }
 
+      XID ID::to_xid() const
+      {
+         XID xid{};
+         xid.formatID = m_format_id;
+         xid.gtrid_length = global().size();
+         xid.bqual_length = branch().size();
+
+         auto string_like = binary::span::to_string_like( data());
+
+         std::copy( std::begin( string_like), std::end( string_like), std::begin( xid.data));
+         return xid;
+      }
+
       bool operator < ( const ID& lhs, const ID& rhs)
       {
-         return lhs.xid < rhs.xid;
+         if( lhs.m_format_id != rhs.m_format_id) 
+            return lhs.m_format_id < rhs.m_format_id;
+         if( lhs.m_format_id == ID::Format::null) 
+            return false;
+
+         return std::ranges::lexicographical_compare( lhs.m_data, rhs.m_data);
       }
 
       bool operator == ( const ID& lhs, const ID& rhs)
       {
-         return lhs.xid == rhs.xid;
+         if( lhs.m_format_id != rhs.m_format_id) 
+            return false;
+         if( lhs.m_format_id == ID::Format::null) 
+            return true;
+
+         return std::ranges::equal( lhs.m_data, rhs.m_data);
       }
 
-      bool operator == ( const ID& lhs, const xid_type& rhs)
+      bool operator == ( const ID& lhs, const ::XID& rhs)
       {
-         return lhs.xid == rhs;
+         if( lhs.m_format_id != rhs.formatID) 
+            return false;
+         if( lhs.m_format_id == ID::Format::null)
+            return true;
+
+         return algorithm::equal( lhs.data(), binary::span::make( rhs.data, rhs.data + rhs.gtrid_length + rhs.bqual_length));
       }
+
 
       bool operator == ( const ID& lhs, global::id::range rhs)
       {
-         return algorithm::equal( id::range::global( lhs), rhs);
+         return std::ranges::equal( lhs.global(), rhs);
       }
 
       std::ostream& operator << ( std::ostream& out, const ID& id)
       {
-         if( out && id)
-            out << id.xid << ':' << id.m_owner.pid;
+         transcode::hex::encode( out, id.global());
+         out  << ':';
+         transcode::hex::encode( out, id.branch());
          
-         return out;
+         return out << ':' << id.m_format_id
+            << ':' << id.m_owner;  
       }
 
       namespace id
       {
-         ID create( const process::Handle& owner)
+         ID branch( const ID& id)
          {
-            return { uuid::make(), uuid::make(), owner};
+            return ID{ id.global(), uuid::make().range(), id.format()};
+         }
+
+         ID create( strong::process::id owner)
+         {
+            return ID{ uuid::make(), uuid::make(), owner};
          }
 
          ID create()
          {
-            return { uuid::make(), uuid::make(), process::handle()};
+            return create( process::id());
          }
 
-         bool null( const ID& id)
-         {
-            return xid::null( id.xid);
-         }
-
-         ID branch( const ID& id)
-         {
-            if( id.null())
-               return {};
-
-            ID result( id);
-
-            result.xid.formatID = ID::Format::branch;
-
-            auto uuid = uuid::make();
-            auto range = uuid::range( uuid);
-
-            algorithm::copy( range, result.xid.data + result.xid.gtrid_length);
-            result.xid.bqual_length = range.size();
-            
-            return result;
-         }
-
-         namespace range
-         {
-            type::global global( const xid_type& xid)
-            {
-               return type::global{ binary::span::make( xid.data, xid.gtrid_length)};
-            }
-
-            type::branch branch( const xid_type& xid)
-            {
-               return type::branch{ binary::span::make( xid.data + xid.gtrid_length, xid.bqual_length)};
-            }
-
-            type::global global( const ID& id)
-            {
-               return global( id.xid);
-            }
-
-            type::branch branch( const ID& id)
-            {
-               return branch( id.xid);
-            }
-         } // range
       } // id
+         
 
    } // common::transaction
 } // casual
