@@ -53,7 +53,7 @@ namespace casual
          auto writer = serialize::ini::writer();
 
          static_assert( serialize::archive::is::dynamic< decltype( writer)>);
-         EXPECT_TRUE( writer.archive_properties() == common::serialize::archive::Property::named) << CASUAL_NAMED_VALUE( writer.archive_properties());
+         EXPECT_TRUE( writer.dynamic_properties() == common::serialize::archive::Property::named) << CASUAL_NAMED_VALUE( writer.dynamic_properties());
       }
 
       TEST( common_serialize_ini_archive, reader_archive_type)
@@ -64,7 +64,7 @@ namespace casual
          auto reader = serialize::ini::strict::reader( buffer);
 
          static_assert( serialize::archive::is::dynamic< decltype( reader)>);
-         EXPECT_TRUE( reader.archive_properties() == common::serialize::archive::Property::named) << CASUAL_NAMED_VALUE( reader.archive_properties());
+         EXPECT_TRUE( reader.dynamic_properties() == common::serialize::archive::Property::named) << CASUAL_NAMED_VALUE( reader.dynamic_properties());
       }
 
       TEST( common_serialize_ini_archive, write_read_string_with_new_line)

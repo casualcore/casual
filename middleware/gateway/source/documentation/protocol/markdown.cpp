@@ -146,7 +146,7 @@ namespace casual
                constexpr static auto archive_properties() 
                {
                   using Property = common::serialize::archive::Property;
-                  return Property::named | Property::order | Property::network;
+                  return Property::named | Property::order | Property::network | Property::write;
                }
 
                Printer() = default;
@@ -440,7 +440,7 @@ namespace casual
                // gateway network specialization for every message.
                struct Writer : common::serialize::Writer
                {
-                  constexpr static auto archive_properties() { return common::serialize::archive::Property::named | common::serialize::archive::Property::network;}
+                  constexpr static auto archive_properties() { return common::serialize::archive::Property::write | common::serialize::archive::Property::named | common::serialize::archive::Property::network;}
 
                   Writer()
                      : common::serialize::Writer{ common::serialize::yaml::writer()}
@@ -455,7 +455,6 @@ namespace casual
                };
 
                static_assert( common::serialize::archive::is::network::normalizing< Writer>);
-               static_assert( ! common::serialize::archive::is::dynamic< Writer>);
                
             } // yaml
 

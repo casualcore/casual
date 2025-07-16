@@ -16,6 +16,8 @@
 #include "common/algorithm.h"
 #include "common/process.h"
 
+#include "common/serialize/value/customize.h"
+
 
 #include <tx.h>
 
@@ -114,42 +116,46 @@ namespace casual
          //! @return a XID object based on this ID
          XID to_xid() const;
          
-
          friend std::ostream& operator << ( std::ostream& out, const ID& id);
 
          CASUAL_CONST_CORRECT_SERIALIZE(
-            
-            CASUAL_SERIALIZE_NAME( m_format_id, "formatID");
-
-            if( ! null())
-            {
-               long gtrid_length = global().size();
-               long bqual_length = branch().size();
-
-               CASUAL_SERIALIZE( gtrid_length);
-               CASUAL_SERIALIZE( bqual_length);
-
-               // maybe resize.
-               resize( gtrid_length, bqual_length);
-
-               CASUAL_SERIALIZE_NAME( data(), "data");
-
-               if constexpr( ! serialize::archive::is::network::normalizing< std::decay_t< decltype( archive)>>)
-               {
-                  // we only serialize the owner if it't not over 'network'
-                  CASUAL_SERIALIZE_NAME( m_owner, "owner");
-               }
-            }
+            serialize_indirection( archive, *this);  
          )
+
 
       private:
 
-         inline void resize( platform::size::type gtrid_length, platform::size::type bqual_length) 
+         //! indirection to be able to update id based on archive (and constness of id)
+         //! It might work with _deducing this_ and regular serialize function, but some compilers
+         //! doesn't support that yet.
+         template< typename A, typename T>
+         friend void serialize_indirection( A& archive, T& id)
          {
-               m_data.resize( gtrid_length + bqual_length);
-               m_bqual_pivot = static_cast< short>( gtrid_length);
+            CASUAL_SERIALIZE_NAME( id.m_format_id, "formatID");
+
+            if( ! id.null())
+            {
+               long gtrid_length = id.global().size();
+               long bqual_length = id.branch().size();
+
+               CASUAL_SERIALIZE( gtrid_length);
+               CASUAL_SERIALIZE( bqual_length);
+               
+               if constexpr( serialize::archive::is::reader< A>)
+               {
+                  id.m_data.resize( gtrid_length + bqual_length);
+                  id.m_bqual_pivot = static_cast< short>( gtrid_length);
+               }
+
+               CASUAL_SERIALIZE_NAME( id.data(), "data");
+
+               if constexpr( ! serialize::archive::is::network::normalizing< A>)
+               {
+                  // we only serialize the owner if it't not over 'network'
+                  CASUAL_SERIALIZE_NAME( id.m_owner, "owner");
+               }
+            }  
          }
-         inline void resize( platform::size::type gtrid_length, platform::size::type bqual_length) const { /* no op*/}
 
          
          long m_format_id = Format::null;
@@ -181,6 +187,7 @@ namespace casual
       } // id
       
    } // common::transaction
+
 } // casual
 
 

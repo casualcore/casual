@@ -40,6 +40,7 @@ namespace casual
                -> decltype( void( stream::customization::supersede::point< std::remove_cvref_t< T>>::stream( out, std::forward< T>( value))), out)
             {
                stream::customization::supersede::point< std::remove_cvref_t< T>>::stream( out, std::forward< T>( value));
+
                return out;
             }
 
@@ -63,10 +64,11 @@ namespace casual
          
          //! internal priority dispatch to get the right customization, including ostream stream operator
          template< typename T> 
-         auto write( std::ostream& out, const T& value)
-            -> decltype( dispatch::write( out, value, traits::priority::tag< 2>{}))
+         auto write( std::ostream& out, T&& value)
+            -> decltype( dispatch::write( out, std::forward< T>( value), traits::priority::tag< 2>{}))
+
          {
-            return dispatch::write( out, value, traits::priority::tag< 2>{});
+            return dispatch::write( out, std::forward< T>( value), traits::priority::tag< 2>{});
          }
          
       } // detail

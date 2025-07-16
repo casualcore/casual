@@ -28,19 +28,19 @@ namespace casual
          {
             //! dispatch to the customization priority, including ostream stream operator
             template< typename T> 
-            auto write( std::ostream& out, T&& value, traits::priority::tag< 1>) 
-               -> decltype( customization::detail::write( out, std::forward< T>( value)))
+            auto write( std::ostream& out, const T& value, traits::priority::tag< 1>) 
+               -> decltype( customization::detail::write( out, value))
             {
-               return customization::detail::write( out, std::forward< T>( value));
+               return customization::detail::write( out, value);
             }
 
             // if not, we takes all that can be serialized
             template< typename T> 
-            auto write( std::ostream& out, T&& value, traits::priority::tag< 0>) 
-               -> decltype( void( std::declval< serialize::line::Writer&>() << std::forward< T>( value)), out)
+            auto write( std::ostream& out, const T& value, traits::priority::tag< 0>) 
+               -> decltype( void( std::declval< serialize::line::Writer&>() << value), out)
             {
                serialize::line::Writer archive;
-               archive << std::forward< T>( value);
+               archive << value;
                archive.consume( out);
                return out;
             }
@@ -49,20 +49,20 @@ namespace casual
 
 
          template< typename T> 
-         auto write( std::ostream& out, T&& value)
-            -> decltype( dispatch::write( out, std::forward< T>( value), traits::priority::tag< 1>{}))
+         auto write( std::ostream& out, const T& value)
+            -> decltype( dispatch::write( out, value, traits::priority::tag< 1>{}))
          {
-            return dispatch::write( out, std::forward< T>( value), traits::priority::tag< 1>{});
+            return dispatch::write( out, value, traits::priority::tag< 1>{});
          }
          
       } // detail
 
       //! write multiple values
       template< typename... Ts>
-      auto write( std::ostream& out, Ts&&... ts) 
-         -> decltype( ( detail::write( out, std::forward< Ts>( ts)), ...) )
+      auto write( std::ostream& out, const Ts&... ts) 
+        -> decltype( ( detail::write( out, ts), ...))
       {
-         return ( detail::write( out, std::forward< Ts>( ts)), ...);
+         return ( detail::write( out, ts), ...);
       }
 
       namespace customization
@@ -71,9 +71,10 @@ namespace casual
          struct delay
          {
             template< typename... Ts>
-            static auto write( std::ostream& out, Ts&&... ts) -> decltype( stream::write( out, std::forward< Ts>( ts)...))
+            static auto write( std::ostream& out, const Ts&... ts) 
+               -> decltype( stream::write( out, ts...))
             {
-               return stream::write( out, std::forward< Ts>( ts)...);
+               return stream::write( out, ts...);
             }
          };
 
@@ -138,7 +139,7 @@ namespace casual
 
                algorithm::for_each_interleave( 
                   range,
-                  [&out]( auto& v){ stream::write( out, v);},
+                  [&out]( auto& v){ stream::detail::write( out, v);},
                   [&out](){ out << ", ";}
                );
 

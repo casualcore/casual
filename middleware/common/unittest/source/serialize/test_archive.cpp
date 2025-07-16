@@ -34,7 +34,7 @@ namespace casual
       auto writer = common::serialize::binary::writer();
 
       static_assert( common::serialize::archive::is::dynamic< decltype( writer)>);
-      EXPECT_TRUE( writer.archive_properties() == common::serialize::archive::Property::order) << CASUAL_NAMED_VALUE( writer.archive_properties());
+      EXPECT_TRUE( common::flag::contains( writer.dynamic_properties(), common::serialize::archive::Property::order)) << CASUAL_NAMED_VALUE( writer.dynamic_properties());
    }
 
 

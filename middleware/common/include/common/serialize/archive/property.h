@@ -17,30 +17,19 @@ namespace casual
    {
       enum struct Property
       {
-         named =      0b0001,
-         order =      0b0010,
-         network =    0b0100,
-         no_consume = 0b1000, // if the archive is an "adapter" and has no consume semantics
+         named =      0b000001,
+         order =      0b000010,
+         network =    0b000100,
+         no_consume = 0b001000, // if the archive is an "adapter" and has no consume semantics
+         read =       0b010000, // if the archive is a "reader"
+         write =      0b100000, // if the archive is a "writer"
       };
 
       std::string_view description( Property value) noexcept;
 
       void casual_enum_as_flag( Property);
 
-      namespace is
-      {
-         template< typename T> 
-         concept not_dynamic = requires
-         {
-            { T::archive_properties() } -> std::same_as< Property>;
-         };
 
-         template< typename T>
-         concept dynamic = ! not_dynamic< T> && requires( T a)
-         {
-            { a.archive_properties()} -> std::same_as< Property>;
-         };
-      } // is
 
       namespace has
       {        
@@ -52,6 +41,23 @@ namespace casual
          };
 
       } // has
+
+      namespace is
+      {
+
+         template< typename T>
+         concept dynamic = requires( T a)
+         {
+            { a.dynamic_properties()} -> std::same_as< Property>;
+         };
+
+         template< typename T>
+         concept writer = has::property< T, Property::write>;
+
+         template< typename T>
+         concept reader = has::property< T, Property::read>;
+
+      } // is
 
       namespace need
       {

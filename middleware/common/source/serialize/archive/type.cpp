@@ -18,6 +18,8 @@ namespace casual
             case Property::order: return "order";
             case Property::network: return "network";
             case Property::no_consume: return "no_consume";
+            case Property::read: return "read";
+            case Property::write: return "write";
          }
          return "unknown";
       }

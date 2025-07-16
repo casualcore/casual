@@ -40,7 +40,7 @@ namespace casual
 
          struct Policy
          {
-            constexpr static auto archive_properties() { return common::serialize::archive::Property::order | common::serialize::archive::Property::network;}
+            constexpr static auto archive_properties() { return archive::Property::order | archive::Property::network;}
 
             template< detail::network_value T>
             static void write( const T& value, platform::binary::type& buffer) 
@@ -94,9 +94,11 @@ namespace casual
 
          using Reader = basic_reader< Policy>;
          static_assert( archive::is::network::normalizing< Reader>);
+         static_assert( archive::is::reader< Reader>);
 
          using Writer = basic_writer< Policy>;
          static_assert( archive::is::network::normalizing< Writer>);
+         static_assert( archive::is::writer< Writer>);
 
          namespace create
          {

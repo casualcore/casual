@@ -55,8 +55,8 @@ namespace casual
          struct Writer
          {
             using value_type = decltype( std::hash< long>{}( 0l));
-          
-            constexpr static auto archive_properties() { return common::serialize::archive::Property::order;}
+
+            constexpr static auto archive_properties() { return common::serialize::archive::Property::order | common::serialize::archive::Property::write;}
 
             inline platform::size::type container_start( const platform::size::type size, const char* name)
             {

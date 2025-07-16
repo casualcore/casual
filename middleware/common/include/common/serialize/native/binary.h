@@ -32,7 +32,7 @@ namespace casual
 
          struct Policy
          {
-            constexpr static auto archive_properties() { return common::serialize::archive::Property::order;}
+            constexpr static auto archive_properties() { return archive::Property::order;}
 
             template< typename T>
             static void write( const T& value, platform::binary::type& buffer)
@@ -64,7 +64,7 @@ namespace casual
          struct basic_writer
          {
             using policy_type = P;
-            constexpr static auto archive_properties() { return policy_type::archive_properties();}
+            constexpr static auto archive_properties() { return policy_type::archive_properties() | archive::Property::write;}
 
             basic_writer()
             {
@@ -143,11 +143,13 @@ namespace casual
 
          using Writer = basic_writer< Policy>;
 
+         static_assert( archive::is::writer< Writer>);
+
          template< typename P>
          struct basic_reader
          {
             using policy_type = P;
-            constexpr static auto archive_properties() { return policy_type::archive_properties();}
+            constexpr static auto archive_properties() { return policy_type::archive_properties() | archive::Property::read;}
 
             basic_reader( const platform::binary::type& buffer, platform::size::type offset)
                : m_buffer( buffer), m_offset{ offset} {}
@@ -229,6 +231,8 @@ namespace casual
          };
 
          using Reader = basic_reader< Policy>;
+
+         static_assert( archive::is::reader< Reader>);
 
          inline auto writer() { return binary::Writer{};}
          inline auto reader( const platform::binary::type& buffer) { return binary::Reader{ buffer};}

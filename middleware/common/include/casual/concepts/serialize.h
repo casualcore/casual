@@ -16,6 +16,7 @@ namespace casual
 {
    namespace concepts::serialize
    {
+    
       namespace has
       {
          template< typename T, typename A>
@@ -25,6 +26,7 @@ namespace casual
          };
          
       } // has
+    
 
       namespace archive
       {

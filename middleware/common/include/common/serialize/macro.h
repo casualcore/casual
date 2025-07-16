@@ -15,14 +15,14 @@ namespace casual
    namespace common::serialize::detail
    {
 
-      template< typename A, typename V> 
+      template< casual::common::serialize::archive::is::writer A, typename V> 
       auto dispatch( A& archive, V&& value)
          -> decltype( void( archive << std::forward< V>( value)))
       {
          archive << std::forward< V>( value);
       }
 
-      template< typename A, typename V> 
+      template< casual::common::serialize::archive::is::reader A, typename V> 
       auto dispatch( A& archive, V&& value)
          -> decltype( void( archive >> std::forward< V>( value)))
       {
@@ -42,25 +42,25 @@ namespace casual
 } // casual
 
 #define CASUAL_CONST_CORRECT_SERIALIZE( statement) \
-   template< typename A>  \
+   template< casual::common::serialize::archive::is::reader A>  \
    void serialize( A& archive) \
    {  \
       statement  \
    } \
-   template< typename A>  \
-   void serialize( A& archive) const\
+   template< casual::common::serialize::archive::is::writer A>  \
+   void serialize( A& archive) const \
    {  \
       statement  \
    } \
 
 // to forward one value
 #define CASUAL_FORWARD_SERIALIZE( member) \
-   template< typename A>  \
+   template< casual::common::serialize::archive::is::reader A>  \
    void serialize( A& archive, const char* name) \
    {  \
       casual::common::serialize::detail::dispatch( archive, member, name); \
    } \
-   template< typename A>  \
+   template< casual::common::serialize::archive::is::writer A>  \
    void serialize( A& archive, const char* name) const \
    {  \
       casual::common::serialize::detail::dispatch( archive, member, name); \
@@ -68,7 +68,7 @@ namespace casual
 
 
 #define CASUAL_LOG_SERIALIZE( statement) \
-   template< typename A>  \
+   template< casual::common::serialize::archive::is::writer A>  \
    void serialize( A& archive) const\
    {  \
       statement  \

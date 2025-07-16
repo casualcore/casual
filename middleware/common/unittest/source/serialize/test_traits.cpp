@@ -16,6 +16,25 @@ namespace casual
    {
       namespace serialize
       {
+         namespace local
+         {
+            namespace
+            {
+               namespace archive
+               {
+                  struct Named
+                  {
+                     constexpr static auto archive_properties() { return serialize::archive::Property::named | serialize::archive::Property::write;}
+                  };
+
+                  struct Order
+                  {
+                     constexpr static auto archive_properties() { return serialize::archive::Property::order | serialize::archive::Property::read;}
+                  };
+               } // archive
+               
+            } // <unnamed>
+         } // local
          
 
          TEST( casual_serialize_traits, has_serialize__false)
@@ -26,7 +45,7 @@ namespace casual
             {
             };
 
-            EXPECT_FALSE( ( concepts::serialize::has::serialize< Value, long>));
+            EXPECT_FALSE( ( concepts::serialize::has::serialize< Value, local::archive::Named>));
          }
 
          namespace local
@@ -44,29 +63,11 @@ namespace casual
          {
             common::unittest::Trace trace;
 
-            EXPECT_TRUE( ( concepts::serialize::has::serialize< local::Value, long>));
+            EXPECT_TRUE( ( concepts::serialize::has::serialize< local::Value, local::archive::Named>));
          }
 
 
-         namespace local
-         {
-            namespace
-            {
-               namespace archive
-               {
-                  struct Named
-                  {
-                     constexpr static auto archive_properties() { return common::serialize::archive::Property::named;}
-                  };
 
-                  struct Order
-                  {
-                     constexpr static auto archive_properties() { return common::serialize::archive::Property::order;}
-                  };
-               } // archive
-               
-            } // <unnamed>
-         } // local
 
 
 

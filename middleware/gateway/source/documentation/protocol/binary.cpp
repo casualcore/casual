@@ -65,7 +65,7 @@ namespace casual
                //! properties that are transported over the wire.
                struct Writer : serialize::Writer
                {
-                  constexpr static auto archive_properties() { return common::serialize::archive::Property::network;}
+                  constexpr static auto archive_properties() { return common::serialize::archive::Property::network | common::serialize::archive::Property::write;}
 
                   Writer( serialize::Writer writer) : serialize::Writer{ std::move( writer)} {}
 

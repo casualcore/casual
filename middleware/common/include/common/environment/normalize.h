@@ -23,7 +23,7 @@ namespace casual
          struct Traverser 
          {
 
-            constexpr static auto archive_properties() { return common::serialize::archive::Property::order;}
+            constexpr static auto archive_properties() { return common::serialize::archive::Property::order | common::serialize::archive::Property::read;}
 
             template< typename... Ts> 
             Traverser( Ts&&... ts) : m_policy{ std::forward< Ts>( ts)...} {}

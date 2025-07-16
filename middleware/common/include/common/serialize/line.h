@@ -69,7 +69,7 @@ namespace casual
       public:
          Writer();
          
-         constexpr static auto archive_properties() { return common::serialize::archive::Property::named;}
+         constexpr static auto archive_properties() { return archive::Property::named | archive::Property::write;}
 
          constexpr static auto keys() 
          {
@@ -102,9 +102,10 @@ namespace casual
        
          void consume( std::ostream& destination);
          std::string consume();
-
-
       };
+
+      static_assert( archive::is::writer< Writer>);
+      static_assert( ! archive::is::reader< Writer>);
 
       //! type erased line writer 
       serialize::Writer writer();

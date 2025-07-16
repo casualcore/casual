@@ -142,6 +142,8 @@ namespace casual
          auto write( A& archive, const T& value, const char* name)
             -> decltype( indirection::write( archive, value, name, traits::priority::tag< 4>{}))
          {
+            static_assert( archive::is::writer< A>, "archive must be a writer");
+
             // invoke the most prioritized implementation
             indirection::write( archive, value, name, traits::priority::tag< 4>{});
          }
@@ -160,6 +162,8 @@ namespace casual
          template< typename A, typename T>
          auto read( A& archive, T&& value, const char* name)
          {
+            static_assert( archive::is::reader< A>, "archive must be a reader");
+
             if constexpr( std::same_as< bool, decltype( detail::read( archive, std::forward< T>( value), name))>)
                return detail::read( archive, std::forward< T>( value), name);
             
@@ -172,6 +176,8 @@ namespace casual
          auto serialize( A& archive, T&& value) 
             -> decltype( indirection::serialize( archive, std::forward< T>( value), traits::priority::tag< 2>{}))
          {
+            static_assert( archive::is::writer< A> || archive::is::reader< A>, "archive must be either a writer or a reader");
+
             // invoke the most prioritized implementation
             indirection::serialize( archive, std::forward< T>( value), traits::priority::tag< 2>{});
          }
@@ -564,7 +570,7 @@ namespace casual
             {
                if constexpr( archive::is::dynamic< A>)
                {
-                  if( flag::contains( archive.archive_properties(), archive::Property::named))
+                  if( flag::contains( archive.dynamic_properties(), archive::Property::named))
                      write_named( archive, value, name);
                   else
                      write_order_type( archive, value, name);
@@ -612,7 +618,7 @@ namespace casual
             {
                if constexpr( archive::is::dynamic< A>)
                {
-                  if( flag::contains( archive.archive_properties(), archive::Property::named))
+                  if( flag::contains( archive.dynamic_properties(), archive::Property::named))
                      return read_named( archive, value, name);
                   else
                      return read_order_type( archive, value, name);

@@ -22,6 +22,9 @@ namespace casual
    {
       struct Reader
       {
+
+         constexpr static auto archive_properties() { return archive::Property::read;}
+
          ~Reader();
 
          Reader( Reader&&) noexcept;
@@ -50,8 +53,8 @@ namespace casual
          //! It throws if there are information in the source that is not consumed by the object-model
          inline void validate() { m_protocol->validate();}
 
-         //! non static non constexpr indicate that this is a 'dynamic' archive
-         inline auto archive_properties() const { return m_properties;};
+         //! indicate that this is a 'dynamic' archive
+         inline auto dynamic_properties() const { return m_properties;};
 
 
          template< typename V>
@@ -145,10 +148,13 @@ namespace casual
       };
 
       static_assert( archive::is::dynamic< Reader>);
+      static_assert( archive::is::reader< Reader>);
 
 
       struct Writer
       {
+         constexpr static auto archive_properties() { return archive::Property::write;}
+
          ~Writer();
 
          Writer( Writer&&) noexcept;
@@ -187,8 +193,8 @@ namespace casual
          }
          //! @}
 
-         //! non static non constexpr indicate that this is a 'dynamic' archive
-         inline auto archive_properties() const { return m_properties;};
+         //! indicate that this is a 'dynamic' archive
+         inline auto dynamic_properties() const { return m_properties;};
 
          template< typename V>
          [[maybe_unused]] Writer& operator << ( V&& value)
@@ -269,6 +275,7 @@ namespace casual
       };
 
       static_assert( archive::is::dynamic< Writer>);
+      static_assert( archive::is::writer< Writer>);
 
    } // common::serialize
 } // casual
