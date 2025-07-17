@@ -26,7 +26,7 @@ make.LibraryPaths( [
     + dsl.paths().library.gtest
    )
 
-install_bins = []
+install_libs = []
 
 server_lib = make.LinkLibrary( 'bin/casual-server',
    [
@@ -48,7 +48,7 @@ server_lib = make.LinkLibrary( 'bin/casual-server',
       'casual-transaction',
    ])
 
-install_bins.append( server_lib)
+install_libs.append( server_lib)
 
 
 test_server = make.LinkUnittest( 'bin/casual-server-test',
@@ -64,4 +64,4 @@ test_server = make.LinkUnittest( 'bin/casual-server-test',
    ])
 
 
-make.Install( install_bins, dsl.paths().install + '/bin')
+make.Install( install_libs, dsl.paths().install + '/lib')
