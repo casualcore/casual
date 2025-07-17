@@ -89,7 +89,7 @@ namespace casual
             }();
 
 
-            const platform::time::unit Heuristic::duration = []() -> platform::time::unit
+            const common::chronology::duration Heuristic::duration = []() -> common::chronology::duration
             {
                return environment::variable::get( environment::variable::name::internal::discovery::accumulate::timeout)
                   .transform( []( auto value){ return common::chronology::from::string( value);})

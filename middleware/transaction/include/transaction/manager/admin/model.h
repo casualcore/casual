@@ -22,12 +22,12 @@ namespace casual
       struct Metric
       {
          platform::size::type count = 0;
-         platform::time::unit total{};
+         common::chronology::duration total{};
 
          struct Limit 
          {
-            platform::time::unit min{};
-            platform::time::unit max{};
+            common::chronology::duration min{};
+            common::chronology::duration max{};
 
             CASUAL_CONST_CORRECT_SERIALIZE(
                CASUAL_SERIALIZE( min);
@@ -167,7 +167,7 @@ namespace casual
             common::strong::resource::id resource;
             common::strong::correlation::id correlation;
             common::message::Type type;
-            platform::time::point::type created{};
+            common::chronology::time_point created{};
 
             CASUAL_CONST_CORRECT_SERIALIZE(
                CASUAL_SERIALIZE( resource);

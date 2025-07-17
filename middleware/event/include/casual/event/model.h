@@ -7,6 +7,7 @@
 #pragma once
 
 #include "casual/platform.h"
+#include "common/chronology.h"
 
 #include "casual/xa.h"
 
@@ -63,10 +64,10 @@ namespace casual
                         transaction::ID id;
                      } transaction;
                      
-                     platform::time::point::type start{};
-                     platform::time::point::type end{};
+                     common::chronology::time_point start{};
+                     common::chronology::time_point end{};
 
-                     platform::time::unit pending{};
+                     common::chronology::duration pending{};
 
                      // outcome of the service call
                      int code{};
@@ -113,10 +114,10 @@ namespace casual
                         transaction::ID id;
                      } transaction;
                      
-                     platform::time::point::type start{};
-                     platform::time::point::type end{};
+                     common::chronology::time_point start{};
+                     common::chronology::time_point end{};
 
-                     platform::time::unit pending{};
+                     common::chronology::duration pending{};
 
                      // outcome of the service call
                      int code{};

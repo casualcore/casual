@@ -207,7 +207,7 @@ namespace casual
             namespace pending
             {
              
-               std::optional< platform::time::point::type> Deadline::add( deadline::Entry entry)
+               std::optional< common::chronology::time_point> Deadline::add( deadline::Entry entry)
                {
                   auto inserted = m_entries.insert(
                      std::upper_bound( std::begin( m_entries), std::end( m_entries), entry),
@@ -219,7 +219,7 @@ namespace casual
                   return { inserted->when};
                }
 
-               std::optional< platform::time::point::type> Deadline::remove( const strong::correlation::id& correlation)
+               std::optional< common::chronology::time_point> Deadline::remove( const strong::correlation::id& correlation)
                {
                   if( auto found = algorithm::find( m_entries, correlation))
                   {
@@ -229,7 +229,7 @@ namespace casual
                   return {};
                }
 
-               std::optional< platform::time::point::type> Deadline::remove( const std::vector< strong::correlation::id>& correlations)
+               std::optional< common::chronology::time_point> Deadline::remove( const std::vector< strong::correlation::id>& correlations)
                {
 
                   auto [ keep, remove] = algorithm::stable::partition( m_entries, [&correlations]( auto& entry)
@@ -252,7 +252,7 @@ namespace casual
                   return algorithm::find( m_entries, correlation).data();
                }
 
-               Deadline::Expired Deadline::expired( platform::time::point::type now)
+               Deadline::Expired Deadline::expired( common::chronology::time_point now)
                {
                   auto pivot = std::find_if( std::begin( m_entries), std::end( m_entries), [now]( auto& entry)
                   {
@@ -279,7 +279,7 @@ namespace casual
 
          bool Service::timeoutable() const noexcept   
          {
-            return has_sequential() && timeout.duration > platform::time::unit::zero();
+            return has_sequential() && timeout.duration > common::chronology::duration::zero();
          }
 
          
@@ -796,7 +796,7 @@ namespace casual
             auto add_service = [&]( auto& service)
             {
                configuration::model::service::Timeout timeout;
-               if( service.timeout.duration > platform::time::unit::zero())
+               if( service.timeout.duration > common::chronology::duration::zero())
                   timeout.duration = service.timeout.duration;
 
                auto relate_service_and_instance = [ &]( auto service_id, auto instance_id)

@@ -90,7 +90,7 @@ namespace casual
 
                   void reserve();
                   //! used when requests has been pending.
-                  void reserve( platform::time::point::type requested);
+                  void reserve( common::chronology::time_point requested);
                   void unreserve( const common::message::Statistics& statistics);
 
                   common::strong::resource::id id;
@@ -115,10 +115,10 @@ namespace casual
                   )
 
                private:
-                  void general_reserve( platform::time::point::type now);
+                  void general_reserve( common::chronology::time_point now);
 
                   instance::State m_state{};
-                  platform::time::point::type m_reserved{};
+                  common::chronology::time_point m_reserved{};
                   Metrics m_metrics;
                   common::Metric m_pending;
                };
@@ -312,8 +312,8 @@ namespace casual
 
             common::process::Handle owner;
 
-            platform::time::point::type started;
-            platform::time::point::type deadline;
+            common::chronology::time_point started;
+            common::chronology::time_point deadline;
 
 
 
@@ -343,7 +343,7 @@ namespace casual
 
                inline explicit operator bool() const noexcept { return common::predicate::boolean( complete);}
 
-               platform::time::point::type created{};
+               common::chronology::time_point created{};
                common::communication::ipc::message::Complete complete;
 
                inline const auto& correlation() const noexcept { return complete.correlation();}

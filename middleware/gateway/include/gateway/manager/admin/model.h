@@ -116,7 +116,7 @@ namespace casual
             common::domain::Identity remote;
             connection::Address address;
             common::strong::ipc::id ipc;
-            platform::time::point::type created{};
+            common::chronology::time_point created{};
             bool enabled = true;
             
             inline friend bool operator == ( const Connection& lhs, common::strong::socket::id rhs) { return lhs.descriptor == rhs;}
@@ -308,7 +308,7 @@ namespace casual
             listener::Runlevel runlevel{};
             listener::Address address;
             connection::Bound bound{};
-            platform::time::point::type created{};
+            common::chronology::time_point created{};
          
             //@ deprecated
             struct

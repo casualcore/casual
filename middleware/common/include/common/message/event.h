@@ -248,10 +248,10 @@ namespace casual
                execution::type execution;
                common::transaction::ID trid;
 
-               platform::time::point::type start{};
-               platform::time::point::type end{};
+               chronology::time_point start{};
+               chronology::time_point end{};
 
-               platform::time::unit pending{};
+               chronology::duration pending{};
 
                common::service::Code code;
 

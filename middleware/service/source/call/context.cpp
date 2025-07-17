@@ -56,7 +56,7 @@ namespace casual
                   common::message::service::call::caller::Request message;
                };
 
-               auto lookup( std::string service, async::Flag flags, const std::optional< platform::time::point::type>& deadline)
+               auto lookup( std::string service, async::Flag flags, const std::optional< common::chronology::time_point>& deadline)
                {
                   common::Trace trace( "service::call::local::prepare::lookup");
 
@@ -375,7 +375,7 @@ namespace casual
          return ! m_state.pending.empty();
       }
 
-      void Context::deadline( platform::time::point::type now, std::optional< platform::time::unit> timeout)
+      void Context::deadline( common::chronology::time_point now, std::optional< common::chronology::duration> timeout)
       {
          if( timeout)
             m_state.deadline = now + *timeout;
@@ -383,7 +383,7 @@ namespace casual
             m_state.deadline = std::nullopt;
       }
 
-      std::optional< platform::time::point::type> Context::deadline() const
+      std::optional< common::chronology::time_point> Context::deadline() const
       {
          return m_state.deadline;
       }

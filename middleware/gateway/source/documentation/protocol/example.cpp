@@ -81,7 +81,7 @@ namespace casual
                {
                   constexpr auto point()
                   {
-                     return platform::time::point::type{ std::chrono::microseconds{ 1559762216552100}};
+                     return common::chronology::time_point{ std::chrono::microseconds{ 1559762216552100}};
                   }
                } // time
 

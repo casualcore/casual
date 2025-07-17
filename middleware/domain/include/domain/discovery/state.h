@@ -97,7 +97,7 @@ namespace casual
                bool accumulate() const noexcept;
 
                static const platform::size::type in_flight_window;
-               static const platform::time::unit duration;
+               static const common::chronology::duration duration;
 
                CASUAL_LOG_SERIALIZE(
                   CASUAL_SERIALIZE_NAME( pending_requests(), "pending_requests");

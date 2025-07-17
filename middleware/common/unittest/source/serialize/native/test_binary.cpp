@@ -237,12 +237,12 @@ namespace casual
                using input_type = typename TestFixture::input_type;
                using output_type = typename TestFixture::output_type;
 
-               const auto expected = platform::time::unit::zero();
+               const auto expected = chronology::duration::zero();
 
                auto output = output_type{}();
                output << expected;
 
-               platform::time::unit target;
+               chronology::duration target;
                {
                   auto buffer = output.consume();
                   auto input = input_type{}( buffer);
@@ -253,7 +253,7 @@ namespace casual
                   << CASUAL_NAMED_VALUE( target.count()) 
                   << "\n" << CASUAL_NAMED_VALUE( expected.count());
 
-               EXPECT_TRUE( target == platform::time::unit::zero());
+               EXPECT_TRUE( target == chronology::duration::zero());
             }
 
             TYPED_TEST( casual_serialize_native_binary, time_point_min)
@@ -263,12 +263,12 @@ namespace casual
                using input_type = typename TestFixture::input_type;
                using output_type = typename TestFixture::output_type;
 
-               const platform::time::point::type expected;
+               const chronology::time_point expected;
 
                auto output = output_type{}();
                output << expected;
 
-               platform::time::point::type target;
+               chronology::time_point target;
                {
                   auto buffer = output.consume();
                   auto input = input_type{}( buffer);

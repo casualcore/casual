@@ -92,7 +92,7 @@ namespace casual
   
       } // lookup
 
-      Lookup::Lookup( std::string service, const common::transaction::ID& trid, lookup::Context context, std::optional< platform::time::point::type> deadline)
+      Lookup::Lookup( std::string service, const common::transaction::ID& trid, lookup::Context context, std::optional< common::chronology::time_point> deadline)
          : m_service( std::move( service))
       {
          Trace trace{ "common::service::Lookup"};
@@ -106,7 +106,7 @@ namespace casual
          m_correlation = common::communication::device::blocking::send( common::communication::instance::outbound::service::manager::device(), request);
       }
 
-      Lookup::Lookup( std::string service, const common::transaction::ID& trid, std::optional< platform::time::point::type> deadline) 
+      Lookup::Lookup( std::string service, const common::transaction::ID& trid, std::optional< common::chronology::time_point> deadline) 
          : Lookup( std::move( service), trid, lookup::Context{}, std::move( deadline)) 
       {}
 

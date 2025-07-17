@@ -82,7 +82,7 @@ namespace casual
             {
                struct Target : Source
                {
-                  platform::time::unit delay{};
+                  common::chronology::duration delay{};
 
                   CASUAL_LOG_SERIALIZE(
                      Source::serialize( archive);
@@ -126,7 +126,7 @@ namespace casual
                struct Count
                {
                   platform::size::type count = 0;
-                  platform::time::point::type last{};
+                  common::chronology::time_point last{};
 
                   CASUAL_CONST_CORRECT_SERIALIZE(
                      CASUAL_SERIALIZE( count);

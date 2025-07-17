@@ -79,7 +79,7 @@ namespace casual
                   model::Metric invoked;
                   model::Metric pending;
 
-                  platform::time::point::type last = platform::time::point::limit::zero();
+                  platform::time::clock::type::time_point last = {};
                   platform::size::type remote = 0;
                };
 

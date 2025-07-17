@@ -29,7 +29,7 @@ namespace casual
          result.parent = std::move( message.parent.service);
          result.pending = message.pending;
          result.service.name = std::move( message.service.name);
-         result.service.timeout.duration = message.deadline.remaining.value_or( platform::time::unit{});
+         result.service.timeout.duration = message.deadline.remaining.value_or( common::chronology::duration{});
          result.trid = std::move( message.trid);
          return result;
       }
@@ -45,7 +45,7 @@ namespace casual
          result.pending = message.pending;
          result.service.name = std::move( message.service.name);
          
-         if( message.service.timeout.duration > platform::time::unit{})
+         if( message.service.timeout.duration > common::chronology::duration{})
             result.deadline.remaining = message.service.timeout.duration;
 
          result.trid = std::move( message.trid);
@@ -85,7 +85,7 @@ namespace casual
          result.parent = std::move( message.parent.service);
          result.pending = message.pending;
          result.service.name = std::move( message.service.name);
-         result.service.timeout.duration = message.deadline.remaining.value_or( platform::time::unit{});
+         result.service.timeout.duration = message.deadline.remaining.value_or( common::chronology::duration{});
          result.trid = std::move( message.trid);
          return result;
       }
@@ -100,7 +100,7 @@ namespace casual
          result.pending = message.pending;
          result.service.name = std::move( message.service.name);
          
-         if( message.service.timeout.duration > platform::time::unit{})
+         if( message.service.timeout.duration > common::chronology::duration{})
             result.deadline.remaining = message.service.timeout.duration;
          
          result.trid = std::move( message.trid);

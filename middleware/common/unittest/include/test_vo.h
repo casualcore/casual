@@ -11,6 +11,7 @@
 
 #include "common/serialize/macro.h"
 #include "common/serialize/archive.h"
+#include "common/chronology.h"
 
 #include "common/pimpl.h"
 #include "common/uuid.h"
@@ -35,7 +36,7 @@ namespace casual
          std::string m_string = "foo";
          short m_short = 256;
          long long m_longlong = std::numeric_limits< long long>::max();
-         platform::time::point::type m_time = platform::time::point::type::max();
+         common::chronology::time_point m_time = common::chronology::time_point::max();
          std::filesystem::path m_path{u8"/tmp/file.txt"};
 
          std::optional< long> m_optional = 42;

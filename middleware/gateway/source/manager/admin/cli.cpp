@@ -84,8 +84,8 @@ namespace casual
 
                auto created = []( auto& value) -> std::string
                {
-                  if( value.created != platform::time::point::limit::zero())
-                     return chronology::utc::offset( value.created);
+                  if( value.created != common::chronology::empty())
+                     return common::chronology::utc::offset( value.created);
 
                   return "-";
                };

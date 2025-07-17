@@ -568,7 +568,7 @@ namespace casual
                            request.message.id = uuid::make();
 
                            
-                           if( forward->target.delay > platform::time::unit::zero())
+                           if( forward->target.delay > common::chronology::duration::zero())
                               request.message.attributes.available = platform::time::clock::type::now() + forward->target.delay;
 
                            log::debug( "enqueue request: ", request);
@@ -756,7 +756,7 @@ namespace casual
                               request.message.payload.type = std::move( message.buffer.type);
                               request.message.payload.data = std::move( message.buffer.data);
 
-                              if( reply.delay > platform::time::unit::zero())
+                              if( reply.delay > common::chronology::duration::zero())
                                  request.message.attributes.available = platform::time::clock::type::now() + reply.delay;
 
                               log::debug( "enqueue reply: ", request);

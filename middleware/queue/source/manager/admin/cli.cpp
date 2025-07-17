@@ -65,10 +65,10 @@ namespace casual
 
             namespace normalize
             {
-               std::string timestamp( const platform::time::point::type& time)
+               std::string timestamp( const common::chronology::time_point& time)
                {
-                  if( time != platform::time::point::limit::zero())
-                     return chronology::utc::offset( time);
+                  if( time != common::chronology::empty())
+                     return common::chronology::utc::offset( time);
 
                   return "-";;
                }
@@ -650,7 +650,7 @@ namespace casual
                      {
                         return terminal::format::column( "last", [&state]( auto& group)
                         { 
-                           platform::time::point::type result{};
+                           common::chronology::time_point result{};
                            auto last = [&result, pid = group.process.pid]( auto& forward)
                            {
                               auto max = std::max( forward.metric.commit.last, forward.metric.rollback.last);
@@ -1449,7 +1449,7 @@ casual queue --peek <queue-name> <id1> <id2> | <some other part of casual-pipe> 
                            else if( name == "reply")
                               message.attributes.reply = value;
                            else if( name == "available")
-                              message.attributes.available = platform::time::point::type{ chronology::from::string( value)};
+                              message.attributes.available = common::chronology::time_point{ common::chronology::from::string( value)};
                            else
                               common::code::raise::error( common::code::casual::invalid_argument, "'", name, "' is not part of the valid set: ", attributes::names());
                         }
@@ -1494,7 +1494,7 @@ casual queue --peek <queue-name> <id1> <id2> | <some other part of casual-pipe> 
                         return algorithm::container::create< std::vector< std::string>>( attributes::names());   //{ "properties", "reply", "available"};
                      
                      if( ! values.empty() && range::back( values) == "available")
-                        return { chronology::to::string( std::chrono::duration_cast< std::chrono::seconds>( platform::time::clock::type::now().time_since_epoch()))};
+                        return { common::chronology::to::string( std::chrono::duration_cast< std::chrono::seconds>( platform::time::clock::type::now().time_since_epoch()))};
 
                      if( ! values.empty() && range::back( values) == "reply")
                         return local::queues();

@@ -116,7 +116,7 @@ namespace casual
             common::strong::socket::id descriptor;
             common::domain::Identity domain;
             Configuration configuration;
-            platform::time::point::type created = platform::time::clock::type::now();
+            common::chronology::time_point created = platform::time::clock::type::now();
 
             inline friend bool operator == ( const Information& lhs, common::strong::socket::id rhs) { return lhs.descriptor == rhs;} 
             inline friend bool operator == ( const Information& lhs, const common::strong::domain::id& rhs) { return lhs.domain == rhs;} 

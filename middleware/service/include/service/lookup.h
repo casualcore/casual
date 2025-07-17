@@ -42,12 +42,12 @@ namespace casual
       {                        
          //! Lookup an entry point for the `service`. `trid` represent the current transaction to give
          //! SM a chance to keep calls within the same transaction to end up at the same destination.
-         Lookup( std::string service, const common::transaction::ID& trid, std::optional< platform::time::point::type> deadline = {});
+         Lookup( std::string service, const common::transaction::ID& trid, std::optional< common::chronology::time_point> deadline = {});
 
          //! Lookup an entry point for the `service`. `trid` represent the current transaction to give
          //! SM a chance to keep calls within the same transaction to end up at the same destination.
          //! `context` could be used for specific semantics.
-         Lookup( std::string service, const common::transaction::ID& trid, lookup::Context context, std::optional< platform::time::point::type> deadline = {});
+         Lookup( std::string service, const common::transaction::ID& trid, lookup::Context context, std::optional< common::chronology::time_point> deadline = {});
 
          //! If pending lookup discard it.
          ~Lookup();

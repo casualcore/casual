@@ -29,12 +29,12 @@ namespace casual
 
       namespace utc
       {
-         std::string offset( platform::time::point::type timepoint)
+         std::string offset( time_point timepoint)
          {
             return std::format("{:%FT%T%Ez}", std::chrono::zoned_time{ std::chrono::current_zone(), std::chrono::floor< std::chrono::microseconds>( timepoint)});
          }
 
-         void offset( std::ostream& out, platform::time::point::type timepoint)
+         void offset( std::ostream& out, time_point timepoint)
          {
             out << offset( timepoint);
          }
@@ -97,9 +97,9 @@ namespace casual
                
             } // detail
 
-            void format( std::ostream& out, platform::time::point::type timepoint)
+            void format( std::ostream& out, time_point timepoint)
             {
-               if( timepoint == platform::time::point::limit::zero())
+               if( timepoint ==  chronology::empty())
                   return;
 
                auto timer = platform::time::clock::type::to_time_t( timepoint);
@@ -117,14 +117,14 @@ namespace casual
 
       namespace utc
       {
-         std::string offset( platform::time::point::type timepoint)
+         std::string offset( time_point timepoint)
          {
             std::ostringstream out;
             offset( out, timepoint);
             return std::move( out).str();
         }
 
-        void offset( std::ostream& out, platform::time::point::type timepoint)
+        void offset( std::ostream& out, time_point timepoint)
         {
            local::format( out, timepoint);
          }
@@ -139,7 +139,7 @@ namespace casual
             namespace
             {
                template< typename R>
-               platform::time::unit string( R&& value)
+               chronology::duration string( R&& value)
                {
                   auto is_ws = []( auto c){ return c != ' ';};
 
@@ -154,7 +154,7 @@ namespace casual
                   // extract the count part
                   auto count = [number = std::get< 0>( split)]( )
                   {
-                     using count_type = decltype( platform::time::unit{}.count());
+                     using count_type = decltype( chronology::duration{}.count());
                      if( number)
                         return common::string::from< count_type>( string::view::make( number));
                      return count_type{ 0};
@@ -173,10 +173,10 @@ namespace casual
                   if( unit == "ns") 
                   {
                      auto point = std::chrono::nanoseconds( count);
-                     if constexpr( std::is_same_v< platform::time::unit, std::chrono::nanoseconds>)
-                        return std::chrono::duration_cast< platform::time::unit>( point);
+                     if constexpr( std::is_same_v< chronology::duration, std::chrono::nanoseconds>)
+                        return std::chrono::duration_cast< chronology::duration>( point);
                      else
-                        return std::chrono::round< platform::time::unit>( point);
+                        return std::chrono::round< chronology::duration>( point);
                   }
 
                   code::raise::error( code::casual::invalid_argument, "invalid time representation: ", string::view::make( value));
@@ -185,9 +185,8 @@ namespace casual
             } // <unnamed>
          } // local
 
-         platform::time::unit string( const std::string& value)
+         duration string( const std::string& value)
          {
-            using time_unit = platform::time::unit;
 
             // we split on '+', and provide _next range_ for the range-adapter 
             auto next_range = []( auto range)
@@ -196,14 +195,14 @@ namespace casual
                return algorithm::split( range, '+');
             };
             
-            auto accumulate_time = []( time_unit current, auto range)
+            auto accumulate_time = []( duration current, auto range)
             {
                return current + local::string( range);
             };
 
             return algorithm::accumulate( 
                range::adapter::make( next_range, range::make( value)), 
-               time_unit{}, 
+               duration{}, 
                accumulate_time);
          }
       } // from
@@ -233,7 +232,7 @@ namespace casual
 
          std::string string( std::chrono::nanoseconds duration)
          {
-            if( duration == platform::time::unit::zero())
+            if( duration == chronology::duration::zero())
                return {};
 
             std::ostringstream out;

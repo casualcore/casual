@@ -261,11 +261,11 @@ namespace casual
                   return transaction;
                }
 
-               Transaction transaction( platform::time::unit timeout)
+               Transaction transaction( common::chronology::duration timeout)
                {
                   auto transaction = start::transaction();
 
-                  if( timeout > platform::time::unit{})
+                  if( timeout > common::chronology::duration{})
                      transaction.deadline = platform::time::clock::type::now() + timeout;
 
                   return transaction;
@@ -985,9 +985,9 @@ namespace casual
          return code::tx::ok;
       }
 
-      code::tx Context::set_transaction_timeout( platform::time::unit timeout)
+      code::tx Context::set_transaction_timeout( common::chronology::duration timeout)
       {
-         if( timeout < platform::time::unit{})
+         if( timeout < common::chronology::duration{})
             return local::log::code( code::tx::argument, "set_transaction_timeout - timeout value has to be 0 or greater");
 
          m_timeout = timeout;

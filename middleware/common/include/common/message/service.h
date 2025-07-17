@@ -49,7 +49,7 @@ namespace casual
 
             struct Deadline
             {
-               std::optional< platform::time::unit> remaining;
+               std::optional< chronology::duration> remaining;
 
                CASUAL_CONST_CORRECT_SERIALIZE(
                   CASUAL_SERIALIZE( remaining);
@@ -61,7 +61,7 @@ namespace casual
          //! service timeout
          struct Timeout
          {
-            platform::time::unit duration{};
+            chronology::duration duration{};
 
             CASUAL_CONST_CORRECT_SERIALIZE(
                CASUAL_SERIALIZE( duration);
@@ -340,7 +340,7 @@ namespace casual
                std::string requested;
                request::Context context;
                common::transaction::ID trid;
-               std::optional< platform::time::point::type> deadline{};
+               std::optional< chronology::time_point> deadline{};
 
                inline bool no_reply() const noexcept
                {
@@ -387,7 +387,7 @@ namespace casual
                call::Service service;
                call::Deadline deadline;
                //! represent how long this request was pending (busy);
-               platform::time::unit pending{};
+               chronology::duration pending{};
                reply::State state = reply::State::idle;
                
                inline bool absent() const { return state == reply::State::absent;}
@@ -497,7 +497,7 @@ namespace casual
 
                   //! pending time, only to be return in the "ACK", to collect
                   //! metrics
-                  platform::time::unit pending{};
+                  chronology::duration pending{};
 
                   CASUAL_CONST_CORRECT_SERIALIZE(
                      base_type::serialize( archive);
@@ -561,7 +561,7 @@ namespace casual
 
                //! pending time, only to be return in the "ACK", to collect
                //! metrics
-               platform::time::unit pending{};
+               chronology::duration pending{};
 
                CASUAL_CONST_CORRECT_SERIALIZE(
                   base_type::serialize( archive);

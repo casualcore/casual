@@ -106,7 +106,7 @@ namespace casual
             model::Metric invoked;
             model::Metric pending;
 
-            platform::time::point::type last = platform::time::point::limit::zero();
+            common::chronology::time_point last = common::chronology::empty();
             platform::size::type remote = 0;
 
             CASUAL_CONST_CORRECT_SERIALIZE(

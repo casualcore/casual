@@ -408,7 +408,7 @@ namespace casual
 
       queue::ipc::message::group::dequeue::Reply Queuebase::dequeue( 
          const queue::ipc::message::group::dequeue::Request& message, 
-         const platform::time::point::type& now)
+         const common::chronology::time_point& now)
       {
          Trace trace{ "queue::Queuebase::dequeue"};
 
@@ -511,7 +511,7 @@ namespace casual
 
       queue::ipc::message::group::message::browse::Reply Queuebase::browse( 
          const queue::ipc::message::group::message::browse::Request& request,
-         const platform::time::point::type& now)
+         const common::chronology::time_point& now)
       {
          Trace trace{ "queue::Queuebase::browse"};
 
@@ -562,7 +562,7 @@ namespace casual
          return result;
       }
 
-      std::optional< platform::time::point::type> Queuebase::available( common::strong::queue::id queue) const
+      std::optional< common::chronology::time_point> Queuebase::available( common::strong::queue::id queue) const
       {
          Trace trace{ "queue::Queuebase::available earliest"};
          log::debug( "queue: ", queue);
@@ -573,7 +573,7 @@ namespace casual
          if( ! query.fetch( row))
             return {};
 
-         std::optional< platform::time::point::type> available;
+         std::optional< common::chronology::time_point> available;
 
          // "SELECT MIN( m.available)"
          sql::database::row::get( row, 

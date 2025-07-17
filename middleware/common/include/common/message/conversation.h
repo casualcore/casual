@@ -66,7 +66,7 @@ namespace casual
                      std::string parent;
                      common::transaction::ID trid;
                      header::Fields header;
-                     platform::time::unit pending{};
+                     chronology::duration pending{};
                      duplex::Type duplex{};
                      common::buffer::Payload buffer;
 
@@ -100,7 +100,7 @@ namespace casual
 
                //! pending time, only to be return in the "ACK", to collect
                //! metrics
-               platform::time::unit pending{};
+               chronology::duration pending{};
 
                duplex::Type duplex{};
 

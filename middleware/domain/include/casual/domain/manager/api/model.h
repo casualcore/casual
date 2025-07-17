@@ -96,7 +96,7 @@ namespace casual
                {
                   H handle;
                   instance::State state = instance::State::scale_out;
-                  casual::platform::time::point::type spawnpoint;
+                  casual::platform::time::clock::type::time_point  spawnpoint;
                };
 
                struct Executable : base_process

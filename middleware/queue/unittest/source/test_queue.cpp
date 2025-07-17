@@ -419,7 +419,7 @@ domain:
       {
          namespace
          {
-            bool compare( const platform::time::point::type& lhs, const platform::time::point::type& rhs)
+            bool compare( const common::chronology::time_point& lhs, const common::chronology::time_point& rhs)
             {
                return std::chrono::time_point_cast< std::chrono::microseconds>( lhs)
                      == std::chrono::time_point_cast< std::chrono::microseconds>( rhs);

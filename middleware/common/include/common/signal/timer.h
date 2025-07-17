@@ -8,6 +8,7 @@
 
 #include "casual/platform.h"
 #include "common/move.h"
+#include "common/chronology.h"
 #include "common/serialize/macro.h"
 
 #include <optional>
@@ -18,13 +19,13 @@ namespace casual
    {
       namespace unit
       {
-         //using type = value::basic_optional< platform::time::unit, detail::policy>; 
-         using type = std::optional< platform::time::unit>;
+         //using type = value::basic_optional< chronology::duration, detail::policy>; 
+         using type = std::optional< chronology::duration>;
       } // unit
 
       namespace point
       {
-         using type = std::optional< platform::time::point::type>;
+         using type = std::optional< chronology::time_point>;
       } // point
 
       //! Sets a timeout.
@@ -39,14 +40,14 @@ namespace casual
       template< typename R, typename P>
       unit::type set( std::chrono::duration< R, P> offset)
       {
-         return set( unit::type{ std::chrono::duration_cast< platform::time::unit>( offset)});
+         return set( unit::type{ std::chrono::duration_cast< chronology::duration>( offset)});
       }
 
       //! sets a timout that will expire ot `deadline`
       template< typename R, typename P>
       unit::type set( std::chrono::time_point< R, P> deadline)
       {
-         return set( deadline - platform::time::point::type::clock::now());
+         return set( deadline - chronology::time_point::clock::now());
       }
 
       //! @return current timeout, or 'emtpy' if there isn't one
@@ -62,11 +63,11 @@ namespace casual
       struct Scoped
       {
          Scoped( unit::type timeout);
-         Scoped( unit::type timeout, platform::time::point::type now);
+         Scoped( unit::type timeout, chronology::time_point now);
 
          template< typename R, typename P>
          Scoped( std::chrono::duration< R, P> timeout)
-            : Scoped( unit::type{ std::chrono::duration_cast< platform::time::unit>( timeout)})
+            : Scoped( unit::type{ std::chrono::duration_cast< chronology::duration>( timeout)})
          {}
 
          ~Scoped();
@@ -88,8 +89,8 @@ namespace casual
       //! dtor will 'unset' timeout regardless
       struct Deadline
       {
-         Deadline( point::type deadline, platform::time::point::type now);
-         Deadline( platform::time::unit duration);
+         Deadline( point::type deadline, chronology::time_point now);
+         Deadline( chronology::duration duration);
          ~Deadline();
 
          Deadline( Deadline&&) noexcept;

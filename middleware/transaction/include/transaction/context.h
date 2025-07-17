@@ -65,7 +65,7 @@ namespace casual
          [[nodiscard]] commit::Return get_commit_return() const noexcept;
          
          [[nodiscard]] code::tx set_transaction_control( transaction::Control control);
-         [[nodiscard]] code::tx set_transaction_timeout( platform::time::unit timeout);
+         [[nodiscard]] code::tx set_transaction_timeout( common::chronology::duration timeout);
          
          bool info( TXINFO* info);
          //! @}
@@ -152,7 +152,7 @@ namespace casual
          } m_resources;
 
 
-         platform::time::unit m_timeout{};
+         common::chronology::duration m_timeout{};
 
          Context();
          ~Context();

@@ -8,6 +8,7 @@
 
 #include "casual/platform.h"
 #include "common/serialize/macro.h"
+#include "common/chronology.h"
 
 
 #include <iosfwd>
@@ -20,10 +21,10 @@ namespace casual
       {
          struct Limit
          {
-            platform::time::unit min = platform::time::unit::zero();
-            platform::time::unit max = platform::time::unit::zero();
+            chronology::duration min = chronology::duration::zero();
+            chronology::duration max = chronology::duration::zero();
 
-            Limit& operator += ( platform::time::unit duration);
+            Limit& operator += ( chronology::duration duration);
             Limit& operator += ( const Limit& rhs);
 
             friend Limit operator + ( const Limit& lhs, const Limit& rhs);
@@ -36,18 +37,18 @@ namespace casual
          };
 
          platform::size::type count = 0;
-         platform::time::unit total = platform::time::unit::zero();
+         chronology::duration total = chronology::duration::zero();
          Limit limit;
 
 
-         Metric& operator += ( platform::time::unit duration);
+         Metric& operator += ( chronology::duration duration);
          Metric& operator += ( const Metric& rhs);
          friend Metric operator + ( const Metric& lhs, const Metric& rhs);
 
          template< typename R, typename P>
          Metric& operator += ( std::chrono::duration< R, P> duration)
          {
-            return *this += std::chrono::duration_cast< platform::time::unit>( duration);
+            return *this += std::chrono::duration_cast< chronology::duration>( duration);
          }
 
          friend bool operator == ( const Metric& lhs, const Metric& rhs);

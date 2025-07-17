@@ -153,8 +153,8 @@ namespace casual
                   result.pid = common::strong::process::id{ row.get< platform::process::native::type>( 3)};
                   result.state = static_cast< Log::State>( row.get< long>( 4));
 
-                  result.started = platform::time::point::type{ std::chrono::microseconds{ row.get< platform::time::point::type::rep>( 5)}};
-                  result.updated = platform::time::point::type{ std::chrono::microseconds{ row.get< platform::time::point::type::rep>( 6)}};
+                  result.started = common::chronology::time_point{ std::chrono::microseconds{ row.get< common::chronology::time_point::rep>( 5)}};
+                  result.updated = common::chronology::time_point{ std::chrono::microseconds{ row.get< common::chronology::time_point::rep>( 6)}};
 
                   return result;
                }

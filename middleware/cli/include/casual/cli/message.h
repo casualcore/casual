@@ -87,7 +87,7 @@ namespace casual
             {
                std::string properties;
                std::string reply;
-               platform::time::point::type available;
+               common::chronology::time_point available;
                
                CASUAL_CONST_CORRECT_SERIALIZE(
                   CASUAL_SERIALIZE( properties);
