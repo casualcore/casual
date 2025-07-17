@@ -98,10 +98,21 @@ domain:
 )");
             }
 
+         
+            void service( TPSVCINFO *)
+            {
+
+            }
+
+            int callback( const casual_browsed_service* service, void* context)
+            {
+               auto services = static_cast< std::vector< std::string>*>( context);
+               services->emplace_back( service->name);
+               return 0;
+
+            }
          } // <unnamed>
       } // local
-
-
 
 
       TEST( test_xatmi_call, tpalloc_X_OCTET_binary__expect_ok)
@@ -691,10 +702,14 @@ domain:
 
          auto domain = local::domain();
 
+         // we advertise a service so we know we don't get a reply. Hence
+         // we guarantee that the signal will be received before the reply
+         tpadvertise( "a", &local::service);
+
          auto buffer = tpalloc( X_OCTET, nullptr, 128);
          auto len = tptypes( buffer, nullptr, nullptr);
 
-         auto desc = tpacall( "casual/example/echo", buffer, 128, 0);
+         auto desc = tpacall( "a", buffer, 128, 0);
          EXPECT_TRUE( desc != -1);
          EXPECT_TRUE( tperrno == 0) << "tperrno: " << tperrnostring( tperrno);
 
@@ -702,6 +717,8 @@ domain:
 
          EXPECT_TRUE( tpgetrply( &desc, &buffer, &len, 0) == -1);
          EXPECT_TRUE( tperrno == TPGOTSIG) << "tperrno: " << tperrnostring( tperrno);
+
+         tpunadvertise( "a");
       }
 
       TEST( test_xatmi_call, tpgetrply_with_TPSIGRSTRT__signal_interrupt__expect_no_error)
@@ -725,24 +742,6 @@ domain:
          signal::clear();
       }
 
-      namespace local
-      {
-         namespace
-         {
-            void service( TPSVCINFO *)
-            {
-
-            }
-
-            int callback( const casual_browsed_service* service, void* context)
-            {
-               auto services = static_cast< std::vector< std::string>*>( context);
-               services->emplace_back( service->name);
-               return 0;
-
-            }
-         } // <unnamed>
-      } // local
 
       TEST( test_xatmi_call_extended, casual_instance_browse_services)
       {
