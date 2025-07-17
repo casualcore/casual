@@ -31,9 +31,9 @@ namespace casual
          {
             struct
             {
-               casual::platform::time::unit startup{};
-               casual::platform::time::unit sleep{};
-               casual::platform::time::unit work{};
+               common::chronology::duration startup{};
+               common::chronology::duration sleep{};
+               common::chronology::duration work{};
                std::string forward;
             } global;
          } // <unnamed>
@@ -65,7 +65,7 @@ namespace casual
                   argument::Option{ std::tie( local::global.forward), {"--forward"}, "service that casual/example/forward should call"},
                }, argc, argv);
 
-               if( local::global.startup != platform::time::unit::zero())
+               if( local::global.startup != common::chronology::duration::zero())
                   common::process::sleep( local::global.startup);
 
                auto advertise_echo = []( std::string_view name)

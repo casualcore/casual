@@ -11,6 +11,7 @@
 #include "common/serialize/macro.h"
 #include "casual/platform.h"
 #include "common/uuid.h"
+#include "common/chronology.h"
 
 #include <string>
 
@@ -52,7 +53,7 @@ namespace casual
          std::string reply;
 
          //! When the message is available, in absolute time.
-         platform::time::point::type available = platform::time::point::limit::zero();
+         common::chronology::time_point available = common::chronology::empty();
 
          CASUAL_CONST_CORRECT_SERIALIZE(
             CASUAL_SERIALIZE( properties);
@@ -146,7 +147,7 @@ namespace casual
 
 
                size_type redelivered;
-               platform::time::point::type timestamp;
+               common::chronology::time_point timestamp;
 
 
                CASUAL_CONST_CORRECT_SERIALIZE(

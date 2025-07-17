@@ -83,8 +83,8 @@ namespace casual
          bool pending() const;
 
          //! set deadline for calls.
-         void deadline( platform::time::point::type now, std::optional< platform::time::unit> timeout);
-         std::optional< platform::time::point::type> deadline() const;
+         void deadline( common::chronology::time_point now, std::optional< common::chronology::duration> timeout);
+         std::optional< common::chronology::time_point> deadline() const;
 
       private:
          Context();

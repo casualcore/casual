@@ -72,7 +72,7 @@ namespace casual
                struct Retry 
                {
                   platform::size::type count{};
-                  platform::time::unit delay{};
+                  common::chronology::duration delay{};
 
                   friend auto operator <=> ( const Retry&, const Retry&) = default;
 

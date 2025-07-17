@@ -9,6 +9,7 @@
 #include "common/environment/variable.h"
 #include "common/serialize/macro.h"
 #include "common/service/type.h"
+#include "common/chronology.h"
 
 #include <vector>
 #include <string>
@@ -238,7 +239,7 @@ namespace casual::configuration
          {
             using Contract = common::service::execution::timeout::contract::Type;
             
-            std::optional< platform::time::unit> duration;
+            std::optional< common::chronology::duration> duration;
             std::optional< Contract> contract;
 
             friend Timeout set_union( Timeout lhs, Timeout rhs);
@@ -600,9 +601,9 @@ namespace casual::configuration
             struct Retry
             {
                platform::size::type count{};
-               platform::time::unit delay = platform::time::unit::zero();
+               common::chronology::duration delay = common::chronology::duration::zero();
 
-               inline auto empty() const { return count == 0 && delay == platform::time::unit::zero();}
+               inline auto empty() const { return count == 0 && delay == common::chronology::duration::zero();}
 
                friend auto operator <=> ( const Retry&, const Retry&) = default;
 
@@ -697,7 +698,7 @@ namespace casual::configuration
                struct Target
                {
                   std::string queue;
-                  platform::time::unit delay{};
+                  common::chronology::duration delay{};
 
                   friend auto operator <=> ( const Target&, const Target&) = default;
 

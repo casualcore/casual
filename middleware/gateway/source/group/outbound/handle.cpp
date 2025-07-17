@@ -189,7 +189,7 @@ namespace casual
                               std::string service;
                               execution::context::Parent parent;
                               common::transaction::ID trid;
-                              platform::time::point::type start;
+                              common::chronology::time_point start;
                            };
 
                            state.multiplex.send( message.process.ipc, reply);
@@ -220,7 +220,7 @@ namespace casual
                               execution::context::Parent parent;
                               strong::ipc::id ipc;
                               common::transaction::ID trid;
-                              platform::time::point::type start;
+                              common::chronology::time_point start;
                            };
 
                            // NOTE: the parent span in the message is our current actual span. The provided parent is the one from the caller (was in the message).
@@ -322,7 +322,7 @@ namespace casual
                               std::string service;
                               execution::context::Parent parent;
                               strong::ipc::id ipc;
-                              platform::time::point::type start;
+                              common::chronology::time_point start;
                               common::transaction::ID trid;
 
                            };

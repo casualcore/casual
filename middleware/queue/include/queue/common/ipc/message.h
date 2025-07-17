@@ -24,7 +24,7 @@ namespace casual
       struct Retry 
       {
          platform::size::type count{};
-         platform::time::unit delay{};
+         common::chronology::duration delay{};
 
          CASUAL_CONST_CORRECT_SERIALIZE(
             CASUAL_SERIALIZE( count);
@@ -275,7 +275,7 @@ namespace casual
       {
          std::string properties;
          std::string reply;
-         platform::time::point::type available;
+         common::chronology::time_point available;
 
          inline auto tie() const noexcept { return std::tie( properties, reply, available);}
          
@@ -439,7 +439,7 @@ namespace casual
                ipc::message::Attributes attributes;
                ipc::message::Payload payload;
                platform::size::type redelivered{};
-               platform::time::point::type timestamp;
+               common::chronology::time_point timestamp;
 
                CASUAL_CONST_CORRECT_SERIALIZE(
                   CASUAL_SERIALIZE( id);
@@ -665,7 +665,7 @@ namespace casual
                   platform::size::type count{};
                   platform::size::type size{};
                   platform::size::type uncommitted{};
-                  platform::time::point::type last;
+                  common::chronology::time_point last;
                   platform::size::type dequeued{};
                   platform::size::type enqueued{};
 
@@ -688,7 +688,7 @@ namespace casual
                Retry retry;
                common::strong::queue::id error;
                queue::Metric metric;
-               platform::time::point::type created;
+               common::chronology::time_point created;
 
                inline queue::Type type() const { return  error ? queue::Type::queue : queue::Type::error_queue;}
 
@@ -775,11 +775,11 @@ namespace casual
                std::string reply;
                message::State state;
                platform::binary::type trid;
-               platform::time::point::type available;
+               common::chronology::time_point available;
                platform::size::type redelivered;
                std::string type;
                platform::size::type size;
-               platform::time::point::type timestamp;
+               common::chronology::time_point timestamp;
 
                CASUAL_CONST_CORRECT_SERIALIZE(
                   CASUAL_SERIALIZE( id);
@@ -901,7 +901,7 @@ namespace casual
 
                   //! Should be set to the last browsed message timestamp (or nothing if it's the first request),
                   //! hence act as the pivot point of which messages to browse.
-                  platform::time::point::type last{};
+                  common::chronology::time_point last{};
 
                   CASUAL_CONST_CORRECT_SERIALIZE(
                      base_request::serialize( archive);
@@ -1079,7 +1079,7 @@ namespace casual
                   struct Count
                   {
                      platform::size::type count = 0;
-                     platform::time::point::type last{};
+                     common::chronology::time_point last{};
 
                      CASUAL_CONST_CORRECT_SERIALIZE(
                         CASUAL_SERIALIZE( count);
@@ -1101,7 +1101,7 @@ namespace casual
                   struct Target
                   {
                      std::string queue;
-                     platform::time::unit delay{};
+                     common::chronology::duration delay{};
 
                      CASUAL_CONST_CORRECT_SERIALIZE(
                         CASUAL_SERIALIZE( queue);

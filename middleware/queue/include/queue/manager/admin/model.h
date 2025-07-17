@@ -102,7 +102,7 @@ namespace casual
          struct Retry 
          {
             platform::size::type count = 0;
-            platform::time::unit delay{};
+            common::chronology::duration delay{};
 
             CASUAL_CONST_CORRECT_SERIALIZE(
                CASUAL_SERIALIZE( count);
@@ -146,8 +146,8 @@ namespace casual
 
          } metric;
 
-         platform::time::point::type last;
-         platform::time::point::type created;
+         common::chronology::time_point last;
+         common::chronology::time_point created;
 
          CASUAL_CONST_CORRECT_SERIALIZE(
             CASUAL_SERIALIZE( group);
@@ -191,7 +191,7 @@ namespace casual
             struct Count
             {
                platform::size::type count{};
-               platform::time::point::type last{};
+               common::chronology::time_point last{};
 
                CASUAL_CONST_CORRECT_SERIALIZE(
                   CASUAL_SERIALIZE( count);
@@ -216,7 +216,7 @@ namespace casual
             struct Target
             {
                std::string queue;
-               platform::time::unit delay{};
+               common::chronology::duration delay{};
 
                CASUAL_CONST_CORRECT_SERIALIZE(
                   CASUAL_SERIALIZE( queue);
@@ -335,8 +335,8 @@ namespace casual
          platform::size::type redelivered;
          std::string type;
 
-         platform::time::point::type available;
-         platform::time::point::type timestamp;
+         common::chronology::time_point available;
+         common::chronology::time_point timestamp;
 
          platform::size::type size;
 

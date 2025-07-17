@@ -63,7 +63,7 @@ namespace casual
                   common::strong::correlation::id correlation;
                   common::strong::execution::id execution;
                   common::strong::execution::span::id span;
-                  platform::time::point::type start = platform::time::point::limit::zero();
+                  common::chronology::time_point start = common::chronology::empty();
                   std::string service;
                   common::execution::context::Parent parent;
                   common::transaction::ID trid;

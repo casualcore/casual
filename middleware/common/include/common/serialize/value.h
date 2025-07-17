@@ -650,56 +650,6 @@ namespace casual
          }
       };
 
-      //! Specialization for time
-      //! @{
-
-      template< typename R, typename P, typename A>
-      struct Value< std::chrono::duration< R, P>, A>
-      {
-         using value_type = std::chrono::duration< R, P>;
-
-         template< typename V> 
-         static void write( A& archive, V&& value, const char* name)
-         {
-            value::write( archive, std::chrono::duration_cast< platform::time::serialization::unit>( value).count(), name);
-         }
-
-         static bool read( A& archive, value_type& value, const char* name)
-         {
-            platform::time::serialization::unit::rep representation;
-
-            if( value::read( archive, representation, name))
-            {
-               value = std::chrono::duration_cast< value_type>( platform::time::serialization::unit{ representation});
-               return true;
-            }
-            return false;
-         }
-      };
-
-      template< typename A>
-      struct Value< platform::time::point::type, A>
-      {
-         static void write( A& archive, platform::time::point::type value, const char* name)
-         {
-            value::write(
-               archive, 
-               std::chrono::time_point_cast< platform::time::serialization::unit>( value).time_since_epoch(), 
-               name);
-         }
-
-         static bool read( A& archive, platform::time::point::type& value, const char* name)
-         {
-            platform::time::serialization::unit duration;
-            if( value::read( archive, duration, name))
-            {
-               value = platform::time::point::type{ std::chrono::duration_cast< platform::time::unit>( duration)};
-               return true;
-            }
-            return false;
-         }
-      };
-      //! @}
 
       //! Specialization for std::error_code
       template< typename A>

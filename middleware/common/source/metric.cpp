@@ -17,9 +17,9 @@ namespace casual
       {
          namespace
          {
-            auto min( platform::time::unit lhs, platform::time::unit rhs)
+            auto min( chronology::duration lhs, chronology::duration rhs)
             {
-               if( lhs == platform::time::unit::zero())
+               if( lhs == chronology::duration::zero())
                   return rhs;
                
                return std::min( lhs, rhs);
@@ -27,7 +27,7 @@ namespace casual
          } // <unnamed>
       } // local
 
-      Metric::Limit& Metric::Limit::operator += ( platform::time::unit duration)
+      Metric::Limit& Metric::Limit::operator += ( chronology::duration duration)
       {
          min = local::min( min, duration);
          max = std::max( max, duration);
@@ -49,7 +49,7 @@ namespace casual
          };
       }
 
-      Metric& Metric::operator += ( platform::time::unit duration)
+      Metric& Metric::operator += ( chronology::duration duration)
       {
          ++count;
          total += duration;

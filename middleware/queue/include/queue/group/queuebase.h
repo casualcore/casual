@@ -39,7 +39,7 @@ namespace casual
             struct Retry 
             {
                platform::size::type count{};
-               platform::time::unit delay{};
+               common::chronology::duration delay{};
 
                CASUAL_CONST_CORRECT_SERIALIZE(
                   CASUAL_SERIALIZE( count);
@@ -89,7 +89,7 @@ namespace casual
             {
                common::strong::queue::id queue;
                platform::size::type count;
-               platform::time::point::type when;
+               common::chronology::time_point when;
 
                inline friend bool operator == ( const Available& lhs, common::strong::queue::id rhs) { return lhs.queue == rhs;}
                
@@ -139,7 +139,7 @@ namespace casual
          
          queue::ipc::message::group::dequeue::Reply dequeue( 
             const queue::ipc::message::group::dequeue::Request& request, 
-            const platform::time::point::type& now);
+            const common::chronology::time_point& now);
 
          //! 'meta peek' to get information about messages
          queue::ipc::message::group::message::meta::peek::Reply peek( const queue::ipc::message::group::message::meta::peek::Request& request);
@@ -149,13 +149,13 @@ namespace casual
          //! browse the next message
          queue::ipc::message::group::message::browse::Reply browse( 
             const queue::ipc::message::group::message::browse::Request& request,
-            const platform::time::point::type& now);
+            const common::chronology::time_point& now);
 
          //! @returns all queues that is found in `queues` and has messages potentially available for dequeue
          std::vector< queuebase::message::Available> available( std::vector< common::strong::queue::id> queues) const;
 
          //! @returns the earliest available message in the queue, if any.
-         std::optional< platform::time::point::type> available( common::strong::queue::id queue) const;
+         std::optional< common::chronology::time_point> available( common::strong::queue::id queue) const;
 
          //! @return number of restored messages for the queue
          platform::size::type restore( common::strong::queue::id id);

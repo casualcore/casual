@@ -60,8 +60,8 @@ namespace casual
                   } service;
 
                   common::Uuid execution;
-                  platform::time::point::type start;
-                  platform::time::point::type end;
+                  common::chronology::time_point start;
+                  common::chronology::time_point end;
 
                   CASUAL_CONST_CORRECT_SERIALIZE(
                      CASUAL_SERIALIZE( service);

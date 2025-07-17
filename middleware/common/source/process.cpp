@@ -115,7 +115,7 @@ namespace casual
          }
 
 
-         void sleep( platform::time::unit time)
+         void sleep( chronology::duration time)
          {
             log::debug( "process::sleep time: ", time);
 
@@ -622,7 +622,7 @@ namespace casual
                return result;
             }
 
-            std::vector< Exit> wait( const std::vector< strong::process::id>& pids, platform::time::unit timeout)
+            std::vector< Exit> wait( const std::vector< strong::process::id>& pids, chronology::duration timeout)
             {
                Trace trace{ "common::process::lifetime::wait"};
 
@@ -656,7 +656,7 @@ namespace casual
                return wait( process::terminate( pids));
             }
 
-            std::vector< Exit> terminate( const std::vector< strong::process::id>& pids, platform::time::unit timeout)
+            std::vector< Exit> terminate( const std::vector< strong::process::id>& pids, chronology::duration timeout)
             {
                return wait( process::terminate( pids), timeout);
             }

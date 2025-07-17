@@ -184,7 +184,7 @@ namespace casual
                   {
                      auto set( descriptor::id descriptor, std::chrono::milliseconds time)
                      {
-                        global::cache.get( descriptor).value.attributes.available = platform::time::point::type{ time};
+                        global::cache.get( descriptor).value.attributes.available = common::chronology::time_point{ time};
                         return 0;
                      }
 

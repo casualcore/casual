@@ -9,6 +9,7 @@
 #include "casual/platform.h"
 #include "common/strong/id.h"
 #include "common/strong/type.h"
+#include "common/chronology.h"
 
 #include "common/service/type.h"
 
@@ -75,7 +76,7 @@ namespace casual
       struct State
       {
          state::Pending pending;
-         std::optional< platform::time::point::type> deadline;
+         std::optional< common::chronology::time_point> deadline;
       };
 
    } // service::call

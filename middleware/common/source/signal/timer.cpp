@@ -104,7 +104,7 @@ namespace casual
 
 
 
-      Scoped::Scoped( unit::type timeout, platform::time::point::type now)
+      Scoped::Scoped( unit::type timeout, chronology::time_point now)
       {
          auto old = timer::set( timeout);
 
@@ -136,7 +136,7 @@ namespace casual
       Scoped& Scoped::operator = ( Scoped&& other) noexcept = default;
 
 
-      Deadline::Deadline( point::type deadline, platform::time::point::type now)
+      Deadline::Deadline( point::type deadline, chronology::time_point now)
       {
          if( deadline)
             timer::set( deadline.value() - now);
@@ -144,7 +144,7 @@ namespace casual
             timer::unset();
       }
 
-      Deadline::Deadline( platform::time::unit duration)
+      Deadline::Deadline( chronology::duration duration)
       {
          timer::set( duration);
       }

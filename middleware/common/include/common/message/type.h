@@ -427,8 +427,8 @@ namespace casual
 
       struct Statistics
       {
-         platform::time::point::type start;
-         platform::time::point::type end;
+         chronology::time_point start;
+         chronology::time_point end;
 
          CASUAL_CONST_CORRECT_SERIALIZE(
             CASUAL_SERIALIZE( start);

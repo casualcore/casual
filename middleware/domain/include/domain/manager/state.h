@@ -21,6 +21,7 @@
 #include "common/process.h"
 #include "common/communication/select.h"
 #include "common/communication/ipc/send.h"
+#include "common/chronology.h"
 
 #include "common/event/dispatch.h"
 
@@ -160,7 +161,7 @@ namespace casual
             handle_type handle;
             instance::Phase wanted = instance::Phase::running;
 
-            platform::time::point::type spawnpoint = platform::time::point::limit::zero();
+            common::chronology::time_point spawnpoint = common::chronology::empty();
 
             instance::State state() const { return policy_type::state( handle, wanted);}
             

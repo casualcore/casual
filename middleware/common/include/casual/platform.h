@@ -411,20 +411,9 @@ namespace casual
             using type = std::chrono::system_clock;
          } // clock
 
-         namespace point
-         {
-            using type = clock::type::time_point;
-
-            namespace limit
-            {
-               constexpr auto zero() noexcept { return point::type{};}
-            } // limit
-         } // point
-
-         using unit = point::type::duration;
-         
          namespace serialization
          {
+            // the unit used when serializing time
             using unit = std::chrono::nanoseconds;
          } // serialization
 

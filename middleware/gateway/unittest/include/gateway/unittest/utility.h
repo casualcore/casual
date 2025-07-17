@@ -186,7 +186,7 @@ namespace casual
                {
                   return common::algorithm::count_if( state.listeners, []( auto& listener)
                   {
-                     return listener.created > platform::time::point::type{};
+                     return listener.created > common::chronology::time_point{};
                   }) == count;
 
                };

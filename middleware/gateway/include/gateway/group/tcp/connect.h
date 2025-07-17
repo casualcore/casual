@@ -130,7 +130,7 @@ namespace casual
          {
             if( ! connect.prospects.empty())
             {
-               static const auto duration = []() -> platform::time::unit
+               static const auto duration = []() -> common::chronology::duration
                {
                   // check if we're in unittest context or not.
                   if( common::environment::variable::exists( common::environment::variable::name::internal::unittest::context))

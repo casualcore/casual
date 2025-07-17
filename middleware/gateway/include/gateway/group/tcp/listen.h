@@ -31,7 +31,7 @@ namespace casual
 
                common::communication::Socket socket;
                Configuration configuration;
-               platform::time::point::type created = platform::time::clock::type::now();
+               common::chronology::time_point created = platform::time::clock::type::now();
 
                inline friend bool operator == ( const Listener& lhs, common::strong::file::descriptor::id rhs) { return lhs.descriptor() == rhs;}
 

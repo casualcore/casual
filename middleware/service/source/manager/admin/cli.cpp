@@ -169,7 +169,7 @@ namespace casual
 
                      auto format_timeout_duration_string = []( const auto& value) -> std::string
                      {
-                        if( ! value.execution.timeout.duration || *value.execution.timeout.duration == platform::time::unit::zero())
+                        if( ! value.execution.timeout.duration || *value.execution.timeout.duration == common::chronology::duration::zero())
                            return empty_representation(); 
                         using second_t = std::chrono::duration< double>;
                         return std::to_string( std::chrono::duration_cast< second_t>( value.execution.timeout.duration.value()).count());
@@ -262,7 +262,7 @@ namespace casual
 
                      auto format_last = []( const admin::model::Service& value) -> std::string
                      {
-                        if( value.metric.last == platform::time::point::limit::zero())
+                        if( value.metric.last == common::chronology::empty())
                            return empty_representation();
 
                         return common::chronology::utc::offset( value.metric.last);

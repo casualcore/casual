@@ -404,7 +404,7 @@ namespace casual
 
                namespace detail
                {
-                  auto calculate_deadline( const state::Service& service, platform::time::point::type now, std::optional< platform::time::point::type> caller_deadline) -> std::optional< platform::time::point::type>
+                  auto calculate_deadline( const state::Service& service, common::chronology::time_point now, std::optional< common::chronology::time_point> caller_deadline) -> std::optional< common::chronology::time_point>
                   {
                      if( service.timeout.duration && service.timeout.duration > std::chrono::microseconds{ 0})
                      {
@@ -460,7 +460,7 @@ namespace casual
                         state.multiplex.send( message.process.ipc, reply);
                      }
 
-                     void reply( State& state, state::service::id::type service_id, auto instance_id, common::message::service::lookup::Request& message, platform::time::unit pending)
+                     void reply( State& state, state::service::id::type service_id, auto instance_id, common::message::service::lookup::Request& message, common::chronology::duration pending)
                      {
                         Trace trace{ "service::manager::handle::local::service::detail::dispatch::lookup::reply"};
                         common::log::debug( "'reserved' instance: ", instance_id);
@@ -581,7 +581,7 @@ namespace casual
                         }
                      }
 
-                     bool internal_only( State& state, state::service::id::type service_id, common::message::service::lookup::Request& message, platform::time::unit pending)
+                     bool internal_only( State& state, state::service::id::type service_id, common::message::service::lookup::Request& message, common::chronology::duration pending)
                      {
                         Trace trace{ "service::manager::handle::local::service::detail::dispatch::lookup::internal_only"};
 
@@ -603,7 +603,7 @@ namespace casual
                         return false;
                      }
 
-                     bool external_internal( State& state, state::service::id::type service_id, common::message::service::lookup::Request& message, platform::time::unit pending)
+                     bool external_internal( State& state, state::service::id::type service_id, common::message::service::lookup::Request& message, common::chronology::duration pending)
                      {
                          Trace trace{ "service::manager::handle::local::service::detail::dispatch::lookup::external_internal"};
 
@@ -651,7 +651,7 @@ namespace casual
                      
                   } // dispatch::lookup
 
-                  void lookup( State& state, common::message::service::lookup::Request& message, platform::time::unit pending = {})
+                  void lookup( State& state, common::message::service::lookup::Request& message, common::chronology::duration pending = {})
                   {
                      Trace trace{ "service::manager::handle::local::service::detail::lookup"};
                      common::log::debug( "message: ", message, ", pending: ", pending);

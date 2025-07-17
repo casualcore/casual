@@ -18,7 +18,7 @@ namespace casual
       {
          namespace
          {
-            auto resource_roundtrip( platform::time::unit duration)
+            auto resource_roundtrip( common::chronology::duration duration)
             {
                // transport tm -> rm
                process::sleep( duration);
@@ -91,7 +91,7 @@ namespace casual
 
          auto pending = instance.pending();
          EXPECT_TRUE( pending.count == 0);
-         EXPECT_TRUE( pending.total == platform::time::unit{});
+         EXPECT_TRUE( pending.total == common::chronology::duration{});
       }
 
       TEST( transaction_manager_state, proxy_instance_pending)

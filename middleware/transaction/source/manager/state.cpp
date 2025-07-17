@@ -56,7 +56,7 @@ namespace casual
 
                } // instance
 
-               void Instance::general_reserve( platform::time::point::type now)
+               void Instance::general_reserve( common::chronology::time_point now)
                {
                   if( m_state != instance::State::idle)
                      common::code::raise::error( common::code::casual::invalid_semantics, "trying to reserve rm instance: ", process.pid, " in state: ", m_state);
@@ -70,7 +70,7 @@ namespace casual
                   general_reserve( platform::time::clock::type::now());
                }
 
-               void Instance::reserve( platform::time::point::type requested)
+               void Instance::reserve( common::chronology::time_point requested)
                {
                   auto now = platform::time::clock::type::now();
                   general_reserve( now);

@@ -138,7 +138,7 @@ domain:
 
          struct
          {
-            std::vector< platform::time::unit> pending{};
+            std::vector< common::chronology::duration> pending{};
          } state;
 
          constexpr auto count = 5;
@@ -211,8 +211,8 @@ domain:
          common::algorithm::sort( state.pending);
 
          // we know it has to be pending for all except the first one..
-         EXPECT_TRUE( state.pending.at( 0) == platform::time::unit::zero()) << CASUAL_NAMED_VALUE( state.pending);
-         EXPECT_TRUE( state.pending.at( 1) > platform::time::unit::zero()) << CASUAL_NAMED_VALUE( state.pending);
+         EXPECT_TRUE( state.pending.at( 0) == common::chronology::duration::zero()) << CASUAL_NAMED_VALUE( state.pending);
+         EXPECT_TRUE( state.pending.at( 1) > common::chronology::duration::zero()) << CASUAL_NAMED_VALUE( state.pending);
       }
 
 
@@ -257,7 +257,7 @@ domain:
             ASSERT_TRUE( call.metrics.size() == 1) << CASUAL_NAMED_VALUE( call.metrics.size());
             auto& metric = call.metrics.at( 0);
             EXPECT_TRUE( metric.process.pid == common::process::id().value());
-            EXPECT_TRUE( metric.pending == platform::time::unit::zero());
+            EXPECT_TRUE( metric.pending == common::chronology::duration::zero());
             EXPECT_TRUE( metric.service.name == "foo");
             EXPECT_TRUE( metric.service.type == decltype( metric.service.type)::concurrent);
             // we trigger shutdown, to trigger "end"

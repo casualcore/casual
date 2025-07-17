@@ -1172,7 +1172,7 @@ domain:
 
             ASSERT_TRUE( metrics.size() == count) << CASUAL_NAMED_VALUE( metrics);
             // all should be 0 pending
-            EXPECT_TRUE(( algorithm::all_of( metrics, []( auto& metric){ return metric.pending == platform::time::unit::zero();})));
+            EXPECT_TRUE(( algorithm::all_of( metrics, []( auto& metric){ return metric.pending == common::chronology::duration::zero();})));
          }
 
       }

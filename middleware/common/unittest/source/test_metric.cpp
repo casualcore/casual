@@ -18,9 +18,9 @@ namespace casual
          Metric metric;
 
          EXPECT_TRUE( metric.count == 0);
-         EXPECT_TRUE( metric.total == platform::time::unit::zero());
-         EXPECT_TRUE( metric.limit.min == platform::time::unit::zero());
-         EXPECT_TRUE( metric.limit.max == platform::time::unit::zero());
+         EXPECT_TRUE( metric.total == chronology::duration::zero());
+         EXPECT_TRUE( metric.limit.min == chronology::duration::zero());
+         EXPECT_TRUE( metric.limit.max == chronology::duration::zero());
       }
 
       TEST( common_metric, compound_assign_1_duration)

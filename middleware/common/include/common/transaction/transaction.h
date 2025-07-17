@@ -37,7 +37,7 @@ namespace casual
          explicit Transaction( ID trid);
 
          ID trid;
-         std::optional< platform::time::point::type> deadline;
+         std::optional< chronology::time_point> deadline;
          State state = State::active;
 
          //! @return true if `trid` is _active_ 

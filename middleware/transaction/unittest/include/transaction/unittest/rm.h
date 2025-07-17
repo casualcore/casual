@@ -53,9 +53,9 @@ namespace casual
          std::vector< common::code::xa> errors;
          std::vector< state::Invoke> invocations;
 
-         std::optional< platform::time::unit> sleep_prepare;
-         std::optional< platform::time::unit> sleep_commit;
-         std::optional< platform::time::unit> sleep_rollback;
+         std::optional< common::chronology::duration> sleep_prepare;
+         std::optional< common::chronology::duration> sleep_commit;
+         std::optional< common::chronology::duration> sleep_rollback;
 
          CASUAL_LOG_SERIALIZE(
             CASUAL_SERIALIZE( id);

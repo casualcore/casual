@@ -229,11 +229,11 @@ namespace casual
             {
                struct Lookup
                {
-                  Lookup( common::message::service::lookup::Request request, platform::time::point::type when)
+                  Lookup( common::message::service::lookup::Request request, common::chronology::time_point when)
                   : request{ std::move( request)}, when{ when} {}
 
                   common::message::service::lookup::Request request;
-                  platform::time::point::type when;
+                  common::chronology::time_point when;
 
                   inline friend bool operator == ( const Lookup& lhs, const common::strong::correlation::id& rhs) { return lhs.request == rhs;}
                   inline friend bool operator == ( const Lookup& lhs, const std::string& service) { return lhs.request.requested == service;}
@@ -248,7 +248,7 @@ namespace casual
                {
                   struct Entry
                   {   
-                     platform::time::point::type when;
+                     common::chronology::time_point when;
                      common::strong::correlation::id correlation;
                      //! The actual instance that the timeout refers to.
                      instance::sequential::id::type target;
@@ -269,16 +269,16 @@ namespace casual
 
                struct Deadline
                {      
-                  std::optional< platform::time::point::type> add( deadline::Entry entry);
-                  std::optional< platform::time::point::type> remove( const common::strong::correlation::id& correlation);
-                  std::optional< platform::time::point::type> remove( const std::vector< common::strong::correlation::id>& correlations);
+                  std::optional< common::chronology::time_point> add( deadline::Entry entry);
+                  std::optional< common::chronology::time_point> remove( const common::strong::correlation::id& correlation);
+                  std::optional< common::chronology::time_point> remove( const std::vector< common::strong::correlation::id>& correlations);
 
                   deadline::Entry* find_entry( const common::strong::correlation::id& correlation);
 
                   struct Expired
                   {
                      std::vector< deadline::Entry> entries;
-                     std::optional< platform::time::point::type> deadline;
+                     std::optional< common::chronology::time_point> deadline;
 
                      CASUAL_LOG_SERIALIZE(
                         CASUAL_SERIALIZE( entries);
@@ -286,7 +286,7 @@ namespace casual
                      )
                   };
 
-                  Expired expired( platform::time::point::type now = platform::time::point::type::clock::now());
+                  Expired expired( common::chronology::time_point now = common::chronology::time_point::clock::now());
 
                   CASUAL_LOG_SERIALIZE( 
                      CASUAL_SERIALIZE_NAME( m_entries, "entries");
@@ -369,7 +369,7 @@ namespace casual
                //! Keeps track of the pending metrics for this service
                common::Metric pending;
 
-               platform::time::point::type last = platform::time::point::limit::zero();
+               common::chronology::time_point last = common::chronology::empty();
 
                // remote invocations
                platform::size::type remote = 0;

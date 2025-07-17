@@ -119,7 +119,7 @@ namespace casual
          {
             H handle;
             instance::State state = instance::State::scale_out;
-            platform::time::point::type spawnpoint;
+            common::chronology::time_point spawnpoint;
 
             template< typename T>
             friend bool operator == ( const Instance& lhs, T&& rhs) 

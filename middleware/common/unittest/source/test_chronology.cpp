@@ -77,7 +77,7 @@ namespace casual
          {
             unittest::Trace trace;
 
-            if constexpr( std::is_same_v< std::chrono::nanoseconds, platform::time::unit>)
+            if constexpr( std::is_same_v< std::chrono::nanoseconds, chronology::duration>)
             {
                EXPECT_TRUE( from::string( "42ns") == std::chrono::nanoseconds( 42)) << trace.compose( "42ns - ", from::string( "42ns"), " - ", from::string( "42ns").count());
                EXPECT_TRUE( from::string( "0ns") == std::chrono::seconds::zero());

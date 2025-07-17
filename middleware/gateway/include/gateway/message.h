@@ -129,7 +129,7 @@ namespace casual
             listener::Runlevel runlevel{};
             common::communication::tcp::Address address;
             common::strong::file::descriptor::id descriptor;
-            platform::time::point::type created{};
+            common::chronology::time_point created{};
 
             CASUAL_CONST_CORRECT_SERIALIZE(
                CASUAL_SERIALIZE( runlevel);
@@ -175,7 +175,7 @@ namespace casual
             message::protocol::Version protocol{};
             Configuration configuration;
             common::strong::ipc::id ipc;
-            platform::time::point::type created{};
+            common::chronology::time_point created{};
 
             struct
             {
