@@ -9,10 +9,11 @@
 
 #include "common/unittest.h"
 
-#include "server/handle/policy.h"
 #include "service/call/context.h"
 
 #include "transaction/context.h"
+
+#include "server/context.h"
 
 #include "test/unittest/xatmi/buffer.h"
 
@@ -95,10 +96,8 @@ domain:
          EXPECT_TRUE( casual::transaction::context().associated().size() == 2);
 
 
-         casual::server::handle::policy::call::Default policy;
-
          // emulate a rollback finalize
-         policy.transaction( false);
+         casual::server::detail::finalize_transaction( false);
 
          // we should have cleared the in-flight calls
          EXPECT_TRUE( casual::service::call::context().empty());

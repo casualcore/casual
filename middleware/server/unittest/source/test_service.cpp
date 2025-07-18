@@ -29,7 +29,7 @@ namespace casual
                EXPECT_TRUE( info->name == std::string{ "service_foo"}) << "info->name: " << info->name;
                
                // tpreturn
-               server::context().jump_return( common::flag::xatmi::Return::success, 0, info->data, info->len);
+               server::Context::instance().jump_return( common::flag::xatmi::Return::success, 0, info->data, info->len);
             };
 
             auto parameter( std::string name)

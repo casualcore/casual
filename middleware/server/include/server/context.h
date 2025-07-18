@@ -7,13 +7,12 @@
 
 #pragma once
 
-
-
-
 #include "server/service.h"
-
+#include "server/argument.h"
 
 #include "casual/platform.h"
+#include "common/message/dispatch.h"
+#include "common/communication/ipc.h"
 
 #include "casual/xatmi/defines.h"
 
@@ -31,7 +30,8 @@ namespace casual
 {
    namespace server
    {
-      struct Arguments;
+
+      using dispatch_type = common::message::dispatch::basic_handler< common::communication::ipc::message::Complete>;
 
       namespace state
       {
@@ -121,9 +121,16 @@ namespace casual
          service_mapping_type services;
       };
 
-      class Context
+      namespace detail
       {
-      public:
+         // only exposed for unittests
+         void finalize_transaction( bool commit);
+      } // detail
+
+
+      struct Context
+      {
+         server::dispatch_type initialize( server::Arguments arguments) &;
 
          static Context& instance();
 

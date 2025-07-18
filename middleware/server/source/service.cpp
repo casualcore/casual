@@ -121,7 +121,7 @@ namespace casual
 
                   service::invoke::Result operator () ( service::invoke::Parameter&& argument)
                   {
-                     auto& state = server::context().state();
+                     auto& state = server::Context::instance().state();
 
                      // Set destination for the coming jump...
                      // we can't wrap the jump in some abstraction since it's
@@ -171,7 +171,7 @@ namespace casual
                      // TODO set global headers
                      //service::header::fields() = std::move( argument.header);
 
-                     auto& state = server::context().state();
+                     auto& state = server::Context::instance().state();
 
                      // Type of buffer needed by Cobol API TPSVCSTART(), so save information.
                      // dismantle() returns a tuple with two "range".

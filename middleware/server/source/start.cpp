@@ -9,9 +9,7 @@
 
 #include "server/service.h"
 #include "server/argument.h"
-
-#include "server/handle/call.h"
-#include "server/handle/conversation.h"
+#include "server/context.h"
 
 
 #include "common/message/dispatch/handle.h"
@@ -82,9 +80,7 @@ namespace casual
 
                   auto handler = common::message::dispatch::handler( inbound,
                      common::message::dispatch::handle::defaults(),
-                     // will configure and advertise services
-                     server::handle::Call( local::transform::arguments( std::move( services), std::move( resources))),
-                     server::handle::Conversation{},
+                     server::Context::instance().initialize( local::transform::arguments( std::move( services), std::move( resources))),
                      [&state]( const common::message::shutdown::Request& message)
                      {
                         common::log::debug( "shutdown: ", message);

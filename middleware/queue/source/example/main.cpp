@@ -16,7 +16,8 @@
 #include "queue/api/queue.h"
 
 #include "server/argument.h"
-#include "server/handle/call.h"
+#include "server/context.h"
+
 
 namespace casual
 {
@@ -105,7 +106,7 @@ namespace casual
                auto handler = common::message::dispatch::handler(
                   common::communication::ipc::inbound::device(),
                   common::message::dispatch::handle::defaults(),
-                  server::handle::Call{ services( settings.queues)}
+                  server::context().initialize( services( settings.queues))
                );
 
                common::message::dispatch::pump( handler, common::communication::ipc::inbound::device());

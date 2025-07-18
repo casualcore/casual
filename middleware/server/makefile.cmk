@@ -33,9 +33,6 @@ server_lib = make.LinkLibrary( 'bin/casual-server',
       make.Compile( 'source/context.cpp'),
       make.Compile( 'source/service.cpp'),
 
-      make.Compile( 'source/handle/conversation.cpp'),
-      make.Compile( 'source/handle/call.cpp'),
-      make.Compile( 'source/handle/policy.cpp'),
 
       make.Compile( 'source/start.cpp'),
       make.Compile( 'source/executable/start.cpp'),
