@@ -118,6 +118,24 @@ namespace casual
             return common::algorithm::all_of( m_descriptors, common::predicate::negate( std::mem_fn( &pending::Descriptor::active)));
          }
 
+         std::vector< common::strong::correlation::id> Pending::finalize()
+         {
+            common::Trace trace{ "common::service::call::state::Pending::finalize"};
+
+            std::vector< common::strong::correlation::id> result;
+
+            for( auto& descriptor : m_descriptors)
+            {
+               if( descriptor.active)
+               {
+                  result.push_back( descriptor.correlation);
+                  descriptor.active = false;
+               }
+            }
+
+            return result;
+         }
+
       } // state
 
 

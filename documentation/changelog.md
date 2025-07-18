@@ -1,6 +1,12 @@
 # Changelog
 This is the changelog for `casual` and all changes are listed in this document.
 
+## [1.7.9] - 2025-07-13
+
+### Fixes
+- common: server-service finalize needs to wait for pending calls ([#575](https://github.com/casualcore/casual/issues/575))
+
+
 ## [1.7.8] - 2025-06-18
 
 ### Fixes
