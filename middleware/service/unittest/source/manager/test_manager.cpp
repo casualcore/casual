@@ -790,7 +790,7 @@ domain:
       -  name: a
          execution:
             timeout:
-               duration: 2ms
+               duration: 10ms
 )");
 
          
