@@ -83,8 +83,7 @@ namespace casual
          private:
             std::vector< header::Field> m_fields;
          };
-
-         Fields& fields();
+         
 
       } // v1
    } // header

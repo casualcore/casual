@@ -6,12 +6,15 @@
 
 #include "casual/xatmi/extended.h"
 #include "casual/xatmi/internal/log.h"
+#include "casual/xatmi/internal/code.h"
 
 #include "common/instance.h"
 #include "common/log/stream.h"
 
 #include "common/execution/context.h"
 #include "common/uuid.h"
+
+#include "casual/header/context.h"
 
 #include "server/context.h"
 
@@ -207,4 +210,50 @@ void casual_instance_browse_services( casual_instance_browse_callback callback, 
       casual_browsed_service state{ service.first.data()};
       return callback( &state, context) == 0;
    });
+}
+
+int casual_header_associate( const char* buffer_handle, const char** headers, long header_size)
+{
+   try
+   {
+      if( ! headers || header_size <= 0)
+         return 0;
+
+      auto transform_field = []( const char* header)
+      {
+         return casual::header::Field{ header};
+      };
+
+      auto fields = casual::common::algorithm::transform( casual::common::range::make( headers, header_size), transform_field);
+
+      casual::header::context().associate( 
+         casual::common::buffer::handle::type{ buffer_handle}, casual::header::Fields{ std::move( fields)});
+
+      return 0;
+   }
+   catch( ...)
+   {
+      casual::xatmi::internal::error::set( casual::xatmi::internal::exception::code());
+      return -1;
+   }
+}
+
+void casual_header_disassociate( const char* buffer_handle)
+{
+   casual::header::context().disassociate( casual::common::buffer::handle::type{ buffer_handle});
+}
+
+void casual_header_browse( const char* buffer_handle, casual_header_browse_callback callback, void* context)
+{
+   if( ! callback || ! buffer_handle)
+      return;
+
+   if( auto fields = casual::header::context().find( casual::common::buffer::handle::type{ buffer_handle}))
+   {
+      for( const auto& field : *fields)
+      {
+         if( callback( field.string().data(), context) != 0)
+            return;
+      }
+   }
 }

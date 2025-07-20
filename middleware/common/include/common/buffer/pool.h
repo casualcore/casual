@@ -71,6 +71,8 @@ namespace casual
          //! @note used only (?) in unittests
          bool inbound( buffer::handle::type handle) const;
 
+         bool contains( buffer::handle::type handle) const noexcept;
+
          void clear();
 
          CASUAL_FORWARD_SERIALIZE( m_pools);

@@ -159,12 +159,17 @@ namespace casual
          return false;
       }
 
+      bool Holder::contains( buffer::handle::type handle) const noexcept
+      {
+         return predicate::boolean( algorithm::find_if( m_pools, manage_buffer( handle)));
+      }
+
 
       void Holder::clear()
       {
          algorithm::for_each( m_pools, std::mem_fn( &Holder::Concept::clear));
       }
 
-   } // casual.laz.se:80880/documentation/
+   } // common::buffer::pool
 
 } // casual

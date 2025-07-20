@@ -108,20 +108,7 @@ namespace casual
             algorithm::container::append( rhs.m_fields, lhs.m_fields);
             return lhs;
          }
-
-         
-
-         header::Fields& fields()
-         {
-            static header::Fields fields;
-            return fields;
-         }
-
-         void fields( header::Fields header)
-         {
-            log::debug( "header: ", header);
-            fields() = std::move( header);
-         }
+ 
 
       } // v1
    } // header

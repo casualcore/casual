@@ -105,9 +105,43 @@ typedef int( *casual_instance_browse_callback)( const struct casual_browsed_serv
  */
 extern void casual_instance_browse_services( casual_instance_browse_callback callback, void* context);
 
+/**
+ * Associate a header with a buffer handle.
+ *
+ * @param buffer_handle the buffer handle to associate the header with
+ * @param headers the headers to associate. Format for the headers is http-like, i.e. "key:value"s -> [ "key:value", ... ]
+ * @param header_size size of the headers array
+ * @returns 0 on success, -1 on error
+ */
+extern int casual_header_associate( const char* buffer_handle, const char** headers, long header_size);
+
+/**
+ * Disassociate a header from a buffer handle.
+ *
+ * @param buffer_handle the buffer handle to disassociate the header from
+ */
+extern void casual_header_disassociate( const char* buffer_handle);
+
+/**
+ * callback for browsing headers associated with a buffer handle.
+ * @param header current header. Format is "key:value"
+ */
+typedef int( *casual_header_browse_callback)( const char* header, void* context);
+
+/**
+ * Browse all headers associated with a buffer.
+ *
+ * The supplied `context` will be included in all callback calls, hence user can keep state.
+ *
+ * Will browse all headers. If `callback` returns other than `0`, the browsing will
+ * stop.
+ */
+extern void casual_header_browse( const char* buffer_handle, casual_header_browse_callback callback, void* context);
 
 #ifdef __cplusplus
 }
 #endif
+
+
 
 

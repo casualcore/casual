@@ -80,9 +80,10 @@ make.LinkUnittest( 'bin/test-casual-xatmi',
     [
        make.Compile( 'unittest/source/test_buffer.cpp'),
        make.Compile( 'unittest/source/test_tx.cpp'),
-       make.Compile( 'unittest/source/test_xatmi.cpp')
+       make.Compile( 'unittest/source/test_xatmi.cpp'),
+       make.Compile( 'unittest/source/test_header.cpp'),
     ],
-    [ lib_xatmi, 'casual-common', 'casual-unittest'] + platform_specific_libs )
+    [ lib_xatmi, lib_xatmi_explicit, 'casual-common', 'casual-unittest'] + platform_specific_libs )
 
 
 

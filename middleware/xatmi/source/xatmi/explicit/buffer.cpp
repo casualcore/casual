@@ -13,6 +13,7 @@
 #include "common/memory.h"
 
 #include "casual/platform.h"
+#include "casual/header/context.h"
 
 
 char* casual_buffer_allocate( const char* type, const char* subtype, long size)
@@ -37,8 +38,15 @@ char* casual_buffer_reallocate( const char* ptr, long size)
 
    try
    {
+      auto handle = casual::common::buffer::handle::type{ ptr};
+
       // TODO: Shall we report size less than zero ?
-      return casual::common::buffer::pool::holder().reallocate( casual::common::buffer::handle::type{ ptr}, size < 0 ? 0 : size).raw();
+      auto raw = casual::common::buffer::pool::holder().reallocate( handle, size < 0 ? 0 : size).raw();
+
+      // update header associated with the handle, if any
+      casual::header::context().update_handle( handle, casual::common::buffer::handle::type{ raw });
+
+      return raw;
    }
    catch( ...)
    {
@@ -83,11 +91,14 @@ long casual_buffer_type( const char* const ptr, char* const type, char* const su
 
 }
 
-void casual_buffer_free( const char* const ptr)
+void casual_buffer_free( const char* const buffer)
 {
    try
    {
-      casual::common::buffer::pool::holder().deallocate( casual::common::buffer::handle::type{ ptr});
+      auto handle = casual::common::buffer::handle::type{ buffer};
+
+      casual::header::context().disassociate( handle);
+      casual::common::buffer::pool::holder().deallocate( handle);
    }
    catch( ...)
    {

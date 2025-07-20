@@ -59,6 +59,7 @@ casual_common_objectfiles = [
     make.Compile( 'source/service/type.cpp'),
 
     make.Compile( 'source/header.cpp'),
+    make.Compile( 'source/header/context.cpp'),
     
     make.Compile( 'source/buffer/x_octet.cpp'),
     make.Compile( 'source/buffer/pool.cpp'),

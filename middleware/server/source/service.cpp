@@ -19,9 +19,10 @@
 #include "common/code/xatmi.h"
 #include "common/code/casual.h"
 
+#include "casual/header/context.h"
+
 #include "casual/xatmi/flag.h" 
 
-//#include "transaction/context.h"
 
 namespace casual
 {
@@ -82,13 +83,20 @@ namespace casual
                      // This is the only place where we use adopt
                      result.data = common::buffer::pool::holder().adopt( std::move( argument.payload)).raw();
 
+                     // if we have a header, we associate it with the buffer handle -> give user access to it via handle
+                     if( ! argument.header.empty())
+                        header::context().associate( common::buffer::handle::type{ result.data}, std::move( argument.header));
+
                      return result;
                   }
 
                   common::buffer::Payload payload( const server::state::Jump& jump)
                   {
                      if( jump.buffer.data)
+                     {
+                        header::context().disassociate( common::buffer::handle::type{ jump.buffer.data});
                         return common::buffer::pool::holder().release( jump.buffer.data, jump.buffer.size);
+                     }
 
                      return { nullptr};
                   }
@@ -121,7 +129,7 @@ namespace casual
 
                   service::invoke::Result operator () ( service::invoke::Parameter&& argument)
                   {
-                     auto& state = server::Context::instance().state();
+                     auto& state = server::context().state();
 
                      // Set destination for the coming jump...
                      // we can't wrap the jump in some abstraction since it's
@@ -167,9 +175,6 @@ namespace casual
 
                   void invoke( service::invoke::Parameter& argument)
                   {
-                     // set the global header
-                     // TODO set global headers
-                     //service::header::fields() = std::move( argument.header);
 
                      auto& state = server::Context::instance().state();
 
@@ -240,7 +245,8 @@ namespace casual
          {
             auto target = function.target<void(*)(TPSVCINFO*)>();
 
-            if( target) { return reinterpret_cast< void*>( *target);}
+            if( target) 
+               return reinterpret_cast< void*>( *target);
 
             return target;
          }

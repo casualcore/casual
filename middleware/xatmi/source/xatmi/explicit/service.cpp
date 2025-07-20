@@ -19,8 +19,11 @@
 #include "common/string.h"
 
 #include "service/call/context.h"
+#include "service/call.h"
 
 #include "server/context.h"
+
+#include "casual/header/context.h"
 
 #include <array>
 #include <cstdarg>
@@ -72,14 +75,20 @@ int casual_service_call( const char* const service, char* idata, const long ilen
       if( ! casual::common::flag::valid( valid_flags, flags))
          casual::common::code::raise::error( casual::common::code::xatmi::argument, "flags: ", flags, " outside of: ", valid_flags);
 
-      auto buffer = casual::common::buffer::pool::holder().get( casual::common::buffer::handle::type{ idata}, ilen);
+      auto handle = casual::common::buffer::handle::type{ idata};
+
+      auto buffer = casual::common::buffer::pool::holder().get( handle, ilen);
 
       auto maybe_block = casual::xatmi::internal::signal::maybe_block( flags);
 
-      auto result = casual::service::call::context().sync(
-            service,
-            buffer,
-            flags);
+      auto get_complement = [ &](){
+         if( auto header = casual::header::context().find( handle))
+            return casual::service::call::Complement{ .flags = flags, .header = *header};
+         else
+            return casual::service::call::Complement{ .flags = flags};
+      };
+
+      auto result = casual::service::call::invoke( service, buffer.payload(), get_complement());
 
       casual::xatmi::internal::user::code::set( result.user);
       local::handle_reply_buffer( result, flags, odata, olen);
@@ -128,14 +137,23 @@ int casual_service_asynchronous_send( const char* const service, char* idata, co
       if( ! casual::common::flag::valid( valid_flags, flags))
          casual::common::code::raise::error( casual::common::code::xatmi::argument, "flags: ", flags, " outside of: ", valid_flags);
 
-      auto buffer = casual::common::buffer::pool::holder().get( casual::common::buffer::handle::type{ idata}, ilen);
+      auto handle = casual::common::buffer::handle::type{ idata};
+
+      auto buffer = casual::common::buffer::pool::holder().get( handle, ilen);
 
       auto maybe_block = casual::xatmi::internal::signal::maybe_block( flags);
 
-      return casual::service::call::context().async(
+      auto get_complement = [ &](){
+         if( auto header = casual::header::context().find( handle))
+            return casual::service::send::Complement{ .flags = flags, .header = *header};
+         else
+            return casual::service::send::Complement{ .flags = flags};
+      };
+
+      return casual::service::send::invoke(
             service,
-            buffer,
-            flags);
+            buffer.payload(),
+            get_complement());
    }
    catch( ...)
    {
@@ -165,7 +183,7 @@ int casual_service_asynchronous_receive( int *const descriptor, char** odata, lo
 
       auto maybe_block = casual::xatmi::internal::signal::maybe_block( flags);
 
-      auto result = casual::service::call::context().reply( *descriptor, flags);
+      auto result = casual::service::receive::invoke( *descriptor, flags);
 
       *descriptor = result.descriptor;
       casual::xatmi::internal::user::code::set( result.user);
