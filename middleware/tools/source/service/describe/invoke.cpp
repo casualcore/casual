@@ -21,14 +21,17 @@ namespace casual
    {
       std::vector< common::serialize::service::Model> invoke( const std::vector< std::string>& services)
       {
-         Trace trace{ "tools::service::describe::incoke"};
+         Trace trace{ "tools::service::describe::invoke"};
 
-         // Set header so we invoke the servcie-describe protocol
-         header::fields().add( casual::header::Field{  "casual-service-describe: true"});
+         
+         return algorithm::transform( services, []( const std::string& service)
+         {
+            const casual::service::call::Complement complement{
+               .header = { { { "casual-service-describe", "true"}}}
+            };
 
-         return algorithm::transform( services, []( const std::string& service){
             casual::service::protocol::binary::Call call;
-            auto reply = call( service);
+            auto reply = call( service, complement);
             return reply.extract< common::serialize::service::Model>( "model");
          });
       }

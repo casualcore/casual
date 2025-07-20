@@ -180,9 +180,11 @@ namespace casual
                      // casual::common::string has a split that returns a vector<string>. Would perhaps
                      // be nicer to use that. More "natural" than to use the ranges currently returned
                      // by dismantle()... Should dismantle() return vector<string> instead? 
-                     auto split_type=casual::common::buffer::type::dismantle(argument.payload.type);
-                     state.buffer_type=std::string {std::begin(std::get<0>(split_type)), std::end(std::get<0>(split_type))};
-                     state.buffer_subtype=std::string {std::begin(std::get<1>(split_type)), std::end(std::get<1>(split_type))};
+                     
+                     auto [ type, subtype] =  casual::common::buffer::type::dismantle(argument.payload.type);
+                     state.buffer_type = std::string{ std::begin( type), std::end( type)};
+                     state.buffer_subtype = std::string{ std::begin( subtype), std::end( subtype)};
+
                      // Note that saving buffer tpe information need to be done before
                      // transform::information() below. The transform  "move" data from
                      // argument and looses the buffer type information.

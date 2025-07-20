@@ -64,15 +64,13 @@ namespace casual
       {
          static Context& instance();
 
-         platform::descriptor::type async( const std::string& service, common::buffer::payload::Send buffer, async::Flag flags);
+         platform::descriptor::type async( const std::string& service, common::buffer::payload::Send buffer, async::Flag flags, const header::Fields& header);
 
-         platform::descriptor::type async( service::Lookup&& lookup, common::buffer::payload::Send buffer, async::Flag flags);
-
-         platform::descriptor::type async( service::Lookup&& lookup, common::buffer::payload::Send buffer, header::Fields header, async::Flag flags);
+         platform::descriptor::type async( service::Lookup&& lookup, common::buffer::payload::Send buffer, async::Flag flags, const header::Fields& header);
 
          reply::Result reply( platform::descriptor::type descriptor, reply::Flag flags);
 
-         sync::Result sync( const std::string& service, common::buffer::payload::Send buffer, sync::Flag flags);
+         sync::Result sync( const std::string& service, common::buffer::payload::Send buffer, sync::Flag flags, const header::Fields& header);
 
          void cancel( platform::descriptor::type descriptor);
 

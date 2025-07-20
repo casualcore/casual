@@ -11,6 +11,7 @@
 
 #include "common/serialize/macro.h"
 #include "common/string.h"
+#include "common/buffer/type.h"
 
 #include <string>
 #include <vector>

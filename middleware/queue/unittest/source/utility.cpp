@@ -29,7 +29,7 @@ namespace casual
       std::vector< manager::admin::model::Message> messages( const std::string& queue)
       {
          using Call = casual::service::protocol::binary::Call;
-         return Call{}( manager::admin::service::name::messages::list, Call::Flag{}, queue).extract< std::vector< manager::admin::model::Message>>();
+         return Call{}( manager::admin::service::name::messages::list, queue).extract< std::vector< manager::admin::model::Message>>();
       }
 
       namespace scale
@@ -37,7 +37,7 @@ namespace casual
          void aliases( const std::vector< manager::admin::model::scale::Alias>& aliases)
          {
             using Call = casual::service::protocol::binary::Call;
-            Call{}( manager::admin::service::name::forward::scale::aliases, Call::Flag{}, aliases);
+            Call{}( manager::admin::service::name::forward::scale::aliases, aliases);
          }
 
          namespace all::forward

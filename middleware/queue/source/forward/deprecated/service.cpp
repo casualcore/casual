@@ -15,7 +15,7 @@
 
 #include "common/buffer/pool.h"
 
-#include "service/call/context.h"
+#include "service/call.h"
 
 
 namespace casual
@@ -55,9 +55,9 @@ namespace casual
 
                try
                {
-                  auto result = casual::service::call::Context::instance().sync( m_service,
+                  auto result = casual::service::call::invoke( m_service,
                      payload,
-                     casual::service::call::sync::Flag::no_time);
+                     { .flags = casual::service::call::sync::Flag::no_time});
 
                   const auto& replyqueue = m_reply.value_or( message.attributes.reply);
 

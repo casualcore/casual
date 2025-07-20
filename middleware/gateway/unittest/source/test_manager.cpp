@@ -25,7 +25,7 @@
 
 #include "transaction/context.h"
 
-#include "service/call/context.h"
+#include "service/call.h"
 #include "service/unittest/utility.h"
 
 #include "domain/unittest/manager.h"
@@ -1591,7 +1591,7 @@ domain:
             payload.type = "X_OCTET/";
             common::algorithm::copy( binary::span::make( "casual"sv), std::back_inserter( payload.data));
 
-            auto result = casual::service::call::context().sync( "casual/example/domain/echo/B", common::buffer::payload::Send{ payload}, {});
+            auto result = casual::service::call::invoke( "casual/example/domain/echo/B", payload, {});
 
             EXPECT_TRUE( result.buffer.data == payload.data);
 
@@ -1670,7 +1670,7 @@ domain:
             payload.type = "X_OCTET/";
             payload.data = common::unittest::random::binary( 512);
 
-            return casual::service::call::context().async( service, common::buffer::payload::Send{ payload}, {});
+            return casual::service::send::invoke( service, payload, {});
          };
 
          [[maybe_unused]] auto send_reply = []( auto& request)
@@ -1787,7 +1787,7 @@ domain:
             buffer::Payload payload;
             payload.type = "X_OCTET/";
             payload.data = common::unittest::random::binary( 512);
-            casual::service::call::context().async( "casual/example/resource/nested/calls/B", common::buffer::payload::Send{ payload}, {});
+            casual::service::send::invoke( "casual/example/resource/nested/calls/B", payload, {});
          }
 
          {

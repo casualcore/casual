@@ -150,7 +150,7 @@ namespace casual
          } // <unnamed>
       } // local
       
-      descriptor_type Context::async( service::Lookup&& service, common::buffer::payload::Send buffer, header::Fields header, async::Flag flags)
+      descriptor_type Context::async( service::Lookup&& service, common::buffer::payload::Send buffer, async::Flag flags, const header::Fields& header)
       {
          common::Trace trace( "service::call::Context::async lookup");
 
@@ -187,14 +187,10 @@ namespace casual
          return prepared.descriptor;
       }
 
-      descriptor_type Context::async( service::Lookup&& service, common::buffer::payload::Send buffer, async::Flag flags)
-      {
-         return async( std::move( service), std::move( buffer), {}, flags);
-      }
 
-      descriptor_type Context::async( const std::string& service, common::buffer::payload::Send buffer, async::Flag flags)
+      descriptor_type Context::async( const std::string& service, common::buffer::payload::Send buffer, async::Flag flags, const header::Fields& header)
       {
-         return async( local::prepare::lookup( service, flags, m_state.deadline), std::move( buffer), flags); 
+         return async( local::prepare::lookup( service, flags, m_state.deadline), std::move( buffer), flags, header); 
       }
 
       namespace local
@@ -341,7 +337,7 @@ namespace casual
          } // <unnamed>
       } // local
 
-      sync::Result Context::sync( const std::string& service, common::buffer::payload::Send buffer, sync::Flag flags)
+      sync::Result Context::sync( const std::string& service, common::buffer::payload::Send buffer, sync::Flag flags, const header::Fields& header)
       {
          // We can't have no-block when getting the reply
          flags -= sync::Flag::no_block;
@@ -349,7 +345,7 @@ namespace casual
          // Suspend if ongoing transaction and no no_transaction flag.
          auto guard = local::suspend::wrapper( flags);
 
-         auto descriptor = async( service, buffer, common::flag::convert( async::valid_flags, flags));
+         auto descriptor = async( service, buffer, common::flag::convert( async::valid_flags, flags), header);
          auto result = reply( descriptor, common::flag::convert( reply::valid_flags, flags));
 
          return { std::move( result.buffer), result.user};

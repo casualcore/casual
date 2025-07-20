@@ -72,8 +72,6 @@ namespace casual
 
             auto raw() const { return reinterpret_cast< platform::buffer::raw::immutable::type>( value());}
 
-
-
             inline friend bool operator == ( type lhs, mutate::type rhs) { return lhs.value() == rhs.value();}
          };
          
@@ -102,17 +100,13 @@ namespace casual
          }
       } // type
 
-      struct Payload : compare::Equality< Payload>
+      struct Payload
       {
          Payload();
          Payload( std::nullptr_t);
          Payload( string::Argument type);
          Payload( string::Argument type, platform::binary::type buffer);
          Payload( string::Argument type, platform::binary::size::type size);
-         
-         // TODO make sure this type is move only, and remove the copy during _service-forward_
-         // Payload( Payload&&) noexcept = default;
-         // Payload& operator = ( Payload&&) noexcept = default;
 
          bool null() const;
          inline explicit operator bool () const { return ! type.empty();}
@@ -123,7 +117,7 @@ namespace casual
          std::string type;
          platform::binary::type data;
 
-         inline auto tie() const noexcept { return std::tie( type, data);}
+         inline friend bool operator == ( const Payload& lhs, const Payload& rhs) = default;
 
          friend std::ostream& operator << ( std::ostream& out, const Payload& value);
 

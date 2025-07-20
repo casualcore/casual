@@ -67,11 +67,10 @@ namespace casual
                using input_policy = I;
                using result_policy = R;
                using result_type = basic_result< service::call::Result, result_policy>;
-               using Flag = service::call::Flag;
+               using Complement = service::call::Complement;
 
                basic_call() : m_payload( input_policy::type())
-               {
-               }
+               {}
 
                template< typename T>
                basic_call& operator << ( T&& value)
@@ -80,34 +79,40 @@ namespace casual
                   return *this;
                }
 
-               //! calls the `service` with 0..* arguments. If the first argument is `service::call::Flags` it will 
-               //! be used as flags to the call, and not part of the payload.
-               //! @returns the result...
-               template< typename... Args>
-               auto operator () ( common::string::Argument service, Args&&... args)
+               //! calls the `service`
+               //! @returns service reply in a form of `basic_result`
+               result_type operator () ( common::string::Argument service)
                {
-                  return call( std::move( service), common::traits::priority::tag< 1>{}, std::forward< Args>( args)...);
+                  m_input.archive.consume( m_payload.data);
+                  return service::call::invoke( std::move( service), m_payload);
                }
 
+               //! calls the `service` with 0..* argument   s. If the first argument is `service::call::Complement`
+               //! it will be used as complement to the call, and not part of the payload.
+               //! @returns service reply in a form of `basic_result`
+               template< typename Arg, typename... Args>
+               result_type operator () ( common::string::Argument service, const Arg& arg, const Args&... args)
+               {
+                  if constexpr( std::is_same_v< std::decay_t< Arg>, Complement>)
+                  {
+                     // `arg` is a `Complement`, so we don't add it to the payload
+                     ( ( m_input.archive << args), ...);
+
+                     m_input.archive.consume( m_payload.data);
+                     return service::call::invoke( std::move( service), m_payload, arg);
+                  }
+                  else
+                  {
+                     // `arg` is not a `Complement`, so we add it to the payload
+                     m_input.archive << arg;
+                     ( ( m_input.archive <<  args), ...);
+
+                     m_input.archive.consume( m_payload.data);
+                     return service::call::invoke( std::move( service), m_payload);
+                  }
+               }
 
             private:
-               template< typename Arg, typename... Args>
-               auto call( common::string::Argument service, common::traits::priority::tag< 1>, Arg flags, Args&&... args)
-                  -> decltype( result_type{ service::call::invoke( std::move( service), std::declval< service::payload_type&>(), flags)})
-               {
-                  ( ( m_input.archive << std::forward< Args>( args)), ...);
-                  m_input.archive.consume( m_payload.data);
-                  return result_type{ service::call::invoke( std::move( service), m_payload, flags)};
-               }
-
-               template< typename... Args>
-               auto call( common::string::Argument service, common::traits::priority::tag< 0>, Args&&... args)
-                  -> decltype( result_type{ service::call::invoke( std::move( service), std::declval< service::payload_type&>())})
-               {
-                  ( ( m_input.archive << std::forward< Args>( args)), ...);
-                  m_input.archive.consume( m_payload.data);
-                  return { service::call::invoke( std::move( service), m_payload)};
-               }
 
                service::payload_type m_payload;
                input_policy m_input;
@@ -145,9 +150,9 @@ namespace casual
                using input_policy = I;
                using result_policy = R;
                using receive_type = basic_receive< result_policy>;
-               using Flag = service::send::Flag;
+               using Complement = service::send::Complement;
 
-               basic_send() : m_payload( input_policy::type()), m_input( m_payload) {}
+               basic_send() : m_payload( input_policy::type()) {} //, m_input( m_payload) {}
 
                template< typename T>
                basic_send& operator << ( T&& value)
@@ -156,14 +161,37 @@ namespace casual
                   return *this;
                }
 
-               receive_type operator () ( const std::string& service)
+               //! calls the `service`
+               //! @returns service reply in a form of `basic_result`
+               receive_type operator () ( common::string::Argument service)
                {
-                  return { service::send::invoke( service, m_payload)};
+                  m_input.archive.consume( m_payload.data);
+                  return service::send::invoke( std::move( service), m_payload);
                }
 
-               receive_type operator () ( const std::string& service, Flag flags)
+               //! calls the `service` with 0..* argument   s. If the first argument is `service::call::Complement`
+               //! it will be used as complement to the call, and not part of the payload.
+               //! @returns service reply in a form of `basic_result`
+               template< typename Arg, typename... Args>
+               receive_type operator () ( common::string::Argument service, const Arg& arg, const Args&... args)
                {
-                  return { service::send::invoke( service, m_payload, flags)};
+                  if constexpr( std::is_same_v< std::decay_t< Arg>, Complement>)
+                  {
+                     // `arg` is a `Complement`, so we don't add it to the payload
+                     ( ( m_input.archive << args), ...);
+
+                     m_input.archive.consume( m_payload.data);
+                     return service::send::invoke( std::move( service), m_payload, arg);
+                  }
+                  else
+                  {
+                     // `arg` is not a `Complement`, so we add it to the payload
+                     m_input.archive << arg;
+                     ( ( m_input.archive <<  args), ...);
+
+                     m_input.archive.consume( m_payload.data);
+                     return service::send::invoke( std::move( service), m_payload);
+                  }
                }
 
             private:

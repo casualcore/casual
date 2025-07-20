@@ -12,6 +12,8 @@
 
 #include "common/buffer/type.h"
 
+#include "casual/header.h"
+
 
 namespace casual
 {
@@ -26,14 +28,26 @@ namespace casual
          using Flag = casual::service::call::sync::Flag;
          using Result = casual::service::call::sync::Result;
 
-         Result invoke( std::string service, const payload_type& payload, Flag flags = Flag{});
+         struct Complement
+         {
+            Flag flags = Flag::no_flags;
+            header::Fields header;
+         };
+
+         Result invoke( std::string service, const payload_type& payload, const Complement& complement = {});
       } // call
 
       namespace send
       {
          using Flag = casual::service::call::async::Flag;
 
-         descriptor_type invoke( std::string service, const payload_type& payload, Flag flags = Flag{});
+         struct Complement
+         {
+            Flag flags = Flag::no_flags;
+            header::Fields header;
+         };
+
+         descriptor_type invoke( std::string service, const payload_type& payload, const Complement& complement = {});
 
       } // send
 
