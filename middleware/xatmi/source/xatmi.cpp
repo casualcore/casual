@@ -97,6 +97,8 @@ const char* tperrnostring( int error)
 
 int tpsvrinit( int argc, char **argv)
 {
+   casual::common::log::debug( "default tpsvrinit called");
+
    casual::xatmi::internal::error::clear();
    return tx_open() == TX_OK ? 0 : -1;
 }

@@ -7,13 +7,14 @@
 
 #include "casual/xatmi/explicit.h"
 #include "casual/xatmi/internal/code.h"
+#include "casual/xatmi/internal/header/context.h"
 
 
 #include "common/buffer/pool.h"
 #include "common/memory.h"
 
 #include "casual/platform.h"
-#include "casual/header/context.h"
+
 
 
 char* casual_buffer_allocate( const char* type, const char* subtype, long size)
@@ -44,7 +45,7 @@ char* casual_buffer_reallocate( const char* ptr, long size)
       auto raw = casual::common::buffer::pool::holder().reallocate( handle, size < 0 ? 0 : size).raw();
 
       // update header associated with the handle, if any
-      casual::header::context().update_handle( handle, casual::common::buffer::handle::type{ raw });
+      casual::xatmi::internal::header::context().update_handle( handle, casual::common::buffer::handle::type{ raw });
 
       return raw;
    }
@@ -97,7 +98,7 @@ void casual_buffer_free( const char* const buffer)
    {
       auto handle = casual::common::buffer::handle::type{ buffer};
 
-      casual::header::context().disassociate( handle);
+      casual::xatmi::internal::header::context().disassociate( handle);
       casual::common::buffer::pool::holder().deallocate( handle);
    }
    catch( ...)

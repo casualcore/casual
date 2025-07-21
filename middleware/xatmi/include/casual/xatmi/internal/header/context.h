@@ -10,7 +10,7 @@
 
 namespace casual
 {
-   namespace header
+   namespace xatmi::internal::header
    {
       //! @attention Only used for XATMI.
       struct Context
@@ -18,10 +18,10 @@ namespace casual
          //! @returns the current header context
          static Context& instance();
 
-         void associate( common::buffer::handle::type handle, Fields fields);
+         void associate( common::buffer::handle::type handle, casual::header::Fields fields);
          void disassociate( common::buffer::handle::type handle) noexcept;
 
-         const Fields* find( common::buffer::handle::type handle) noexcept;
+         const casual::header::Fields* find( common::buffer::handle::type handle) noexcept;
 
          //! find the `old_handle` in the context and update it to `new_handle`
          //! used when a buffer is reallocated, to keep the association
@@ -34,7 +34,7 @@ namespace casual
          struct Holder
          {
             common::buffer::handle::type handle;
-            Fields fields;
+            casual::header::Fields fields;
 
             friend bool operator == ( const Holder& lhs, common::buffer::handle::type rhs) { return lhs.handle == rhs; }
          };
@@ -45,6 +45,6 @@ namespace casual
       //! @attention Only used for XATMI.
       inline Context& context() { return Context::instance();}
 
-   } // header
+   } // xatmi::internal::header
    
 } // casual

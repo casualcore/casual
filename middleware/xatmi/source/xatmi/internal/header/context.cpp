@@ -4,13 +4,13 @@
 //! This software is licensed under the MIT license, https://opensource.org/licenses/MIT
 //!
 
-#include "casual/header/context.h"
+#include "casual/xatmi/internal/header/context.h"
 
 #include "common/buffer/pool.h"
 
 namespace casual
 {
-   namespace header
+   namespace xatmi::internal::header
    {
       //! @returns the current header context
       Context& Context::instance()
@@ -19,7 +19,7 @@ namespace casual
          return instance;
       }
 
-      void Context::associate( common::buffer::handle::type handle, Fields fields)
+      void Context::associate( common::buffer::handle::type handle, casual::header::Fields fields)
       {
          common::Trace trace{ "header::Context::associate"};
 
@@ -38,7 +38,7 @@ namespace casual
             m_fields.erase( std::begin( found));
       }
 
-      const Fields* Context::find( common::buffer::handle::type handle) noexcept
+      const casual::header::Fields* Context::find( common::buffer::handle::type handle) noexcept
       {
          if( auto found = common::algorithm::find( m_fields, handle))
             return &found->fields;
@@ -61,6 +61,6 @@ namespace casual
          m_fields.clear();
       }
 
-   } // header
+   } // xatmi::internal::header
    
 } // casual

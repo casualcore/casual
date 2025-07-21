@@ -591,39 +591,39 @@ namespace casual
          std::longjmp( m_state.jump.environment, state::Jump::Location::c_forward);
       }
 
-      void Context::advertise( const std::string& service, void (*address)( TPSVCINFO *))
+      void Context::advertise( Service service)
       {
          common::Trace trace{ "server::Context::advertise"};
          common::log::debug( "service: ", service);
 
-         auto prospect = xatmi::service( service, address);
 
-         // validate
-         if( prospect.name.size() >= XATMI_SERVICE_NAME_LENGTH)
-         {
-            prospect.name.resize( XATMI_SERVICE_NAME_LENGTH - 1);
-            common::log::line( common::log::category::error, "service name '", service, "' truncated to '", prospect.name, "'");
-         }
-
-         if( auto found = common::algorithm::find( m_state.services, prospect.name))
+         if( auto found = common::algorithm::find( m_state.services, service.name))
          {
             // service name is already advertised
-            // No error if it's the same function
-            if( found->second != prospect)
-               common::code::raise::error( common::code::xatmi::service_advertised, "service is already advertised - ", prospect.name);
+            auto& current = found->second.get();
+
+            // if both is "null" we just replace the service. We assume the service is a
+            // functor and the user wants to replace it...
+            if( current.compare == nullptr && service.compare == nullptr)
+            {
+               current = std::move( service);
+            }
+            else if( current.compare != service.compare)
+            {
+               // It's an error if it's not the same function, according to the XATMI spec.
+               common::code::raise::error( common::code::xatmi::service_advertised, "service is already advertised - ", service.name);
+            }
          }
          else
          {
             common::message::service::Advertise message{ common::process::handle()};
             message.alias = common::instance::alias();
 
-            auto is_prospect = [&prospect]( auto& service) { return service == prospect;};
-
-            if( auto found = common::algorithm::find_if( m_state.physical_services, is_prospect))
+            if( auto found = common::algorithm::find( m_state.physical_services, service))
             {
-               m_state.services.emplace( prospect.name, *found);
+               m_state.services.emplace( service.name, *found);
                message.services.add.push_back( common::message::service::advertise::Service{ 
-                  .name = prospect.name, 
+                  .name = service.name, 
                   .category = found->category, 
                   .transaction = found->transaction, 
                   .visibility = found->visibility});
@@ -631,14 +631,15 @@ namespace casual
             else
             {
                message.services.add.push_back( { 
-                  .name = prospect.name, 
-                  .category = prospect.category, 
-                  .transaction = prospect.transaction, 
-                  .visibility = prospect.visibility});
+                  .name = service.name, 
+                  .category = service.category, 
+                  .transaction = service.transaction, 
+                  .visibility = service.visibility});
 
-               m_state.physical_services.push_back( prospect);
-               m_state.services.emplace( prospect.name, m_state.physical_services.back());
+               m_state.physical_services.push_back( service);
+               m_state.services.emplace( service.name, m_state.physical_services.back());
             }
+
             common::log::debug( "message: ", message);
             common::communication::device::blocking::send( common::communication::instance::outbound::service::manager::device(), message);
          }
@@ -670,36 +671,6 @@ namespace casual
                   service.name,
                   m_state.physical_services.back());
          }
-      }
-
-      namespace local
-      {
-         namespace
-         {
-            template< typename S, typename P>
-            server::Service* find_physical( S& services, P&& predicate)
-            {
-               if( auto found = common::algorithm::find_if( services, predicate))
-                  return found.data();
-
-               return nullptr;
-            }
-         } // <unnamed>
-      } // local
-
-      server::Service* Context::physical( const std::string& name)
-      {
-         return local::find_physical(  m_state.physical_services, [&]( const server::Service& s){
-            return s.name == name;
-         });
-      }
-
-      server::Service* Context::physical( const server::xatmi::function_type& function)
-      {
-         return local::find_physical(  m_state.physical_services, [&]( const server::Service& s){
-            return s == xatmi::address( function);
-         });
-
       }
 
       State& Context::state()

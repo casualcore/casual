@@ -56,7 +56,7 @@ namespace casual
 
             namespace xatmi
             {
-               using Service = basic_service< std::function< void( TPSVCINFO*)>>;
+               //using Service = basic_service< std::function< void( TPSVCINFO*)>>;
 
             } // xatmi
 
@@ -69,14 +69,6 @@ namespace casual
 
          void start( std::vector< argument::Service> services, std::vector< argument::transaction::Resource> resources);
          void start( std::vector< argument::Service> services);
-
-
-         //! Start an XATMI server. Will call the callback @p initialize before "ready" is sent
-         //! to casual, if provided.
-         void start(
-            std::vector< argument::xatmi::Service> services,
-            std::vector< argument::transaction::Resource> resources,
-            common::function<void()const> initialize);
 
       } // v1
 

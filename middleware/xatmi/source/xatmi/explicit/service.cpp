@@ -6,10 +6,12 @@
 
 
 #include "casual/xatmi/explicit.h"
+#include "casual/xatmi/internal/header/context.h"
 #include "casual/tx.h"
 
 #include "casual/xatmi/internal/code.h"
 #include "casual/xatmi/internal/signal.h"
+#include "casual/xatmi/internal/server/service.h"
 
 #include "common/buffer/pool.h"
 #include "casual/platform.h"
@@ -23,7 +25,6 @@
 
 #include "server/context.h"
 
-#include "casual/header/context.h"
 
 #include <array>
 #include <cstdarg>
@@ -82,7 +83,7 @@ int casual_service_call( const char* const service, char* idata, const long ilen
       auto maybe_block = casual::xatmi::internal::signal::maybe_block( flags);
 
       auto get_complement = [ &](){
-         if( auto header = casual::header::context().find( handle))
+         if( auto header = casual::xatmi::internal::header::context().find( handle))
             return casual::service::call::Complement{ .flags = flags, .header = *header};
          else
             return casual::service::call::Complement{ .flags = flags};
@@ -144,7 +145,7 @@ int casual_service_asynchronous_send( const char* const service, char* idata, co
       auto maybe_block = casual::xatmi::internal::signal::maybe_block( flags);
 
       auto get_complement = [ &](){
-         if( auto header = casual::header::context().find( handle))
+         if( auto header = casual::xatmi::internal::header::context().find( handle))
             return casual::service::send::Complement{ .flags = flags, .header = *header};
          else
             return casual::service::send::Complement{ .flags = flags};
@@ -234,8 +235,19 @@ void casual_service_return( const int rval, const long rcode, char* const data, 
 
 int casual_service_advertise( const char* service, void (*function)( TPSVCINFO *))
 {
-   return casual::xatmi::internal::error::wrap( [&](){
-      casual::server::context().advertise( service, function);
+   return casual::xatmi::internal::error::wrap( [&]()
+   {
+      auto name = std::string{ service};
+      if( name.size() >= XATMI_SERVICE_NAME_LENGTH)
+      {
+         name.resize( XATMI_SERVICE_NAME_LENGTH - 1);
+         casual::common::log::error( casual::common::code::xatmi::argument, "service name '", service, "' truncated to '", name, "'");
+      }
+
+      casual::server::context().advertise( 
+         casual::xatmi::internal::server::service::create( 
+            std::move( name), 
+            function));
    });
 }
 

@@ -9,8 +9,11 @@
 #include "casual/xatmi/internal/log.h"
 #include "casual/xatmi/internal/code.h"
 #include "casual/xatmi/internal/transform.h"
+#include "casual/xatmi/internal/server/service.h"
 
-#include "server/start.h"
+
+#include "server/internal/start.h"
+#include "server/argument.h"
 
 #include "common/code/raise.h"
 #include "common/code/xatmi.h"
@@ -46,26 +49,36 @@ namespace casual
                   return common::service::visibility::Type::discoverable;
                }
 
-               template< typename A>
-               auto services( A& value)
+               template< typename S>
+               auto services( const S* service)
                {
                   casual::xatmi::Trace trace{ "casual::xatmi::server::local::transform::services"};
 
-                  std::vector< casual::server::argument::xatmi::Service> result;
-
-                  auto service = value.services;
+                  std::vector< casual::server::Service> result;
 
                   for( ; service->function_pointer != nullptr; ++service)
                   {
-                     result.emplace_back(
-                        service->name,
+                     result.push_back( internal::server::service::create( 
+                        service->name ? service->name : "",
                         service->function_pointer,
                         common::service::transaction::mode( service->transaction),
                         transform::visibility( *service),
-                        service->category ? service->category : "");
+                        service->category ? service->category : ""));
                   }
 
                   return result;
+               }
+
+
+               template< typename A>
+               auto arguments( const A& argument)
+               {
+                  casual::xatmi::Trace trace{ "casual::xatmi::server::local::transform::arguments"};
+
+                  return casual::server::Arguments{
+                     .services = local::transform::services( argument.services),
+                     .resources = xatmi::transform::resources( argument.xa_switches)
+                  };
                }
 
             } // transform
@@ -73,7 +86,7 @@ namespace casual
             template< typename A> 
             int start( const A& argument)
             {
-               return common::exception::main::log::guard( [&argument]()
+               return common::exception::main::log::guard( [ &argument]()
                {
                   casual::xatmi::Trace trace{ "casual::xatmi::server::local::start"};
 
@@ -89,11 +102,12 @@ namespace casual
                   // We block child so users can spawn stuff without actions/errors from casual
                   common::signal::thread::scope::Block block( { common::code::signal::child});
 
-                  casual::server::start(
-                     transform::services( argument),
-                     xatmi::transform::resources( argument.xa_switches),
+                  casual::server::internal::start(
+                     transform::arguments( argument),
                      [&]()
                      {
+                        common::log::debug( "server initialize - action: ", argument.server_init ? "call" : "skip");
+
                         if( ! argument.server_init)
                            return;
 

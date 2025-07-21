@@ -69,8 +69,8 @@ namespace casual
 
          struct Parameter
          {
-         //XXX   service::invoke::Parameter argument;
-         TPSVCINFO argument;
+            //XXX   service::invoke::Parameter argument;
+            TPSVCINFO argument;
          };
 
 
@@ -145,8 +145,7 @@ namespace casual
          //! called from extern casual_service_forward
          void forward( const char* service, char* data, long size);
 
-         //! Being called from tpadvertise
-         void advertise( const std::string& service, void (*adress)( TPSVCINFO *));
+         void advertise( Service service);
 
          //! Being called from tpunadvertise
          void unadvertise( const std::string& service);
@@ -154,17 +153,6 @@ namespace casual
          //! Basic configuration for a server
          void configure( const server::Arguments& arguments);
 
-         //! Tries to find the physical service from it's original name
-         //!
-         //! @param name
-         //! @return a pointer to the service if found, nullptr otherwise.
-         server::Service* physical( const std::string& name);
-
-         //! Tries to find the physical service from the associated callback function
-         //!
-         //! @param name
-         //! @return a pointer to the service if found, nullptr otherwise.
-         server::Service* physical( const server::xatmi::function_type& function);
 
          //! Share state with callee::handle::basic_call for now...
          //! if this "design" feels good, we should expose needed functionality

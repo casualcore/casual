@@ -19,8 +19,6 @@ namespace casual
       {
          namespace
          {
-            service::invoke::Result service1( service::invoke::Parameter&&) { return {};}
-            service::invoke::Result service3( service::invoke::Parameter&&, int) { return {};}
             service::invoke::Result service4( service::invoke::Parameter&&, std::string& value) { value = "test"; return {};}
          } // <unnamed>
       } // local
@@ -36,65 +34,7 @@ namespace casual
          });
       }
 
-      TEST( server_argument, service_emplace_back)
-      {
-         common::unittest::Trace trace;
 
-         EXPECT_NO_THROW({
-            server::Arguments arguments;
-
-            arguments.services.emplace_back( ".1", &local::service1);
-
-         });
-      }
-
-
-      TEST( server_argument, bind_service_emplace_back)
-      {
-         common::unittest::Trace trace;
-
-         EXPECT_NO_THROW({
-            server::Arguments arguments;
-
-            arguments.services.emplace_back( ".1", std::bind( &local::service3, std::placeholders::_1, 10));
-         });
-      }
-
-      TEST( server_argument, bind_service_type_trans_emplace_back)
-      {
-         common::unittest::Trace trace;
-
-         EXPECT_NO_THROW({
-            server::Arguments arguments;
-
-            arguments.services.emplace_back( ".1",
-               std::bind( &local::service3, std::placeholders::_1, 10),
-               service::transaction::Type::none, service::visibility::Type::discoverable, service::category::admin);
-         });
-      }
-
-
-
-
-      TEST( server_argument, bind_ref_service_type_trans_emplace_back)
-      {
-         common::unittest::Trace trace;
-
-         std::string value;
-
-         EXPECT_NO_THROW({
-            server::Arguments arguments;
-
-            arguments.services.emplace_back( ".1",
-               std::bind( &local::service4, std::placeholders::_1, std::ref( value)),
-               service::transaction::Type::none, service::visibility::Type::discoverable, service::category::admin);
-
-            arguments.services.back()( service::invoke::Parameter{ .payload = common::buffer::Payload{ ".binary/", 128}});
-         });
-
-         EXPECT_TRUE( value == "test");
-
-      }
 
       namespace local
       {
@@ -105,9 +45,12 @@ namespace casual
                server::Arguments arguments;
 
                arguments.services = {
-                     { ".1",
-                           std::bind( &local::service4, std::placeholders::_1, std::ref( value)),
-                           service::transaction::Type::none, service::visibility::Type::discoverable, service::category::admin}
+                     server::Service{ 
+                        .name = ".1",
+                        .function = std::bind( &local::service4, std::placeholders::_1, std::ref( value)),
+                        .transaction = service::transaction::Type::none,
+                        .visibility = service::visibility::Type::discoverable
+                     }
                };
 
                arguments.services.back()( service::invoke::Parameter{});

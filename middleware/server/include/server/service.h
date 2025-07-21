@@ -11,7 +11,6 @@
 
 #include "common/service/type.h"
 #include "common/string.h"
-#include "casual/xatmi/defines.h"
 
 #include <functional>
 #include <string>
@@ -30,11 +29,7 @@ namespace casual
 
       struct Service
       {
-
          using function_type = std::function< service::invoke::Result( service::invoke::Parameter&&)>;
-
-         Service( common::string::Argument name, function_type function, service::transaction::Type transaction, service::visibility::Type visibility, common::string::Argument category);
-         Service( common::string::Argument name, function_type function);
 
          service::invoke::Result operator () ( service::invoke::Parameter&& argument);
 
@@ -61,17 +56,6 @@ namespace casual
             
          )
       };
-
-      namespace xatmi
-      {
-         using function_type = std::function< void( TPSVCINFO*)>;
-
-         server::Service service( std::string name, function_type function, service::transaction::Type transaction, service::visibility::Type visibility, std::string category);
-         server::Service service( std::string name, function_type function);
-
-         const void* address( const function_type& function);
-
-      } // xatmi
 
    } // server
 } // casual

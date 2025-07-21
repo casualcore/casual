@@ -30,6 +30,8 @@ lib_xatmi_explicit = make.LinkLibrary( 'bin/casual-xatmi-explicit',
 	[
       make.Compile( 'source/xatmi/explicit/buffer.cpp'),
       make.Compile( 'source/xatmi/explicit/service.cpp'),
+      make.Compile( 'source/xatmi/internal/server/service.cpp'),
+      make.Compile( 'source/xatmi/internal/header/context.cpp'),
       make.Compile( 'source/xatmi/internal/code.cpp'),
       make.Compile( 'source/xatmi/internal/log.cpp'),
 	],
@@ -82,8 +84,9 @@ make.LinkUnittest( 'bin/test-casual-xatmi',
        make.Compile( 'unittest/source/test_tx.cpp'),
        make.Compile( 'unittest/source/test_xatmi.cpp'),
        make.Compile( 'unittest/source/test_header.cpp'),
+       make.Compile( 'unittest/source/server/test_service.cpp'),
     ],
-    [ lib_xatmi, lib_xatmi_explicit, 'casual-common', 'casual-unittest'] + platform_specific_libs )
+    [ lib_xatmi, lib_xatmi_explicit, 'casual-common', 'casual-unittest', 'casual-server'] + platform_specific_libs )
 
 
 

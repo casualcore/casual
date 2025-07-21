@@ -35,10 +35,11 @@ server_lib = make.LinkLibrary( 'bin/casual-server',
 
 
       make.Compile( 'source/start.cpp'),
+      make.Compile( 'source/internal/start.cpp'),
       make.Compile( 'source/executable/start.cpp'),
 
       make.Compile( 'source/service/protocol.cpp'),
-   ],
+   ], 
    [
       'casual-common',
       'casual-service',
@@ -51,7 +52,6 @@ install_libs.append( server_lib)
 test_server = make.LinkUnittest( 'bin/casual-server-test',
    [
       make.Compile( 'unittest/source/test_arguments.cpp'),
-      make.Compile( 'unittest/source/test_service.cpp'),
    ],
    [
       server_lib,
