@@ -11,7 +11,6 @@
 #include "gateway/manager/transform.h"
 #include "gateway/manager/configuration.h"
 
-#include "gateway/environment.h"
 #include "gateway/common.h"
 
 #include "domain/configuration.h"

@@ -50,7 +50,6 @@ install_example_bin = []
 
 common_archive = make.LinkArchive( 'bin/casual-gateway-common',
     [
-        make.Compile( 'source/environment.cpp'),
         make.Compile( 'source/group/tcp.cpp'),
         make.Compile( 'source/group/tcp/logical/connect.cpp'),
         make.Compile( 'source/message/protocol/version.cpp'),
