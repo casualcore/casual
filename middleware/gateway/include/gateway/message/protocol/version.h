@@ -17,7 +17,7 @@ namespace casual
 {
    namespace gateway::message::protocol
    {
-      enum class Version : platform::size::type
+      enum struct Version : platform::size::type
       {
          invalid = 0,
          v1_0 = 1000,
@@ -25,7 +25,8 @@ namespace casual
          v1_2 = 1002,
          v1_3 = 1003,
          v1_4 = 1004,
-         current = v1_4,
+         v1_5 = 1005,
+         current = v1_5,
       };
 
       constexpr std::string_view description( Version value) noexcept
@@ -38,12 +39,13 @@ namespace casual
             case Version::v1_2: return "1.2";
             case Version::v1_3: return "1.3";
             case Version::v1_4: return "1.4";
+            case Version::v1_5: return "1.5";
          };
          return "<unknown>";
       }
 
       //! an array with all versions ordered by highest to lowest
-      constexpr auto versions = common::array::make( Version::v1_4, Version::v1_3, Version::v1_2, Version::v1_1, Version::v1_0);
+      constexpr auto versions = common::array::make( Version::v1_5, Version::v1_4, Version::v1_3, Version::v1_2, Version::v1_1, Version::v1_0);
 
       //! @returns the version we're using. Version::current, unless it's overridden
       Version version();

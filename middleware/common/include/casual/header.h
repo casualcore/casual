@@ -78,6 +78,8 @@ namespace casual
             inline auto begin() const noexcept { return std::begin( m_fields);}
             inline auto end() const noexcept { return std::end( m_fields);}
 
+            inline friend bool operator == ( const Fields& lhs, const Fields& rhs) = default;
+
             CASUAL_FORWARD_SERIALIZE( m_fields);
 
          private:

@@ -110,10 +110,12 @@ namespace casual
          service_name_lookup_reply,
          service_name_lookup_discard_request,
          service_name_lookup_discard_reply,
-         service_call_v2   = 3100,
-         service_reply_v2  = 3101,
-         service_call   = 3102,
-         service_reply  = 3103,
+         service_call_v2   = 3100, // pinned
+         service_reply_v2  = 3101, // pinned
+         service_call_v4   = 3102, // pinned
+         service_reply_v4  = 3103, // pinned
+         service_call      = 3104, // pinned
+         service_reply     = 3105, // pinned
          service_acknowledge,
 
          service_concurrent_advertise,

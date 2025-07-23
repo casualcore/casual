@@ -34,6 +34,23 @@ namespace casual
          return result;
       }
 
+      inline auto from( common::message::service::call::v1_4::callee::Request&& message)
+      {
+         common::message::service::call::callee::Request result;
+         result.correlation = message.correlation;
+         result.execution = message.execution;
+         result.buffer = std::move( message.buffer);
+         result.flags = message.flags;
+         result.parent = std::move( message.parent);
+         result.pending = message.pending;
+         result.service = std::move( message.service);
+         result.deadline = std::move( message.deadline);
+         result.trid = std::move( message.trid);
+         
+         return result;
+      }
+
+
       inline auto from( common::message::service::call::v1_2::callee::Request&& message)
       {
          common::message::service::call::callee::Request result;
@@ -64,6 +81,18 @@ namespace casual
          return result;
       }
 
+      template<>
+      inline common::message::service::call::v1_4::Reply to( common::message::service::call::Reply&& message)
+      {
+         common::message::service::call::v1_4::Reply result;
+         result.correlation = message.correlation;
+         result.execution = message.execution;
+         result.buffer = std::move( message.buffer);
+         result.code = message.code;
+         result.transaction_state = message.transaction_state;
+         return result;
+      }
+
       inline auto from( common::message::service::call::v1_2::Reply&& message)
       {
          common::message::service::call::Reply result;
@@ -72,6 +101,17 @@ namespace casual
          result.buffer = std::move( message.buffer);
          result.code = message.code;
          result.transaction_state = message.transaction.state;
+         return result;
+      }
+
+      inline auto from( common::message::service::call::v1_4::Reply&& message)
+      {
+         common::message::service::call::Reply result;
+         result.correlation = message.correlation;
+         result.execution = message.execution;
+         result.buffer = std::move( message.buffer);
+         result.code = message.code;
+         result.transaction_state = message.transaction_state;
          return result;
       }
 

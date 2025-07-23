@@ -9,6 +9,7 @@
 #include "administration/unittest/cli/command.h"
 
 #include "gateway/unittest/utility.h"
+#include "gateway/message/protocol/version.h"
 
 #include "domain/unittest/manager.h"
 
@@ -101,9 +102,9 @@ domain:
 /*
 name  id                                group     bound  runlevel   P    local            peer            created                         
 ----  --------------------------------  --------  -----  ---------  ---  ---------------  --------------  --------------------------------
-B     b2793f25142543c19a42c3818fb779f5  outbound  out    connected  1.4  127.0.0.1:59810  127.0.0.1:7001  2024-07-16T15:13:50.610546+02:00
-B     b2793f25142543c19a42c3818fb779f5  outbound  out    connected  1.4  127.0.0.1:59809  127.0.0.1:7001  2024-07-16T15:13:50.610016+02:00
-B     b2793f25142543c19a42c3818fb779f5  outbound  out    connected  1.4  127.0.0.1:59808  127.0.0.1:7001  2024-07-16T15:13:50.607818+02:00
+B     b2793f25142543c19a42c3818fb779f5  outbound  out    connected  1.5  127.0.0.1:59810  127.0.0.1:7001  2024-07-16T15:13:50.610546+02:00
+B     b2793f25142543c19a42c3818fb779f5  outbound  out    connected  1.5  127.0.0.1:59809  127.0.0.1:7001  2024-07-16T15:13:50.610016+02:00
+B     b2793f25142543c19a42c3818fb779f5  outbound  out    connected  1.5  127.0.0.1:59808  127.0.0.1:7001  2024-07-16T15:13:50.607818+02:00
 */
 
 
@@ -113,7 +114,8 @@ B     b2793f25142543c19a42c3818fb779f5  outbound  out    connected  1.4  127.0.0
          EXPECT_TRUE( algorithm::contains( columns, "outbound"));
          EXPECT_TRUE( algorithm::contains( columns, "out"));
          EXPECT_TRUE( algorithm::contains( columns, "connected"));
-         EXPECT_TRUE( algorithm::contains( columns, "1.4"));
+         // expect current protocol version
+         EXPECT_TRUE( algorithm::contains( columns, string::compose( gateway::message::protocol::Version::current)));
       }
 
       TEST( cli_gateway, inbound_discovery_forward__expect_state_with_connection_bound__in_star)

@@ -691,6 +691,53 @@ Sent to and received from other domains when one domain wants call a service in 
                request.parent.service = local::string::value( 128);
                request.buffer.type = local::string::value( 8) + '/' + local::string::value( 16);
                request.buffer.data = local::binary::value( 1024);
+               request.header = casual::header::Fields{ { { "key", "value"}}};
+
+               local::format::type( out, request, {
+                        { "execution", "uuid of the current execution context (breadcrumb)"},
+                        { "service.name.size", "service name size"},
+                        { "service.name.data", "byte array with service name"},
+                        { "has_value", "if 1, deadline.remaining is propagated"},
+                        { "deadline.remaining", "if has_value, the remaining time before deadline (ns)"},
+                        { "parent.span", "parent execution span"},
+                        { "parent.service.size", "parent service name size"},
+                        { "parent.service.data", "byte array with parent service name"},
+
+                        { "xid.formatID", "xid format type. if 0 no more information of the xid is transported"},
+                        { "xid.gtrid_length", "length of the transaction gtrid part"},
+                        { "xid.bqual_length", "length of the transaction branch part"},
+                        { "xid.data", "byte array with the size of gtrid_length + bqual_length (max 128)"},
+
+                        { "flags", "XATMI flags sent to the service"},
+
+                        { "buffer.type.size", "buffer type name size"},
+                        { "buffer.type.data", "byte array with buffer type in the form 'type/subtype'"},
+                        { "buffer.data.size", "buffer payload size (could be very big)"},
+                        { "buffer.data.data", "buffer payload data (with the size of buffer.payload.size)"},
+                        { "header.size", "number of header field entries"},
+                        { "header.element.size", "size of field data"},
+                        { "header.element.data", "the field data, key:value string"},
+                     });
+
+               local::example_and_base64< message_type>( out);
+            }
+
+            {
+               using message_type = common::message::service::call::v1_4::callee::Request;
+
+               local::message::section< message_type>( out, "##") << R"(
+
+Sent to and received from other domains when one domain wants call a service in the other domain
+
+)";
+
+               message_type request;
+               request.trid = common::transaction::id::create();
+               request.deadline.remaining = std::chrono::seconds{ 42};
+               request.service.name = local::string::value( 128);
+               request.parent.service = local::string::value( 128);
+               request.buffer.type = local::string::value( 8) + '/' + local::string::value( 16);
+               request.buffer.data = local::binary::value( 1024);
 
                local::format::type( out, request, {
                         { "execution", "uuid of the current execution context (breadcrumb)"},
@@ -761,6 +808,38 @@ Sent to and received from other domains when one domain wants call a service in 
 
             {
                using message_type = common::message::service::call::Reply;
+
+               local::message::section< message_type>( out, "##") << R"(
+
+Reply to call request
+
+)";
+               message_type message;
+
+               message.transaction_state = decltype( message.transaction_state)::ok;
+               message.buffer.type = local::string::value( 8) + '/' + local::string::value( 16);
+               message.buffer.data = local::binary::value( 1024);
+               message.header = casual::header::Fields{ { { "key", "value"}}};
+
+               local::format::type( out, message, {
+                        { "execution", "uuid of the current execution context (breadcrumb)"},
+                        { "code.result", "XATMI result/error code, 0 represent OK"},
+                        { "code.user", "XATMI user supplied code"},
+                        { "transaction_state", "0:ok/absent, 1:rollback, 2:timeout, 3:error"},
+                        { "buffer.type.size", "buffer type name size"},
+                        { "buffer.type.data", "byte array with buffer type in the form 'type/subtype'"},
+                        { "buffer.data.size", "buffer payload size (could be very big)"},
+                        { "buffer.data.data", "buffer payload data (with the size of buffer.payload.size)"},
+                        { "header.size", "number of header field entries"},
+                        { "header.element.size", "size of field data"},
+                        { "header.element.data", "the field data, key:value string"},
+                     });
+
+               local::example_and_base64< message_type>( out);
+            }
+
+            {
+               using message_type = common::message::service::call::v1_4::Reply;
 
                local::message::section< message_type>( out, "##") << R"(
 

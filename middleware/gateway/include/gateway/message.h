@@ -699,7 +699,7 @@ struct Value< type, A>  \
             CASUAL_CUSTOMIZATION_POINT_SERIALIZE( domains);
          })
 
-         CASUAL_CUSTOMIZATION_POINT_NETWORK( common::message::service::call::callee::Request,
+         CASUAL_CUSTOMIZATION_POINT_NETWORK( common::message::service::call::v1_4::callee::Request,
          {
             CASUAL_CUSTOMIZATION_POINT_SERIALIZE( execution);
             CASUAL_CUSTOMIZATION_POINT_SERIALIZE( service.name);
@@ -709,8 +709,30 @@ struct Value< type, A>  \
             CASUAL_CUSTOMIZATION_POINT_SERIALIZE( flags);
             CASUAL_CUSTOMIZATION_POINT_SERIALIZE( buffer);
          })
+
+         CASUAL_CUSTOMIZATION_POINT_NETWORK( common::message::service::call::callee::Request,
+         {
+            CASUAL_CUSTOMIZATION_POINT_SERIALIZE( execution);
+            CASUAL_CUSTOMIZATION_POINT_SERIALIZE( service.name);
+            CASUAL_CUSTOMIZATION_POINT_SERIALIZE( deadline.remaining);
+            CASUAL_CUSTOMIZATION_POINT_SERIALIZE( parent);
+            CASUAL_SERIALIZE_NAME( value.trid, "xid");
+            CASUAL_CUSTOMIZATION_POINT_SERIALIZE( flags);
+            CASUAL_CUSTOMIZATION_POINT_SERIALIZE( buffer);
+            CASUAL_CUSTOMIZATION_POINT_SERIALIZE( header);
+         })
       
          CASUAL_CUSTOMIZATION_POINT_NETWORK( common::message::service::call::Reply,
+         {
+            CASUAL_CUSTOMIZATION_POINT_SERIALIZE( execution);
+            CASUAL_CUSTOMIZATION_POINT_SERIALIZE( code.result);
+            CASUAL_CUSTOMIZATION_POINT_SERIALIZE( code.user);
+            CASUAL_CUSTOMIZATION_POINT_SERIALIZE( transaction_state);
+            CASUAL_CUSTOMIZATION_POINT_SERIALIZE( buffer);
+            CASUAL_CUSTOMIZATION_POINT_SERIALIZE( header);
+         })
+
+         CASUAL_CUSTOMIZATION_POINT_NETWORK( common::message::service::call::v1_4::Reply,
          {
             CASUAL_CUSTOMIZATION_POINT_SERIALIZE( execution);
             CASUAL_CUSTOMIZATION_POINT_SERIALIZE( code.result);

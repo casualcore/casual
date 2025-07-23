@@ -287,10 +287,16 @@ namespace casual
                      CASUAL_ASSERT( connection);
 
                      if( message::protocol::compatible< common::message::service::call::Reply>( connection->protocol()))
+                     {
                         tcp::send( state, connection->descriptor(), reply);
+                     }
+                     else if( message::protocol::compatible< common::message::service::call::v1_4::Reply>( connection->protocol()))
+                     {
+                        auto message = message::protocol::transform::to< common::message::service::call::v1_4::Reply>( std::move( reply));
+                        tcp::send( state, connection->descriptor(), message);
+                     }
                      else
                      {
-                        // we need to transform the reply to the protocol version of the tcp connection
                         auto message = message::protocol::transform::to< common::message::service::call::v1_2::Reply>( std::move( reply));
                         message.transaction.trid = shared->origin_trid;
                         tcp::send( state, connection->descriptor(), message);

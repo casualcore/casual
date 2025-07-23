@@ -291,6 +291,20 @@ namespace casual
                         };
                      }
 
+                     namespace v1_4
+                     {
+                        auto request( State& state)
+                        {
+                           return [ &state]( common::message::service::call::v1_4::callee::Request& message, strong::socket::id descriptor)
+                           {
+                              Trace trace{ "gateway::group::inbound::handle::local::external::service::call::request"};
+                              log::debug( "message: ", message);
+
+                              state.tasks.add( task::create::service::call( state, descriptor, message::protocol::transform::from( std::move( message))));
+                           };
+                        }
+                     } // v1_4
+
                      namespace v1_2
                      {
                         auto request( State& state)
@@ -573,6 +587,7 @@ namespace casual
 
             // service call
             local::external::service::call::request( state),
+            local::external::service::call::v1_4::request( state),
             local::external::service::call::v1_2::request( state),
 
             // conversation

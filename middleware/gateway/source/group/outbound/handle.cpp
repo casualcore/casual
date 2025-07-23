@@ -609,6 +609,21 @@ namespace casual
                            };
                         }
                      } // v1_2
+
+                     namespace v1_4
+                     {
+                        auto reply( State& state)
+                        {
+                           return [ &state]( common::message::service::call::v1_4::Reply message)
+                           {
+                              Trace trace{ "gateway::group::outbound::handle::local::external::service::call::v1_4::reply"};
+                              log::debug( "message: ", message);
+
+                              state.tasks( message::protocol::transform::from( std::move( message)));
+                           };
+                        }
+                        
+                     } // v1_4
                   } // call
 
                } // service
@@ -921,6 +936,7 @@ namespace casual
             // service
             local::external::service::call::reply( state),
             local::external::service::call::v1_2::reply( state),
+            local::external::service::call::v1_4::reply( state),
 
             // conversation
             local::external::conversation::connect::reply( state),

@@ -127,10 +127,10 @@ domain:
          EXPECT_TRUE( device.connector().socket());
 
          const auto trid = common::transaction::id::create();
-
-         static constexpr auto send_call = []( auto& device, const auto& trid)
+         
+         static constexpr auto send_v1_4_call = []( auto& device, const auto& trid)
          {
-            common::message::service::call::callee::Request request;
+            common::message::service::call::v1_4::callee::Request request;
             request.service.name = "b";
             request.trid = trid;
             request.correlation = common::strong::correlation::id::generate();
@@ -141,7 +141,7 @@ domain:
          };
 
          // send the first call to b with a new trid, via inbound
-         auto correlation_a = send_call( device, trid);
+         auto correlation_a = send_v1_4_call( device, trid);
          
          // receive the call to a from within 'B' domain
          auto request_a = communication::ipc::receive< common::message::service::call::callee::Request>( correlation_a);
@@ -150,7 +150,7 @@ domain:
          EXPECT_TRUE( request_a.trid.branch() != trid.branch()) << CASUAL_NAMED_VALUE( trid);
 
          // send another call to b with the exact same branched trid.
-         auto correlation_b = send_call( device, request_a.trid);
+         auto correlation_b = send_v1_4_call( device, request_a.trid);
 
          // receive the call to b from within 'B' domain
          auto request_b = communication::ipc::receive< common::message::service::call::callee::Request>( correlation_b);

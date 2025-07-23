@@ -21,6 +21,7 @@ version | protocol value
 1.2     | 1002
 1.3     | 1003
 1.4     | 1004
+1.5     | 1005
 
 ## definitions
 
@@ -59,7 +60,7 @@ header.correlation | (fixed) binary |           16 | correlation id of the messa
 header.size        | uint64         |            8 | the size of the payload that follows         
 
 
-## gateway_domain_connect_request - **#7200** - _[1.0, 1.1, 1.2, 1.3, 1.4]_
+## gateway_domain_connect_request - **#7200** - _[1.0, 1.1, 1.2, 1.3, 1.4, 1.5]_
 
 Connection requests from another domain that wants to connect
 
@@ -80,6 +81,7 @@ domain:
   id: !!binary "MV2sxhguTBK/mHfvqSTLhg=="
   name: "domain A"
 protocol.versions:
+  - 1005
   - 1004
   - 1003
   - 1002
@@ -89,11 +91,11 @@ protocol.versions:
 ```
 
 Binary representation of the example (network byte ordering in base64):
-`cHPL9BRESkGHswCG8UP8YDFdrMYYLkwSv5h376kky4YAAAAAAAAACGRvbWFpbiBBAAAAAAAAAAUAAAAAAAAD7AAAAAAAAAPrAAAAAAAAA+oAAAAAAAAD6QAAAAAAAAPo`
+`cHPL9BRESkGHswCG8UP8YDFdrMYYLkwSv5h376kky4YAAAAAAAAACGRvbWFpbiBBAAAAAAAAAAYAAAAAAAAD7QAAAAAAAAPsAAAAAAAAA+sAAAAAAAAD6gAAAAAAAAPpAAAAAAAAA+g=`
 
 
 
-## gateway_domain_connect_reply - **#7201** - _[1.0, 1.1, 1.2, 1.3, 1.4]_
+## gateway_domain_connect_reply - **#7201** - _[1.0, 1.1, 1.2, 1.3, 1.4, 1.5]_
 
 Connection reply with the chosen _protocol version_
 
@@ -121,7 +123,7 @@ Binary representation of the example (network byte ordering in base64):
 
 
 
-## gateway_domain_disconnect_request - **#7202** - _[1.1, 1.2, 1.3, 1.4]_
+## gateway_domain_disconnect_request - **#7202** - _[1.1, 1.2, 1.3, 1.4, 1.5]_
 
 Sent from inbound to connected outbound to notify that the connection is about to close, and outbound 
 will stop sending new requests. Hence, the inbound can gracefully disconnect.
@@ -142,7 +144,7 @@ Binary representation of the example (network byte ordering in base64):
 
 
 
-## gateway_domain_disconnect_reply - **#7203** - _[1.1, 1.2, 1.3, 1.4]_
+## gateway_domain_disconnect_reply - **#7203** - _[1.1, 1.2, 1.3, 1.4, 1.5]_
 
 Confirmation that the outbound has got the disconnect request.
 
@@ -162,7 +164,7 @@ Binary representation of the example (network byte ordering in base64):
 
 
 
-## domain_discovery_request - **#7300** - _[1.0, 1.1, 1.2, 1.3, 1.4]_
+## domain_discovery_request - **#7300** - _[1.0, 1.1, 1.2, 1.3, 1.4, 1.5]_
 
 Sent to and received from other domains when one domain wants to discover information abut the other.
 
@@ -202,7 +204,7 @@ Binary representation of the example (network byte ordering in base64):
 
 
 
-## domain_discovery_reply - **#7311** - _[1.4]_
+## domain_discovery_reply - **#7311** - _[1.4, 1.5]_
 
 Sent to and received from other domains when one domain wants to discover information about the other.
 
@@ -304,7 +306,7 @@ Binary representation of the example (network byte ordering in base64):
 
 
 
-## domain_discovery_topology_implicit_update - **#7302** - _[1.2, 1.3, 1.4]_
+## domain_discovery_topology_implicit_update - **#7302** - _[1.2, 1.3, 1.4, 1.5]_
 
 Sent to all inbound connections from a domain when when it gets a new connection or gets this message from an outbound.
 When the message is passed "upstream" domains will add its id to the domains array, hence it's possible to mitigate endless 
@@ -333,7 +335,64 @@ Binary representation of the example (network byte ordering in base64):
 
 
 
-## service_call - **#3102** - _[1.3, 1.4]_
+## service_call - **#3104** - _[1.5]_
+
+Sent to and received from other domains when one domain wants call a service in the other domain
+
+role name           | network type   | network size | description                                                        
+------------------- | -------------- | ------------ | -------------------------------------------------------------------
+execution           | (fixed) binary |           16 | uuid of the current execution context (breadcrumb)                 
+service.name.size   | uint64         |            8 | service name size                                                  
+service.name.data   | dynamic string |       [0..*] | byte array with service name                                       
+has_value           | uint8          |            1 | if 1, deadline.remaining is propagated                             
+deadline.remaining  | uint64         |            8 | if has_value, the remaining time before deadline (ns)              
+parent.span         | (fixed) binary |            8 | parent execution span                                              
+parent.service.size | uint64         |            8 | parent service name size                                           
+parent.service.data | dynamic string |       [0..*] | byte array with parent service name                                
+xid.formatID        | uint64         |            8 | xid format type. if 0 no more information of the xid is transported
+xid.gtrid_length    | uint64         |            8 | length of the transaction gtrid part                               
+xid.bqual_length    | uint64         |            8 | length of the transaction branch part                              
+xid.data            | (fixed) binary |           32 | byte array with the size of gtrid_length + bqual_length (max 128)  
+flags               | uint64         |            8 | XATMI flags sent to the service                                    
+buffer.type.size    | uint64         |            8 | buffer type name size                                              
+buffer.type.data    | dynamic string |       [0..*] | byte array with buffer type in the form 'type/subtype'             
+buffer.data.size    | uint64         |            8 | buffer payload size (could be very big)                            
+buffer.data.data    | dynamic binary |       [0..*] | buffer payload data (with the size of buffer.payload.size)         
+header.size         | uint64         |            8 | number of header field entries                                     
+header.element.size | uint64         |            8 | size of field data                                                 
+header.element.data | dynamic string |       [0..*] | the field data, key:value string                                   
+
+#### example 
+```yaml
+---
+execution: !!binary "cHPL9BRESkGHswCG8UP8YA=="
+service.name: "service1"
+deadline.remaining: 42000000000
+parent:
+  span: !!binary "gIGCg4SFhoc="
+  service: "parent-service"
+xid:
+  formatID: 42
+  gtrid_length: 16
+  bqual_length: 16
+  data: !!binary "W2wb9vJLSA29vN71TDoIUVtsG/byS0gNvbze9Uw6CFI="
+flags: 4
+buffer:
+  type: ".binary/"
+  data: !!binary "gIGCg4SFhoeIiYqLjI2Oj5CRkpOUlZaXmJmam5ydnp+goaKjpKWmp6ipqqusra6vsLGys7S1tre4ubq7vL2+v8DBwsPExcbHyMnKy8zNzs/Q0dLT1NXW19jZ2tvc3d7f4OHi4+Tl5ufo6err7O3u7/Dx8vP09fb3+Pn6+/z9/v8="
+header:
+  - "a:foo"
+  - "b:bar"
+  - "c:baz"
+...
+```
+
+Binary representation of the example (network byte ordering in base64):
+`cHPL9BRESkGHswCG8UP8YAAAAAAAAAAIc2VydmljZTEBAAAACcdlJACAgYKDhIWGhwAAAAAAAAAOcGFyZW50LXNlcnZpY2UAAAAAAAAAKgAAAAAAAAAQAAAAAAAAABBbbBv28ktIDb283vVMOghRW2wb9vJLSA29vN71TDoIUgAAAAAAAAAEAAAAAAAAAAguYmluYXJ5LwAAAAAAAACAgIGCg4SFhoeIiYqLjI2Oj5CRkpOUlZaXmJmam5ydnp+goaKjpKWmp6ipqqusra6vsLGys7S1tre4ubq7vL2+v8DBwsPExcbHyMnKy8zNzs/Q0dLT1NXW19jZ2tvc3d7f4OHi4+Tl5ufo6err7O3u7/Dx8vP09fb3+Pn6+/z9/v8AAAAAAAAAAwAAAAAAAAAFYTpmb28AAAAAAAAABWI6YmFyAAAAAAAAAAVjOmJheg==`
+
+
+
+## service_call_v4 - **#3102** - _[1.3, 1.4]_
 
 Sent to and received from other domains when one domain wants call a service in the other domain
 
@@ -429,7 +488,47 @@ Binary representation of the example (network byte ordering in base64):
 
 
 
-## service_reply - **#3103** - _[1.3, 1.4]_
+## service_reply - **#3105** - _[1.5]_
+
+Reply to call request
+
+role name           | network type   | network size | description                                               
+------------------- | -------------- | ------------ | ----------------------------------------------------------
+execution           | (fixed) binary |           16 | uuid of the current execution context (breadcrumb)        
+code.result         | uint32         |            4 | XATMI result/error code, 0 represent OK                   
+code.user           | uint64         |            8 | XATMI user supplied code                                  
+transaction_state   | uint8          |            1 | 0:ok/absent, 1:rollback, 2:timeout, 3:error               
+buffer.type.size    | uint64         |            8 | buffer type name size                                     
+buffer.type.data    | dynamic string |       [0..*] | byte array with buffer type in the form 'type/subtype'    
+buffer.data.size    | uint64         |            8 | buffer payload size (could be very big)                   
+buffer.data.data    | dynamic binary |       [0..*] | buffer payload data (with the size of buffer.payload.size)
+header.size         | uint64         |            8 | number of header field entries                            
+header.element.size | uint64         |            8 | size of field data                                        
+header.element.data | dynamic string |       [0..*] | the field data, key:value string                          
+
+#### example 
+```yaml
+---
+execution: !!binary "cHPL9BRESkGHswCG8UP8YA=="
+code.result: 11
+code.user: 42
+transaction_state: ' '
+buffer:
+  type: ".binary/"
+  data: !!binary "gIGCg4SFhoeIiYqLjI2Oj5CRkpOUlZaXmJmam5ydnp+goaKjpKWmp6ipqqusra6vsLGys7S1tre4ubq7vL2+v8DBwsPExcbHyMnKy8zNzs/Q0dLT1NXW19jZ2tvc3d7f4OHi4+Tl5ufo6err7O3u7/Dx8vP09fb3+Pn6+/z9/v8="
+header:
+  - "a:foo"
+  - "b:bar"
+  - "c:baz"
+...
+```
+
+Binary representation of the example (network byte ordering in base64):
+`cHPL9BRESkGHswCG8UP8YAAAAAsAAAAAAAAAKgAAAAAAAAAACC5iaW5hcnkvAAAAAAAAAICAgYKDhIWGh4iJiouMjY6PkJGSk5SVlpeYmZqbnJ2en6ChoqOkpaanqKmqq6ytrq+wsbKztLW2t7i5uru8vb6/wMHCw8TFxsfIycrLzM3Oz9DR0tPU1dbX2Nna29zd3t/g4eLj5OXm5+jp6uvs7e7v8PHy8/T19vf4+fr7/P3+/wAAAAAAAAADAAAAAAAAAAVhOmZvbwAAAAAAAAAFYjpiYXIAAAAAAAAABWM6YmF6`
+
+
+
+## service_reply_v4 - **#3103** - _[1.3, 1.4]_
 
 Reply to call request
 
@@ -504,7 +603,7 @@ Binary representation of the example (network byte ordering in base64):
 
 
 
-## transaction_resource_prepare_request - **#5201** - _[1.0, 1.1, 1.2, 1.3, 1.4]_
+## transaction_resource_prepare_request - **#5201** - _[1.0, 1.1, 1.2, 1.3, 1.4, 1.5]_
 
 Sent to and received from other domains when one domain wants to prepare a transaction. 
 
@@ -537,7 +636,7 @@ Binary representation of the example (network byte ordering in base64):
 
 
 
-## transaction_resource_prepare_reply - **#5202** - _[1.0, 1.1, 1.2, 1.3, 1.4]_
+## transaction_resource_prepare_reply - **#5202** - _[1.0, 1.1, 1.2, 1.3, 1.4, 1.5]_
 
 Sent to and received from other domains when one domain is done preparing a transaction. 
 
@@ -573,7 +672,7 @@ Binary representation of the example (network byte ordering in base64):
 
 
 
-## transaction_resource_commit_request - **#5203** - _[1.0, 1.1, 1.2, 1.3, 1.4]_
+## transaction_resource_commit_request - **#5203** - _[1.0, 1.1, 1.2, 1.3, 1.4, 1.5]_
 
 Sent to and received from other domains when one domain wants to commit an already prepared transaction.
 
@@ -606,7 +705,7 @@ Binary representation of the example (network byte ordering in base64):
 
 
 
-## transaction_resource_commit_reply - **#5204** - _[1.0, 1.1, 1.2, 1.3, 1.4]_
+## transaction_resource_commit_reply - **#5204** - _[1.0, 1.1, 1.2, 1.3, 1.4, 1.5]_
 
 Reply to a commit request. 
 
@@ -639,7 +738,7 @@ Binary representation of the example (network byte ordering in base64):
 
 
 
-## transaction_resource_rollback_request - **#5205** - _[1.0, 1.1, 1.2, 1.3, 1.4]_
+## transaction_resource_rollback_request - **#5205** - _[1.0, 1.1, 1.2, 1.3, 1.4, 1.5]_
 
 Sent to and received from other domains when one domain wants to rollback an already prepared transaction.
 That is, when one or more resources has failed to prepare.
@@ -673,7 +772,7 @@ Binary representation of the example (network byte ordering in base64):
 
 
 
-## transaction_resource_rollback_reply - **#5206** - _[1.0, 1.1, 1.2, 1.3, 1.4]_
+## transaction_resource_rollback_reply - **#5206** - _[1.0, 1.1, 1.2, 1.3, 1.4, 1.5]_
 
 Reply to a rollback request. 
 
@@ -706,7 +805,7 @@ Binary representation of the example (network byte ordering in base64):
 
 
 
-## queue_group_enqueue_request - **#6100** - _[1.0, 1.1, 1.2, 1.3, 1.4]_
+## queue_group_enqueue_request - **#6100** - _[1.0, 1.1, 1.2, 1.3, 1.4, 1.5]_
 
 Represent enqueue request.
 
@@ -757,7 +856,7 @@ Binary representation of the example (network byte ordering in base64):
 
 
 
-## queue_group_enqueue_reply - **#6102** - _[1.3, 1.4]_
+## queue_group_enqueue_reply - **#6102** - _[1.3, 1.4, 1.5]_
 
 Represent enqueue reply.
 
@@ -803,7 +902,7 @@ Binary representation of the example (network byte ordering in base64):
 
 
 
-## queue_group_dequeue_request - **#6200** - _[1.0, 1.1, 1.2, 1.3, 1.4]_
+## queue_group_dequeue_request - **#6200** - _[1.0, 1.1, 1.2, 1.3, 1.4, 1.5]_
 
 Represent dequeue request.
 
@@ -843,7 +942,7 @@ Binary representation of the example (network byte ordering in base64):
 
 
 
-## queue_group_dequeue_reply - **#6202** - _[1.3, 1.4]_
+## queue_group_dequeue_reply - **#6202** - _[1.3, 1.4, 1.5]_
 
 Represent dequeue reply.
 
@@ -933,7 +1032,7 @@ Binary representation of the example (network byte ordering in base64):
 
 
 
-## conversation_connect_request - **#3220** - _[1.3, 1.4]_
+## conversation_connect_request - **#3220** - _[1.3, 1.4, 1.5]_
 
 Sent to establish a conversation
 
@@ -1029,7 +1128,7 @@ Binary representation of the example (network byte ordering in base64):
 
 
 
-## conversation_connect_reply - **#3211** - _[1.0, 1.1, 1.2, 1.3, 1.4]_
+## conversation_connect_reply - **#3211** - _[1.0, 1.1, 1.2, 1.3, 1.4, 1.5]_
 
 Reply for a conversation
 
@@ -1051,7 +1150,7 @@ Binary representation of the example (network byte ordering in base64):
 
 
 
-## conversation_send - **#3212** - _[1.0, 1.1, 1.2, 1.3, 1.4]_
+## conversation_send - **#3212** - _[1.0, 1.1, 1.2, 1.3, 1.4, 1.5]_
 
 Represent a message sent 'over' an established connection
 
@@ -1084,7 +1183,7 @@ Binary representation of the example (network byte ordering in base64):
 
 
 
-## conversation_disconnect - **#3213** - _[1.0, 1.1, 1.2, 1.3, 1.4]_
+## conversation_disconnect - **#3213** - _[1.0, 1.1, 1.2, 1.3, 1.4, 1.5]_
 
 Sent to abruptly disconnect the conversation
 

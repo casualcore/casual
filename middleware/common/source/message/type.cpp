@@ -67,7 +67,9 @@ namespace casual
             case Type::service_call: return "service_call";
             case Type::service_reply: return "service_reply";
             case Type::service_call_v2: return "service_call_v2";
+            case Type::service_call_v4: return "service_call_v4";
             case Type::service_reply_v2: return "service_reply_v2";
+            case Type::service_reply_v4: return "service_reply_v4";
             case Type::service_acknowledge: return "service_acknowledge";
             case Type::service_concurrent_advertise: return "service_concurrent_advertise";
             case Type::conversation_connect_request: return "conversation_connect_request";
