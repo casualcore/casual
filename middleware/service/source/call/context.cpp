@@ -264,6 +264,7 @@ namespace casual
          result.descriptor = xatmi_descriptor;
          result.user = reply.code.user;
          result.buffer = std::move( reply.buffer);
+         result.header = std::move( reply.header);
 
 
          // We unreserve pending (at end of scope, regardless of outcome)
@@ -348,7 +349,10 @@ namespace casual
          auto descriptor = async( service, buffer, common::flag::convert( async::valid_flags, flags), header);
          auto result = reply( descriptor, common::flag::convert( reply::valid_flags, flags));
 
-         return { std::move( result.buffer), result.user};
+         return { 
+            .buffer = std::move( result.buffer),
+            .header = std::move( result.header), 
+            .user = result.user};
       }
 
 

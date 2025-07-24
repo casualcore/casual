@@ -21,6 +21,8 @@
 #define CASUAL_BUFFER_XML_SUBTYPE ""
 #define CASUAL_BUFFER_YAML_TYPE ".yaml"
 #define CASUAL_BUFFER_YAML_SUBTYPE ""
+#define CASUAL_BUFFER_HTTP_TYPE ".http"
+#define CASUAL_BUFFER_HTTP_SUBTYPE "body"
 
 
 #ifdef __cplusplus

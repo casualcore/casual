@@ -37,6 +37,8 @@ namespace local
       template< typename R, typename Flag>
       void handle_reply_buffer( R&& result, Flag flags, char** odata, long* olen)
       {
+         casual::common::Trace trace( "local::handle_reply_buffer");
+
          auto output = casual::common::buffer::pool::holder().get( casual::common::buffer::handle::type{ *odata});
 
          if( casual::common::flag::contains( flags, Flag::no_change) && result.buffer.type != output.payload().type)
@@ -46,6 +48,13 @@ namespace local
          auto buffer = casual::common::buffer::pool::holder().insert( std::move( result.buffer));
          *odata = std::get< 0>( buffer).raw();
          *olen = std::get< 1>( buffer);
+
+         if( ! result.header.empty())
+         {
+            casual::common::log::debug( "result.header: ", result.header);
+            casual::xatmi::internal::context().header().associate( casual::common::buffer::handle::type{ *odata}, result.header);
+         }
+
       }
    } // <unnamed>
 } // local

@@ -128,7 +128,9 @@ domain:
 
          service::unittest::advertise( { "a"});
 
-         const auto complement = service::send::Complement{ .header = { { { "test-header", "casual"}}}};
+         const auto header = casual::header::Fields{ { { "test-header", "casual"}}};
+
+         const auto complement = service::send::Complement{ .header = header};
 
          const long arg_long = 42;
          const std::string arg_string = "hello world";
@@ -145,11 +147,14 @@ domain:
             service::unittest::send::ack( request);
             auto reply = common::message::reverse::type( request);
             reply.buffer = request.buffer;
+            reply.header = request.header; // reply the header
             common::communication::device::blocking::send( request.process.ipc, reply);
          }
 
       
          auto result = receive();
+
+         EXPECT_TRUE( result.header == header);
 
          EXPECT_TRUE( result.extract< long>() == arg_long);
          EXPECT_TRUE( result.extract< std::string>() == arg_string);

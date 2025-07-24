@@ -32,6 +32,7 @@ namespace casual
          struct Result
          {
             common::buffer::Payload buffer;
+            header::Fields header;
             long user = 0;
             platform::descriptor::type descriptor;
          };
@@ -43,6 +44,7 @@ namespace casual
          struct Result
          {
             common::buffer::Payload buffer;
+            header::Fields header;
             long user = 0;
          };
       } // sync

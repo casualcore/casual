@@ -265,6 +265,7 @@ namespace casual
 
                reply.code.user = result.code.user;
                reply.buffer = std::move( result.payload);
+               reply.header = std::move( result.header);
 
                if( result.code.result == common::flag::xatmi::Return::success)
                {

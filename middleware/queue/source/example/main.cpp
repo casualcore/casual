@@ -42,7 +42,7 @@ namespace casual
                      message.payload.data = std::move(parameter.payload.data);
                      message.payload.type = parameter.payload.type;
                      queue::enqueue(queue, message);
-                     return server::service::invoke::Result{ nullptr };
+                     return server::service::invoke::Result{ .payload = nullptr};
                   };
                }
 
@@ -54,9 +54,9 @@ namespace casual
                      {
                         common::buffer::Payload payload { message.front().payload.type };
                         payload.data = std::move( message.front().payload.data);
-                        return server::service::invoke::Result{ std::move(payload) };
+                        return server::service::invoke::Result{ .payload = std::move(payload) };
                      }
-                     return server::service::invoke::Result{ nullptr };
+                     return server::service::invoke::Result{ .payload = nullptr};
                   };
                }
             }

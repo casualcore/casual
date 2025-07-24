@@ -82,10 +82,12 @@ namespace casual
 
       struct Result
       {
+         header::Fields header;
          common::buffer::Payload payload;
          result::Code code;
 
          CASUAL_LOG_SERIALIZE(
+            CASUAL_SERIALIZE( header);
             CASUAL_SERIALIZE( payload);
             CASUAL_SERIALIZE( code);
          )

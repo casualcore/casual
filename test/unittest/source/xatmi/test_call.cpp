@@ -301,6 +301,49 @@ domain:
          tpfree( buffer);
       }
 
+
+      TEST( test_xatmi_call, tpcall_echo_with_header__expect_header_to_be_replied)
+      {
+         common::unittest::Trace trace;
+
+         auto domain = local::domain();
+
+         auto buffer = local::allocate( 128);
+
+         const std::vector< std::string> headers = { "a:foo", "b:bar", "c:baz"};
+
+         // associate headers with buffer
+         {
+            auto raw_header = algorithm::transform( headers, []( const std::string& header) { return header.c_str();});
+            ::casual_header_associate( buffer, raw_header.data(), raw_header.size());
+         }
+
+         auto extract_header = []( auto handle)
+         {
+            std::vector< std::string> headers;
+
+            auto callback = []( const char* header, void* context) -> int
+            {
+               auto headers = static_cast< std::vector< std::string>*>( context);
+               headers->emplace_back( header);
+               return 0;
+            };
+
+            ::casual_header_browse( handle, callback, &headers);
+            return headers;
+         };
+         
+         auto output_buffer = local::allocate( 128);
+         auto output_len = tptypes( output_buffer, nullptr, nullptr);
+         
+         EXPECT_TRUE( ::tpcall( "casual/example/echo", buffer, 128, &output_buffer, &output_len, 0) == 0) << "tperrno: " << tperrnostring( tperrno);
+         EXPECT_TRUE( output_buffer != buffer);
+
+         EXPECT_TRUE( extract_header( output_buffer) == headers) << "received: " << common::string::compose( extract_header( output_buffer));
+
+         tpfree( buffer);
+      }
+
       TEST( test_xatmi_call, tpcall_service_resource_echo__rm_xa_start_gives_XA_RBROLLBACK__expect_TPESVCERR)
       {
          common::unittest::Trace trace;

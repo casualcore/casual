@@ -62,9 +62,20 @@ namespace casual
                   return { nullptr};
                }
 
+               casual::header::Fields header( const internal::state::Jump& jump)
+               {
+                  auto handle = common::buffer::handle::type{ jump.buffer.data};
+
+                  if( auto found = internal::context().header().find( handle))
+                     return *found;
+
+                  return {};
+               }
+
                casual::server::service::invoke::Result result( const internal::state::Jump& jump)
                {
                   return casual::server::service::invoke::Result{ 
+                     .header = transform::header( jump),
                      .payload = transform::payload( jump),
                      .code = { .result = jump.state.value, .user = jump.state.code}
                   };
@@ -75,8 +86,9 @@ namespace casual
                   casual::server::service::invoke::Forward result;
 
                   result.parameter.payload =  transform::payload( jump);
+                  result.parameter.header = transform::header( jump);
                   result.parameter.service.name = jump.forward.service;
-
+                  
                   return result;
                }
 
