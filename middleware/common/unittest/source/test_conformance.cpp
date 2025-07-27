@@ -493,6 +493,20 @@ namespace casual
 
       }
 
+      TEST( common_conformance_ranges, view_split)
+      {
+         common::unittest::Trace trace;
+
+         using std::operator""sv;
+         constexpr auto words{"Hello^_^C++^_^20^_^!"sv};
+         constexpr auto delim{"^_^"sv};
+
+         auto splitted = words | std::views::split( delim);
+
+         EXPECT_TRUE( std::distance( splitted.begin(), splitted.end()) == 4);
+
+      }
+
 
       /*
        * generates error with -Werror=return-type

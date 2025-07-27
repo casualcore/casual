@@ -366,53 +366,115 @@ namespace casual
 
          Capture execute( std::filesystem::path path, std::vector< std::string> arguments, std::vector< environment::Variable> environment)
          {
-            // We try to eliminate signals to propagate to children by it self...
-            // we don't need to set groupid with posix_spawnattr_setpgroup since the default is 0.
-            const local::spawn::Attributes attributes{ POSIX_SPAWN_SETPGROUP};
-            
-            // We're going to capture stdout and stderr from the spawned process.
-            // A lot of C-posix juggling...
-            local::spawn::file::Actions actions;
-            
-            // we don't use pipe anywhere else, I don't think it's worth it to abstract the thing...
-            int cout_pipe[ 2];
-            int cerr_pipe[ 2];
-
-            {
-               posix::result( ::pipe( cout_pipe), "pipe");
-               posix::result( ::pipe( cerr_pipe), "pipe");
-            }
-
-            // add file actions that posix_spawn applies between fork and exec
-            {
-               actions.add_close( cout_pipe[ 0]);
-               actions.add_close( cerr_pipe[ 0]);
-
-               actions.add_dup2( cout_pipe[ 1], 1);
-               actions.add_dup2( cerr_pipe[ 1], 2);
-
-               actions.add_close( cout_pipe[ 1]);
-               actions.add_close( cerr_pipe[ 1]);
-            }
-
-            auto pid = local::spawn::invoke( path, attributes, arguments, environment, actions.get());
-
-            // close the unused write end
-            ::close( cout_pipe[ 1]);
-            ::close( cerr_pipe[ 1]);
-
-            Capture capture;
-
-            capture.standard.out = local::spawn::read_from_pipe( cout_pipe[ 0]);
-            capture.standard.error = local::spawn::read_from_pipe( cerr_pipe[ 0]);
-            capture.exit = process::wait( pid);
-
-            // Make sure we've closed all open file descriptors
-            ::close( cout_pipe[ 0]);
-            ::close( cerr_pipe[ 0]);
-            
-            return capture;
+            return non::blocking::capture( non::blocking::execute( std::move( path), std::move( arguments), std::move( environment)));
          }
+
+         namespace non::blocking
+         {
+            Execution::Execution( strong::process::id pid, int cout_pipe, int cerr_pipe)
+               : m_pid( std::move( pid)), cout_pipe( cout_pipe), cerr_pipe( cerr_pipe)
+            {
+               Trace trace{ "process::non::blocking::Execution::Execution"};
+            }
+
+            Execution::~Execution()
+            {
+               Trace trace{ "process::non::blocking::Execution::~Execution"};
+
+               exception::guard( [&]()
+               {
+                  log::debug( "this: ", *this);
+
+                  if( m_pid)
+                  {
+                     signal::send( m_pid, code::signal::terminate);
+                     process::wait( m_pid);
+                  }
+                  if( cout_pipe != -1)
+                     ::close( cout_pipe);
+                  if( cerr_pipe != -1)
+                     ::close( cerr_pipe);
+               });
+            }
+
+            Execution::Execution( Execution&& other) noexcept
+               : m_pid{ std::exchange( other.m_pid, {})},
+               cout_pipe{ std::exchange( other.cout_pipe, -1)},
+               cerr_pipe{ std::exchange( other.cerr_pipe, -1)}
+            {}
+
+            Execution& Execution::operator = ( Execution&& other) noexcept
+            {
+               m_pid = std::exchange( other.m_pid, m_pid);
+               cout_pipe = std::exchange( other.cout_pipe, cout_pipe);
+               cerr_pipe = std::exchange( other.cerr_pipe, cerr_pipe);
+
+               return *this;
+            }
+
+
+            Execution execute( std::filesystem::path path, std::vector< std::string> arguments, std::vector< environment::Variable> environment)
+            {
+
+               // We try to eliminate signals to propagate to children by it self...
+               // we don't need to set groupid with posix_spawnattr_setpgroup since the default is 0.
+               const local::spawn::Attributes attributes{ POSIX_SPAWN_SETPGROUP};
+               
+               // We're going to capture stdout and stderr from the spawned process.
+               // A lot of C-posix juggling...
+               local::spawn::file::Actions actions;
+               
+               // we don't use pipe anywhere else, I don't think it's worth it to abstract the thing...
+               int cout_pipe[ 2];
+               int cerr_pipe[ 2];
+
+               {
+                  posix::result( ::pipe( cout_pipe), "pipe");
+                  posix::result( ::pipe( cerr_pipe), "pipe");
+               }
+
+               // add file actions that posix_spawn applies between fork and exec
+               {
+                  actions.add_close( cout_pipe[ 0]);
+                  actions.add_close( cerr_pipe[ 0]);
+
+                  actions.add_dup2( cout_pipe[ 1], 1);
+                  actions.add_dup2( cerr_pipe[ 1], 2);
+
+                  actions.add_close( cout_pipe[ 1]);
+                  actions.add_close( cerr_pipe[ 1]);
+               }
+
+               auto pid = local::spawn::invoke( path, attributes, arguments, environment, actions.get());
+
+               // close the unused write end
+               ::close( cout_pipe[ 1]);
+               ::close( cerr_pipe[ 1]);
+
+               return Execution{ pid, cout_pipe[ 0], cerr_pipe[ 0]};
+            }
+
+            process::Capture capture( Execution&& execution)
+            {
+               if( ! execution.m_pid)
+                  code::raise::error( code::casual::invalid_semantics, "invalid pid");
+
+               if( execution.cout_pipe == -1 || execution.cerr_pipe == -1)
+                  code::raise::error( code::casual::invalid_semantics, "invalid pipe");
+
+               Capture capture;
+
+               capture.standard.out = local::spawn::read_from_pipe( execution.cout_pipe);
+               capture.standard.error = local::spawn::read_from_pipe( execution.cerr_pipe);
+               capture.exit = process::wait( std::exchange( execution.m_pid, {}));
+
+               ::close( std::exchange( execution.cout_pipe, -1));
+               ::close( std::exchange( execution.cerr_pipe, -1));
+
+               return capture;
+            }
+            
+         } // non::blocking
 
          namespace local
          {

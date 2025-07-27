@@ -153,6 +153,42 @@ namespace casual
       //! @return the captured output from the process
       Capture execute( std::filesystem::path path, std::vector< std::string> arguments, std::vector< environment::Variable> environment = {});
 
+      namespace non::blocking
+      {
+         struct Execution
+         {
+            Execution( strong::process::id pid, int cout_pipe, int cerr_pipe);
+            ~Execution();
+            Execution( Execution&&) noexcept;
+            Execution& operator = ( Execution&&) noexcept;
+
+
+            friend process::Capture capture( Execution&& execution);
+
+            CASUAL_LOG_SERIALIZE(
+               CASUAL_SERIALIZE( m_pid);
+               CASUAL_SERIALIZE( cout_pipe);
+               CASUAL_SERIALIZE( cerr_pipe);
+            )
+
+         private:
+            strong::process::id m_pid;
+            int cout_pipe{};
+            int cerr_pipe{}; 
+         };
+
+         //! start execution of a process, and return an Execution object that can be used to capture the output
+         //! later.
+         Execution execute( std::filesystem::path path, std::vector< std::string> arguments, std::vector< environment::Variable> environment = {});
+
+         //! block until the process has finished
+         //! @return the captured output from the process
+         //! @attention this consumes the Execution object.
+         process::Capture capture( Execution&& execution);
+
+         
+      } // non::blocking
+
       //! Wait for a specific process to terminate.
       //!
       //! @return return code from process

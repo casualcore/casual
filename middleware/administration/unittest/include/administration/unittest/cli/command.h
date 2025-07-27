@@ -25,6 +25,26 @@ namespace casual
       {
          return detail::execute( common::string::compose( std::forward< Cs>( commands)...));
       }
+
+      namespace non::blocking
+      {
+         using Execution = common::process::non::blocking::Execution;
+
+         namespace detail
+         {
+            Execution execute( std::string command);
+            
+         } // detail
+
+         template< typename... Cs>
+         Execution execute( Cs&&... commands)
+         {
+            return detail::execute( common::string::compose( std::forward< Cs>( commands)...));
+         }
+
+         Capture capture( Execution&& execution);
+         
+      } // non::blocking
    
    } // administration::unittest::cli::command
 } // casual
