@@ -409,17 +409,18 @@ namespace casual
 
 
             auto ready = range::make( events.data(), *event_count);
-            log::debug( "ready: ", ready);        
+            log::debug( "ready: ", ready);
             
-            auto [ read, rest] = algorithm::partition( ready, local::filter_predicate( directive::detail::Filter::read));
-
-            auto write = algorithm::filter( rest, []( auto& event)
-            {
-               return event.filter == EVFILT_WRITE;
-            });
+            auto [ read, rest1] = algorithm::partition( ready, local::filter_predicate( directive::detail::Filter::read));
+            auto [ write, rest2] = algorithm::partition( rest1, local::filter_predicate( directive::detail::Filter::write));
 
             log::debug( "read: ", read);
             log::debug( "write: ", write);
+            log::debug( "rest: ", rest2);
+
+            // we need to check signal events in 'rest'.
+            if( algorithm::find_if( rest2, local::filter_predicate( directive::detail::Filter::signal)))
+               code::raise::error( code::casual::interrupted);
 
             return directive::Ready{
                .read = read,

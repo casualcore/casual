@@ -123,22 +123,29 @@ namespace casual
                {
                   Trace trace{ "http::inbound::call::local::basic_caller::operator()"};
 
-                  if( request)
+                  try
                   {
-                     // lookup request is in flight
-                     message::service::lookup::Reply lookup;
-                     if( communication::device::non::blocking::receive( ipc, lookup, correlation))
-                        local::send::request( ipc, std::move( lookup), std::move( std::exchange( request, {}).value()));
-                  }
-                  else 
-                  {
-                     // service call is in flight
-                     message::service::call::Reply reply;
-                     if( communication::device::non::blocking::receive( ipc, reply, correlation))
-                        return Policy::transform( std::move( reply));
-                  }
 
-                  return {};
+                     if( request)
+                     {
+                        // lookup request is in flight
+                        if( auto reply = communication::device::non::blocking::receive< message::service::lookup::Reply>( ipc, correlation))
+                           local::send::request( ipc, std::move( *reply), std::exchange( request, {}).value());
+                     }
+                     else 
+                     {
+                        // service call is in flight
+                        if( auto reply = communication::device::non::blocking::receive< message::service::call::Reply>( ipc, correlation))
+                           return Policy::transform( std::move( *reply));
+                     }
+
+                     return {};
+                  }
+                  catch( ...)
+                  {
+                     return Policy::error(common::exception::capture());
+
+                  }
                }
 
                strong::correlation::id correlation;
@@ -178,20 +185,76 @@ namespace casual
                      return result;
                   }
 
+                  static Reply error( const std::system_error& error)
+                  {
+                     Reply result;
+
+                     if( common::code::is::category< http::code>( error.code()))
+                        result.code = static_cast< http::code>( error.code().value());
+                     else if( error.code() == common::code::xatmi::no_entry)
+                        result.code = http::code::not_found;
+                     else 
+                     {
+                        log::line( log::category::error, error);
+                        result.code = http::code::internal_server_error;
+                     }
+
+                     auto message = common::binary::span::make( std::string_view{ error.what()});
+
+                     result.payload.body.assign( std::begin( message), std::end( message));
+                     result.payload.header.emplace_back( "content-length", std::to_string( result.payload.body.size()));
+                     result.payload.header.emplace_back( "content-type", "text/plain");
+                     result.payload.header.emplace_back( http::header::name::result::code, http::header::value::result::code( static_cast< common::code::xatmi>( error.code().value())));
+                     result.payload.header.emplace_back( http::header::name::result::user::code, http::header::value::result::user::code( 0));
+
+                     return result;
+                  }
+
                };
 
                struct Forward
                {
                   static message::service::call::callee::Request transform( Request request)
                   {
+                     message::service::call::callee::Request result;
 
-                     return {};
+                     // extract execution and span from the traceparent header
+                     std::tie( result.execution, result.parent.span) = extract::header::trace( request.payload.header);
+
+                     // we parent service to propagate the request line
+                     result.parent.service = request.request_line;
+
+                     // this is forward semantics, so we always set buffer type to http/body
+                     result.buffer.type = common::buffer::type::http;
+                     result.buffer.data = std::move( request.payload.body);
+                     result.header = std::move( request.payload.header);
+
+                     return result;
                   }
                   
                   static Reply transform( message::service::call::Reply reply)
                   {
+                     Reply result;
 
-                     return {};
+                     auto deduce_status_code = []( const message::service::call::Reply& reply)
+                     {
+                        // if user is set, assume http code from user
+                        if( reply.code.user != 0)
+                           return static_cast< http::code>( reply.code.user);
+
+                        return local::transform::reply::code( reply.code.result);
+                     };
+
+                     result.payload.body = std::move( reply.buffer.data);
+                     result.payload.header = std::move( reply.header).extract();
+                     result.code = deduce_status_code( reply);
+
+                     return result;
+                  }
+
+                  static Reply error( const std::system_error& error)
+                  {
+                     return policy::Service::error( error); 
                   }
 
                };
@@ -205,7 +268,7 @@ namespace casual
                common::unique_function< std::optional< Reply>()> dispatch( communication::ipc::inbound::Device ipc, Directive directive, Request request)
                {
                   Trace trace{ "http::inbound::call::local::create::dispatch"};
-                  log::debug( "ipc: ", ipc, " directive: ", directive, " request: ", request);
+                  log::debug( "ipc: ", ipc, ", directive: ", directive, ", request: ", request);
 
                   switch( directive)
                   {
@@ -262,20 +325,18 @@ namespace casual
 
          communication::ipc::inbound::Device ipc;
          m_descriptor = ipc.connector().descriptor();
-         m_protocol = local::buffer::type( request.payload.header);
          m_implementation = local::create::dispatch( std::move( ipc), directive, std::move( request));
       }
 
       Context::~Context() = default;
 
       Context::Context( Context&& other)
-         : m_descriptor{ std::exchange( other.m_descriptor, {})}, m_protocol{ std::exchange( other.m_protocol, {})}, m_implementation{ std::exchange( other.m_implementation, {})}
+         : m_descriptor{ std::exchange( other.m_descriptor, {})}, m_implementation{ std::exchange( other.m_implementation, {})}
       {}
 
       Context& Context::operator = ( Context&& other)
       {
          m_descriptor = std::exchange( other.m_descriptor, {});
-         m_protocol = std::exchange( other.m_protocol, {});
          m_implementation = std::exchange( other.m_implementation, {});
          return *this;
       }
@@ -286,43 +347,11 @@ namespace casual
 
          casual::assertion( m_implementation, common::code::casual::invalid_semantics, " http::inbound::call::Context::receive");
 
-         try
-         {
-            auto result = m_implementation();
-            if( result)
-               m_implementation = {};
-            
-            return result;
-         }
-         catch( ...)
-         {
-            auto error = exception::capture();
-
-            Reply result;
-
-            if( common::code::is::category< http::code>( error.code()))
-               result.code = static_cast< http::code>( error.code().value());
-            else if( error.code() == common::code::xatmi::no_entry)
-               result.code = http::code::not_found;
-            else 
-            {
-               log::line( log::category::error, error);
-               result.code = http::code::internal_server_error;
-            }
-
-            common::buffer::Payload payload{ m_protocol};
-            {
-               auto view = binary::span::make( error.what(), std::strlen( error.what()));
-               payload.data.assign( std::begin( view), std::end( view));
-            }
-
-            result.payload.body = std::move( payload.data);
-            result.payload.header.emplace_back( "content-length", std::to_string( result.payload.body.size()));
-            result.payload.header.emplace_back( http::header::name::result::code, http::header::value::result::code( static_cast< common::code::xatmi>( error.code().value())));
-            result.payload.header.emplace_back( http::header::name::result::user::code, http::header::value::result::user::code( 0));
- 
-            return result;
-         }
+         auto result = m_implementation();
+         if( result)
+            m_implementation = {};
+         
+         return result;
       }
 
    } // http::inbound::call

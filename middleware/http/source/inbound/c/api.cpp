@@ -117,8 +117,18 @@ namespace casual::http::inbound
 
             log::debug( "request: ", context_holder->request);
 
+            auto transform_directive = []( Directive value)
+            {
+               switch( value)
+               {
+                  case Directive::forward: return http::inbound::call::Directive::forward;
+                  case Directive::service: return http::inbound::call::Directive::service;
+               }
+               common::code::raise::error( common::code::casual::invalid_argument, "invalid value for directive: ", value);
+            };
+
             context_holder->context = http::inbound::call::Context{ 
-               static_cast< http::inbound::call::Directive>( directive), std::move( context_holder->request)};
+               transform_directive( directive), std::move( context_holder->request)};
 
             // return fd to caller
             // fd triggered when it's time to poll (when "readable")
@@ -151,6 +161,7 @@ namespace casual::http::inbound
                auto context_holder = context::cast( handle->context_holder);
                context_holder->request.method.assign( request->method.data, request->method.size);
                context_holder->request.url.assign( request->url.data, request->url.size);
+               context_holder->request.request_line.assign( request->line.data, request->line.size);
                context_holder->request.service.assign( request->service.data, request->service.size);
 
                // copy all headers i.e. key and value
@@ -241,9 +252,24 @@ namespace casual::http::inbound
                return error.code().value();  
             }
          }
+
+         void initialize_handle( casual_http_inbound_handle_t* handle)
+         {
+            Trace trace{ "casual::http::inbound::local::initialize_handle"};
+            CASUAL_ASSERT( handle != nullptr);
+
+            if( ! handle->context_holder)
+                  handle->context_holder = new context::Holder();
+         }
+
       } // <unnamed>
    } // local
 } // casual::http::inbound
+
+extern void casual_http_inbound_initialize_handle( casual_http_inbound_handle_t* handle)
+{
+   casual::http::inbound::local::initialize_handle( handle);
+}
 
 extern void casual_http_inbound_request_set( casual_http_inbound_handle_t* handle, casual_http_inbound_request_t* request)
 {

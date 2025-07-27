@@ -4,6 +4,7 @@ import casual.middleware.make.api as dsl
 
 make.IncludePaths([
     'include',
+    'unittest/include',
     '../common/include',
     '../xatmi/include',
     '../buffer/include',
@@ -80,6 +81,7 @@ target = make.LinkExecutable( 'bin/casual-http-outbound',
    ])
 
 install_bin.append( target)
+
 
 # Unittest
 make.LinkUnittest( 'unittest/bin/test-http',

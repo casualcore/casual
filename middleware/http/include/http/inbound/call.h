@@ -76,6 +76,8 @@ namespace casual
          //! GET, POST/PUT, DELETE, etc
          std::string method;
 
+         std::string request_line; // the first line of the request, e.g. "GET / HTTP/1.1"
+
          http::inbound::call::url url;
 
          Payload payload;
@@ -83,6 +85,7 @@ namespace casual
          CASUAL_LOG_SERIALIZE(
             CASUAL_SERIALIZE( service);
             CASUAL_SERIALIZE( method);
+            CASUAL_SERIALIZE( request_line);
             CASUAL_SERIALIZE( url);
             CASUAL_SERIALIZE( payload);
          )
@@ -130,7 +133,6 @@ namespace casual
              
       private:
          common::strong::ipc::descriptor::id m_descriptor;
-         std::string m_protocol;
          common::unique_function< std::optional< Reply>()> m_implementation;
          
       };

@@ -32,6 +32,7 @@ typedef struct ngx_http_casual_loc_conf
 {
    ngx_str_t directive; // "service" or "forward"; TODO: change to enum
    ngx_str_t url_prefix; // default /
+   ngx_str_t forward_service; // service to forward all calls to.
 } ngx_http_casual_loc_conf_t;
 
 // nginx integration api
@@ -95,6 +96,15 @@ static ngx_command_t
                 ngx_conf_set_str_slot, 
                 NGX_HTTP_LOC_CONF_OFFSET,
                 offsetof(ngx_http_casual_loc_conf_t, url_prefix),
+                NULL // post handler
+            },
+            {
+                // "forward" -> forward all calls to a specific service
+                ngx_string("casual_forward_service"),
+                NGX_HTTP_LOC_CONF | NGX_CONF_TAKE1,
+                ngx_conf_set_str_slot, // TODO: change to enum
+                NGX_HTTP_LOC_CONF_OFFSET,
+                offsetof(ngx_http_casual_loc_conf_t, forward_service),
                 NULL // post handler
             },
             ngx_null_command};
@@ -275,7 +285,11 @@ static void ngx_http_casual_request_data_handler( ngx_http_request_t* http_reque
    ngx_log_error( NGX_LOG_NOTICE, http_request->connection->log, 0, "casual: %s", __FUNCTION__);
 
    ngx_http_casual_ctx_t* context = ngx_http_get_module_ctx( http_request, ngx_http_casual_module);
+
+   // make sure we initialize all the stuff
+   casual_http_inbound_initialize_handle( &context->casual_handle);
    
+
    // since we've set http_request->request_body_in_single_buf = 1; and http_request->request_body_no_buffering = 0;
    // we know that we'll get a single buffer/file and don't need to check last_buf and such.
    for( ngx_chain_t* cl = http_request->request_body->bufs; cl; cl = cl->next)
@@ -339,10 +353,11 @@ static ngx_int_t send_request_to_casual( ngx_http_casual_ctx_t* context)
    cleanup->handler = request_cleanup; // set request's cleanup callback
    cleanup->data = context;     // handler argument
 
+
    casual_http_inbound_request_t request;
+   request.line = to_string( context->http_request->request_line);
    request.method = to_string( context->http_request->method_name);
    request.url = to_string( context->http_request->unparsed_uri);
-   request.service = retrieve_service( context->http_request->uri, location_configuration->url_prefix);
    
    // handle headers
    ngx_int_t headersize = get_header_length(context->http_request);
@@ -356,14 +371,29 @@ static ngx_int_t send_request_to_casual( ngx_http_casual_ctx_t* context)
       request.headers.size = headersize;
    }
 
+
+   // if active choosen forward then forward else service
+   ngx_int_t directive = ngx_strcmp( location_configuration->directive.data, "forward") == 0 ? forward : service;
+
+   if( location_configuration->forward_service.len > 0)
+   {
+      // user has set a specific service to forward to
+      request.service = to_string(location_configuration->forward_service);
+
+      // directive is always forward if a forward-service is set
+      directive = forward;
+   }
+   else
+   {
+      // deduce from url
+      request.service = retrieve_service( context->http_request->uri, location_configuration->url_prefix);
+   }
+
    // set values in casual context
    casual_http_inbound_request_set( &context->casual_handle, &request);
 
    // free headers once copied
    free_headers( headers, headersize);
-
-   // if active choosen forward then forward else service
-   ngx_int_t directive = ngx_strcmp( location_configuration->directive.data, "forward") == 0 ? forward : service;
 
    if( casual_http_inbound_call( &context->casual_handle, directive) != 0)
    {

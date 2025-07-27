@@ -44,6 +44,7 @@ typedef struct casual_http_inbound_string_s
 // request from nginx to casual
 typedef struct casual_http_inbound_request_s
 {
+   casual_http_inbound_string_t line; // the first line of the request, e.g. "GET / HTTP/1.1"
    casual_http_inbound_string_t method;
    casual_http_inbound_string_t url;
    casual_http_inbound_string_t service;
@@ -71,6 +72,7 @@ enum Cycle { cycle_done = 0, cycle_again = -2};
 enum Directive { service = 0, forward = 1};
 
 // c-api
+extern API void casual_http_inbound_initialize_handle(casual_http_inbound_handle_t* handle);
 extern API void casual_http_inbound_request_set( casual_http_inbound_handle_t* handle, casual_http_inbound_request_t* request);
 extern API void casual_http_inbound_reply_get( casual_http_inbound_handle_t* handle, casual_http_inbound_reply_t* reply);
 extern API void casual_http_inbound_push_payload(casual_http_inbound_handle_t* handle, const unsigned char* ptr, size_t size);

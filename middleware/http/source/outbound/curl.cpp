@@ -139,6 +139,64 @@ namespace casual
          } // <unnamed>
       } // local
 
+      namespace log
+      {
+         common::log::Stream debug{ "casual.curl.debug"};
+      } // log
+
+
+      // callback for curl's logging
+      extern "C" int curl_log_callback( CURL *handle, ::curl_infotype type, const char* data, size_t size, const void* clientp)
+      {
+         auto content = std::string_view{ data, size};
+
+         if( content.empty())
+            return 0;
+
+         if( content.back() == '\n')
+            content.remove_suffix( 1);
+
+         constexpr std::string_view header_newline = "\r\n";
+
+         switch( type)
+         {
+            case CURLINFO_TEXT:         
+               common::log::line( curl::log::debug, "CURLINFO_TEXT: ", content); 
+               break;
+            case CURLINFO_HEADER_IN:
+               for( auto header : std::views::split( content, header_newline))
+                  if( ! header.empty())
+                     common::log::line( curl::log::debug, "CURLINFO_HEADER_IN: ", header);
+               break;
+            case CURLINFO_HEADER_OUT:
+            {
+               for( auto header : std::views::split( content, header_newline))
+                  if( ! header.empty())
+                     common::log::line( curl::log::debug, "CURLINFO_HEADER_OUT: ", header);
+               break;
+            }
+            case CURLINFO_DATA_IN:      
+               common::log::line( curl::log::debug, "CURLINFO_DATA_IN: ", common::binary::span::make( content));
+               break;
+            case CURLINFO_DATA_OUT:     
+               common::log::line( curl::log::debug, "CURLINFO_DATA_OUT: ", common::binary::span::make( content));
+               break;
+            case CURLINFO_SSL_DATA_IN:  
+               common::log::line( curl::log::debug, "CURLINFO_SSL_DATA_IN: ", common::binary::span::make( content));
+               break;
+            case CURLINFO_SSL_DATA_OUT: 
+               common::log::line( curl::log::debug, "CURLINFO_SSL_DATA_OUT: ", common::binary::span::make( content));
+               break;
+            case CURLINFO_END:
+               common::log::line( curl::log::debug, "CURLINFO_END: ", content); 
+               break;
+            default:
+               common::log::error( common::code::casual::invalid_argument, "unknown curl log type: ", std::to_underlying( type));
+         }
+
+         return 0;
+      }
+
       namespace type
       {
          std::ostream& operator << ( std::ostream& out, const easy& easy)
@@ -201,17 +259,7 @@ namespace casual
          }
       }
 
-      void log( type::code::multi code)
-      {
-         try
-         {
-            check( code);
-         }
-         catch( ...)
-         {
-            common::exception::sink();
-         }
-      }
+
 
       namespace multi
       {
@@ -222,13 +270,16 @@ namespace casual
 
          void remove( const type::multi& multi, const type::easy& easy)
          {
-            curl::log( curl_multi_remove_handle( multi.get(), easy.get()));
+            log( curl_multi_remove_handle( multi.get(), easy.get()));
          }
 
          platform::size::type perform( const type::multi& multi)
          {
+            Trace trace{ "http::outbound::curl::multi::perform"};
+
             int count = 0;
             curl::check( curl_multi_perform( multi.get(), &count));
+            common::log::debug( "count: ", count);
             return count;
          }
 
@@ -236,6 +287,19 @@ namespace casual
          {
             return local::global::Initializer::instance().multi();
          }
+
+            void log( type::code::multi code)
+            {
+               try
+               {
+                  check( code);
+               }
+               catch( ...)
+               {
+                  common::exception::sink();
+               }
+            }
+
       } // multi
 
       namespace easy

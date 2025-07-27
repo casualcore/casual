@@ -16,8 +16,8 @@ namespace casual
       {
          static constexpr auto types()
          {
-            // TODO Why all these? Don't understand my former self...
-            return array::make( type::x_octet, type::binary, type::json, type::yaml, type::xml, type::ini);
+            // x_octet buffer is a "default" binary buffer type, and is used by all other binary buffer types
+            return array::make( type::x_octet, type::binary, type::json, type::yaml, type::xml, type::ini, type::http);
          }
       };
 

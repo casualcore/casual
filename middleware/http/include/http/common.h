@@ -43,8 +43,6 @@ namespace casual
 
             } // execution
 
-            
-
          } // name
 
 

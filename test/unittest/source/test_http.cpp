@@ -10,6 +10,8 @@
 
 #include "domain/unittest/manager.h"
 
+#include "service/unittest/utility.h"
+
 #include "common/communication/instance.h"
 #include "common/transcode.h"
 #include "common/environment.h"
@@ -25,7 +27,7 @@ namespace casual
 
    namespace test
    {
-      namespace domain
+      namespace http
       {
          namespace local
          {
@@ -36,9 +38,6 @@ namespace casual
                   constexpr std::string_view a = R"(
 domain:
    name: A
-   transaction:
-      log: ":memory:"
-
    executables:
       -  path: ${CASUAL_UNITTEST_HTTP_INBOUND_PATH}
          alias: casual-http-inbound
@@ -52,9 +51,6 @@ domain:
                   constexpr std::string_view b = R"(
 domain:
    name: B
-   transaction:
-      log: ":memory:"
-
    servers:
       - path: ${CASUAL_MAKE_SOURCE_ROOT}/middleware/service/bin/casual-service-manager
       - path: ${CASUAL_MAKE_SOURCE_ROOT}/middleware/http/bin/casual-http-outbound
@@ -73,10 +69,17 @@ http:
                      common::environment::variable::set( "CASUAL_UNITTEST_HTTP_OUTBOUND_CONFIG", file.string());
                      return file;
                   }
+
+                  auto nginx_config_content( auto content)
+                  {
+                     auto file = unittest::file::temporary::content( ".conf", content);
+                     common::environment::variable::set( "CASUAL_UNITTEST_HTTP_INBOUND_CONFIG", file.string());
+                     return file;
+                  }
                   
                   auto nginx_config_file()
                   {
-                     auto file = unittest::file::temporary::content( ".conf", R"(
+                     return nginx_config_content( R"(
 worker_processes  1;
 daemon off;
 
@@ -89,13 +92,15 @@ events {
    worker_connections  1000;
 }
 
+error_log /tmp/log debug;
+
 http {
    default_type  application/octet-stream;
    underscores_in_headers on;
 
    sendfile        on;
 
-   client_max_body_size 500M;
+   client_max_body_size 500M; 
 
    server {
       listen       8042;
@@ -109,9 +114,6 @@ http {
       }
    }
 })");
-                     
-                     common::environment::variable::set( "CASUAL_UNITTEST_HTTP_INBOUND_CONFIG", file.string());
-                     return file;
                   }
                   
                } // configuration
@@ -143,7 +145,14 @@ http {
 
                      tpfree( buffer);
                   }
+               }
 
+               auto curl_output_rows( const std::string& output)
+               {
+                  auto copy = output;
+                  auto cleaned = common::algorithm::remove( copy, '\r');
+
+                  return string::split( std::string_view{ std::begin( cleaned), std::end( cleaned)}, '\n');
                }
 
             } // <unnamed>
@@ -283,7 +292,246 @@ http {
             test_http_parallel,
             ::testing::ValuesIn( counts)
          );
-      
-      } // domain
+
+
+         TEST( test_http, advertise_forward_service__curl_GET__expect_call_to_forward_service)
+         {
+            common::unittest::Trace trace;
+
+            auto nginx_guard = local::configuration::nginx_config_content( R"(
+worker_processes  1;
+daemon off;
+
+pid nginx-pid-file.pid;
+
+env CASUAL_DOMAIN_HOME;
+env LD_LIBRARY_PATH;
+
+events {
+   worker_connections  1000;
+}
+
+error_log /tmp/log debug;
+
+http {
+   default_type  application/octet-stream;
+   underscores_in_headers on;
+
+   sendfile        on;
+
+   server {
+      listen       8042;
+      server_name  localhost;
+      access_log   /tmp/access.log;
+
+      location / {
+            casual_pass;
+            casual_forward_service forward/service;
+      }
+   }
+})");
+
+            auto a = casual::domain::unittest::manager( local::configuration::a);
+            
+            casual::service::unittest::advertise( { "forward/service"});
+
+            auto executing = administration::unittest::cli::command::non::blocking::execute( 
+               "curl -sS -H 'Content-Type: application/some-type' -X GET 'http://localhost:8042/some/path?foo=bar'"
+            );
+
+
+            {
+               auto request = common::communication::ipc::receive< common::message::service::call::callee::Request>();
+
+               EXPECT_TRUE( request.buffer.data.empty()) << CASUAL_NAMED_VALUE( request);
+               EXPECT_TRUE( request.buffer.type == common::buffer::type::http);
+
+               EXPECT_TRUE( request.header.at( "content-type").value() == "application/some-type") << CASUAL_NAMED_VALUE( request.header);
+
+               EXPECT_TRUE( request.parent.service == "GET /some/path?foo=bar HTTP/1.1") << CASUAL_NAMED_VALUE( request.parent.service);
+               
+
+               auto reply = common::message::reverse::type( request);
+               reply.buffer.data.assign_range( common::binary::span::make( std::string_view{ "foo"}));
+               reply.buffer.type = common::buffer::type::http;
+               reply.code.result = common::code::xatmi::ok;
+               reply.header = { { 
+                  { "a", "foo"},
+                  { "b", "bar"},
+                  { "c", "baz"}
+               }};
+               
+
+               common::communication::device::blocking::send( request.process.ipc, reply);
+            }
+
+            auto capture = administration::unittest::cli::command::non::blocking::capture( std::move( executing));
+            EXPECT_TRUE( capture.standard.out == "foo") << CASUAL_NAMED_VALUE( capture.standard.out);
+       }
+
+
+
+         TEST( test_http, advertise_forward_service__curl_POST__expect_call_to_forward_service)
+         {
+            common::unittest::Trace trace;
+
+            auto nginx_guard = local::configuration::nginx_config_content( R"(
+worker_processes  1;
+daemon off;
+
+pid nginx-pid-file.pid;
+
+env CASUAL_DOMAIN_HOME;
+env LD_LIBRARY_PATH;
+
+events {
+   worker_connections  1000;
+}
+
+error_log /tmp/log debug;
+
+http {
+   default_type  application/octet-stream;
+   underscores_in_headers on;
+
+   sendfile        on;
+
+   server {
+      listen       8042;
+      server_name  localhost;
+      access_log   /tmp/access.log;
+
+      location / {
+            casual_pass;
+            casual_forward_service forward/service;
+      }
+   }
+})");
+
+            auto a = casual::domain::unittest::manager( local::configuration::a);
+            
+            casual::service::unittest::advertise( { "forward/service"});
+
+            constexpr std::string_view origin_body = R"({"a": 42})";
+
+            auto executing = administration::unittest::cli::command::non::blocking::execute( 
+               "curl -sS --fail-with-body -H 'Content-Type: application/some-type' -X POST -d '", origin_body, "' 'http://localhost:8042/some/path?foo=bar'"
+            );
+
+            {
+               auto request = common::communication::ipc::receive< common::message::service::call::callee::Request>();
+
+               EXPECT_TRUE( request.parent.service == "POST /some/path?foo=bar HTTP/1.1") << CASUAL_NAMED_VALUE( request.parent.service);
+
+               auto body = std::string_view( common::binary::span::to_string_like( request.buffer.data));
+               EXPECT_TRUE( body == origin_body ) << CASUAL_NAMED_VALUE( body);
+               EXPECT_TRUE( request.buffer.type == common::buffer::type::http);
+
+               EXPECT_TRUE( request.header.at( "content-type").value() == "application/some-type") << CASUAL_NAMED_VALUE( request.header);
+
+               auto reply = common::message::reverse::type( request);
+               reply.buffer.data.assign_range( common::binary::span::make( std::string_view{ "bar"}));
+               reply.buffer.type = common::buffer::type::http;
+               reply.code.result = common::code::xatmi::ok;
+               reply.header = { { 
+                  { "a", "foo"},
+                  { "b", "bar"},
+                  { "c", "baz"}
+               }};
+               
+
+               common::communication::device::blocking::send( request.process.ipc, reply);
+            }
+
+            auto capture = administration::unittest::cli::command::non::blocking::capture( std::move( executing));
+            EXPECT_TRUE( capture.standard.out == "bar") << CASUAL_NAMED_VALUE( capture.standard.out);
+       }
+
+
+         TEST( test_http, inbound_directive_forward__advertise_service__curl_POST__expect_call_to_url_service)
+         {
+            common::unittest::Trace trace;
+
+            auto nginx_guard = local::configuration::nginx_config_content( R"(
+worker_processes  1;
+daemon off;
+
+pid nginx-pid-file.pid;
+
+env CASUAL_DOMAIN_HOME;
+env LD_LIBRARY_PATH;
+
+events {
+   worker_connections  1000;
+}
+
+error_log /tmp/log debug;
+
+http {
+   default_type  application/octet-stream;
+   underscores_in_headers on;
+
+   sendfile        on;
+
+   server {
+      listen       8042;
+      server_name  localhost;
+      access_log   /tmp/access.log;
+
+      location / {
+            casual_pass;
+            casual_directive forward;
+      }
+   }
+})");
+
+            auto a = casual::domain::unittest::manager( local::configuration::a);
+            
+            casual::service::unittest::advertise( { "some/service"});
+
+            constexpr std::string_view origin_body = R"({"a": 42})";
+
+            auto executing = administration::unittest::cli::command::non::blocking::execute( 
+               "curl -sS -i --fail-with-body -H 'Content-Type: application/some-type' -X POST -d '", origin_body, "' 'http://localhost:8042/some/service?foo=bar'"
+            );
+
+            {
+               auto request = common::communication::ipc::receive< common::message::service::call::callee::Request>();
+
+               EXPECT_TRUE( request.parent.service == "POST /some/service?foo=bar HTTP/1.1") << CASUAL_NAMED_VALUE( request.parent.service);
+
+               auto body = std::string_view( common::binary::span::to_string_like( request.buffer.data));
+               EXPECT_TRUE( body == origin_body ) << CASUAL_NAMED_VALUE( body);
+               EXPECT_TRUE( request.buffer.type == common::buffer::type::http);
+
+               EXPECT_TRUE( request.header.at( "content-type").value() == "application/some-type") << CASUAL_NAMED_VALUE( request.header);
+
+
+               auto reply = common::message::reverse::type( request);
+               reply.buffer.data.assign_range( common::binary::span::make( std::string_view{ "casual-payload"}));
+               reply.buffer.type = common::buffer::type::http;
+               reply.code.result = common::code::xatmi::ok;
+               reply.header = { { 
+                  { "a", "foo"},
+                  { "b", "bar"},
+                  { "c", "baz"}
+               }};
+               
+
+               common::communication::device::blocking::send( request.process.ipc, reply);
+            }
+
+            auto capture = administration::unittest::cli::command::non::blocking::capture( std::move( executing));
+            auto rows = local::curl_output_rows( capture.standard.out);
+
+            // the payload
+            EXPECT_TRUE( common::algorithm::find( rows, "casual-payload")) << CASUAL_NAMED_VALUE( rows);
+            // the headers
+            EXPECT_TRUE( common::algorithm::find( rows, "a: foo")) << CASUAL_NAMED_VALUE( rows);
+            EXPECT_TRUE( common::algorithm::find( rows, "b: bar")) << CASUAL_NAMED_VALUE( rows);
+            EXPECT_TRUE( common::algorithm::find( rows, "c: baz")) << CASUAL_NAMED_VALUE( rows);
+       }
+
+      } // http
    } // test
 } // casual

@@ -82,6 +82,9 @@ namespace casual
 
             CASUAL_FORWARD_SERIALIZE( m_fields);
 
+            inline std::vector< header::Field> extract() && { return std::move( m_fields);}
+
+
          private:
             std::vector< header::Field> m_fields;
          };

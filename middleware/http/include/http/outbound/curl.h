@@ -23,6 +23,14 @@ namespace casual
    {
       constexpr platform::size::type timeout = 1000 * 60 * 5;
 
+      namespace log
+      {
+          extern common::log::Stream debug;
+      } // log
+
+      //! curl callback for logging
+      extern "C" int curl_log_callback( CURL *handle, ::curl_infotype type, const char* data, size_t size, const void* clientp);
+
       namespace type
       {
          namespace native
@@ -101,7 +109,7 @@ namespace casual
       void check( type::code::multi code);
       void check( type::code::easy code);
 
-      void log( type::code::multi code);
+      
 
       namespace multi
       {
@@ -111,6 +119,8 @@ namespace casual
          platform::size::type perform( const type::multi& multi);
 
          type::multi create();
+
+         void log( type::code::multi code);
       } // multi
 
       namespace easy

@@ -39,11 +39,9 @@ namespace casual
             struct Configuration
             {
                const bool force_fresh_connect = common::environment::variable::get< bool>( "CASUAL_HTTP_CURL_FORCE_FRESH_CONNECT").value_or( false);
-               const bool verbose = common::environment::variable::get< bool>( "CASUAL_HTTP_CURL_VERBOSE").value_or( false);
 
                CASUAL_LOG_SERIALIZE(
                   CASUAL_SERIALIZE( force_fresh_connect);
-                  CASUAL_SERIALIZE( verbose);
                )
             };
 
@@ -107,6 +105,7 @@ namespace casual
                      result.state().payload = std::move( payload);
 
                      // add content header
+                     if( ! result.state().payload.type.empty())
                      {
                         auto content = protocol::convert::from::buffer( result.state().payload.type);
 
@@ -150,28 +149,28 @@ namespace casual
                      return 0;
                   }
 
-                  auto write_header( char* buffer, platform::size::type size, state::pending::Request::State& state)
+                  auto write_header( const char* buffer, platform::size::type size, state::pending::Request::State& state)
                   {
                      Trace trace{ "http::outbound::request::local::receive::callback::header"};
 
-                     auto range = range::make( buffer, buffer + size);
-
-                     range = std::get< 0>( common::algorithm::divide_if( range, []( char c){
-                        return c == '\n' || c == '\r';
-                     }));
+                     auto text = std::string_view{ buffer, buffer + size};
+                     constexpr std::string_view new_line = "\n";
 
 
-                     if( range)                        
-                        state.header.reply.add( casual::header::Field{ std::string{ std::begin( range), std::end( range)}});
+                     for( auto header : std::views::split( text, new_line))
+                     {
+                        header = common::string::trim( header);
 
-                     // else:
-                     // Think this is an "empty header" that we'll be invoked as the "last header"
-                     //  
+                        if( header.empty())
+                           continue;
+
+                        state.header.reply.add( casual::header::Field{ std::string{ std::begin( header), std::end( header)}});
+                     }
 
                      return size;
                   }
 
-                  std::size_t header( char* buffer, size_t size, size_t nitems, state::pending::Request::State* state)
+                  std::size_t header( const char* buffer, size_t size, size_t nitems, state::pending::Request::State* state)
                   {
                      if( state)
                         return write_header( buffer, size * nitems, *state);
@@ -303,8 +302,11 @@ namespace casual
             curl::easy::set::option( easy, CURLOPT_HEADERDATA, &request.state());
          }
 
-         if( local::configuration().verbose)
+         if( outbound::curl::log::debug)
+         {
             curl::easy::set::option( easy, CURLOPT_VERBOSE, 1);
+            curl::easy::set::option( easy, CURLOPT_DEBUGFUNCTION, &outbound::curl::curl_log_callback);
+         }
 
 
          common::log::debug( "request: ", request);
