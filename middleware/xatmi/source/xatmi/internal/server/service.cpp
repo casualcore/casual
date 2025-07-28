@@ -6,7 +6,7 @@
 
 
 #include "casual/xatmi/internal/server/service.h"
-#include "casual/xatmi/internal/header/context.h"
+#include "casual/xatmi/internal/context.h"
 
 #include "server/service/invoke.h"
 #include "server/context.h"
@@ -46,23 +46,23 @@ namespace casual
 
                   // if we have a header, we associate it with the buffer handle -> give user access to it via handle
                   if( ! argument.header.empty())
-                     header::context().associate( common::buffer::handle::type{ result.data}, std::move( argument.header));
+                     context().header().associate( common::buffer::handle::type{ result.data}, std::move( argument.header));
 
                   return result;
                }
 
-               common::buffer::Payload payload( const casual::server::state::Jump& jump)
+               common::buffer::Payload payload( const internal::state::Jump& jump)
                {
                   if( jump.buffer.data)
                   {
-                     header::context().disassociate( common::buffer::handle::type{ jump.buffer.data});
+                     context().header().disassociate( common::buffer::handle::type{ jump.buffer.data});
                      return common::buffer::pool::holder().release( jump.buffer.data, jump.buffer.size);
                   }
 
                   return { nullptr};
                }
 
-               casual::server::service::invoke::Result result( const casual::server::state::Jump& jump)
+               casual::server::service::invoke::Result result( const internal::state::Jump& jump)
                {
                   return casual::server::service::invoke::Result{ 
                      .payload = transform::payload( jump),
@@ -70,7 +70,7 @@ namespace casual
                   };
                }
 
-               casual::server::service::invoke::Forward forward( const casual::server::state::Jump& jump)
+               casual::server::service::invoke::Forward forward( const internal::state::Jump& jump)
                {
                   casual::server::service::invoke::Forward result;
 
@@ -90,14 +90,14 @@ namespace casual
 
                casual::server::service::invoke::Result operator () ( casual::server::service::invoke::Parameter&& argument)
                {
-                  auto& state = casual::server::context().state();
+                  auto& xatmi_state = xatmi::internal::context().state();
 
                   // Set destination for the coming jump...
                   // we can't wrap the jump in some abstraction since it's
                   // UB (http://en.cppreference.com/w/cpp/utility/program/setjmp)
-                  switch( ::setjmp( state.jump.environment))
+                  switch( ::setjmp( xatmi_state.jump.environment))
                   {
-                     case casual::server::state::Jump::Location::c_no_jump:
+                     case xatmi::internal::state::Jump::Location::c_no_jump:
                      {
                         invoke( argument);
                         
@@ -108,26 +108,29 @@ namespace casual
                         // a normal path instead of an error. We need to check if TPRETURN
                         // has been called, and pick upp the response it saved in context.
                         // This means doing the "same" as in the c_return case below.
-                        if (state.TPRETURN_called) {
+                        if (xatmi_state.TPRETURN_called) 
+                        {
                            common::log::debug( "user called TPRETURN");
-                           return transform::result( state.jump);
-                        } else {
+                           return transform::result( xatmi_state.jump);
+                        } 
+                        else 
+                        {
                            common::code::raise::error( common::code::xatmi::service_error, "service did not call tpreturn - ", argument.service.name);
                         }
                      }
-                     case casual::server::state::Jump::Location::c_forward:
+                     case xatmi::internal::state::Jump::Location::c_forward:
                      {
                         common::log::debug( "user called tpforward");
-                        throw transform::forward( state.jump);
+                        throw transform::forward( xatmi_state.jump);
                      }
                      default:
                      {
                         common::code::raise::error( common::code::casual::internal_unexpected_value, "unexpected value from setjmp");
                      }
-                     case casual::server::state::Jump::Location::c_return:
+                     case xatmi::internal::state::Jump::Location::c_return:
                      {
                         common::log::debug( "user called tpreturn");
-                        return transform::result( state.jump);
+                        return transform::result( xatmi_state.jump);
                      }
                   }
                }
@@ -137,7 +140,7 @@ namespace casual
                void invoke( casual::server::service::invoke::Parameter& argument)
                {
 
-                  auto& state = casual::server::context().state();
+                  auto& xatmi_state = casual::xatmi::internal::context().state();
 
                   // Type of buffer needed by Cobol API TPSVCSTART(), so save information.
                   // dismantle() returns a tuple with two "range".
@@ -148,8 +151,8 @@ namespace casual
                   // by dismantle()... Should dismantle() return vector<string> instead? 
                   
                   auto [ type, subtype] =  casual::common::buffer::type::dismantle(argument.payload.type);
-                  state.buffer_type = std::string{ std::begin( type), std::end( type)};
-                  state.buffer_subtype = std::string{ std::begin( subtype), std::end( subtype)};
+                  xatmi_state.buffer_type = std::string{ std::begin( type), std::end( type)};
+                  xatmi_state.buffer_subtype = std::string{ std::begin( subtype), std::end( subtype)};
 
                   // Note that saving buffer tpe information need to be done before
                   // transform::information() below. The transform  "move" data from
@@ -159,7 +162,7 @@ namespace casual
                   TPSVCINFO information = transform::information( argument);
 
                   // save service argument for possible use from Cobol api TPSVCSTART
-                  state.information.argument = information;
+                  xatmi_state.information.argument = information;
 
                   // Initialize flag for detecting service normal "return" after a call
                   // to TPRETURN, i.e. The COBOL api method of returning service data
@@ -167,7 +170,7 @@ namespace casual
                   // and uses a long_jump. When using the C api a normal return is an error,
                   // but it is "normal" when the Cobol API is used, as long as the Cobol
                   // API TPRETURN has been called to supply the service "result".  
-                  state.TPRETURN_called = false;
+                  xatmi_state.TPRETURN_called = false;
 
                   try
                   {

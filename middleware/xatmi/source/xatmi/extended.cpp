@@ -7,7 +7,7 @@
 #include "casual/xatmi/extended.h"
 #include "casual/xatmi/internal/log.h"
 #include "casual/xatmi/internal/code.h"
-#include "casual/xatmi/internal/header/context.h"
+#include "casual/xatmi/internal/context.h"
 
 #include "common/instance.h"
 #include "common/log/stream.h"
@@ -22,7 +22,7 @@
 
 void casual_service_forward( const char* service, char* data, long size)
 {
-   casual::server::context().forward( service, data, size);
+   casual::xatmi::internal::context().forward( service, data, size);
 }
 
 namespace local
@@ -225,7 +225,7 @@ int casual_header_associate( const char* buffer_handle, const char** headers, lo
 
       auto fields = casual::common::algorithm::transform( casual::common::range::make( headers, header_size), transform_field);
 
-      casual::xatmi::internal::header::context().associate( 
+      casual::xatmi::internal::context().header().associate( 
          casual::common::buffer::handle::type{ buffer_handle}, casual::header::Fields{ std::move( fields)});
 
       return 0;
@@ -239,7 +239,7 @@ int casual_header_associate( const char* buffer_handle, const char** headers, lo
 
 void casual_header_disassociate( const char* buffer_handle)
 {
-   casual::xatmi::internal::header::context().disassociate( casual::common::buffer::handle::type{ buffer_handle});
+   casual::xatmi::internal::context().header().disassociate( casual::common::buffer::handle::type{ buffer_handle});
 }
 
 void casual_header_browse( const char* buffer_handle, casual_header_browse_callback callback, void* context)
@@ -247,7 +247,7 @@ void casual_header_browse( const char* buffer_handle, casual_header_browse_callb
    if( ! callback || ! buffer_handle)
       return;
 
-   if( auto fields = casual::xatmi::internal::header::context().find( casual::common::buffer::handle::type{ buffer_handle}))
+   if( auto fields = casual::xatmi::internal::context().header().find( casual::common::buffer::handle::type{ buffer_handle}))
    {
       for( const auto& field : *fields)
       {

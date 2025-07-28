@@ -6,6 +6,7 @@
 
 #include "casual/xatmi/cobol.h"
 #include "casual/xatmi/internal/code.h"
+#include "casual/xatmi/internal/context.h"
 
 #include "server/context.h"
 
@@ -24,16 +25,16 @@ int tpsvcinfo_cobol_support(const TPSVCINFO** tpsvcinfo,
    //return casual::xatmi::internal::error::wrap( [&](){
    //   something...
    //});
-   *tpsvcinfo = &casual::server::context().state().information.argument;
-   *buffer_type = casual::server::context().state().buffer_type.c_str();
-   *buffer_subtype = casual::server::context().state().buffer_subtype.c_str();
+   *tpsvcinfo = &casual::xatmi::internal::context().state().information.argument;
+   *buffer_type = casual::xatmi::internal::context().state().buffer_type.c_str();
+   *buffer_subtype = casual::xatmi::internal::context().state().buffer_subtype.c_str();
    return 0; //Assumne OK. Only for now!!!! prototyping! 
 }
 
 void tpreturn_cobol_support( int rval, long rcode, char* data, long len, long flags)
 {
    casual::xatmi::internal::error::wrap( [&](){
-      casual::server::context().normal_return( 
+      casual::xatmi::internal::context().normal_return( 
          static_cast< casual::common::flag::xatmi::Return>( rval), rcode, data, len);
    });
 }

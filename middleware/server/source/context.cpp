@@ -488,18 +488,6 @@ namespace casual
       } // detail
       
 
-      namespace state
-      {
-         std::ostream& operator << ( std::ostream& out, const Jump& value)
-         {
-            return common::stream::write( out, "{ value: ", value.state.value,
-               ", code: ", value.state.code,
-               ", data: ", value.buffer.data,
-               ", size: ", value.buffer.size,
-               ", service: ", value.forward.service, '}');
-         }
-      } // state
-
 
       Context& Context::instance()
       {
@@ -539,57 +527,7 @@ namespace casual
       }
 
 
-      void Context::jump_return( common::flag::xatmi::Return rval, long rcode, char* data, long len)
-      {
-         // Prepare buffer.
-         // We have to keep state, since there seems not to be any way to send information
-         // via longjump...
-
-         m_state.jump.state.value = rval;
-         m_state.jump.state.code = rcode;
-         m_state.jump.buffer.data = common::buffer::handle::type{ data};
-         m_state.jump.buffer.size = len;
-         m_state.jump.forward.service.clear();
-
-         common::log::debug( "Context::jump_return - jump state: ", m_state.jump);
-
-         std::longjmp( m_state.jump.environment, state::Jump::Location::c_return);
-      }
-
-      void Context::normal_return( common::flag::xatmi::Return rval, long rcode, char* data, long len)
-      {
-         // Prepare buffer.
-         // Essentially the same as jump_return above, but instead of a longjmp
-         // this variant returns to the caller. Used by the COBOL api TPRETURN
-         // function that is expected to return to its caller, that ultimately
-         // returns to the "communications manager" (Casual) without bypassing 
-         // the COBOL runtime. 
-
-         m_state.jump.state.value = rval;
-         m_state.jump.state.code = rcode;
-         m_state.jump.buffer.data = common::buffer::handle::type{ data};
-         m_state.jump.buffer.size = len;
-         m_state.jump.forward.service.clear();
-
-         m_state.TPRETURN_called = true;
-
-         common::log::debug( "Context::normal_return - jump state: ", m_state.jump);
-      }
-
-
-      void Context::forward( const char* service, char* data, long size)
-      {
-         m_state.jump.state.value = common::flag::xatmi::Return::success;
-         m_state.jump.state.code = 0;
-         m_state.jump.buffer.data = common::buffer::handle::type{ data};
-         m_state.jump.buffer.size = size;
-
-         m_state.jump.forward.service = service ? service : "";
-
-         common::log::debug( "Context::forward - jump state: ", m_state.jump);
-
-         std::longjmp( m_state.jump.environment, state::Jump::Location::c_forward);
-      }
+     
 
       void Context::advertise( Service service)
       {

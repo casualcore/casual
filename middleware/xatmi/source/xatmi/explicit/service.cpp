@@ -6,7 +6,7 @@
 
 
 #include "casual/xatmi/explicit.h"
-#include "casual/xatmi/internal/header/context.h"
+#include "casual/xatmi/internal/context.h"
 #include "casual/tx.h"
 
 #include "casual/xatmi/internal/code.h"
@@ -83,7 +83,7 @@ int casual_service_call( const char* const service, char* idata, const long ilen
       auto maybe_block = casual::xatmi::internal::signal::maybe_block( flags);
 
       auto get_complement = [ &](){
-         if( auto header = casual::xatmi::internal::header::context().find( handle))
+         if( auto header = casual::xatmi::internal::context().header().find( handle))
             return casual::service::call::Complement{ .flags = flags, .header = *header};
          else
             return casual::service::call::Complement{ .flags = flags};
@@ -145,7 +145,7 @@ int casual_service_asynchronous_send( const char* const service, char* idata, co
       auto maybe_block = casual::xatmi::internal::signal::maybe_block( flags);
 
       auto get_complement = [ &](){
-         if( auto header = casual::xatmi::internal::header::context().find( handle))
+         if( auto header = casual::xatmi::internal::context().header().find( handle))
             return casual::service::send::Complement{ .flags = flags, .header = *header};
          else
             return casual::service::send::Complement{ .flags = flags};
@@ -227,7 +227,7 @@ int casual_service_asynchronous_cancel( int id)
 void casual_service_return( const int rval, const long rcode, char* const data, const long len, const long /* flags for future use */)
 {
    casual::xatmi::internal::error::wrap( [&](){
-      casual::server::context().jump_return( 
+      casual::xatmi::internal::context().jump_return(
          static_cast< casual::common::flag::xatmi::Return>( rval), rcode, data, len);
    });
 }
