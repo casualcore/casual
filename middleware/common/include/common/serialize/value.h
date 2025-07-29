@@ -12,6 +12,7 @@
 #include "common/traits.h"
 #include "common/binary/span.h"
 #include "common/code/serialize.h"
+#include "common/code/casual.h"
 #include "common/flag.h"
 
 #include "casual/concepts/serialize.h"
@@ -589,10 +590,23 @@ namespace casual
             {
                std::decay_t< decltype( value.value())> contained;
 
-               if( value::read( archive, contained, name))
+               try
                {
-                  value = std::move( contained);
-                  return true;
+                  if( value::read( archive, contained, name))
+                  {
+                     value = std::move( contained);
+                     return true;
+                  }
+               }
+               catch( const std::system_error& error)
+               {
+                  // For strict policies, missing optional values should not cause an error
+                  // Only catch the specific "invalid_node" error for missing values
+                  if( error.code() == code::casual::invalid_node)
+                     return false;
+                  
+                  // Re-throw any other errors
+                  throw;
                }
                return false;
             }

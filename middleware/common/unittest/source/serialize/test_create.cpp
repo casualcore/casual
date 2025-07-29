@@ -14,6 +14,8 @@
 
 #include "common/code/casual.h"
 
+#include <optional>
+
 namespace casual
 {
    namespace common
@@ -184,6 +186,75 @@ namespace casual
          {
             serialize::create::reader::relaxed::from( "foo", std::cin);
          }, code::casual::invalid_argument);
+      }
+
+      // Test for strict reader handling of optional values
+      namespace local
+      {
+         namespace vo
+         {
+            struct WithOptional
+            {
+               int required_field = 0;
+               std::optional<int> optional_field;
+               
+               CASUAL_CONST_CORRECT_SERIALIZE(
+                  CASUAL_SERIALIZE_NAME(required_field, "required_field");
+                  CASUAL_SERIALIZE_NAME(optional_field, "optional_field");
+               )
+            };
+         } // vo
+      } // local
+
+      TEST( archive_create, strict_reader_optional_missing_field_should_not_fail)
+      {
+         common::unittest::Trace trace;
+
+         // Create a document with only the required field (missing optional field)
+         std::string yaml_content = "required_field: 42\n";
+         std::stringstream stream(yaml_content);
+         
+         // This should NOT fail for missing optional field in strict mode
+         auto reader = serialize::create::reader::strict::from("yaml", stream);
+         
+         local::vo::WithOptional test_obj;
+         EXPECT_NO_THROW(reader >> test_obj);
+         
+         EXPECT_EQ(42, test_obj.required_field);
+         EXPECT_FALSE(test_obj.optional_field.has_value());
+      }
+
+      TEST( archive_create, strict_reader_optional_present_field_should_work)
+      {
+         common::unittest::Trace trace;
+
+         // Create a document with both required and optional fields
+         std::string yaml_content = "required_field: 42\noptional_field: 99\n";
+         std::stringstream stream(yaml_content);
+         
+         auto reader = serialize::create::reader::strict::from("yaml", stream);
+         
+         local::vo::WithOptional test_obj;
+         EXPECT_NO_THROW(reader >> test_obj);
+         
+         EXPECT_EQ(42, test_obj.required_field);
+         EXPECT_TRUE(test_obj.optional_field.has_value());
+         EXPECT_EQ(99, *test_obj.optional_field);
+      }
+
+      TEST( archive_create, strict_reader_optional_missing_required_field_should_fail)
+      {
+         common::unittest::Trace trace;
+
+         // Create a document with only optional field (missing required field)
+         std::string yaml_content = "optional_field: 99\n";
+         std::stringstream stream(yaml_content);
+         
+         auto reader = serialize::create::reader::strict::from("yaml", stream);
+         
+         local::vo::WithOptional test_obj;
+         // This should still fail for missing required field in strict mode
+         EXPECT_CODE({ reader >> test_obj; }, code::casual::invalid_node);
       }
    } // common
 } // casual
