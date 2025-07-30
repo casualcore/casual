@@ -12,9 +12,9 @@
 
 Multiple access to the same (original) path within the same transaction if of course possible.
 
-## notes
+***note***
 
-`casual-file` implies some overhead (apart from communication) compared to plain file operations in order to be able to commit and rollback content (maybe needless to write).
+`casual-file` does not (so far) provide isolation between domains, i.e. the behaviour of using the same (physical) path simultaneously, despite the same global transaction, in different domains is undefined and of course no protection from external manipulating is provided.
 
 ## samples
 
