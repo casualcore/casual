@@ -91,7 +91,6 @@ namespace casual
             {
                disabled,
                running,
-               spawned,
                scale_out,
                scale_in,
                exit,
@@ -104,7 +103,6 @@ namespace casual
                {
                   case State::disabled: return "disabled";
                   case State::running: return "running";
-                  case State::spawned: return "spawned";
                   case State::scale_out: return "scale-out";
                   case State::scale_in: return "scale-in";
                   case State::exit: return "exit";

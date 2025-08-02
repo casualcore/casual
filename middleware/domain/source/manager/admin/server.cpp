@@ -169,7 +169,20 @@ namespace casual
                         auto protocol = casual::manager::service::protocol::deduce( std::move( parameter));
                         auto aliases = protocol.extract< std::vector< model::scale::Alias>>( "aliases");
 
-                        return casual::manager::service::protocol::dispatch( std::move( protocol), &handle::scale::aliases, state, std::move( aliases));
+                        state::scale::Instances instances;
+
+                        for( auto& alias : aliases)
+                        {
+                           if( auto found = state.server( alias.name))
+                              instances.servers.push_back( { .id = found->id, .instances = alias.instances});
+                           else if( auto found = state.executable( alias.name))
+                              instances.executables.push_back( { .id = found->id, .instances = alias.instances});
+                        }
+
+
+
+
+                        return casual::manager::service::protocol::dispatch( std::move( protocol), &handle::scale::aliases, state, std::move( instances));
                      };
                   }     
                } // scale

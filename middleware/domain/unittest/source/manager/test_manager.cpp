@@ -387,6 +387,73 @@ domain:
 
       }
 
+      TEST( domain_manager, spawn_5_long_running_executables__kill_2__restart_group__expect_all_5_running)
+      {
+         common::unittest::Trace trace;
+
+         auto domain = local::domain( R"(
+domain:
+   name: A
+   executables:
+      -  alias: sleep
+         path: sleep
+         arguments: [60]
+         instances: 5
+)");
+
+         auto state = local::fetch::until( unittest::fetch::predicate::alias::has::state_count( "sleep", manager::admin::model::instance::State::running, 5));
+
+         auto pids_to_kill = common::algorithm::transform( state.executables.at( 0).instances | std::views::take( 2), []( auto& instance)
+         {
+            return instance.handle;
+         });
+
+         ASSERT_TRUE( pids_to_kill.size() == 2) << CASUAL_NAMED_VALUE( pids_to_kill);
+
+         for( auto pid : pids_to_kill)
+            EXPECT_TRUE( common::signal::send( pid, common::code::signal::kill));
+
+
+         local::fetch::until( unittest::fetch::predicate::alias::has::state_count( "sleep", manager::admin::model::instance::State::error, 2));
+
+         local::call::restart::aliases( { "sleep"});
+
+         local::fetch::until( unittest::fetch::predicate::alias::has::state_count( "sleep", manager::admin::model::instance::State::running, 5));
+      }
+
+      TEST( domain_manager, spawn_2_long_running_executables__kill_2__restart_group__expect_all_2_running)
+      {
+         common::unittest::Trace trace;
+
+         auto domain = local::domain( R"(
+domain:
+   name: A
+   executables:
+      -  alias: sleep
+         path: sleep
+         arguments: [60]
+         instances: 2
+)");
+
+         auto state = local::fetch::until( unittest::fetch::predicate::alias::has::state_count( "sleep", manager::admin::model::instance::State::running, 2));
+
+         auto pids_to_kill = common::algorithm::transform( state.executables.at( 0).instances | std::views::take( 2), []( auto& instance)
+         {
+            return instance.handle;
+         });
+
+         ASSERT_TRUE( pids_to_kill.size() == 2) << CASUAL_NAMED_VALUE( pids_to_kill);
+
+         for( auto pid : pids_to_kill)
+            EXPECT_TRUE( common::signal::send( pid, common::code::signal::kill));
+
+
+         local::fetch::until( unittest::fetch::predicate::alias::has::state_count( "sleep", manager::admin::model::instance::State::error, 2));
+
+         local::call::restart::aliases( { "sleep"});
+
+         local::fetch::until( unittest::fetch::predicate::alias::has::state_count( "sleep", manager::admin::model::instance::State::running, 2));
+      }
 
       TEST( domain_manager, state_simple_server__expect_boot)
       {
@@ -610,7 +677,7 @@ domain:
          ASSERT_TRUE( local::find::alias( state_after.servers, "test-simple-server")) << CASUAL_NAMED_VALUE( state_after);
          ASSERT_TRUE( local::find::alias( state_after.servers, "test-simple-server")->instances.size() == 1) << CASUAL_NAMED_VALUE( state_after);
          
-         EXPECT_TRUE( local::find::alias( state_after.servers, "test-simple-server")->instances.at( 0).state == admin::model::instance::State::exit) << CASUAL_NAMED_VALUE( state_after);
+         EXPECT_TRUE( local::find::alias( state_after.servers, "test-simple-server")->instances.at( 0).state == admin::model::instance::State::error) << CASUAL_NAMED_VALUE( state_after);
 
          // is correct target killed
          EXPECT_TRUE( assassination.target == died.state.pid) << CASUAL_NAMED_VALUE( assassination) << '\n' << CASUAL_NAMED_VALUE( died);
@@ -656,7 +723,7 @@ domain:
             ASSERT_TRUE( local::find::alias( state.servers, "foo")) << CASUAL_NAMED_VALUE( state);
             ASSERT_TRUE( local::find::alias( state.servers, "foo")->instances.size() == 1) << CASUAL_NAMED_VALUE( state);
             
-            EXPECT_TRUE( local::find::alias( state.servers, "foo")->instances.at( 0).state == admin::model::instance::State::exit) << CASUAL_NAMED_VALUE( state);
+            EXPECT_TRUE( local::find::alias( state.servers, "foo")->instances.at( 0).state == admin::model::instance::State::error) << CASUAL_NAMED_VALUE( state);
 
             // is correct target killed
             EXPECT_TRUE( assassination.target == died.state.pid) << CASUAL_NAMED_VALUE( assassination) << '\n' << CASUAL_NAMED_VALUE( died);
@@ -701,6 +768,81 @@ domain:
             EXPECT_TRUE( local::find::alias( state.servers, "foo")->instances.at( 0).state == admin::model::instance::State::running) << CASUAL_NAMED_VALUE( state);
          }
       }
+
+      TEST( domain_manager, spawn_5_simple_servers__kill_2__restart_group__expect_all_5_running)
+      {
+         common::unittest::Trace trace;
+
+         auto domain = local::domain( R"(
+domain:
+   name: A
+   servers:
+      -  alias: foo
+         path: ./bin/test-simple-server
+         instances: 5
+)");
+
+         auto state = local::fetch::until( unittest::fetch::predicate::alias::has::state_count( "foo", manager::admin::model::instance::State::running, 5));
+
+         auto server = algorithm::find( state.servers, "foo");
+         ASSERT_TRUE( server) << CASUAL_NAMED_VALUE( state);
+
+         auto pids_to_kill = common::algorithm::transform( server->instances | std::views::take( 2), []( auto& instance)
+         {
+            return instance.handle.pid;
+         });
+
+         ASSERT_TRUE( pids_to_kill.size() == 2) << CASUAL_NAMED_VALUE( pids_to_kill);
+
+         for( auto pid : pids_to_kill)
+            EXPECT_TRUE( common::signal::send( pid, common::code::signal::kill));
+
+
+         state = local::fetch::until( unittest::fetch::predicate::alias::has::state_count( "foo", manager::admin::model::instance::State::error, 2));
+
+         //ASSERT_TRUE( false) << CASUAL_NAMED_VALUE( common::algorithm::find( state.servers, "foo"));
+
+         local::call::restart::aliases( { "foo"});
+
+         local::fetch::until( unittest::fetch::predicate::alias::has::state_count( "foo", manager::admin::model::instance::State::running, 5));
+      }
+
+      TEST( domain_manager, spawn_2_simple_servers__kill_2__restart_group__expect_all_2_running)
+      {
+         common::unittest::Trace trace;
+
+         auto domain = local::domain( R"(
+domain:
+   name: A
+   servers:
+      -  alias: foo
+         path: ./bin/test-simple-server
+         instances: 2
+)");
+
+         auto state = local::fetch::until( unittest::fetch::predicate::alias::has::state_count( "foo", manager::admin::model::instance::State::running, 2));
+
+         auto server = algorithm::find( state.servers, "foo");
+         ASSERT_TRUE( server) << CASUAL_NAMED_VALUE( state);
+
+         auto pids_to_kill = common::algorithm::transform( server->instances | std::views::take( 2), []( auto& instance)
+         {
+            return instance.handle.pid;
+         });
+
+         ASSERT_TRUE( pids_to_kill.size() == 2) << CASUAL_NAMED_VALUE( pids_to_kill);
+
+         for( auto pid : pids_to_kill)
+            EXPECT_TRUE( common::signal::send( pid, common::code::signal::kill));
+
+
+         local::fetch::until( unittest::fetch::predicate::alias::has::state_count( "foo", manager::admin::model::instance::State::error, 2));
+
+         local::call::restart::aliases( { "foo"});
+
+         local::fetch::until( unittest::fetch::predicate::alias::has::state_count( "foo", manager::admin::model::instance::State::running, 2));
+      }
+
 
       //! We need to rethink this test case. It might be to hard to pretend to be service-manager.
       //! It should be possible to make it work though :)

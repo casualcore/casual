@@ -22,6 +22,11 @@ domain [0..1]
       -ra, --restart-aliases [0..1]  (<alias>) [1..*]
            restart instances for the given aliases
            
+           This will restart all instances for the provided aliases,
+           if no aliases are provided, all aliases are restarted.
+           
+           Will also scale-out to configured instances for the aliases.
+           
            note: some aliases are unrestartable
 
       -rg, --restart-groups [0..1]  (<group>) [0..*]

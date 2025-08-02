@@ -33,17 +33,27 @@ namespace casual
 
       namespace scale
       {
+         casual::task::Group prepare( State& state, state::scale::Instances instances);
+
          std::vector< casual::task::Group> groups( State& state, std::vector< state::dependency::Group> groups);
 
          //! @returns a task that when invoked calls `action` to get which group to scale
          casual::task::Group group( State& state, common::unique_function< state::dependency::Group( State&)> action);
 
-         //std::vector< casual::task::Group> groups( State& state, std::vector< state::dependency::Group> groups, std::optional< casual::task::Group> done_event);
       } // scale
 
       namespace restart
       {
          std::vector< casual::task::Group> groups( State& state, std::vector< state::dependency::Group> groups);
+
+         namespace exited
+         {
+            // all exited instances wanted state are changed from `exited`/`error` to `running`
+            casual::task::Group prepare( State& state, std::vector< state::dependency::Group> groups);
+            
+         } // exited
+
+
       } // restart
 
       namespace configuration::managers

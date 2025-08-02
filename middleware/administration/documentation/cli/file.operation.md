@@ -10,6 +10,9 @@ file [0..1]
 
    SUB OPTIONS:
 
+      --state [0..1]  (json, yaml, xml, ini, line) [0..1]
+           prints state in the provided format to stdout
+
       -r, --list-reservations [0..1]
            list information of files currently reserved
 

@@ -175,7 +175,6 @@ namespace casual
                            {
                               case IN::disabled: return OUT::disabled;
                               case IN::running: return OUT::running;
-                              case IN::spawned: return OUT::spawned;
                               case IN::scale_out: return OUT::scale_out;
                               case IN::scale_in: return OUT::scale_in;
                               case IN::exit: return OUT::exit;
@@ -394,7 +393,7 @@ namespace casual
                manager.note = "responsible for all executables in this domain";
 
                manager::state::Server::instance_type instance{ common::process::handle()};
-               instance.wanted = manager::state::instance::Phase::running;
+               instance.wanted = manager::state::instance::Wanted::running;
                instance.spawnpoint = platform::time::clock::type::now();
                manager.instances.push_back( std::move( instance));
 

@@ -248,7 +248,7 @@ domain:
             return [ state]( auto& instance){ return instance.state() == state;};
          };
 
-         auto has_wanted = []( state::instance::Phase wanted)
+         auto has_wanted = []( state::instance::Wanted wanted)
          {
             return [ wanted]( auto& instance){ return instance.wanted == wanted;};
          };
@@ -282,13 +282,13 @@ domain:
 
             EXPECT_TRUE( executable.spawnable().empty());
             EXPECT_TRUE( executable.shutdownable().size() == 10);
-            EXPECT_TRUE( common::algorithm::all_of( executable.instances, has_wanted( state::instance::Phase::disabled)));
+            EXPECT_TRUE( common::algorithm::all_of( executable.instances, has_wanted( state::instance::Wanted::disabled)));
          }
 
          auto pids = common::algorithm::transform( executable.instances, []( auto& instance){ return instance.handle;});
 
          for( auto pid : common::algorithm::random::shuffle( pids))
-            executable.remove( pid);
+            executable.remove( pid, common::process::lifetime::exit::Reason::exited);
 
          EXPECT_TRUE( common::algorithm::all_of( executable.instances, has_state( state::instance::State::disabled)));
       }

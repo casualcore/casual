@@ -86,6 +86,13 @@ namespace casual
          {
             namespace
             {
+
+               constexpr auto valid_instance = []( auto& instance)
+               {
+                  return instance.state() == state::instance::State::running;
+               };
+
+
                auto task_unit( State& state, strong::server::id id)
                {
                   // we use the _auto restart_ functionality, and set the server restart to true for the 
@@ -122,8 +129,15 @@ namespace casual
                   // the action that will be invoked when the task starts.
                   auto action = casual::task::create::action( [ shared]( casual::task::unit::id id)
                   {
+                     Trace trace{ "domain::manager::task::create::restart::local::task_unit server action"};
+
                      auto& server = shared->state->entity( shared->id);
-                     shared->processes = algorithm::transform( server.instances, []( auto& instance){ return instance.handle;});
+                     log::debug( "server: ", server);
+
+                     shared->processes = algorithm::transform_if( server.instances, 
+                        []( auto& instance){ return instance.handle;}, 
+                        local::valid_instance);
+
 
                      if( shared->processes.empty())
                         return casual::task::unit::action::Outcome::abort;
@@ -233,8 +247,16 @@ namespace casual
                   // the action that will be invoked when the task starts.
                   auto action = casual::task::create::action( [ shared]( casual::task::unit::id id)
                   {
+                     Trace trace{ "domain::manager::task::create::restart::local::task_unit executable action"};
+
                      auto& executable = shared->state->entity( shared->id);
-                     shared->pids = algorithm::transform( executable.instances, []( auto& instance){ return instance.handle;});
+
+                     shared->pids = algorithm::transform_if( executable.instances, 
+                        []( auto& instance){ return instance.handle;},
+                        local::valid_instance);
+
+                     log::debug( "pids: ", shared->pids);
+                     log::debug( "executable: ", executable);
 
                      if( shared->pids.empty())
                         return casual::task::unit::action::Outcome::abort;
@@ -289,39 +311,6 @@ namespace casual
          } // local
 
 
-         std::vector< casual::task::Group> groups( State& state, std::vector< state::dependency::Group> groups, common::unique_function< void()> done)
-         {
-            Trace trace{ "domain::manager::task::create::restart::groups"};
-            log::debug( "groups: ", groups);
-
-            auto result = algorithm::transform( groups, [ &state]( auto& group)
-            {
-               auto transform_task_unit = [ &state]( auto& id)
-               {
-                  return local::task_unit( state, id);
-               };
-
-               auto units = algorithm::transform( group.servers, transform_task_unit);
-               algorithm::transform( group.executables, std::back_inserter( units), transform_task_unit);
-
-               return casual::task::Group{ std::move( units)};
-            });
-
-            if( done)
-            {
-               // add the "done" task.
-               result.emplace_back( casual::task::create::unit( 
-                  [ done = std::move( done)]( casual::task::unit::id) mutable
-                  {
-                     done();
-                     return casual::task::unit::action::Outcome::abort;
-                  }
-               ));
-            };
-
-            return result;
-         }
-
          std::vector< casual::task::Group> groups( State& state, std::vector< state::dependency::Group> groups)
          {
             Trace trace{ "domain::manager::task::create::restart::groups"};
@@ -337,9 +326,46 @@ namespace casual
                auto units = algorithm::transform( group.servers, transform_task_unit);
                algorithm::transform( group.executables, std::back_inserter( units), transform_task_unit);
 
+               log::debug( "units: ", units);
+
                return casual::task::Group{ std::move( units)};
             });
          }
+
+         namespace exited
+         {
+            casual::task::Group prepare( State& state, std::vector< state::dependency::Group> groups)
+            {
+               Trace trace{ "domain::manager::task::create::restart::exited::prepare"};
+               log::debug( "groups: ", groups);
+
+               return casual::task::create::unit( 
+                  casual::task::create::action([ &state, groups = std::move( groups)]( casual::task::unit::id id) mutable
+                  {
+                     Trace trace{ "domain::manager::task::create::restart::exited::prepare action"};
+
+                     auto update_wanted_to_running = [ &state]( auto id)
+                     {
+                        if( auto found = state.find_entity( id))
+                        {
+                           for( auto& instance : found->instances)
+                              if( instance.wanted == state::instance::Wanted::lingered)
+                                 instance.wanted = state::instance::Wanted::running;
+                        }
+                     };
+
+                     for( auto& group : groups)
+                     {
+                        algorithm::for_each( group.servers, update_wanted_to_running);
+                        algorithm::for_each( group.executables, update_wanted_to_running);
+                     }
+
+                     // indicate that the whole task is done. via `abort` 
+                     return casual::task::unit::action::Outcome::abort;
+                  }));
+            }
+            
+         } // exited
 
 
       } // restart
@@ -416,6 +442,9 @@ namespace casual
                      return casual::task::create::unit( 
                         casual::task::create::action([ &state, shared, action = std::move( action)]( casual::task::unit::id id) mutable
                         {
+                           Trace trace{ "domain::manager::task::create::scale::local::group::create_task action"};
+                           log::debug( "action: ", id);
+
                            manager::task::event::dispatch( state, [&]()
                            {
                               common::message::event::sub::Task event{ common::process::handle()};
@@ -451,6 +480,20 @@ namespace casual
                } // group  
             } // <unnamed>
          } // local
+
+         casual::task::Group prepare( State& state, state::scale::Instances instances)
+         {
+            return casual::task::create::unit( 
+               casual::task::create::action([ &state, instances = std::move( instances)]( casual::task::unit::id id) mutable
+               {
+                  Trace trace{ "domain::manager::task::create::scale::prepare action"};
+
+                  state.scale( instances);
+                  
+                  // indicate that the whole task is done. via `abort` 
+                  return casual::task::unit::action::Outcome::abort;
+               }));
+         }
 
 
          std::vector< casual::task::Group> groups( State& state, std::vector< state::dependency::Group> groups)

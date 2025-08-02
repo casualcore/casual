@@ -123,7 +123,7 @@ namespace casual
       //! @param predicate that takes C::value_type as parameter and returns bool
       //! @return the container
       template< typename C, typename P>
-      C& erase_if( C& container, P&& predicate)
+      decltype( auto) erase_if( C&& container, P&& predicate)
       {
          for( auto current = std::begin( container); current != std::end( container);)
          {
@@ -132,7 +132,7 @@ namespace casual
             else
                ++current;
          }
-         return container;
+         return std::forward< C>( container);
       }
 
       //! appends `range` to `output`.

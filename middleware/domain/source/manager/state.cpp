@@ -46,7 +46,6 @@ namespace casual
                {
                   case State::disabled: return "disabled";
                   case State::running: return "running";
-                  case State::spawned : return "spawned";
                   case State::scale_out: return "scale_out";
                   case State::scale_in: return "scale_in";
                   case State::exit: return "exit";
@@ -55,17 +54,29 @@ namespace casual
                return "<unknown>";
             }
 
-            std::string_view description( Phase value) noexcept
+            std::string_view description( Wanted value) noexcept
             {
                switch( value)
                {
-                  case Phase::disabled: return "disabled";
-                  case Phase::running: return "running";
-                  case Phase::exit: return "exit";
-                  case Phase::error: return "error";
+                  case Wanted::disabled: return "disabled";
+                  case Wanted::running: return "running";
+                  case Wanted::lingered: return "lingered";
+                  case Wanted::removed: return "removed";
                }
                return "<unknown>";
             }
+
+            std::string_view description( Exit value) noexcept
+            {
+               switch( value)
+               {
+                  case Exit::none: return "none";
+                  case Exit::exit: return "exit";
+                  case Exit::error: return "error";
+               }
+               return "<unknown>";
+            }
+
          } // instance
 
 
@@ -107,14 +118,14 @@ namespace casual
                      auto set_scale_keep = [ enabled = entity.enabled]( auto& instance)
                      {
                         if( enabled) 
-                           instance.wanted = state::instance::Phase::running;
+                           instance.wanted = state::instance::Wanted::running;
                         else
-                           instance.wanted = state::instance::Phase::disabled;
+                           instance.wanted = state::instance::Wanted::disabled;
                      };
 
-                     auto set_scale_exit = []( auto& instance)
+                     auto set_scale_removed = []( auto& instance)
                      {
-                        instance.wanted = state::instance::Phase::exit;
+                        instance.wanted = state::instance::Wanted::removed;
                      };
 
                      if( std::ssize( entity.instances) < count)
@@ -134,13 +145,13 @@ namespace casual
                      auto exit = range::make( std::end( keep), std::end( entity.instances));
 
                      algorithm::for_each( keep, set_scale_keep);
-                     algorithm::for_each( exit, set_scale_exit);
+                     algorithm::for_each( exit, set_scale_removed);
 
-                     // remove already exit (wasn't spawned to begin with)
+                     // remove already removed (wasn't spawned to begin with)
                      {
                         algorithm::container::erase( entity.instances, algorithm::filter( exit, []( auto& instance)
                         { 
-                           return instance.state() == state::instance::State::exit;
+                           return algorithm::compare::any( instance.state(), state::instance::State::exit, state::instance::State::error);
                         }));
                      }
 
@@ -151,22 +162,6 @@ namespace casual
 
             } // <unnamed>
          } // local
-
-         instance::State Executable::instance_policy::state( common::strong::process::id pid, instance::Phase wanted)
-         {
-            switch( wanted)
-            {
-               case instance::Phase::running:
-                  return pid ? instance::State::running : instance::State::scale_out;
-               case instance::Phase::exit:
-                  return pid ? instance::State::scale_in : instance::State::exit;
-               case instance::Phase::disabled:
-                  return pid ? instance::State::scale_in : instance::State::disabled;
-               case instance::Phase::error:
-                  return instance::State::error;
-            }
-            common::code::raise::error( common::code::casual::internal_unexpected_value, "wanted phase: ", wanted);
-         }
 
 
          Executable::instances_range Executable::spawnable()
@@ -192,7 +187,7 @@ namespace casual
             local::instance::scale( *this, count);
          }
 
-         void Executable::remove( strong::process::id pid)
+         void Executable::remove( strong::process::id pid, common::process::lifetime::exit::Reason reason)
          {
             Trace trace{ "domain::manager::state::Executable::remove"};
 
@@ -203,22 +198,24 @@ namespace casual
 
                found->handle = {};
 
+               found->exit = reason == common::process::lifetime::exit::Reason::exited ? instance::Exit::exit : instance::Exit::error;
+
                switch( found->wanted)
                {
-                  case instance::Phase::disabled:
-                  case instance::Phase::error:
+                  case instance::Wanted::disabled:
+                  case instance::Wanted::lingered:
                      break;
-                  case instance::Phase::exit:
+                  case instance::Wanted::removed:
                   {
                      algorithm::container::erase( instances, std::begin( found));
                      break;
                   }
-                  case instance::Phase::running:
+                  case instance::Wanted::running:
                   {
                      if( restart)
                         initiated_restarts++;
                      else
-                        found->wanted = instance::Phase::exit;
+                        found->wanted = instance::Wanted::lingered;
 
                      break;
                   }
@@ -231,28 +228,13 @@ namespace casual
             return predicate::boolean( algorithm::find( lhs.instances, rhs));
          }
 
-         instance::State Server::instance_policy::state( const common::process::Handle& handle, instance::Phase wanted)
-         {
-            switch( wanted)
-            {
-               case instance::Phase::running:
-                  return handle ? instance::State::running : handle.pid ? instance::State::spawned : instance::State::scale_out;
-               case instance::Phase::exit:
-                  return handle ? instance::State::scale_in : instance::State::exit;
-               case instance::Phase::disabled:
-                  return handle ? instance::State::scale_in : instance::State::disabled;
-               case instance::Phase::error:
-                  return instance::State::error;
-            }
-            common::code::raise::error( common::code::casual::internal_unexpected_value, "wanted phase: ", wanted);
-         }
 
          const Server::instance_type* Server::instance( common::strong::process::id pid) const
          {
             return algorithm::find_if( instances, [pid]( auto& p){ return p.handle.pid == pid;}).data();
          }
 
-         common::process::Handle Server::remove( common::strong::process::id pid)
+         common::process::Handle Server::remove( common::strong::process::id pid, common::process::lifetime::exit::Reason reason)
          {
             Trace trace{ "domain::manager::state::Server::remove"};
 
@@ -261,19 +243,21 @@ namespace casual
                log::debug( "found: ", *found);
                log::debug( "instances: ", instances);
 
+               found->exit = reason == common::process::lifetime::exit::Reason::exited ? instance::Exit::exit : instance::Exit::error;
+
                switch( found->wanted)
                {
-                  case instance::Phase::disabled:
-                  case instance::Phase::error:
+                  case instance::Wanted::disabled:
+                  case instance::Wanted::lingered:
                      break;
-                  case instance::Phase::exit:
+                  case instance::Wanted::removed:
                      return algorithm::container::extract( instances, std::begin( found)).handle;
-                  case instance::Phase::running:
+                  case instance::Wanted::running:
                   {
                      if( restart)
                         initiated_restarts++;
                      else
-                        found->wanted = instance::Phase::exit;
+                        found->wanted = instance::Wanted::lingered;
 
                      break;
                   }
@@ -338,7 +322,7 @@ namespace casual
       } // state
 
 
-      std::tuple< state::Server*, state::Executable*> State::remove( common::strong::process::id pid)
+      std::tuple< state::Server*, state::Executable*> State::remove( common::strong::process::id pid, common::process::lifetime::exit::Reason reason)
       {
          Trace trace{ "domain::manager::State::remove pid"};
 
@@ -370,25 +354,29 @@ namespace casual
          // Check if it's a server
          if( auto found = server( pid))
          {
+            log::debug( "found: ", *found);
+
             // we know the instance exists...
-            auto process = found->remove( pid);
-            
+            auto process = found->remove( pid, reason);
+
             log::debug( "remove server instance: ", process);
 
             // Try to remove ipc-queue (no-op if it's removed already)
             local::ipc::remove( process.ipc);
 
-            if( found->restart && runlevel == decltype( runlevel())::running)
+            if( found->restart && runlevel == state::Runlevel::running)
                return result_type{ found, nullptr};
          }
 
          // Find and remove from executable
          if( auto found = executable( pid))
          {
-            found->remove( pid);
+            log::debug( "found: ", *found);
+
+            found->remove( pid, reason);
             log::debug( "remove executable instance: ", pid);
 
-            if( found->restart && runlevel == decltype( runlevel())::running)
+            if( found->restart && runlevel == state::Runlevel::running)
                return result_type{ nullptr, found};
          }
 
@@ -549,10 +537,10 @@ namespace casual
          for( auto& alias : algorithm::unique( algorithm::sort( aliases)))
          {
             if( auto found = State::server( alias); found && ! State::untouchable( found->id))
-               result.servers.push_back( *found);
+               result.servers.push_back( found->id);
             else if( auto found = State::executable( alias); found && ! State::untouchable( found->id))
-               result.executables.push_back( *found);
-         }     
+               result.executables.push_back( found->id);
+         }
 
          return result;
       }
@@ -631,6 +619,28 @@ namespace casual
          return result;
       }
 
+
+      void State::scale( const state::scale::Instances& instances)
+      {
+         Trace trace{ "domain::manager::State::scale"};
+         log::debug( "instances: ", instances);
+
+         auto scale_instances = [ this]( const auto& instance)
+         {
+            // can we scale it?
+            if( untouchable( instance.id))
+               return;
+
+            if( auto found = find_entity( instance.id))
+            {
+               log::debug( "found: ", *found);
+               found->scale( instance.instances);
+            }
+         };
+
+         std::ranges::for_each( instances.servers, scale_instances);
+         std::ranges::for_each( instances.executables, scale_instances);
+      }
 
    } // domain::manager
 } // casual

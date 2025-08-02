@@ -21,6 +21,7 @@ namespace casual
       {
          namespace
          {
+
             auto find_instance = []( auto& range, auto& alias, auto index)
                -> decltype( range.at( 0).instances.at( index).handle)
             {
@@ -108,6 +109,31 @@ namespace casual
                   return is_alias_has_count( state.servers) || is_alias_has_count( state.executables);
                };
             }
+
+            auto state_count( std::string_view alias, manager::admin::model::instance::State state, platform::size::type count) -> common::unique_function< bool( const manager::admin::model::State&)>
+            {
+               return [ alias, state, count]( const manager::admin::model::State& model)
+               {
+                  auto count_state = [ state, count]( auto& instances)
+                  {
+                     return std::ranges::count_if( instances, [ state]( auto& instance)
+                     {
+                        return instance.state == state;
+                     }) == count;
+                  };
+
+                  if( auto found = algorithm::find( model.servers, alias))
+                  {
+                     return count_state( found->instances);
+                  }
+                  if( auto found = algorithm::find( model.executables, alias))
+                  {
+                     return count_state( found->instances);
+                  }
+                  return false;
+               };
+            }
+
          } // alias::has
             
       } // fetch::predicate

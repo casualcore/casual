@@ -44,6 +44,9 @@ namespace casual
             {
                auto instances( std::string_view expression, platform::size::type count) -> common::unique_function< bool( const manager::admin::model::State&)>;
 
+               auto state_count( std::string_view alias, manager::admin::model::instance::State state, platform::size::type count) -> common::unique_function< bool( const manager::admin::model::State&)>;
+
+
             } // alias::has
             
          } // predicate

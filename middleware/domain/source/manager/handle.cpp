@@ -82,7 +82,8 @@ namespace casual
                         auto error = exception::capture();
                         log::error( error, "failed to spawn: ", entity.path);
 
-                        range->wanted = state::instance::Phase::error;
+                        range->wanted = state::instance::Wanted::lingered;
+                        range->exit = state::instance::Exit::error;
 
                         manager::task::event::dispatch( state, [&]()
                         {
@@ -138,6 +139,8 @@ namespace casual
 
                   if( auto shutdownable = server.shutdownable())
                   {
+                     log::debug( "shutdownable: ", shutdownable);
+
                      handle::scale::shutdown( state, algorithm::transform( range::reverse( shutdownable), []( const auto& i)
                      {
                         return i.handle;
@@ -312,42 +315,28 @@ namespace casual
       namespace scale
       {
 
-         std::vector< common::strong::correlation::id> aliases( State& state, std::vector< admin::model::scale::Alias> aliases)
+         std::vector< common::strong::correlation::id> aliases( State& state, state::scale::Instances instances)
          {
             Trace trace{ "domain::manager::handle::scale::aliases"};
-            log::debug( "aliases: ", aliases);
+            log::debug( "instances: ", instances);
 
             auto done_event = task::create::event::parent( state, "scale aliases");
 
-            auto scalables = state.scalables( algorithm::transform( aliases, []( auto& alias){ return alias.name;}));
-
-            // prepare the scaling
-            {                  
-               auto scale_runnable = [&aliases]( auto& runnable)
-               {
-                  auto is_alias = [&runnable]( auto& alias){ return alias.name == runnable.get().alias;};
-
-                  if( auto found = algorithm::find_if( aliases, is_alias))
-                     runnable.get().scale( found->instances);
-               };
-
-               algorithm::for_each( scalables.servers, scale_runnable);
-               algorithm::for_each( scalables.executables, scale_runnable);
-            }
-
-            auto transform_id = []( auto& entity){ return entity.get().id;};
-
             state::dependency::Group group;
             {
+               auto transform_id = []( auto& entity){ return entity.id;};
+
                group.description = "scale aliases";
-               algorithm::transform( scalables.servers, group.servers, transform_id);
-               algorithm::transform( scalables.executables, group.executables, transform_id);
+               algorithm::transform( instances.servers, group.servers, transform_id);
+               algorithm::transform( instances.executables, group.executables, transform_id);
             }
 
-            auto groups = manager::task::create::scale::groups( state, { std::move( group)}); 
+            auto prepare_task = manager::task::create::scale::prepare( state, std::move( instances));
 
-            auto result = casual::task::ids( groups, done_event);
-            state.tasks.then( std::move( groups)).then( std::move( done_event));
+            auto scale_tasks = manager::task::create::scale::groups( state, { std::move( group)}); 
+
+            auto result = casual::task::ids( scale_tasks, prepare_task, done_event);
+            state.tasks.then( std::move( prepare_task)).then( std::move( scale_tasks)).then( std::move( done_event));
 
             return result;
          }
@@ -386,12 +375,18 @@ namespace casual
          
          void instances( State& state, state::Server& server)
          {
+            Trace trace{ "domain::manager::handle::scale::instances"};
+            log::debug( "server: ", server);
+
             local::scale::in( state, server);
             local::scale::out( state, server);
          }
 
          void instances( State& state, state::Executable& executable)
          {
+            Trace trace{ "domain::manager::handle::scale::instances"};
+            log::debug( "executable: ", executable);
+
             local::scale::in( state, executable);
             local::scale::out( state, executable);
          }
@@ -409,16 +404,22 @@ namespace casual
 
             auto scalables = state.scalables( std::move( aliases));
 
-            auto transform_id = []( auto& entity){ return entity.get().id;};
+            state::dependency::Group group{
+               .servers = scalables.servers,
+               .executables = scalables.executables,
+            };
 
-            state::dependency::Group group;
-            algorithm::transform( scalables.servers, group.servers, transform_id);
-            algorithm::transform( scalables.executables, group.executables, transform_id);
+            auto restart_tasks = manager::task::create::restart::groups( state, {  group});
 
-            auto groups = manager::task::create::restart::groups( state, { std::move( group)});
+            auto prepare_resurrection_task = manager::task::create::restart::exited::prepare( state, { group});
+            auto resurrect_task = manager::task::create::scale::groups( state, { group});
 
-            auto result = casual::task::ids( groups, done_event);
-            state.tasks.then( std::move( groups)).then( std::move( done_event));
+
+            auto result = casual::task::ids( restart_tasks, prepare_resurrection_task, resurrect_task, done_event);
+            state.tasks.then( std::move( restart_tasks))
+               .then( std::move( prepare_resurrection_task))
+               .then( std::move( resurrect_task))
+               .then( std::move( done_event));
 
             return result;
          }
@@ -460,10 +461,15 @@ namespace casual
             filter_untouchables( state, groups);
             log::debug( "groups: ", groups);
 
-            auto tasks = manager::task::create::restart::groups( state, std::move( groups));
+            auto restart_tasks = manager::task::create::restart::groups( state, groups);
+            auto prepare_resurrection_task = manager::task::create::restart::exited::prepare( state, groups);
+            auto resurrect_task = manager::task::create::scale::groups( state, groups);
 
-            auto result = casual::task::ids( tasks, done_event);
-            state.tasks.then( std::move( tasks)).then( std::move( done_event));
+            auto result = casual::task::ids( restart_tasks, prepare_resurrection_task, resurrect_task, done_event);
+            state.tasks.then( std::move( restart_tasks))
+               .then( std::move( prepare_resurrection_task))
+               .then( std::move( resurrect_task))
+               .then( std::move( done_event));
 
             return result;
          }
@@ -543,7 +549,7 @@ namespace casual
                         {
                            if( process.ipc)
                               state.multiplex.send( process.ipc, common::message::shutdown::Request{ common::process::handle()});
-                           else
+                           else if( process.pid)
                               common::process::terminate( process.pid);
                         }
                      };
@@ -631,14 +637,14 @@ namespace casual
                            // We don't want to handle any signals in this task
                            signal::thread::scope::Block block;
 
-                           auto alias =  get_alias( state)( message.state.pid);
+                           auto alias = get_alias( state)( message.state.pid);
 
                            if( message.state.reason == decltype( message.state.reason)::core)
                               log::line( log::category::error, "process cored, alias: ", alias, ", details: ", message.state);
 
                            auto singleton = state.singleton( message.state.pid);
 
-                           auto [ server, executable] = state.remove( message.state.pid);
+                           auto [ server, executable] = state.remove( message.state.pid, message.state.reason);
 
                            // only log on error if process is a singleton and is spawnable (i.e. not scaled down)
                            if( singleton && (( server && server->spawnable()) || ( executable && executable->spawnable())))
@@ -922,12 +928,12 @@ namespace casual
 
                            if( auto server = state.server( message.information.handle.pid))
                            {
-                              server->remove( message.information.handle.pid);
+                              server->remove( message.information.handle.pid, common::process::lifetime::exit::Reason::exited);
                               server->scale( 1);
                            }
                            else if( auto executable = state.executable( message.information.handle.pid))
                            {
-                              executable->remove( message.information.handle.pid);
+                              executable->remove( message.information.handle.pid, common::process::lifetime::exit::Reason::exited);
                               executable->scale( 1);
                            }
                            

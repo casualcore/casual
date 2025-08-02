@@ -133,7 +133,6 @@ namespace casual
             {
                disabled,
                running,
-               spawned,
                scale_out,
                scale_in,
                exit,
@@ -141,14 +140,22 @@ namespace casual
             };
             std::string_view description( State value) noexcept;
 
-            enum class Phase : short
+            enum struct Wanted : short
             {
-               running,
-               exit,
                disabled,
-               error, // not really a wanted phase...
+               running,
+               lingered,
+               removed,
             };
-            std::string_view description( Phase value) noexcept;
+            std::string_view description( Wanted value) noexcept;
+
+            enum struct Exit : short
+            {
+               none,
+               exit,
+               error,
+            };
+            std::string_view description( Exit value) noexcept;
 
          } // instance
 
@@ -159,11 +166,33 @@ namespace casual
             using handle_type = typename policy_type::handle_type;
 
             handle_type handle;
-            instance::Phase wanted = instance::Phase::running;
+            instance::Wanted wanted = instance::Wanted::running;
+            instance::Exit exit = instance::Exit::none;
 
             common::chronology::time_point spawnpoint = common::chronology::empty();
 
-            instance::State state() const { return policy_type::state( handle, wanted);}
+            instance::State state() const 
+            { 
+               auto exit_or_error = []( instance::Exit exit)
+               {
+                  if( exit == instance::Exit::error)
+                     return instance::State::error;
+                  return instance::State::exit;
+               };
+
+               switch( wanted)
+               {
+                  case instance::Wanted::disabled: 
+                     return handle ? instance::State::scale_in : instance::State::disabled;
+                  case instance::Wanted::running: 
+                     return handle ? instance::State::running : instance::State::scale_out;
+                  case instance::Wanted::lingered:
+                     return handle ? instance::State::scale_in : exit_or_error( exit);
+                  case instance::Wanted::removed:
+                     return handle ? instance::State::scale_in : exit_or_error( exit);
+               }
+               common::code::raise::error( common::code::casual::internal_unexpected_value, "wanted phase: ", wanted);
+            }
             
             void spawned( common::strong::process::id pid)
             {
@@ -192,8 +221,6 @@ namespace casual
             {
                using handle_type = common::strong::process::id;
 
-               static instance::State state( common::strong::process::id pid, instance::Phase wanted);
-
                static void spawned( common::strong::process::id pid, auto& instance)
                {
                   instance.handle = pid;
@@ -213,7 +240,7 @@ namespace casual
             const_instances_range shutdownable() const;
 
             void scale( platform::size::type instances);
-            void remove( common::strong::process::id instance);
+            void remove( common::strong::process::id instance, common::process::lifetime::exit::Reason reason);
 
             friend bool operator == ( const Executable& lhs, common::strong::process::id rhs);
             inline friend bool operator == ( common::strong::process::id lhs, const Executable& rhs) { return rhs == lhs;}
@@ -233,8 +260,6 @@ namespace casual
             struct instance_policy
             {
                using handle_type = common::process::Handle;
-
-               static instance::State state( const common::process::Handle& handle, instance::Phase wanted);
 
                static void spawned( common::strong::process::id pid, auto& instance)
                {
@@ -258,7 +283,7 @@ namespace casual
             const instance_type* instance( common::strong::process::id pid) const;
 
             //! @returns 'null handle' if not found
-            common::process::Handle remove( common::strong::process::id pid);
+            common::process::Handle remove( common::strong::process::id pid, common::process::lifetime::exit::Reason reason);
 
             bool connect( const common::process::Handle& process);
 
@@ -339,10 +364,38 @@ namespace casual
 
          } // configuration
 
+         namespace scale
+         {
+            template< typename T>
+            struct basic_entity
+            {
+               T id;
+               platform::size::type instances{};
+
+               CASUAL_LOG_SERIALIZE(
+                  CASUAL_SERIALIZE( id);
+                  CASUAL_SERIALIZE( instances);
+               )
+            };
+
+            struct Instances
+            {
+               std::vector< basic_entity< strong::server::id>> servers;
+               std::vector< basic_entity< strong::executable::id>> executables;
+
+               CASUAL_LOG_SERIALIZE(
+                  CASUAL_SERIALIZE( servers);
+                  CASUAL_SERIALIZE( executables);
+               )
+            };
+
+            
+         } // scale
+
          struct Scalables
          {
-            std::vector< std::reference_wrapper< state::Server>> servers;
-            std::vector< std::reference_wrapper< state::Executable>> executables;
+            std::vector< strong::server::id > servers;
+            std::vector< strong::executable::id > executables;
 
             CASUAL_LOG_SERIALIZE({
                CASUAL_SERIALIZE( servers);
@@ -474,7 +527,7 @@ namespace casual
          //!
          //! @param pid
          //! @return pointer to Server and Executable which is not null if we gonna restart them.
-         std::tuple< state::Server*, state::Executable*> remove( common::strong::process::id pid);
+         std::tuple< state::Server*, state::Executable*> remove( common::strong::process::id pid, common::process::lifetime::exit::Reason reason);
 
          //! @return environment variables for the process, including global/default variables
          template< typename E>
@@ -517,6 +570,8 @@ namespace casual
 
          //! @return all 'running' id:s of 'aliases' that are untouchable, ie. internal casual stuff.
          std::tuple< std::vector< state::Server::id_type>, std::vector< state::Executable::id_type>> untouchables() const noexcept;
+
+         void scale( const state::scale::Instances& instances);
 
 
          CASUAL_LOG_SERIALIZE(

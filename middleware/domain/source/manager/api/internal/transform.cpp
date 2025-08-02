@@ -47,7 +47,6 @@ namespace casual
             {
                case Enum::running: return model::instance::State::running;
                // treat spawned as scale_out, for now.
-               case Enum::spawned:
                case Enum::scale_out: return model::instance::State::scale_out;
                case Enum::scale_in: return model::instance::State::scale_in;
                case Enum::disabled:

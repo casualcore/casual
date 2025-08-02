@@ -53,7 +53,7 @@ namespace casual
          void instances( State& state, state::Server& server);
          void instances( State& state, state::Executable& executable);
 
-         std::vector< common::strong::correlation::id> aliases( State& state, std::vector< admin::model::scale::Alias> aliases);
+         std::vector< common::strong::correlation::id> aliases( State& state, state::scale::Instances instances);
 
       } // scale
 
