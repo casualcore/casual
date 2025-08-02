@@ -28,6 +28,8 @@ namespace casual
          namespace detail
          {
             void set_execution_context( const common::message::service::call::callee::Request& message);
+
+            void finalize();
             
             //! @return true if we should send a reply
             bool send_reply( common::message::service::call::request::Flag flags);
@@ -57,6 +59,8 @@ namespace casual
                {
                   if( detail::send_reply( flags))
                      common::communication::device::blocking::send( ipc, reply);
+
+                  detail::finalize();
                });
 
                auto ack = detail::prepare_ack( message);

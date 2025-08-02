@@ -29,6 +29,13 @@ namespace casual
             execution::context::parent::span::set( message.parent.span);
          }
 
+         void finalize()
+         {
+            Trace trace{ "manager::service::handle::detail::finalize"};
+
+            execution::context::reset();
+         }
+
          bool send_reply( common::message::service::call::request::Flag flags)
          {
             return ! flag::contains( flags, common::message::service::call::request::Flag::no_reply);
