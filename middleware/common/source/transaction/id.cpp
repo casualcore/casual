@@ -209,6 +209,9 @@ namespace casual
 
       std::ostream& operator << ( std::ostream& out, const ID& id)
       {
+         if( ! id)
+            return out;
+
          transcode::hex::encode( out, id.global());
          out  << ':';
          transcode::hex::encode( out, id.branch());

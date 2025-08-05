@@ -15,7 +15,7 @@ namespace casual
    namespace common
    {
 
-      TEST( casual_common_transaction_id, uuid_constructor)
+      TEST( common_transaction_id, uuid_constructor)
       {
          common::unittest::Trace trace;
 
@@ -29,7 +29,7 @@ namespace casual
       }
 
 
-      TEST( casual_common_transaction_id, not_equal)
+      TEST( common_transaction_id, not_equal)
       {
          common::unittest::Trace trace;
 
@@ -41,7 +41,7 @@ namespace casual
       }
 
 
-      TEST( casual_common_transaction_id, owner)
+      TEST( common_transaction_id, owner)
       {
          common::unittest::Trace trace;
 
@@ -51,7 +51,7 @@ namespace casual
 
       }
 
-      TEST( casual_common_transaction_id, equal)
+      TEST( common_transaction_id, equal)
       {
          common::unittest::Trace trace;
 
@@ -63,8 +63,30 @@ namespace casual
 
       }
 
+      TEST( common_transaction_id, ostream_operator)
+      {
+         common::unittest::Trace trace;
 
-      TEST( casual_common_transaction_id, global_id)
+         {
+            transaction::ID id{};
+
+            EXPECT_TRUE( string::compose( id).empty()) << CASUAL_NAMED_VALUE( id);
+         }
+
+         {
+            auto id = transaction::id::create();
+
+            // 0a9147898e1247aab477255cb3304848:af29269055d74fc6871fe0b0d380c720:42:74946
+            std::regex regex{ R"([0-9a-f]{32}:[0-9a-f]{32}:\d+:\d+)"};
+
+            EXPECT_TRUE( std::regex_match( string::compose( id), regex)) << CASUAL_NAMED_VALUE( id);
+
+         }
+
+      }
+
+
+      TEST( common_transaction_id, global_id)
       {
          common::unittest::Trace trace;
 
@@ -76,7 +98,7 @@ namespace casual
 
       }
 
-      TEST( casual_common_transaction_id, branch_id)
+      TEST( common_transaction_id, branch_id)
       {
          common::unittest::Trace trace;
 
