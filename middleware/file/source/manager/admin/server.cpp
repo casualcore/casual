@@ -102,13 +102,13 @@ namespace casual
       std::vector< casual::manager::Service> services( manager::State& state)
       {
          return {
-            casual::manager::Service{ 
+            casual::manager::sequential::Service{ 
                .name = service::name::state,
                .function = local::service::state( state),
                .visibility = common::service::visibility::Type::undiscoverable,
                .category = std::string{ common::service::category::admin}
             },
-            casual::manager::Service{
+            casual::manager::sequential::Service{
                .name = service::name::recover,
                .function = local::service::recover( state),
                .visibility = common::service::visibility::Type::undiscoverable,

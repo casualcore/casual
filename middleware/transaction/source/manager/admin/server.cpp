@@ -58,13 +58,13 @@ namespace casual
             std::vector< casual::manager::Service> services( manager::State& state)
             {
                return { 
-                     { 
+                     casual::manager::sequential::Service{ 
                         .name = std::string{ service::name::state},
                         .function = local::state( state),
                         .visibility = common::service::visibility::Type::undiscoverable,
                         .category = std::string{ common::service::category::admin}
                      },
-                     {
+                     casual::manager::sequential::Service{
                         .name = std::string{ service::name::scale::resource::proxies},
                         .function = local::scale::resource::proxy::instances( state),
                         .visibility = common::service::visibility::Type::undiscoverable,
@@ -72,7 +72,7 @@ namespace casual
                      }
                      ,
                      // deprecated
-                     { 
+                     casual::manager::sequential::Service{
                         .name = ".casual/transaction/scale/instances",
                         .function = local::scale::resource::proxy::instances( state),
                         .visibility = common::service::visibility::Type::undiscoverable,

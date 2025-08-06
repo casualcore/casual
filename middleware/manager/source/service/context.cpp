@@ -15,7 +15,7 @@ namespace casual
          State::State( std::vector< manager::Service> services)
          {
             for( auto& service : services)
-               this->services[ service.name] = std::move( service);
+               this->services[ service::name( service)] = std::move( service);
          }
       } // context
       

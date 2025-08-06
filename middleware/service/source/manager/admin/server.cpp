@@ -57,13 +57,13 @@ namespace casual
       std::vector< casual::manager::Service> services( manager::State& state)
       {
          return {
-            {  
+            casual::manager::sequential::Service{
                .name = service::name::state,
                .function = local::state( state),
                .visibility = common::service::visibility::Type::undiscoverable,
                .category = std::string{ common::service::category::admin}
             },
-            { 
+            casual::manager::sequential::Service{
                .name = service::name::metric::reset,
                .function = local::metric::reset( state),
                .visibility = common::service::visibility::Type::undiscoverable,

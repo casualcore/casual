@@ -869,23 +869,14 @@ namespace casual
       {
          Trace trace{ "service::manager::State::connect_manager"};
 
-         auto transform_service = []( auto& service)
-         {
-            message::service::advertise::Service result;
-            result.category = service.category;
-            result.name = service.name;
-            result.transaction = decltype( result.transaction)::none;
-            result.visibility = service.visibility;
-            return result;
-         };
-
          // We advertise to our self
+         auto advertise = casual::manager::service::advertise::transform( services);
 
-         message::service::Advertise advertise{ process::handle()};
-         advertise.alias = common::instance::alias();
-         advertise.services.add = algorithm::transform( services, transform_service);
+         if( advertise.sequential)
+            (void)State::update( std::move( *advertise.sequential));
+         if( advertise.concurrent)
+            (void)State::update( std::move( *advertise.concurrent));
 
-         (void)State::update( std::move( advertise));
       }
 
       void State::Metric::add( metric_type metric)

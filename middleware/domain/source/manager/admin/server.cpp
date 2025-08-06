@@ -330,63 +330,63 @@ namespace casual
       std::vector< casual::manager::Service> services( manager::State& state)
       {
          return { 
-               { .name = std::string{ service::name::state},
+               casual::manager::sequential::Service{ .name = std::string{ service::name::state},
                   .function = local::service::state( state),
                   .visibility = common::service::visibility::Type::undiscoverable,
                   .category = std::string{ common::service::category::admin}
                },
-               { .name = std::string{ service::name::scale::aliases},
+               casual::manager::sequential::Service{ .name = std::string{ service::name::scale::aliases},
                   .function = local::service::scale::aliases( state),
                   .visibility = common::service::visibility::Type::undiscoverable,
                   .category = std::string{ common::service::category::admin}
                },
-               { .name = std::string{ service::name::restart::aliases},
+               casual::manager::sequential::Service{ .name = std::string{ service::name::restart::aliases},
                   .function = local::service::restart::aliases( state),
                   .visibility = common::service::visibility::Type::undiscoverable,
                   .category = std::string{ common::service::category::admin}
                },
-               { .name = std::string{ service::name::restart::groups},
+               casual::manager::sequential::Service{ .name = std::string{ service::name::restart::groups},
                   .function = local::service::restart::groups( state),
                   .visibility = common::service::visibility::Type::undiscoverable,
                   .category = std::string{ common::service::category::admin}
                },
-               { .name = std::string{ service::name::shutdown},
+               casual::manager::sequential::Service{ .name = std::string{ service::name::shutdown},
                   .function = local::service::shutdown( state),
                   .visibility = common::service::visibility::Type::undiscoverable,
                   .category = std::string{ common::service::category::admin}
                },
-               { .name = std::string{ service::name::configuration::get},
+               casual::manager::sequential::Service{ .name = std::string{ service::name::configuration::get},
                   .function = local::service::configuration::get( state),
                   .visibility = common::service::visibility::Type::undiscoverable,
                   .category = std::string{ common::service::category::admin}
                },
-               { .name = std::string{ service::name::configuration::post},
+               casual::manager::sequential::Service{ .name = std::string{ service::name::configuration::post},
                   .function = local::service::configuration::post( state),
                   .visibility = common::service::visibility::Type::undiscoverable,
                   .category = std::string{ common::service::category::admin}
                },
-               { .name = std::string{ service::name::configuration::put},
+               casual::manager::sequential::Service{ .name = std::string{ service::name::configuration::put},
                   .function = local::service::configuration::put( state),
                   .visibility = common::service::visibility::Type::undiscoverable,
                   .category = std::string{ common::service::category::admin}
                },
-               { .name = std::string{ service::name::environment::set},
+               casual::manager::sequential::Service{ .name = std::string{ service::name::environment::set},
                   .function = local::service::environment::set( state),
                   .visibility = common::service::visibility::Type::undiscoverable,
                   .category = std::string{ common::service::category::admin}
                },
-               { .name = std::string{ service::name::environment::unset},
+               casual::manager::sequential::Service{ .name = std::string{ service::name::environment::unset},
                   .function = local::service::environment::unset( state),
                   .visibility = common::service::visibility::Type::undiscoverable,
                   .category = std::string{ common::service::category::admin}
                },
                // deprecated
-               { .name = ".casual/domain/scale/instances",
+               casual::manager::sequential::Service{ .name = ".casual/domain/scale/instances",
                   .function = local::service::scale::aliases( state),
                   .visibility = common::service::visibility::Type::undiscoverable,
                   .category = std::string{ common::service::category::deprecated}
                },
-               { .name = ".casual/domain/restart/instances",
+               casual::manager::sequential::Service{ .name = ".casual/domain/restart/instances",
                   .function = local::service::restart::aliases( state),
                   .visibility = common::service::visibility::Type::undiscoverable,
                   .category = std::string{ common::service::category::deprecated}

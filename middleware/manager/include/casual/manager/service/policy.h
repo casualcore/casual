@@ -17,6 +17,21 @@ namespace casual
 {
    namespace manager::service::policy
    {
+      namespace advertise
+      {
+         struct Result
+         {
+            std::optional< common::message::service::Advertise> sequential;
+            std::optional< common::message::service::concurrent::Advertise> concurrent;
+
+            CASUAL_LOG_SERIALIZE(
+               CASUAL_SERIALIZE( sequential);
+               CASUAL_SERIALIZE( concurrent);
+            )
+         };
+         
+      } // advertise
+
       struct Default
       {
          //! sends a ACK to SM
@@ -25,8 +40,6 @@ namespace casual
          //! sends a process lookup for SM
          static void initialize( const context::State& state);
 
-         //! @returns a message::service::Advertise with the current process information
-         static common::message::service::Advertise advertise( const context::State& state);
 
          //! advertise the services if the lookup indicates that SM is online
          static void advertise( const context::State& state, const common::message::domain::process::lookup::Reply& message);

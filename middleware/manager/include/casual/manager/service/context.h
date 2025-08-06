@@ -49,7 +49,7 @@ namespace casual
 
          auto advertise() const
          {
-            return Policy::advertise( m_state);
+            return service::advertise::transform( m_state.services | std::views::values);
          }
 
          auto& services() const

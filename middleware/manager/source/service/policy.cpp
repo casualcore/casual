@@ -12,6 +12,8 @@
 #include "common/communication/instance.h"
 #include "common/instance.h"
 
+#include <ranges>
+
 namespace casual
 {
    namespace manager::service::policy
@@ -38,20 +40,6 @@ namespace casual
          communication::device::blocking::send( communication::instance::outbound::domain::manager::device(), message);
       }
 
-      common::message::service::Advertise Default::advertise( const context::State& state)
-      {
-         Trace trace{ "manager::service::policy::Default::advertise"};
-
-         message::service::Advertise advertise{ process::handle()};
-         advertise.alias = common::instance::alias();
-
-         advertise.services.add = algorithm::transform( state.services, []( auto& pair)
-         {
-            return service::transform( pair.second);
-         });
-
-         return advertise;
-      }
 
       void Default::advertise( const context::State& state, const common::message::domain::process::lookup::Reply& message)
       {
@@ -62,10 +50,13 @@ namespace casual
 
          if( ! message.process)
             return;
-         
-         auto advertise = Default::advertise( state);
 
-         communication::device::blocking::send( message.process.ipc, advertise);
+         auto advertise = service::advertise::transform( state.services | std::views::values);
+
+         if( advertise.sequential)
+            communication::device::blocking::send( message.process.ipc, *advertise.sequential);
+         if( advertise.concurrent)
+            communication::device::blocking::send( message.process.ipc, *advertise.concurrent);
       }
 
    } // manager::service::policy

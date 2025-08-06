@@ -904,7 +904,12 @@ namespace casual
                      {
                         Trace trace{ "domain::manager::handle::local::process::detail::singleton::service"};
 
-                        state.multiplex.send( process, state.services.advertise());
+                        auto advertise = state.services.advertise();
+
+                        if( advertise.sequential)
+                           state.multiplex.send( process, *advertise.sequential);
+                        if( advertise.concurrent)
+                           state.multiplex.send( process, *advertise.concurrent);                        
                      }
 
                      //! @returns true if it's a singleton process that tries to connect and this function takes

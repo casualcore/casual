@@ -42,7 +42,7 @@ namespace casual
          Trace trace{ "domain::discovery::admin::services"};
 
          return {
-            {  
+            casual::manager::sequential::Service{  
                .name = std::string{ admin::service::name::state},
                .function = local::service::state( state),
                .visibility = common::service::visibility::Type::undiscoverable,

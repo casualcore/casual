@@ -6,47 +6,57 @@
 
 #include "casual/manager/service.h"
 
-#include "common/log.h"
-
-
 namespace casual
 {
    using namespace common;
 
    namespace manager
    {
-      service::invoke::Result Service::operator () ( service::invoke::Parameter&& argument) const
+      namespace local
       {
-         Trace trace{ "manager::service::Service::operator ()"};
+         namespace
+         {
 
-         return function( std::move( argument));
-      }
 
-      bool operator == ( const Service& lhs, const Service& rhs)
-      {
-         return lhs.name == rhs.name;
-      }
-      
-      bool operator == ( const Service& lhs, std::string_view rhs)
-      {
-         return lhs.name == rhs;
-      }
+            
+         } // <unnamed>
+      } // local
+     
 
       namespace service
       {
-         common::message::service::advertise::Service transform( const Service& service)
+         std::string name( const Service& service)
          {
-            common::message::service::advertise::Service result;
-            result.name = service.name;
-            result.category = service.category;
-            result.transaction = decltype( result.transaction)::none;
-            result.visibility = service.visibility;
-
-            return result;
+            return std::visit( []( const auto& service) { return service.name; }, service);
          }
 
+
+
+         namespace advertise
+         {
+
+            common::message::service::advertise::Service transform( const sequential::Service& service)
+            {
+               return {
+                  .name = service.name,
+                  .category = service.category,
+                  .transaction = common::service::transaction::Type::none,
+                  .visibility = service.visibility
+               };
+            }
+
+            common::message::service::concurrent::advertise::Service transform( const concurrent::Service& service)
+            {
+               return {
+                  .name = service.name,
+                  .category = service.category,
+                  .transaction = common::service::transaction::Type::none,
+                  .visibility = service.visibility
+               };
+            }
+            
+         } // advertise
+
       } // service
-      
-   } // manager
-   
+   } // manager   
 } // casual

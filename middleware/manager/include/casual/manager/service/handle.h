@@ -75,8 +75,11 @@ namespace casual
 
                if( auto found = common::algorithm::find( state.services, message.service.name))
                {
-                  auto result = found->second( detail::transform::parameter( std::move( message)));
-                  detail::complement_reply( std::move( result), reply);
+                  if( auto service = std::get_if< sequential::Service>( &found->second))
+                  {
+                     auto result = service->function( detail::transform::parameter( std::move( message)));
+                     detail::complement_reply( std::move( result), reply);
+                  }                  
                }
                else
                {
