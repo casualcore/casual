@@ -21,6 +21,11 @@ service [0..1]
       -li, --list-instances [0..1]
            list instances
 
+         SUB OPTIONS:
+
+            -a, --all [0..1]
+                 include hidden services
+
       --list-routes [0..1]
            list service routes
 

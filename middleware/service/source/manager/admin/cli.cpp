@@ -438,8 +438,15 @@ namespace casual
       the last time the service was requested    
 )";
 
-                     auto option( auto shared)
+                     auto option()
                      {
+                        struct State
+                        {
+                           bool all = false;
+                        };
+
+                        auto shared = std::make_shared< State>();
+
                         auto invoke = [ shared]()
                         {
                            auto filter = [ &shared]( auto& service)
@@ -475,21 +482,41 @@ namespace casual
                    {
                      auto option()
                      {
-                        auto invoke = []()
+                        struct State
                         {
+                           bool all = false;
+                        };
+
+                        auto shared = std::make_shared< State>();
+
+                        auto invoke = [ shared]()
+                        {
+                           auto filter = [ &shared]( auto& instance)
+                           {
+                              if( shared->all)
+                                 return true; 
+                              return ! common::service::hidden::name( instance.service);
+                           };
+
                            auto state = admin::api::state();
                            auto instances = normalized::instances( state);
 
-                           algorithm::sort( instances);
+                           auto filtered = algorithm::sort( algorithm::filter( instances, filter));
 
                            auto formatter = format::instances();
-                           formatter.print( std::cout, instances);
+                           formatter.print( std::cout, filtered);
                         };
+
+                        auto flag = argument::Option{ [ shared]()
+                        {
+                           shared->all = true;
+                           return argument::option::invoke::preemptive{};
+                        },  { "-a", "--all"}, "include hidden services"};
                         
                         return argument::Option{ 
                            invoke,
                            { "-li", "--list-instances"}, 
-                           "list instances"};
+                           "list instances"}( { std::move( flag)});
                      }
                    } // instances
 
@@ -699,10 +726,8 @@ The following options has legend:
 
          argument::Option options()
          {  
-            auto shared = std::make_shared< local::State>();        
-
             return argument::Option{ [](){}, { "service"}, "service related administration"}( {
-               local::list::services::option( shared),
+               local::list::services::option(),
                local::list::instances::option(),
                local::list::routes::option(),
                local::metric::reset::option(),
