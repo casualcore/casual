@@ -1,5 +1,0 @@
-import casual.make.api as make
-
-# examples 
-make.Build( 'example/makefile.cmk')
-

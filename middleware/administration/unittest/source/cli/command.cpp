@@ -59,15 +59,14 @@ namespace casual
 
                // make sure we've got casual stuff in the path
                auto path = environment::expand( string::compose( "PATH=",
-                  "${CASUAL_MAKE_SOURCE_ROOT}/middleware/administration/bin:",
-                  "${CASUAL_MAKE_SOURCE_ROOT}/middleware/domain/bin:",
-                  "${CASUAL_MAKE_SOURCE_ROOT}/middleware/queue/bin:",
-                  "${CASUAL_MAKE_SOURCE_ROOT}/middleware/transaction/bin:",
-                  "${CASUAL_MAKE_SOURCE_ROOT}/middleware/service/bin:",
-                  "${CASUAL_MAKE_SOURCE_ROOT}/middleware/gateway/bin:",
+                  "${CMAKE_BINARY_DIR}/middleware/administration/bin:",
+                  "${CMAKE_BINARY_DIR}/middleware/domain/bin:",
+                  "${CMAKE_BINARY_DIR}/middleware/queue/bin:",
+                  "${CMAKE_BINARY_DIR}/middleware/transaction/bin:",
+                  "${CMAKE_BINARY_DIR}/middleware/service/bin:",
+                  "${CMAKE_BINARY_DIR}/middleware/gateway/bin:",
                   "${PATH}"
                ));
-
                
                // ignore child signals
                auto guard = local::signal::handler();

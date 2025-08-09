@@ -56,13 +56,20 @@ namespace casual
 
    namespace
    {
+      auto source_root()
+      {
+         if( auto path = common::environment::variable::get< std::filesystem::path>( "CMAKE_SOURCE_DIR"))
+            return *path;
+
+         common::code::raise::error( common::code::casual::invalid_argument, "CMAKE_SOURCE_DIR is not set");
+      }
       class casual_field_buffer_stream : public ::testing::Test
       {
       protected:
 
          void SetUp() override
          {
-            casual::common::environment::variable::set( "CASUAL_FIELD_TABLE", "./sample/field.ini");
+            casual::common::environment::variable::set( "CASUAL_FIELD_TABLE", source_root().string() + std::string("/middleware/buffer/sample/field.json"));
          }
       };
    } //

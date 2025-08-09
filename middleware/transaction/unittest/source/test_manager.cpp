@@ -71,7 +71,7 @@ domain:
         dependencies: [ first]
 
    servers:
-      - path: ${CASUAL_MAKE_SOURCE_ROOT}/middleware/service/bin/casual-service-manager
+      - path: ${CMAKE_BINARY_DIR}/middleware/service/bin/casual-service-manager
         memberships: [ first]
       - path: bin/casual-transaction-manager
         memberships: [ second]

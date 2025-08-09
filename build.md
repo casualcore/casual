@@ -6,9 +6,10 @@
 The following packages need to be installed:
 
  * git
- * python
- * gcc (version >= 13.3)
- * g++ (version >= 13.3)
+ * gcc (version >= 14.2)
+ * g++ (version >= 14.2)
+ * cmake
+ * conan
 
 *Note: casual will not build on a 32-bit system*
 
@@ -25,8 +26,6 @@ if you're planning on trying some of the examples there might be a good idea to 
 the examples correspond exactly to your setup.
 
 ```bash
-$ git clone https://github.com/casualcore/casual-make.git && cd casual-make && git checkout 1.7 && cd ..
-$ git clone https://github.com/casualcore/casual-thirdparty.git && cd casual-thirdparty && git checkout 1.7 && cd ..
 $ git clone https://github.com/casualcore/casual.git
 ```
 
@@ -40,7 +39,6 @@ $ cd $HOME/git/casual
 ```
 
 It should be enough to just source the example environment set up file.
-(if the casual and casual-thirdparty repo's are next to eachother)
 
 ```bash
 $ source middleware/example/env/casual.env
@@ -57,26 +55,42 @@ $ vim casual.env # edit to suit your needs
 $ source casual.env
 ```
 
+## Install dependencies with conan
+
+```bash
+$ cd $HOME/git/casual
+$ conan profile detect # if never used conan before
+$ conan install conanfile.txt
+...
+```
+If that fails use this command to build dependencies from source
+```bash
+$ conan install conanfile.txt --build=missing
+...
+```
+**Note**: If you want to place your build binarys on another place then the default directory _build_ in your repo, you must add a exlicit path in conan install i.e.
+```
+$ conan install conanfile.txt --build=missing --output-folder /tmp/your_build_root
+```
+Then your binarys will end up under /tmp/your_build_root/build/Release
 
 ## build casual
      
 ```bash
-$ casual-make
-```
-     
-If you want to compile as much as possible in parallel you can use:
-
-```bash
-$ casual-make compile && casual-make link
+$ cd $HOME/git/casual
+$ cmake --preset conan-release # Configure cmake, made once
+$ cmake --build . --preset conan-release # Build
 ```
 
 ## test casual
 
 ```bash
-$ casual-make test
+$ cmake --build . --preset conan-release --target test
 ```
 
-## feedback
-
-If this _how-to_ is not to your liking, or does not describe your platform
-please provide a pull-request to fix it.
+## defined aliases i env
+```bash
+alias cmake-build='cmake --build . --preset conan-release'
+alias cmake-make='cmake --preset conan-release'
+alias cmake-test='cmake --build . --preset conan-release --target test'
+```

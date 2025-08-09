@@ -1,7 +1,3 @@
 #! /bin/bash
 
-cd $REPOSITORY_ROOT && \
-    casual-make --no-colors clean && \
-    find $REPOSITORY_ROOT/.. -user root | xargs chmod 777
-
 exit 0

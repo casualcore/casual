@@ -134,7 +134,7 @@ These cli commands are annotated with 'casual-pipe' in the help.
 These _business related_ commands communicate with a non human readable 'internal' _pipeline-protocol_ (binary) 
 via _stdout -> stdin_, hence it's possible to compose them.
 
-The 'causal-pipe' has to be _terminated_ to be able to consume `stdout` with cli commands that are not part
+The 'casual-pipe' has to be _terminated_ to be able to consume `stdout` with cli commands that are not part
 of 'casual-pipe'.
 
 If `casual` detects that `stdout` is tied to a _terminal_ `casual` will try to make it _human readable_

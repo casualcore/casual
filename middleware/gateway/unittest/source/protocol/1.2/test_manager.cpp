@@ -45,9 +45,9 @@ domain:
         dependencies: [ user]
    
    servers:
-      - path: ${CASUAL_MAKE_SOURCE_ROOT}/middleware/service/bin/casual-service-manager
+      - path: ${CMAKE_BINARY_DIR}/middleware/service/bin/casual-service-manager
         memberships: [ base]
-      - path: ${CASUAL_MAKE_SOURCE_ROOT}/middleware/transaction/bin/casual-transaction-manager
+      - path: ${CMAKE_BINARY_DIR}/middleware/transaction/bin/casual-transaction-manager
         memberships: [ base]
 )";
      
@@ -121,7 +121,7 @@ domain:
                -  key: CASUAL_INTERNAL_GATEWAY_PROTOCOL_VERSION
                   value: 1002
 
-      -  path: ${CASUAL_MAKE_SOURCE_ROOT}/middleware/queue/bin/casual-queue-manager
+      -  path: ${CMAKE_BINARY_DIR}/middleware/queue/bin/casual-queue-manager
          memberships: [ base]
    queue:
       groups:
@@ -142,7 +142,7 @@ domain:
    servers:
       - path: bin/casual-gateway-manager
         memberships: [ gateway]
-      - path: ${CASUAL_MAKE_SOURCE_ROOT}/middleware/queue/bin/casual-queue-manager
+      - path: ${CMAKE_BINARY_DIR}/middleware/queue/bin/casual-queue-manager
         memberships: [ base]
    gateway:
       outbound:
@@ -176,7 +176,7 @@ domain:
    servers:
       - path: bin/casual-gateway-manager
         memberships: [ gateway]
-      - path: ${CASUAL_MAKE_SOURCE_ROOT}/middleware/queue/bin/casual-queue-manager
+      - path: ${CMAKE_BINARY_DIR}/middleware/queue/bin/casual-queue-manager
         memberships: [ base]
    queue:
       groups:
@@ -202,7 +202,7 @@ domain:
                -  key: CASUAL_INTERNAL_GATEWAY_PROTOCOL_VERSION
                   value: 1002
 
-      -  path: ${CASUAL_MAKE_SOURCE_ROOT}/middleware/queue/bin/casual-queue-manager
+      -  path: ${CMAKE_BINARY_DIR}/middleware/queue/bin/casual-queue-manager
          memberships: [ base]
    gateway:
       outbound:
@@ -236,7 +236,7 @@ domain:
    servers:
       - path: bin/casual-gateway-manager
         memberships: [ gateway]
-      - path: ${CASUAL_MAKE_SOURCE_ROOT}/middleware/example/server/bin/casual-example-server
+      - path: ${CMAKE_BINARY_DIR}/middleware/example/server/bin/casual-example-server
         memberships: [ user]
    gateway:
       inbound:
@@ -272,7 +272,7 @@ domain:
    servers:
       - path: bin/casual-gateway-manager
         memberships: [ gateway]
-      - path: ${CASUAL_MAKE_SOURCE_ROOT}/middleware/example/server/bin/casual-example-server
+      - path: ${CMAKE_BINARY_DIR}/middleware/example/server/bin/casual-example-server
         memberships: [ user]
    gateway:
       inbound:
@@ -318,7 +318,7 @@ domain:
    servers:
       - path: bin/casual-gateway-manager
         memberships: [ gateway]
-      - path: ${CASUAL_MAKE_SOURCE_ROOT}/middleware/example/server/bin/casual-example-server
+      - path: ${CMAKE_BINARY_DIR}/middleware/example/server/bin/casual-example-server
         memberships: [ user]
    gateway:
       inbound:
@@ -360,7 +360,7 @@ domain:
    servers:
       - path: bin/casual-gateway-manager
         memberships: [ gateway]
-      - path: ${CASUAL_MAKE_SOURCE_ROOT}/middleware/example/server/bin/casual-example-server
+      - path: ${CMAKE_BINARY_DIR}/middleware/example/server/bin/casual-example-server
         memberships: [ user]
    gateway:
       inbound:

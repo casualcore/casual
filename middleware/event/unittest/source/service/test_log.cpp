@@ -39,7 +39,7 @@ domain:
       - name: second
         dependencies: [ first]
    servers:
-      - path: ${CASUAL_MAKE_SOURCE_ROOT}/middleware/service/bin/casual-service-manager
+      - path: ${CMAKE_BINARY_DIR}/middleware/service/bin/casual-service-manager
         memberships: [ first]        
 )";
             } // configuration
@@ -263,7 +263,7 @@ domain:
 domain:
    name: A
    servers:
-      - path: "${CASUAL_MAKE_SOURCE_ROOT}/middleware/example/server/bin/casual-example-server"
+      - path: "${CMAKE_BINARY_DIR}/middleware/example/server/bin/casual-example-server"
         memberships: [ second]
         arguments: [ --forward, casual/example/echo]
         instances: 2

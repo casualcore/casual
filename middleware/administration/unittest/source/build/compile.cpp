@@ -22,7 +22,7 @@ namespace casual
 
          auto object_file = common::unittest::file::temporary::name( ".o");
 
-         auto capture = administration::unittest::cli::command::execute( "g++ -c ", source, " -o ", object_file, " -O3 -I ${CASUAL_MAKE_SOURCE_ROOT}/middleware/xatmi/include");
+         auto capture = administration::unittest::cli::command::execute( "g++ -c ", source, " -o ", object_file, " -O3 -I ${CMAKE_SOURCE_DIR}/middleware/xatmi/include");
 
          if( ! capture)
             common::code::raise::error( common::code::casual::invalid_argument, "failed to compile source: ", source, " with error: ", capture.standard.error);

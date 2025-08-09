@@ -31,11 +31,15 @@ namespace casual
       {
          std::string offset( time_point timepoint)
          {
+            if( timepoint ==  chronology::empty())
+               return {};
             return std::format("{:%FT%T%Ez}", std::chrono::zoned_time{ std::chrono::current_zone(), std::chrono::floor< std::chrono::microseconds>( timepoint)});
          }
 
          void offset( std::ostream& out, time_point timepoint)
          {
+            if( timepoint ==  chronology::empty())
+               return;
             out << offset( timepoint);
          }
       } // utc

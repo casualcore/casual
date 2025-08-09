@@ -45,9 +45,9 @@ domain:
         dependencies: [ user]
    
    servers:
-      - path: ${CASUAL_MAKE_SOURCE_ROOT}/middleware/service/bin/casual-service-manager
+      - path: ${CMAKE_BINARY_DIR}/middleware/service/bin/casual-service-manager
         memberships: [ base]
-      - path: ${CASUAL_MAKE_SOURCE_ROOT}/middleware/transaction/bin/casual-transaction-manager
+      - path: ${CMAKE_BINARY_DIR}/middleware/transaction/bin/casual-transaction-manager
         memberships: [ base]
 )";
      

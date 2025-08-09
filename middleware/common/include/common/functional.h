@@ -10,7 +10,10 @@
 #include <utility>
 #include <functional>
 
+#pragma GCC diagnostic push 
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
 #include "../../../../thirdparty/function2/include/function2/function2.hpp"
+#pragma GCC diagnostic pop
 
 namespace casual
 {

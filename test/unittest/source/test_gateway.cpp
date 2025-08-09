@@ -56,7 +56,7 @@ namespace casual
 system:
    resources:
       -  key: rm-mockup
-         server: "${CASUAL_MAKE_SOURCE_ROOT}/middleware/transaction/bin/rm-proxy-casual-mockup"
+         server: "${CMAKE_BINARY_DIR}/middleware/transaction/bin/rm-proxy-casual-mockup"
          xa_struct_name: casual_mockup_xa_switch_static
          libraries:
             -  casual-mockup-rm
@@ -79,11 +79,11 @@ domain:
          dependencies: [ user]
    
    servers:
-      - path: "${CASUAL_MAKE_SOURCE_ROOT}/middleware/service/bin/casual-service-manager"
+      - path: "${CMAKE_BINARY_DIR}/middleware/service/bin/casual-service-manager"
         memberships: [ base]
-      - path: "${CASUAL_MAKE_SOURCE_ROOT}/middleware/transaction/bin/casual-transaction-manager"
+      - path: "${CMAKE_BINARY_DIR}/middleware/transaction/bin/casual-transaction-manager"
         memberships: [ base]
-      - path: "${CASUAL_MAKE_SOURCE_ROOT}/middleware/gateway/bin/casual-gateway-manager"
+      - path: "${CMAKE_BINARY_DIR}/middleware/gateway/bin/casual-gateway-manager"
         memberships: [ gateway]
 )";
                
@@ -191,7 +191,7 @@ domain:
    name: NAME
 
    servers:
-      - path: "${CASUAL_MAKE_SOURCE_ROOT}/middleware/example/server/bin/casual-example-server"
+      - path: "${CMAKE_BINARY_DIR}/middleware/example/server/bin/casual-example-server"
         memberships: [ user]
         arguments: [ --sleep, 10ms]
    gateway:
@@ -220,7 +220,7 @@ domain:
    name: NAME
 
    servers:
-      - path: "${CASUAL_MAKE_SOURCE_ROOT}/middleware/example/server/bin/casual-example-server"
+      - path: "${CMAKE_BINARY_DIR}/middleware/example/server/bin/casual-example-server"
         memberships: [ user]
         arguments: [ --sleep, 10ms]
    gateway:
@@ -298,7 +298,7 @@ domain:
    name: A
 
    servers:
-      - path: "${CASUAL_MAKE_SOURCE_ROOT}/middleware/example/server/bin/casual-example-server"
+      - path: "${CMAKE_BINARY_DIR}/middleware/example/server/bin/casual-example-server"
         memberships: [ user]
    gateway:
       inbound:
@@ -312,7 +312,7 @@ domain:
    name: B
 
    servers:
-      -  path: "${CASUAL_MAKE_SOURCE_ROOT}/middleware/queue/bin/casual-queue-manager"
+      -  path: "${CMAKE_BINARY_DIR}/middleware/queue/bin/casual-queue-manager"
          memberships: [ queue]
       
    queue:
@@ -379,7 +379,7 @@ domain:
 domain: 
    name: B
    servers:
-      - path: "${CASUAL_MAKE_SOURCE_ROOT}/middleware/example/server/bin/casual-example-server"
+      - path: "${CMAKE_BINARY_DIR}/middleware/example/server/bin/casual-example-server"
         memberships: [ user]
    gateway:
       inbound:
@@ -444,7 +444,7 @@ domain:
 domain: 
    name: B
    servers:
-      - path: "${CASUAL_MAKE_SOURCE_ROOT}/middleware/example/server/bin/casual-example-server"
+      - path: "${CMAKE_BINARY_DIR}/middleware/example/server/bin/casual-example-server"
         memberships: [ user]
    services:
       -  name: casual/example/domain/echo/C
@@ -1136,7 +1136,7 @@ domain:
    name: B
 
    servers:
-      -  path: "${CASUAL_MAKE_SOURCE_ROOT}/middleware/example/server/bin/casual-example-server"
+      -  path: "${CMAKE_BINARY_DIR}/middleware/example/server/bin/casual-example-server"
          memberships: [ user]
          arguments: [ --sleep, 100ms]
          instances: 5
@@ -1206,7 +1206,7 @@ domain:
    name: B
 
    servers:
-      -  path: "${CASUAL_MAKE_SOURCE_ROOT}/middleware/example/server/bin/casual-example-server"
+      -  path: "${CMAKE_BINARY_DIR}/middleware/example/server/bin/casual-example-server"
          memberships: [ user]
          arguments: [ --sleep, 100ms]
          instances: 5
@@ -1276,7 +1276,7 @@ domain:
    name: B
 
    servers:
-      -  path: "${CASUAL_MAKE_SOURCE_ROOT}/middleware/example/server/bin/casual-example-server"
+      -  path: "${CMAKE_BINARY_DIR}/middleware/example/server/bin/casual-example-server"
          memberships: [ user]
          arguments: [ --sleep, 100ms]
          instances: 5
@@ -1346,7 +1346,7 @@ domain:
 domain: 
    name: B
    servers:
-      -  path: "${CASUAL_MAKE_SOURCE_ROOT}/middleware/example/server/bin/casual-example-server"
+      -  path: "${CMAKE_BINARY_DIR}/middleware/example/server/bin/casual-example-server"
          memberships: [ user]
          arguments: [ --sleep, 10ms]
          instances: 1
@@ -1724,7 +1724,7 @@ domain:
    name: B
 
    servers:
-      -  path: "${CASUAL_MAKE_SOURCE_ROOT}/middleware/example/server/bin/casual-example-server"
+      -  path: "${CMAKE_BINARY_DIR}/middleware/example/server/bin/casual-example-server"
          memberships: [ user]
 
    gateway:
@@ -1795,7 +1795,7 @@ domain:
    name: B
 
    servers:
-      -  path: "${CASUAL_MAKE_SOURCE_ROOT}/middleware/example/server/bin/casual-example-server"
+      -  path: "${CMAKE_BINARY_DIR}/middleware/example/server/bin/casual-example-server"
          memberships: [ user]
 
    services:
@@ -1848,7 +1848,7 @@ domain:
    name: B
 
    servers:
-      -  path: "${CASUAL_MAKE_SOURCE_ROOT}/middleware/example/server/bin/casual-example-server"
+      -  path: "${CMAKE_BINARY_DIR}/middleware/example/server/bin/casual-example-server"
          memberships: [ user]
 
    gateway:
@@ -1919,7 +1919,7 @@ domain:
    name: B
 
    servers:
-      -  path: "${CASUAL_MAKE_SOURCE_ROOT}/middleware/example/server/bin/casual-example-server"
+      -  path: "${CMAKE_BINARY_DIR}/middleware/example/server/bin/casual-example-server"
          memberships: [ user]
 
    gateway:
@@ -1975,7 +1975,7 @@ domain:
 domain:
    name: A
    servers:
-      - path: "${CASUAL_MAKE_SOURCE_ROOT}/middleware/example/server/bin/casual-example-resource-server"
+      - path: "${CMAKE_BINARY_DIR}/middleware/example/server/bin/casual-example-resource-server"
         memberships: [ user]
    gateway:
       inbound:
@@ -1989,7 +1989,7 @@ domain:
 domain: 
    name: B
    servers:
-      -  path: "${CASUAL_MAKE_SOURCE_ROOT}/middleware/example/server/bin/casual-example-resource-server"
+      -  path: "${CMAKE_BINARY_DIR}/middleware/example/server/bin/casual-example-resource-server"
          memberships: [ user]
    gateway:
       inbound:
@@ -2117,7 +2117,7 @@ domain:
 domain:
    name: A
    servers:
-      -  path: "${CASUAL_MAKE_SOURCE_ROOT}/middleware/example/server/bin/casual-example-resource-server"
+      -  path: "${CMAKE_BINARY_DIR}/middleware/example/server/bin/casual-example-resource-server"
          memberships: [ user]
          arguments: [ --nested-calls, casual/example/resource/domain/echo/B, casual/example/resource/domain/echo/C, casual/example/resource/domain/echo/X]
          instances: 4
@@ -2138,7 +2138,7 @@ domain:
    name: B
 
    servers:
-      -  path: "${CASUAL_MAKE_SOURCE_ROOT}/middleware/example/server/bin/casual-example-resource-server"
+      -  path: "${CMAKE_BINARY_DIR}/middleware/example/server/bin/casual-example-resource-server"
          memberships: [ user]
          arguments: [ --nested-calls, casual/example/resource/domain/echo/A, casual/example/resource/domain/echo/C, casual/example/resource/domain/echo/X]
          instances: 4
@@ -2159,7 +2159,7 @@ domain:
    name: C
 
    servers:
-      -  path: "${CASUAL_MAKE_SOURCE_ROOT}/middleware/example/server/bin/casual-example-resource-server"
+      -  path: "${CMAKE_BINARY_DIR}/middleware/example/server/bin/casual-example-resource-server"
          memberships: [ user]
          arguments: [ --nested-calls, casual/example/resource/nested/calls/A, casual/example/resource/nested/calls/B, casual/example/resource/domain/echo/X]
          instances: 4
@@ -2201,7 +2201,7 @@ domain:
 domain: 
    name: X
    servers:
-      -  path: "${CASUAL_MAKE_SOURCE_ROOT}/middleware/example/server/bin/casual-example-resource-server"
+      -  path: "${CMAKE_BINARY_DIR}/middleware/example/server/bin/casual-example-resource-server"
          memberships: [ user]
          instances: 3
    gateway:
@@ -2352,7 +2352,7 @@ domain:
 domain:
    name: A
    servers:
-      -  path: "${CASUAL_MAKE_SOURCE_ROOT}/middleware/example/server/bin/casual-example-resource-server"
+      -  path: "${CMAKE_BINARY_DIR}/middleware/example/server/bin/casual-example-resource-server"
          memberships: [ user]
          arguments: [ --nested-calls, casual/example/resource/domain/echo/B, casual/example/resource/domain/echo/C, casual/example/resource/domain/echo/X]
          instances: 4
@@ -2374,7 +2374,7 @@ domain:
    name: B
 
    servers:
-      -  path: "${CASUAL_MAKE_SOURCE_ROOT}/middleware/example/server/bin/casual-example-resource-server"
+      -  path: "${CMAKE_BINARY_DIR}/middleware/example/server/bin/casual-example-resource-server"
          memberships: [ user]
          arguments: [ --nested-calls, casual/example/resource/domain/echo/A, casual/example/resource/domain/echo/C, casual/example/resource/domain/echo/X]
          instances: 4
@@ -2396,7 +2396,7 @@ domain:
    name: C
 
    servers:
-      -  path: "${CASUAL_MAKE_SOURCE_ROOT}/middleware/example/server/bin/casual-example-resource-server"
+      -  path: "${CMAKE_BINARY_DIR}/middleware/example/server/bin/casual-example-resource-server"
          memberships: [ user]
          arguments: [ --nested-calls, casual/example/resource/nested/calls/A, casual/example/resource/nested/calls/B, casual/example/resource/domain/echo/X]
          instances: 4
@@ -2438,7 +2438,7 @@ domain:
 domain: 
    name: X
    servers:
-      -  path: "${CASUAL_MAKE_SOURCE_ROOT}/middleware/example/server/bin/casual-example-resource-server"
+      -  path: "${CMAKE_BINARY_DIR}/middleware/example/server/bin/casual-example-resource-server"
          memberships: [ user]
          instances: 3
    gateway:
@@ -2584,7 +2584,7 @@ domain:
             openinfo: --prepare -3
             instances: 1
    servers:
-      -  path: "${CASUAL_MAKE_SOURCE_ROOT}/middleware/example/server/bin/casual-example-resource-server"
+      -  path: "${CMAKE_BINARY_DIR}/middleware/example/server/bin/casual-example-resource-server"
          memberships: [ user]
          arguments: [ --nested-calls, casual/example/resource/domain/echo/B, casual/example/resource/domain/echo/C, casual/example/resource/domain/echo/X]
          instances: 4
@@ -2606,7 +2606,7 @@ domain:
    name: B
 
    servers:
-      -  path: "${CASUAL_MAKE_SOURCE_ROOT}/middleware/example/server/bin/casual-example-resource-server"
+      -  path: "${CMAKE_BINARY_DIR}/middleware/example/server/bin/casual-example-resource-server"
          memberships: [ user]
          arguments: [ --nested-calls, casual/example/resource/domain/echo/A, casual/example/resource/domain/echo/C, casual/example/resource/domain/echo/X]
          instances: 4
@@ -2628,7 +2628,7 @@ domain:
    name: C
 
    servers:
-      -  path: "${CASUAL_MAKE_SOURCE_ROOT}/middleware/example/server/bin/casual-example-resource-server"
+      -  path: "${CMAKE_BINARY_DIR}/middleware/example/server/bin/casual-example-resource-server"
          memberships: [ user]
          arguments: [ --nested-calls, casual/example/resource/nested/calls/A, casual/example/resource/nested/calls/B, casual/example/resource/domain/echo/X]
          instances: 4
@@ -2670,7 +2670,7 @@ domain:
 domain: 
    name: X
    servers:
-      -  path: "${CASUAL_MAKE_SOURCE_ROOT}/middleware/example/server/bin/casual-example-resource-server"
+      -  path: "${CMAKE_BINARY_DIR}/middleware/example/server/bin/casual-example-resource-server"
          memberships: [ user]
          instances: 3
    gateway:
@@ -2825,7 +2825,7 @@ domain:
             openinfo: --start -7 --end -7
             instances: 1
    servers:
-      -  path: "${CASUAL_MAKE_SOURCE_ROOT}/middleware/example/server/bin/casual-example-resource-server"
+      -  path: "${CMAKE_BINARY_DIR}/middleware/example/server/bin/casual-example-resource-server"
          memberships: [ user]
          arguments: [ --nested-calls, casual/example/resource/domain/echo/B, casual/example/resource/domain/echo/C, casual/example/resource/domain/echo/X]
          instances: 4
@@ -2847,7 +2847,7 @@ domain:
    name: B
 
    servers:
-      -  path: "${CASUAL_MAKE_SOURCE_ROOT}/middleware/example/server/bin/casual-example-resource-server"
+      -  path: "${CMAKE_BINARY_DIR}/middleware/example/server/bin/casual-example-resource-server"
          memberships: [ user]
          arguments: [ --nested-calls, casual/example/resource/domain/echo/A, casual/example/resource/domain/echo/C, casual/example/resource/domain/echo/X]
          instances: 4
@@ -2869,7 +2869,7 @@ domain:
    name: C
 
    servers:
-      -  path: "${CASUAL_MAKE_SOURCE_ROOT}/middleware/example/server/bin/casual-example-resource-server"
+      -  path: "${CMAKE_BINARY_DIR}/middleware/example/server/bin/casual-example-resource-server"
          memberships: [ user]
          arguments: [ --nested-calls, casual/example/resource/nested/calls/A, casual/example/resource/nested/calls/B, casual/example/resource/domain/echo/X]
          instances: 4
@@ -2911,7 +2911,7 @@ domain:
 domain: 
    name: X
    servers:
-      -  path: "${CASUAL_MAKE_SOURCE_ROOT}/middleware/example/server/bin/casual-example-resource-server"
+      -  path: "${CMAKE_BINARY_DIR}/middleware/example/server/bin/casual-example-resource-server"
          memberships: [ user]
          instances: 3
    gateway:
@@ -3052,7 +3052,7 @@ domain:
 domain:
    name: A
    servers:
-      -  path: "${CASUAL_MAKE_SOURCE_ROOT}/middleware/example/server/bin/casual-example-resource-server"
+      -  path: "${CMAKE_BINARY_DIR}/middleware/example/server/bin/casual-example-resource-server"
          memberships: [ user]
          arguments: [ --nested-calls, casual/example/resource/domain/echo/B, casual/example/resource/domain/echo/C, casual/example/resource/domain/echo/X]
          instances: 4
@@ -3073,7 +3073,7 @@ domain:
 domain: 
    name: B
    servers:
-      -  path: "${CASUAL_MAKE_SOURCE_ROOT}/middleware/example/server/bin/casual-example-resource-server"
+      -  path: "${CMAKE_BINARY_DIR}/middleware/example/server/bin/casual-example-resource-server"
          memberships: [ user]
          arguments: [ --nested-calls, casual/example/resource/domain/echo/A, casual/example/resource/domain/echo/C, casual/example/resource/domain/echo/X]
          instances: 4
@@ -3094,7 +3094,7 @@ domain:
 domain: 
    name: C
    servers:
-      -  path: "${CASUAL_MAKE_SOURCE_ROOT}/middleware/example/server/bin/casual-example-resource-server"
+      -  path: "${CMAKE_BINARY_DIR}/middleware/example/server/bin/casual-example-resource-server"
          memberships: [ user]
          arguments: [ --nested-calls, casual/example/resource/nested/calls/A, casual/example/resource/nested/calls/B, casual/example/resource/domain/echo/X]
          instances: 4
@@ -3135,7 +3135,7 @@ domain:
 domain: 
    name: X
    servers:
-      -  path: "${CASUAL_MAKE_SOURCE_ROOT}/middleware/example/server/bin/casual-example-resource-server"
+      -  path: "${CMAKE_BINARY_DIR}/middleware/example/server/bin/casual-example-resource-server"
          memberships: [ user]
          instances: 3
    gateway:
@@ -3274,7 +3274,7 @@ domain:
    name: B
    servers:
       -  alias: casual-example-server
-         path: "${CASUAL_MAKE_SOURCE_ROOT}/middleware/example/server/bin/casual-example-server"
+         path: "${CMAKE_BINARY_DIR}/middleware/example/server/bin/casual-example-server"
          memberships: [ user]
          arguments: [ --sleep, 1s]
    gateway:
@@ -3431,7 +3431,7 @@ domain:
    name: B
 
    servers:
-      - path: "${CASUAL_MAKE_SOURCE_ROOT}/middleware/example/server/bin/casual-example-server"
+      - path: "${CMAKE_BINARY_DIR}/middleware/example/server/bin/casual-example-server"
         instances: 0
 
    gateway:
@@ -3534,7 +3534,7 @@ domain:
 domain:
    name: B
    servers:
-      -  path: "${CASUAL_MAKE_SOURCE_ROOT}/middleware/queue/bin/casual-queue-manager"
+      -  path: "${CMAKE_BINARY_DIR}/middleware/queue/bin/casual-queue-manager"
          memberships: [ queue]
    queue:
       groups:
@@ -3561,7 +3561,7 @@ domain:
             openinfo: --prepare -3
             instances: 1
    servers:
-      -  path: "${CASUAL_MAKE_SOURCE_ROOT}/middleware/example/server/bin/casual-example-resource-server"
+      -  path: "${CMAKE_BINARY_DIR}/middleware/example/server/bin/casual-example-resource-server"
          memberships: [ user]
          instances: 1
    gateway:
@@ -3576,7 +3576,7 @@ domain:
 domain:
    name: A
    servers:
-      -  path: "${CASUAL_MAKE_SOURCE_ROOT}/middleware/queue/bin/casual-queue-manager"
+      -  path: "${CMAKE_BINARY_DIR}/middleware/queue/bin/casual-queue-manager"
          memberships: [ queue]
    gateway:
       outbound:
@@ -3629,7 +3629,7 @@ domain:
             duration: 2ms
             contract: kill
    servers:
-      -  path: "${CASUAL_MAKE_SOURCE_ROOT}/middleware/example/server/bin/casual-example-server"
+      -  path: "${CMAKE_BINARY_DIR}/middleware/example/server/bin/casual-example-server"
          memberships: [ user]
          arguments: [ --sleep, 1s]
    gateway:
@@ -3680,7 +3680,7 @@ domain:
    name: B
    servers:
       -  alias: casual-example-server
-         path: "${CASUAL_MAKE_SOURCE_ROOT}/middleware/example/server/bin/casual-example-server"
+         path: "${CMAKE_BINARY_DIR}/middleware/example/server/bin/casual-example-server"
          memberships: [ user]
    gateway:
       inbound:
@@ -3694,7 +3694,7 @@ domain:
    name: C
    servers:
       -  alias: casual-example-server
-         path: "${CASUAL_MAKE_SOURCE_ROOT}/middleware/example/server/bin/casual-example-server"
+         path: "${CMAKE_BINARY_DIR}/middleware/example/server/bin/casual-example-server"
          memberships: [ user]
    gateway:
       inbound:
@@ -3786,7 +3786,7 @@ domain:
 domain: 
    name: B
    servers:         
-      -  path: "${CASUAL_MAKE_SOURCE_ROOT}/middleware/example/server/bin/casual-example-server"
+      -  path: "${CMAKE_BINARY_DIR}/middleware/example/server/bin/casual-example-server"
          alias: example
          memberships: [ user]
          instances: 0

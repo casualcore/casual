@@ -74,10 +74,10 @@ namespace casual
             {
                auto root()
                {
-                  if( auto value = environment::variable::get< std::filesystem::path>( "CASUAL_MAKE_SOURCE_ROOT"))
+                  if( auto value = environment::variable::get< std::filesystem::path>( "CMAKE_BINARY_DIR"))
                      return *value;
 
-                  code::raise::error( code::casual::invalid_argument, "CASUAL_MAKE_SOURCE_ROOT has to be set");
+                  code::raise::error( code::casual::invalid_argument, "CMAKE_BINARY_DIR has to be set");
                }
             } // repository
             

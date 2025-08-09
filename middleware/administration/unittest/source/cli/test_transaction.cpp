@@ -46,13 +46,13 @@ domain:
       -  name: gateway
          dependencies: [ user]
    servers:
-      -  path: "${CASUAL_MAKE_SOURCE_ROOT}/middleware/service/bin/casual-service-manager"
+      -  path: "${CMAKE_BINARY_DIR}/middleware/service/bin/casual-service-manager"
          memberships: [ base]
-      -  path: "${CASUAL_MAKE_SOURCE_ROOT}/middleware/transaction/bin/casual-transaction-manager"
+      -  path: "${CMAKE_BINARY_DIR}/middleware/transaction/bin/casual-transaction-manager"
          memberships: [ base]
-      -  path: "${CASUAL_MAKE_SOURCE_ROOT}/middleware/queue/bin/casual-queue-manager"
+      -  path: "${CMAKE_BINARY_DIR}/middleware/queue/bin/casual-queue-manager"
          memberships: [ base]
-      -  path: "${CASUAL_MAKE_SOURCE_ROOT}/middleware/gateway/bin/casual-gateway-manager"
+      -  path: "${CMAKE_BINARY_DIR}/middleware/gateway/bin/casual-gateway-manager"
          memberships: [ gateway]
 
 )";
@@ -96,7 +96,7 @@ domain:
 domain: 
    name: domain-B
    servers:
-      -  path: "${CASUAL_MAKE_SOURCE_ROOT}/middleware/example/server/bin/casual-example-server"
+      -  path: "${CMAKE_BINARY_DIR}/middleware/example/server/bin/casual-example-server"
          memberships: [ user]
    gateway:
       inbound:
@@ -166,7 +166,7 @@ E-3  outbound-B  51294  7a3ba66c51d14e6ab6387c522d7518d9  domain-B
 system:
    resources:
       -  key: rm-mockup
-         server: ${CASUAL_MAKE_SOURCE_ROOT}/middleware/transaction/bin/rm-proxy-casual-mockup
+         server: ${CMAKE_BINARY_DIR}/middleware/transaction/bin/rm-proxy-casual-mockup
          xa_struct_name: casual_mockup_xa_switch_static
          libraries:
             -  casual-mockup-rm
@@ -181,7 +181,7 @@ domain:
             instances: 1
 
    servers:
-      -  path: ${CASUAL_MAKE_SOURCE_ROOT}/middleware/example/server/bin/casual-example-resource-server
+      -  path: ${CMAKE_BINARY_DIR}/middleware/example/server/bin/casual-example-resource-server
          memberships: [ user]
 )");
          EXPECT_TRUE( administration::unittest::cli::command::execute( R"(casual transaction --list-transactions --porcelain true)").standard.out.empty());
@@ -253,7 +253,7 @@ d34f921bcf8f43c486284bcc15d66439  3              -  involved  2025-08-12T12:47:2
 system:
    resources:
       -  key: rm-mockup
-         server: ${CASUAL_MAKE_SOURCE_ROOT}/middleware/transaction/bin/rm-proxy-casual-mockup
+         server: ${CMAKE_BINARY_DIR}/middleware/transaction/bin/rm-proxy-casual-mockup
          xa_struct_name: casual_mockup_xa_switch_static
          libraries:
             -  casual-mockup-rm
@@ -267,7 +267,7 @@ domain:
             instances: 1
 
    servers:
-      -  path: ${CASUAL_MAKE_SOURCE_ROOT}/middleware/example/server/bin/casual-example-resource-server
+      -  path: ${CMAKE_BINARY_DIR}/middleware/example/server/bin/casual-example-resource-server
          memberships: [ user]
          arguments: [ --nested-calls, casual/example/resource/echo]
          instances: 4
@@ -333,7 +333,7 @@ domain:
 system:
    resources:
       -  key: rm-mockup
-         server: ${CASUAL_MAKE_SOURCE_ROOT}/middleware/transaction/bin/rm-proxy-casual-mockup
+         server: ${CMAKE_BINARY_DIR}/middleware/transaction/bin/rm-proxy-casual-mockup
          xa_struct_name: casual_mockup_xa_switch_static
 domain: 
    name: domain-A

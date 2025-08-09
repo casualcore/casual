@@ -51,16 +51,16 @@ system:
             -  casual-mockup-rm
          paths:
             include:
-               -  "${CASUAL_MAKE_SOURCE_ROOT}/middleware/transaction/include"
-               -  "${CASUAL_MAKE_SOURCE_ROOT}/middleware/xatmi/include"
+               -  "${CMAKE_SOURCE_DIR}/middleware/transaction/include"
+               -  "${CMAKE_SOURCE_DIR}/middleware/xatmi/include"
             library: 
-               -  "${CASUAL_MAKE_SOURCE_ROOT}/middleware/transaction/bin"
-               -  "${CASUAL_MAKE_SOURCE_ROOT}/middleware/common/bin"
-               -  "${CASUAL_MAKE_SOURCE_ROOT}/middleware/xatmi/bin"
+               -  "${CMAKE_BINARY_DIR}/middleware/transaction/bin"
+               -  "${CMAKE_BINARY_DIR}/middleware/common/bin"
+               -  "${CMAKE_BINARY_DIR}/middleware/xatmi/bin"
 )");
             }
 
-            constexpr std::string_view build_executable_path = "${CASUAL_MAKE_SOURCE_ROOT}/middleware/tools/bin/casual-build-executable";
+            constexpr std::string_view build_executable_path = "${CMAKE_BINARY_DIR}/middleware/tools/bin/casual-build-executable";
 
          } // <unnamed>
       } // local
@@ -88,7 +88,7 @@ executable:
          auto capture = administration::unittest::cli::command::execute(
             local::build_executable_path, " --definition ", configuration, " --output ", output, 
             " --system-configuration ", system, 
-            " --build-directives ", object_file, " -O3 -I ${CASUAL_MAKE_SOURCE_ROOT}/middleware/xatmi/include -L ${CASUAL_MAKE_SOURCE_ROOT}/middleware/xatmi/bin");
+            " --build-directives ", object_file, " -O3 -I ${CMAKE_SOURCE_DIR}/middleware/xatmi/include -L ${CMAKE_BINARY_DIR}/middleware/xatmi/bin");
 
          EXPECT_TRUE( capture) << CASUAL_NAMED_VALUE( capture);
 

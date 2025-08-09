@@ -33,7 +33,7 @@ domain:
    name: service-domain
 
    servers:
-      - path: ${CASUAL_MAKE_SOURCE_ROOT}/middleware/service/bin/casual-service-manager
+      - path: ${CMAKE_BINARY_DIR}/middleware/service/bin/casual-service-manager
 )";
 
 

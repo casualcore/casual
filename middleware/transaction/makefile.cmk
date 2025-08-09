@@ -1,9 +1,0 @@
-
-
-import casual.make.api as make
-import casual.middleware.make.api as dsl
-
-# note: this file is only used for convenience, when working explicitly with the domain module.
-
-make.Build( 'makefile.server.cmk')
-make.Build( 'makefile.client.cmk')

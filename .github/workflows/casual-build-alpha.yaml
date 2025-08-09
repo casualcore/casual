@@ -9,7 +9,6 @@ on:
 env:
   build_type: alpha
   ubi_image: casual/ubi8-builder
-  suse_image: casual/suse-builder
 
 jobs:
   calculate-version: 
@@ -87,40 +86,39 @@ jobs:
           path: 'casual'
           fetch-depth: 0
 
-      - name: check out casual-thirdparty 
-        uses: actions/checkout@v4
-        with:
-          repository: 'casualcore/casual-thirdparty'
-          ref: ${{ needs.calculate-version.outputs.major_minor }}
-          path: 'casual-thirdparty'
-
-      - name: check out casual-make 
-        uses: actions/checkout@v4
-        with:
-          repository: 'casualcore/casual-make'
-          ref: ${{ needs.calculate-version.outputs.major_minor }}
-          path: 'casual-make'
-
       - name: prepare build-script
         run: |
           cat << EOD > builder.sh
           #! /bin/bash
 
-          set -e
-
           git config --global --add safe.directory /git/casual/casual
 
+          mkdir /git/casual/casual/results && chmod 777 /git/casual/casual/results
+
           source /git/casual/casual/pipeline/script/pipeline.env
+
+          export CASUAL_COMMIT_HASH=${{ github.sha }}
 
           bash /git/casual/casual/pipeline/script/pre/cleanup
           
           touch /git/casual/casual.log
           chmod 777 /git/casual/casual.log
 
+          echo "set(CPACK_RPM_PACKAGE_VERSION ${{ needs.calculate-version.outputs.casual_version }})" > /git/casual/casual/version.cmake
+          echo "set(CPACK_RPM_PACKAGE_RELEASE ${{ needs.calculate-version.outputs.casual_release }})" >> /git/casual/casual/version.cmake
+
+          cat /git/casual/casual/version.cmake
+
           bash /git/casual/casual/pipeline/script/backend/$DISTRIBUTION/build ${{ needs.calculate-version.outputs.build_version }}
-          bash /git/casual/casual/pipeline/script/package ${{ needs.calculate-version.outputs.casual_version }} ${{ needs.calculate-version.outputs.casual_release }} $DISTRIBUTION
+          CODE=$?
+
+          find /tmp/build/casual -name 'casual-middleware-*.rpm' -exec cp "{}" /git/casual/casual/results  \;
+          find /tmp/build/casual -name 'report.xml' -exec cp "{}" /git/casual/casual/results  \;
+          chmod 777 /git/casual/casual/results/*
 
           bash /git/casual/casual/pipeline/script/post/cleanup
+
+          exit $CODE
 
           EOD
 
@@ -128,7 +126,7 @@ jobs:
 
       - name: Build
         run: |
-          docker run --rm -v ${{ github.workspace }}:/git/casual:Z -i ${{ env.ubi_image}}:${{ needs.calculate-version.outputs.major_minor }}
+          docker run --rm -v ${{ github.workspace }}:/git/casual:Z -i ${{ env.ubi_image}}:${{ needs.calculate-version.outputs.major_minor }}-cmake
 
       - name: Logpublisher
         if: ${{ failure() || cancelled() }}
@@ -139,7 +137,7 @@ jobs:
         uses: dorny/test-reporter@v1
         if: ${{ success() || failure() }}    # run this step even if previous step failed
         with:
-          name: Google Tests - Centos # Name of the check run which will be created
+          name: Google Tests - Ubi # Name of the check run which will be created
           path: ./**/report.xml       # Path to test results
           reporter: java-junit        # Format of test result
           working-directory: casual
@@ -150,83 +148,10 @@ jobs:
           name: ubi_rpm
           path: ./**/casual-middleware*.rpm
 
-  build-suse:
-    runs-on: [self-hosted, builder]
-    if: ${{ success() }}
-    needs: [calculate-version,notification-start]
-    env:
-      DISTRIBUTION: 'suse'
-    steps:
-      - name: check out repository casual
-        uses: actions/checkout@v4
-        with:
-          path: 'casual'
-          fetch-depth: 0
-
-      - name: check out casual-thirdparty 
-        uses: actions/checkout@v4
-        with:
-          repository: 'casualcore/casual-thirdparty'
-          ref: ${{ needs.calculate-version.outputs.major_minor }}
-          path: 'casual-thirdparty'
-
-      - name: check out casual-make 
-        uses: actions/checkout@v4
-        with:
-          repository: 'casualcore/casual-make'
-          ref: ${{ needs.calculate-version.outputs.major_minor }}
-          path: 'casual-make'
-
-      - name: prepare build-script
-        run: |
-          cat << EOD > builder.sh
-          #! /bin/bash
-
-          set -e
-
-          source /git/casual/casual/pipeline/script/pipeline.env
-
-          bash /git/casual/casual/pipeline/script/pre/cleanup
-          
-          touch /git/casual/casual.log
-          chmod 777 /git/casual/casual.log
-
-          bash /git/casual/casual/pipeline/script/backend/$DISTRIBUTION/build ${{ needs.calculate-version.outputs.build_version }}
-          bash /git/casual/casual/pipeline/script/package ${{ needs.calculate-version.outputs.casual_version }} ${{ needs.calculate-version.outputs.casual_release }} $DISTRIBUTION
-
-          bash /git/casual/casual/pipeline/script/post/cleanup
-
-          EOD
-
-          chmod +x builder.sh
-
-      - name: Build
-        run: |
-          docker run --rm -v ${{ github.workspace }}:/git/casual:Z -i ${{ env.suse_image}}:${{ needs.calculate-version.outputs.major_minor }}
-
-      - name: Logpublisher
-        if: ${{ failure() || cancelled() }}
-        run: |
-          ${{ github.workspace }}/casual/pipeline/script/post/logpublisher ${{ github.workspace }}/casual.log ${DISTRIBUTION}-${{ needs.calculate-version.outputs.build_version }}
-
-      - name: Test Report
-        uses: dorny/test-reporter@v1
-        if: ${{ success() || failure() }}  # run this step even if previous step failed
-        with:
-          name: Google Tests - Suse  # Name of the check run which will be created
-          path: ./**/report.xml      # Path to test results
-          reporter: java-junit       # Format of test result
-          working-directory: casual
-
-      - name: Save artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: suse_rpm
-          path: ./**/casual-middleware*.rpm
 
   notification-end:
     runs-on: ubuntu-latest
-    needs: [calculate-version,build-ubi,build-suse]
+    needs: [calculate-version,build-ubi]
     if: ${{ always() }}
     steps: 
       - uses: martialonline/workflow-status@v4

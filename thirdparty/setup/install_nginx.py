@@ -11,11 +11,11 @@ from shutil import copyfile
 
 NGINX_VERSION = "1.28.0"
 BASENAME = "nginx-" + NGINX_VERSION
-SOURCE_ROOT = os.getenv("CASUAL_MAKE_SOURCE_ROOT")
+SOURCE_ROOT = os.getenv("CMAKE_BINARY_DIR")
 CASUAL_THIRDPARTY = os.getenv("CASUAL_THIRDPARTY")
 
 if not SOURCE_ROOT or not CASUAL_THIRDPARTY:
-	raise SystemError("CASUAL_MAKE_SOURCE_ROOT and CASUAL_THIRDPARTY need to be set")
+	raise SystemError("CMAKE_BINARY_DIR and CASUAL_THIRDPARTY need to be set")
 
 os.chdir(CASUAL_THIRDPARTY + '/nginx/' + BASENAME)
 

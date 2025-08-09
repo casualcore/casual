@@ -18,8 +18,8 @@ namespace casual
          Version result;
 
          // casual version
-#ifdef CASUAL_MAKE_BUILD_VERSION
-         result.casual = CASUAL_MAKE_BUILD_VERSION;
+#ifdef CASUAL_BUILD_VERSION
+         result.casual = CASUAL_BUILD_VERSION;
 #endif 
          // compiler version
 #ifdef __clang_version__
@@ -28,8 +28,8 @@ namespace casual
          result.compiler = string::compose( "g++: ", __GNUC__, '.', __GNUC_MINOR__, '.', __GNUC_PATCHLEVEL__);
 #endif
          // commit hash
-#ifdef CASUAL_MAKE_COMMIT_HASH
-         result.commit = CASUAL_MAKE_COMMIT_HASH;
+#ifdef CASUAL_COMMIT_HASH
+         result.commit = CASUAL_COMMIT_HASH;
 #endif
 
          return result;

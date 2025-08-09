@@ -56,7 +56,7 @@ namespace casual
 
          const auto FLD_BINARY1 = CASUAL_FIELD_BINARY * CASUAL_FIELD_TYPE_BASE + 2000 + 1;
          //const auto FLD_BINARY2 = CASUAL_FIELD_BINARY * CASUAL_FIELD_TYPE_BASE + 2000 + 2;
-         //const auto FLD_BINARY3 = CASUAL_FIELD_BINARY * CASUAL_FIELD_TYPE_BASE + 2000 + 3;
+         //const auto FLD_BINARY3 = CASUAL_FIELD_BINARY * CASUAL_FIELD_TYPE_BASE + 2000 + 3;s
       }
 
 
@@ -605,6 +605,14 @@ namespace casual
 
       namespace
       {
+
+         auto source_root()
+         {
+            if( auto path = common::environment::variable::get< std::filesystem::path>( "CMAKE_SOURCE_DIR"))
+               return *path;
+
+            common::code::raise::error( common::code::casual::invalid_argument, "CMAKE_SOURCE_DIR is not set");
+         }
          class buffer_field_repository : public ::testing::Test
          {
          protected:
@@ -615,7 +623,7 @@ namespace casual
                //casual::common::environment::variable::set( "CASUAL_FIELD_TABLE", "./sample/field.xml");
                //casual::common::environment::variable::set( "CASUAL_FIELD_TABLE", "./sample/field.json");
                //casual::common::environment::variable::set( "CASUAL_FIELD_TABLE", "./sample/field.ini");
-               environment::variable::set( "CASUAL_FIELD_TABLE", "./sample/field.yaml");
+               environment::variable::set( "CASUAL_FIELD_TABLE", source_root().string() + std::string("/middleware/buffer/sample/field.yaml"));
             }
 
             void TearDown() override
