@@ -25,7 +25,7 @@ namespace casual
          std::unordered_map< std::string, manager::Service> services;
 
          CASUAL_LOG_SERIALIZE(
-            //CASUAL_SERIALIZE( services);
+            CASUAL_SERIALIZE( services);
          )
       };
 

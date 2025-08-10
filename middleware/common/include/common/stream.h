@@ -232,8 +232,7 @@ namespace casual
          template< concepts::binary::like T>
          struct point< T>
          {  
-            template< typename C>
-            static void stream( std::ostream& out, const C& value)
+            static void stream( std::ostream& out, const T& value)
             {
                transcode::hex::encode( out, value);
             };
@@ -242,17 +241,29 @@ namespace casual
          template< concepts::string::like T>
          struct point< T>
          {  
-            template< typename C>
-            static void stream( std::ostream& out, const C& value)
+            static void stream( std::ostream& out, const T& value)
             {
-               if constexpr( std::same_as< std::decay_t< std::ranges::range_value_t< C>>, char>)
+               if constexpr( std::same_as< std::decay_t< std::ranges::range_value_t< T>>, char>)
                   out.write( std::data( value), std::size( value));
                else
                {
-                  static_assert( sizeof( std::ranges::range_value_t< C>) == 1);
+                  static_assert( sizeof( std::ranges::range_value_t< T>) == 1);
                   auto data = reinterpret_cast< const char*>( std::data( value));
                   out.write( data, std::size( value));
                }
+            };
+         };
+
+         template< typename... Ts>
+         struct point< std::variant< Ts...>>
+         {  
+            static void stream( std::ostream& out, const std::variant< Ts...>& value)
+            {
+               std::visit( [ &out]( const auto& value) 
+               {
+                  stream::write( out, value);
+               }, value);
+               
             };
          };
 
@@ -260,9 +271,6 @@ namespace casual
 
    } // common::stream
 } // casual
-
-
- 
 
 
 
