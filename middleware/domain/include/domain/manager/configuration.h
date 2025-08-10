@@ -13,6 +13,8 @@
 
 #include "configuration/model.h"
 
+#include "casual/manager/service/protocol.h"
+
 namespace casual
 {
    namespace domain::manager::configuration
@@ -22,8 +24,7 @@ namespace casual
       casual::configuration::Model get( State& state);
 
       //! @pre state.configuration.model is set to the current aggregated configuration model.
-      //! @return id's of tasks that tries to get to the wanted state
-      std::vector< common::strong::correlation::id> post( State& state, casual::configuration::Model wanted);
+      void post( casual::manager::service::protocol::concurrent::Finalize< void> finalize, State& state, casual::configuration::Model wanted);
 
 
    } // domain::manager::configuration

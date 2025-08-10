@@ -33,6 +33,7 @@
 
 
 #include "casual/cli/state.h"
+#include "casual/cli/call.h"
 
 namespace casual
 {
@@ -78,6 +79,36 @@ namespace casual
                   );
                };
 
+               auto handler() 
+               {
+                  return message::dispatch::handler( communication::ipc::inbound::device(),
+                     []( const message::event::process::Spawn& event)
+                     {
+                        message::event::terminal::print( std::cout, event);
+                     },
+                     []( const message::event::process::Exit& event)
+                     {
+                        message::event::terminal::print( std::cout, event);
+                     },
+                     []( message::event::Task& event)
+                     {
+                        message::event::terminal::print( std::cout, event);
+                     },
+                     []( const message::event::sub::Task& event)
+                     {
+                        message::event::terminal::print( std::cout, event);
+                     },
+                     []( const message::event::Error& event)
+                     {
+                        message::event::terminal::print( std::cerr, event);
+                     },
+                     []( const message::event::Notification& event)
+                     {
+                        message::event::terminal::print( std::cout, event);
+                     }
+                  );
+               };
+
                // generalization of the event handling
                template< typename I, typename... Args>
                void invoke( I&& invocable, Args&&... arguments)
@@ -107,46 +138,22 @@ namespace casual
                      condition,
                      local::event::handler( tasks));
                }
-               
+
+               template< typename R, typename... Args>
+               auto concurrent( std::string_view service, const Args&... arguments)
+               {
+                  return casual::cli::call::concurrent< R>( service, local::event::handler(), arguments...);
+               }
 
             } // event
 
             namespace call
             {
-
+               
                admin::model::State state()
                {
-                  casual::service::protocol::binary::Call call;
-                  return call( admin::service::name::state).extract< admin::model::State>();
+                  return casual::cli::call::sequential< admin::model::State>( admin::service::name::state);
                }
-
-               namespace scale
-               {
-                  auto aliases( const std::vector< admin::model::scale::Alias>& aliases)
-                  {
-                     casual::service::protocol::binary::Call call;
-                     auto reply = call( admin::service::name::scale::aliases, aliases);
-                     return reply.extract< std::vector< common::strong::correlation::id>>();
-                  }
-               } // scale
-
-               namespace restart
-               {
-                  auto aliases( const std::vector< admin::model::restart::Alias>& aliases)
-                  {
-                     casual::service::protocol::binary::Call call;
-                     auto reply = call( admin::service::name::restart::aliases, aliases);
-                     return reply.extract< std::vector< common::strong::correlation::id>>();
-                  }
-
-                  auto groups( const std::vector< admin::model::restart::Group>& groups)
-                  {
-                     casual::service::protocol::binary::Call call;
-                     auto reply = call( admin::service::name::restart::groups, groups);
-                     return reply.extract< std::vector< common::strong::correlation::id>>();
-                  }
-
-               } // restart
 
                std::vector< common::strong::correlation::id> boot( const std::vector< std::string>& pattern)
                {
@@ -944,17 +951,20 @@ Fails if any configured server/executable fails to start or exits with an error 
                   {
                      auto invoke = []( const std::vector< std::tuple< std::string, int>>& values)
                      {   
-                        auto transform = []( auto& value){
-                           if( std::get< 1>( value) < 0)
+                        auto transform = []( auto& value)
+                        {
+                           auto [ name, instances] = value;
+
+                           if( instances < 0)
                               code::raise::error( code::casual::invalid_argument, "number of instances cannot be negative");
                               
                            admin::model::scale::Alias result;
-                           result.name = std::get< 0>( value);
-                           result.instances = std::get< 1>( value);
+                           result.name = name;
+                           result.instances = instances;
                            return result;
                         };
 
-                        event::invoke( call::scale::aliases, common::algorithm::transform( values, transform));
+                        event::concurrent< void>( admin::service::name::scale::aliases, common::algorithm::transform( values, transform));
                      };
                   
                      auto completion = []( bool help, auto values) -> std::vector< std::string>
@@ -991,7 +1001,7 @@ Fails if any configured server/executable fails to start or exits with an error 
                            return admin::model::restart::Alias{ std::move( value)};
                         };
 
-                        event::invoke( call::restart::aliases, common::algorithm::transform( values, transform));
+                        event::concurrent< void>( admin::service::name::restart::aliases, common::algorithm::transform( values, transform));
                      };
 
                      auto completion = []( bool help, auto values) -> std::vector< std::string>
@@ -1027,7 +1037,7 @@ note: some aliases are unrestartable
                            return admin::model::restart::Group{ std::move( value)};
                         };
 
-                        event::invoke( call::restart::groups, common::algorithm::transform( values, transform));
+                        event::concurrent< void>( admin::service::name::restart::groups, common::algorithm::transform( values, transform));
                      };
 
                      auto completion = []( bool help, auto values) -> std::vector< std::string>

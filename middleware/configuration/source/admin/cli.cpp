@@ -23,6 +23,8 @@
 
 #include "service/protocol/call.h"
 
+#include "casual/cli/call.h"
+
 namespace casual
 {
    using namespace common;
@@ -39,7 +41,8 @@ namespace casual
 
                namespace event
                {
-                  auto handler( std::vector< common::strong::correlation::id>& tasks) 
+
+                  auto handler() 
                   {
                      return message::dispatch::handler( communication::ipc::inbound::device(),
                         []( const message::event::process::Spawn& event)
@@ -50,12 +53,9 @@ namespace casual
                         {
                            message::event::terminal::print( std::cout, event);
                         },
-                        [&tasks]( message::event::Task& event)
+                        []( message::event::Task& event)
                         {
                            message::event::terminal::print( std::cout, event);
-                           if( event.done())
-                              if( algorithm::find( tasks, event.correlation))
-                                 tasks.clear();
                         },
                         []( const message::event::sub::Task& event)
                         {
@@ -71,37 +71,12 @@ namespace casual
                         }
                      );
                   };
-
-                  // generalization of the event handling
-                  template< typename I, typename... Args>
-                  void invoke( I&& invocable, Args&&... arguments)
-                  {
-                     // if no-block we don't mess with events
-                     if( ! terminal::output::directive().block())
-                     {
-                        invocable( std::forward< Args>( arguments)...);
-                        return;
-                     }
-
-                     decltype( invocable( std::forward< Args>( arguments)...)) tasks;
-
-                     auto condition = common::event::condition::compose(
-                        common::event::condition::prelude( [&]()
-                        {
-                           tasks = invocable( std::forward< Args>( arguments)...);
-                        }),
-                        common::event::condition::done( [&tasks]()
-                        { 
-                           return tasks.empty();
-                        })
-                     );
-
-                     // listen for events
-                     common::event::listen( 
-                        condition,
-                        local::event::handler( tasks));
-                  }
                   
+                  template< typename R, typename... Args>
+                  auto concurrent( std::string_view service, Args&&... arguments)
+                  {
+                     return casual::cli::call::concurrent< R>( service, local::event::handler(), std::forward< Args>( arguments)...);
+                  }
 
                } // event
 
@@ -109,20 +84,7 @@ namespace casual
                {
                   auto get()
                   {
-                     casual::service::protocol::binary::Call call;
-                     return call( casual::domain::manager::admin::service::name::configuration::get).extract< casual::configuration::user::Model>();
-                  }
-
-                  auto post( const casual::configuration::user::Model& model)
-                  {
-                     casual::service::protocol::binary::Call call;
-                     return call( casual::domain::manager::admin::service::name::configuration::post, model).extract< std::vector< common::strong::correlation::id>>();
-                  }
-
-                  auto put( const casual::configuration::user::Model& model)
-                  {
-                     casual::service::protocol::binary::Call call;
-                     return call( casual::domain::manager::admin::service::name::configuration::put, model).extract< std::vector< common::strong::correlation::id>>();
+                     return casual::cli::call::sequential< casual::configuration::user::Model>( casual::domain::manager::admin::service::name::configuration::get);
                   }
                
                } // call
@@ -311,7 +273,9 @@ The format is default yaml, but could be supplied via the --format option)"
                            auto archive = common::serialize::create::reader::consumed::from( format, std::cin);
                            archive >> model;
 
-                           event::invoke( call::post, model);
+                           event::concurrent< void>( 
+                              casual::domain::manager::admin::service::name::configuration::post, 
+                              model);
                         };
 
                         return argument::Option{ 
@@ -371,7 +335,9 @@ The format is default yaml, but could be supplied via the --format option)"
                               return;
                            }
 
-                           event::invoke( call::post, casual::configuration::model::transform( wanted));
+                           event::concurrent< void>( 
+                              casual::domain::manager::admin::service::name::configuration::post, 
+                              casual::configuration::model::transform( wanted));
                         };
 
                         return argument::Option{ 
@@ -390,7 +356,9 @@ The format is default yaml, but could be supplied via the --format option)"
                            auto archive = common::serialize::create::reader::consumed::from( format, std::cin);
                            archive >> model;
 
-                           event::invoke( call::put, model);
+                           event::concurrent< void>( 
+                              casual::domain::manager::admin::service::name::configuration::put, 
+                              model);
                         };
 
                         return argument::Option{ 
@@ -483,7 +451,9 @@ The semantics are similar to http PUT:
 
                            algorithm::for_each( *model.domain->groups, enable_group);
 
-                           event::invoke( call::post, model);
+                           event::concurrent< void>( 
+                              casual::domain::manager::admin::service::name::configuration::post, 
+                              model);
                         };
 
                         return argument::Option{ 
@@ -518,7 +488,9 @@ This effects entities that has memberships to enabled groups
 
                            algorithm::for_each( *model.domain->groups, disable_group);
 
-                           event::invoke( call::post, model);
+                           event::concurrent< void>( 
+                              casual::domain::manager::admin::service::name::configuration::post, 
+                              model);
                         };
 
                         return argument::Option{ 

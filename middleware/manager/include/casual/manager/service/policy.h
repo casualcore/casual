@@ -17,20 +17,6 @@ namespace casual
 {
    namespace manager::service::policy
    {
-      namespace advertise
-      {
-         struct Result
-         {
-            std::optional< common::message::service::Advertise> sequential;
-            std::optional< common::message::service::concurrent::Advertise> concurrent;
-
-            CASUAL_LOG_SERIALIZE(
-               CASUAL_SERIALIZE( sequential);
-               CASUAL_SERIALIZE( concurrent);
-            )
-         };
-         
-      } // advertise
 
       struct Default
       {

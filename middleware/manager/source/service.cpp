@@ -12,15 +12,7 @@ namespace casual
 
    namespace manager
    {
-      namespace local
-      {
-         namespace
-         {
 
-
-            
-         } // <unnamed>
-      } // local
      
 
       namespace service
@@ -45,7 +37,7 @@ namespace casual
                };
             }
 
-            common::message::service::concurrent::advertise::Service transform( const concurrent::Service& service)
+            common::message::service::advertise::Service transform( const concurrent::Service& service)
             {
                return {
                   .name = service.name,

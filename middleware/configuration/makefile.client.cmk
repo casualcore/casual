@@ -6,6 +6,7 @@ import os
 make.IncludePaths([
    'include',
    '../common/include',
+   '../cli/include',
    '../xatmi/include',
    '../service/include',
    '../transaction/include',

@@ -16,6 +16,20 @@ namespace casual
 
    namespace manager::service::handle
    {
+      namespace local
+      {
+         namespace
+         {
+            auto transform_code( invoke::result::Code code)
+            {
+               return common::service::Code{
+                  .result = code.result == decltype( code.result)::success ? common::code::xatmi::ok : common::code::xatmi::service_fail,
+                  .user = code.user
+               };
+            
+            }
+         } // <unnamed>
+      } // local
 
       namespace detail
       {
@@ -36,20 +50,29 @@ namespace casual
             execution::context::reset();
          }
 
-         bool send_reply( common::message::service::call::request::Flag flags)
+         bool caller_wants_reply( common::message::service::call::request::Flag flags)
          {
             return ! flag::contains( flags, common::message::service::call::request::Flag::no_reply);
          }
 
+         void send_reply( const common::strong::ipc::id& ipc, const common::message::service::call::Reply& reply)
+         {
+            Trace trace{ "manager::service::handle::detail::send_reply"};
 
-         common::message::service::call::ACK prepare_ack( const common::message::service::call::callee::Request& message)
+            if( ! common::communication::device::blocking::optional::send( ipc, reply))
+               common::log::error( common::code::casual::communication_unavailable, " failed to send service-call-reply to: ", ipc, " - action: ignore");
+         }
+
+
+         common::message::service::call::ACK prepare_ack( const common::message::service::call::callee::Request& message, common::chronology::time_point start)
          {
             Trace trace{ "manager::service::handle::detail::prepare_ack"};
 
             common::message::service::call::ACK result;
             result.correlation = message.correlation;
             result.execution = message.execution;
-
+            
+            result.metric.start = start;
             result.metric.service = message.service.name;
             result.metric.process = process::handle();
             result.metric.correlation = message.correlation;
@@ -75,8 +98,7 @@ namespace casual
          {
             Trace trace{ "manager::service::handle::detail::complement_reply"};
 
-            reply.code.result = result.code.result == decltype( result.code.result)::success ? common::code::xatmi::ok : common::code::xatmi::service_fail;
-            reply.code.user = result.code.user;
+            reply.code = local::transform_code( result.code);
             reply.buffer = std::move( result.payload);
          }
 
@@ -95,9 +117,62 @@ namespace casual
                   .payload = std::move( message.buffer)};
             }
 
+            invoke::concurrent::Parameter parameter( common::message::service::call::callee::Request&& message,  std::function< void( service::invoke::Result&&)> callback)
+            {
+               Trace trace{ "manager::service::handle::detail::transform::parameter"};
 
-            
+               using parameter_flag = manager::service::invoke::Parameter::Flag;
+
+               return invoke::concurrent::Parameter{ 
+                  .invoke = { 
+                     .flags = flag::convert( parameter_flag::no_reply, message.flags),
+                     .service = std::move( message.service.name),
+                     .header = std::move( message.header),
+                     .payload = std::move( message.buffer)
+                  },
+                  .callback = std::move( callback)
+               };
+            }
+
          } // transform
+
+         namespace callback
+         {
+            std::function< void( service::invoke::Result&&)> reply( 
+               common::strong::ipc::id ipc, 
+               common::message::service::call::Reply&& reply, 
+               std::function< void( common::service::Code)> send_ack)
+            {
+               Trace trace{ "manager::service::handle::detail::callback::reply"};
+
+               return [ ipc, reply = std::move( reply), send_ack = std::move( send_ack)]( service::invoke::Result&& result) mutable
+               {
+                  Trace trace{ "manager::service::handle::detail::callback::reply: callback"};
+
+                  detail::complement_reply( std::move( result), reply);
+
+                  send_ack( reply.code);
+
+                  detail::send_reply( ipc, reply);
+               };
+            }
+
+
+            std::function< void( service::invoke::Result&&)> no_reply( std::function< void( common::service::Code)> send_ack)
+            {
+               Trace trace{ "manager::service::handle::detail::callback::no_reply"};
+
+               return [ send_ack = std::move( send_ack)]( service::invoke::Result&& result) mutable
+               {
+                  Trace trace{ "manager::service::handle::detail::callback::no_reply: callback"};
+
+                  send_ack( local::transform_code( result.code));
+
+                  // caller doesn't care about the reply, so we don't send it
+               };
+            }
+
+         } // callback
          
       } // detail
 

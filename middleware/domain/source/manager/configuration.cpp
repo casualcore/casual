@@ -316,7 +316,7 @@ namespace casual
          });
       }
 
-      std::vector< common::strong::correlation::id> post( State& state, casual::configuration::Model wanted)
+      void post( casual::manager::service::protocol::concurrent::Finalize< void> finalize, State& state, casual::configuration::Model wanted)
       {
          Trace trace{ "domain::manager::configuration::post"};
 
@@ -330,24 +330,23 @@ namespace casual
                return event;
             });
 
-            return {};
+            return;
          }
 
-         auto done_event = task::create::event::parent( state, "configuration post");
+         auto done_event = task::create::event::parent( state, "configuration post", [ finalize = std::move( finalize)]( auto& state) mutable
+         {
+            finalize();
+         });
 
          auto tasks = local::managers( state, wanted);
          algorithm::move( local::domain( state, wanted.domain), std::back_inserter( tasks));
 
          // we use the wanted as our new configuration when 'managers' ask for it.
-         
          state.configuration.model = std::move( wanted);
 
-         auto result = casual::task::ids( tasks, done_event);
          state.tasks.then( std::move( tasks)).then( std::move( done_event));
 
          log::debug( "state.tasks: ", state.tasks);
-         
-         return result;
       }
 
    } // domain::manager::configuration

@@ -27,26 +27,7 @@ namespace casual
       {
          namespace
          {
-            namespace restart
-            {
-               auto transform_name = []( auto& value)
-               {
-                  return value.name;
-               };
-
-               auto aliases( manager::State& state, std::vector< model::restart::Alias> aliases)
-               {
-                  Trace trace{ "domain::manager::admin::local::restart::instances"};
-                  return handle::restart::aliases( state, algorithm::transform( aliases, transform_name));                       
-               }
-
-               auto groups( manager::State& state, std::vector< model::restart::Group> groups)
-               {
-                  Trace trace{ "domain::manager::admin::local::restart::instances"};
-                  return handle::restart::groups( state, algorithm::transform( groups, transform_name));                       
-               }
-            } // restart
-
+  
             namespace set
             {
                auto environment( manager::State& state, const model::set::Environment& environment)
@@ -164,10 +145,10 @@ namespace casual
                {
                   auto aliases( manager::State& state)
                   {
-                     return [&state]( casual::manager::service::invoke::Parameter&& parameter)
+                     return [&state]( casual::manager::service::invoke::concurrent::Parameter&& parameter)
                      {
-                        auto protocol = casual::manager::service::protocol::deduce( std::move( parameter));
-                        auto aliases = protocol.extract< std::vector< model::scale::Alias>>( "aliases");
+                        auto concurrent = casual::manager::service::protocol::deduce( std::move( parameter));
+                        auto aliases = concurrent.protocol.extract< std::vector< model::scale::Alias>>( "aliases");
 
                         state::scale::Instances instances;
 
@@ -179,10 +160,10 @@ namespace casual
                               instances.executables.push_back( { .id = found->id, .instances = alias.instances});
                         }
 
-
-
-
-                        return casual::manager::service::protocol::dispatch( std::move( protocol), &handle::scale::aliases, state, std::move( instances));
+                        casual::manager::service::protocol::concurrent::dispatch(
+                           std::move( concurrent),
+                           &handle::scale::aliases,
+                           state, std::move( instances));
                      };
                   }     
                } // scale
@@ -192,23 +173,33 @@ namespace casual
                {
                   auto aliases( manager::State& state)
                   {
-                     return [&state]( casual::manager::service::invoke::Parameter&& parameter)
+                     return [&state]( casual::manager::service::invoke::concurrent::Parameter&& parameter)
                      {
-                        auto protocol = casual::manager::service::protocol::deduce( std::move( parameter));
-                        auto aliases = protocol.extract< std::vector< model::restart::Alias>>( "aliases");
+                        auto transform_name = []( auto& value)
+                        {
+                           return value.name;
+                        };
 
-                        return casual::manager::service::protocol::dispatch( std::move( protocol), &local::restart::aliases, state, std::move( aliases));
+                        auto concurrent = casual::manager::service::protocol::deduce( std::move( parameter));
+                        auto aliases = common::algorithm::transform( concurrent.protocol.extract< std::vector< model::restart::Alias>>( "aliases"), transform_name);
+
+                        return casual::manager::service::protocol::concurrent::dispatch( std::move( concurrent), &handle::restart::aliases, state, std::move( aliases));
                      };
                   }
 
                   auto groups( manager::State& state)
                   {
-                     return [&state]( casual::manager::service::invoke::Parameter&& parameter)
+                     return [&state]( casual::manager::service::invoke::concurrent::Parameter&& parameter)
                      {
-                        auto protocol = casual::manager::service::protocol::deduce( std::move( parameter));
-                        auto groups = protocol.extract< std::vector< model::restart::Group>>( "groups");
+                        auto transform_name = []( auto& value)
+                        {
+                           return value.name;
+                        };
 
-                        return casual::manager::service::protocol::dispatch( std::move( protocol), &local::restart::groups, state, std::move( groups));
+                        auto concurrent = casual::manager::service::protocol::deduce( std::move( parameter));
+                        auto groups = common::algorithm::transform( concurrent.protocol.extract< std::vector< model::restart::Group>>( "groups"), transform_name);
+
+                        return casual::manager::service::protocol::concurrent::dispatch( std::move( concurrent), &handle::restart::groups, state, std::move( groups));
                      };
                   }
                } // restart
@@ -282,43 +273,37 @@ namespace casual
 
                   auto post( manager::State& state)
                   {
-                     return [&state]( casual::manager::service::invoke::Parameter&& parameter)
+                     return [&state]( casual::manager::service::invoke::concurrent::Parameter&& parameter)
                      {
                         Trace trace{ "domain::manager::admin::local::service::configuration::post"};
 
-                        auto protocol = casual::manager::service::protocol::deduce( std::move( parameter));
-                        auto wanted = normalize( casual::configuration::model::transform( protocol.extract< casual::configuration::user::Model>()));
+                        auto concurrent = casual::manager::service::protocol::deduce( std::move( parameter));
+                        auto wanted = normalize( casual::configuration::model::transform( concurrent.protocol.extract< casual::configuration::user::Model>()));
 
-                        auto post_configuration = []( auto& state, auto& wanted)
-                        {
-                           state.configuration.model = manager::configuration::get( state);
-                           return manager::configuration::post( state, std::move( wanted));
-                        };
+                        // make sure we have the current configuration model
+                        state.configuration.model = manager::configuration::get( state);
 
-                        return casual::manager::service::protocol::dispatch( 
-                           std::move( protocol),
-                           post_configuration,
-                           state, wanted);
+                        return casual::manager::service::protocol::concurrent::dispatch( 
+                           std::move( concurrent),
+                           &manager::configuration::post,
+                           state, std::move( wanted));
                      };
                   }
 
                   auto put( manager::State& state)
                   {
-                     return [&state]( casual::manager::service::invoke::Parameter&& parameter)
+                     return [&state]( casual::manager::service::invoke::concurrent::Parameter&& parameter)
                      {
-                        auto protocol = casual::manager::service::protocol::deduce( std::move( parameter));
-                        auto updates = casual::configuration::model::transform( protocol.extract< casual::configuration::user::Model>());
+                        auto concurrent = casual::manager::service::protocol::deduce( std::move( parameter));
+                        auto updates = casual::configuration::model::transform( concurrent.protocol.extract< casual::configuration::user::Model>());
 
-                        auto post_configuration = []( auto& state, auto& updates)
-                        {
-                           state.configuration.model = manager::configuration::get( state);
-                           return manager::configuration::post( state, normalize( state.configuration.model + std::move( updates)));
-                        };
+                        // make sure we have the current configuration model
+                        state.configuration.model = manager::configuration::get( state);
 
-                        return casual::manager::service::protocol::dispatch( 
-                           std::move( protocol),
-                           post_configuration,
-                           state, updates);
+                        return casual::manager::service::protocol::concurrent::dispatch( 
+                           std::move( concurrent),
+                           &manager::configuration::post,
+                           state, normalize( state.configuration.model + std::move( updates)));
                      };
                   }
                } // configuration
@@ -335,17 +320,17 @@ namespace casual
                   .visibility = common::service::visibility::Type::undiscoverable,
                   .category = std::string{ common::service::category::admin}
                },
-               casual::manager::sequential::Service{ .name = std::string{ service::name::scale::aliases},
+               casual::manager::concurrent::Service{ .name = std::string{ service::name::scale::aliases},
                   .function = local::service::scale::aliases( state),
                   .visibility = common::service::visibility::Type::undiscoverable,
                   .category = std::string{ common::service::category::admin}
                },
-               casual::manager::sequential::Service{ .name = std::string{ service::name::restart::aliases},
+               casual::manager::concurrent::Service{ .name = std::string{ service::name::restart::aliases},
                   .function = local::service::restart::aliases( state),
                   .visibility = common::service::visibility::Type::undiscoverable,
                   .category = std::string{ common::service::category::admin}
                },
-               casual::manager::sequential::Service{ .name = std::string{ service::name::restart::groups},
+               casual::manager::concurrent::Service{ .name = std::string{ service::name::restart::groups},
                   .function = local::service::restart::groups( state),
                   .visibility = common::service::visibility::Type::undiscoverable,
                   .category = std::string{ common::service::category::admin}
@@ -360,12 +345,12 @@ namespace casual
                   .visibility = common::service::visibility::Type::undiscoverable,
                   .category = std::string{ common::service::category::admin}
                },
-               casual::manager::sequential::Service{ .name = std::string{ service::name::configuration::post},
+               casual::manager::concurrent::Service{ .name = std::string{ service::name::configuration::post},
                   .function = local::service::configuration::post( state),
                   .visibility = common::service::visibility::Type::undiscoverable,
                   .category = std::string{ common::service::category::admin}
                },
-               casual::manager::sequential::Service{ .name = std::string{ service::name::configuration::put},
+               casual::manager::concurrent::Service{ .name = std::string{ service::name::configuration::put},
                   .function = local::service::configuration::put( state),
                   .visibility = common::service::visibility::Type::undiscoverable,
                   .category = std::string{ common::service::category::admin}
@@ -381,12 +366,12 @@ namespace casual
                   .category = std::string{ common::service::category::admin}
                },
                // deprecated
-               casual::manager::sequential::Service{ .name = ".casual/domain/scale/instances",
+               casual::manager::concurrent::Service{ .name = ".casual/domain/scale/instances",
                   .function = local::service::scale::aliases( state),
                   .visibility = common::service::visibility::Type::undiscoverable,
                   .category = std::string{ common::service::category::deprecated}
                },
-               casual::manager::sequential::Service{ .name = ".casual/domain/restart/instances",
+               casual::manager::concurrent::Service{ .name = ".casual/domain/restart/instances",
                   .function = local::service::restart::aliases( state),
                   .visibility = common::service::visibility::Type::undiscoverable,
                   .category = std::string{ common::service::category::deprecated}

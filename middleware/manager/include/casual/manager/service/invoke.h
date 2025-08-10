@@ -43,6 +43,8 @@ namespace casual
          )
       };
 
+
+
       namespace result
       {
          struct Code 
@@ -69,6 +71,22 @@ namespace casual
          )
       };
 
+      namespace concurrent
+      {
+         using callback_function_type = std::function< void( Result&&)>;
+
+         struct Parameter
+         {
+            invoke::Parameter invoke;
+            callback_function_type callback;
+
+            CASUAL_LOG_SERIALIZE(
+               CASUAL_SERIALIZE( invoke);
+               CASUAL_SERIALIZE( callback);
+            )
+         };
+         
+      } // concurrent
 
       
    } // manager::service::invoke

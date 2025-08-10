@@ -26,12 +26,12 @@ namespace casual
       {
          using function_type = F;
 
-         template< typename... Ts>
-         auto operator () ( service::invoke::Parameter&& argument, Ts&&... args) const
+         template< typename A>
+         auto operator () ( A&& argument) const
          {
             common::Trace trace{ "manager::service::basic_service::operator ()"};
 
-            return function( std::move( argument), std::forward< Ts>( args)...);
+            return function( std::move( argument));
          }
 
          std::string name;
@@ -52,17 +52,15 @@ namespace casual
 
       namespace sequential
       {
-         using Service = basic_service< std::function< service::invoke::Result( service::invoke::Parameter&&)>>;
+         using Service = basic_service< common::function< service::invoke::Result( service::invoke::Parameter&&) const>>;
 
       } // sequential
 
       
       namespace concurrent
       {
-         using callback_function_type = std::function< void( service::invoke::Result&&)>;
+         using Service = basic_service< common::function< void( service::invoke::concurrent::Parameter&&) const>>;
 
-         using Service = basic_service< std::function< void( service::invoke::Parameter&&, callback_function_type&&)>>;
-         
       } // concurrent
 
       using Service = std::variant< sequential::Service, concurrent::Service>;
@@ -75,7 +73,10 @@ namespace casual
          namespace advertise
          {
             common::message::service::advertise::Service transform( const sequential::Service& service);
-            common::message::service::concurrent::advertise::Service transform( const concurrent::Service& service);
+
+            //! we advertise concurrent services as 'sequential', for now. It's not really clear what the 
+            //! effects would be if we advertised them as concurrent.
+            common::message::service::advertise::Service transform( const concurrent::Service& service);
 
             struct Result
             {
@@ -101,7 +102,11 @@ namespace casual
                   if( auto sequential = std::get_if< sequential::Service>( &service))
                      result.sequential->services.add.push_back( transform( *sequential));
                   else if( auto concurrent = std::get_if< concurrent::Service>( &service))
-                     result.concurrent->services.add.push_back( transform( *concurrent));
+                  {
+                     // we advertise concurrent services as 'sequential', for now. It's not really clear what the
+                     // effects would be if we advertised them as concurrent.
+                     result.sequential->services.add.push_back( transform( *concurrent));
+                  }
                }
 
                if( result.sequential->services.add.empty())

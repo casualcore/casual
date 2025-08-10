@@ -13,6 +13,8 @@
 #include "common/message/domain.h"
 #include "common/message/dispatch.h"
 
+#include "casual/manager/service/protocol.h"
+
 namespace casual
 {
    namespace domain::manager::handle
@@ -53,15 +55,15 @@ namespace casual
          void instances( State& state, state::Server& server);
          void instances( State& state, state::Executable& executable);
 
-         std::vector< common::strong::correlation::id> aliases( State& state, state::scale::Instances instances);
+         void aliases( casual::manager::service::protocol::concurrent::Finalize< void> finalize, State& state, state::scale::Instances instances);
 
       } // scale
 
    
       namespace restart
       {
-         std::vector< common::strong::correlation::id> aliases( State& state, std::vector< std::string> aliases);
-         std::vector< common::strong::correlation::id> groups( State& state, std::vector< std::string> groups);
+         void aliases( casual::manager::service::protocol::concurrent::Finalize< void> finalize, State& state, std::vector< std::string> aliases);
+         void groups( casual::manager::service::protocol::concurrent::Finalize< void> finalize, State& state, std::vector< std::string> groups);
       } // restart
 
       namespace process

@@ -252,19 +252,19 @@ domain:
 
                auto scale( const std::vector< admin::model::scale::Alias>& aliases)
                {
-                  return admin::call::service< std::vector< strong::correlation::id>>( admin::service::name::scale::aliases, aliases);
+                  admin::call::service( admin::service::name::scale::aliases, aliases);
                }
 
                auto scale( const std::string& alias, platform::size::type instances)
                {
-                  return scale( { { alias, instances}});
+                  scale( { { alias, instances}});
                }
 
                namespace restart
                {
                   auto aliases( const std::vector< admin::model::restart::Alias>& aliases)
                   {
-                     return admin::call::service< std::vector< strong::correlation::id>>( admin::service::name::restart::aliases, aliases);
+                     admin::call::service( admin::service::name::restart::aliases, aliases);
                   }
 
                   auto aliases( std::vector< std::string> aliases)
@@ -273,7 +273,7 @@ domain:
                      {
                         return admin::model::restart::Alias{ std::move( a)};
                      };
-                     return restart::aliases( algorithm::transform( aliases, transform));
+                     restart::aliases( algorithm::transform( aliases, transform));
                   }
 
                   auto groups( std::vector< std::string> groups)
@@ -283,7 +283,7 @@ domain:
                         return admin::model::restart::Group{ std::move( name)};
                      };
 
-                     return admin::call::service< std::vector< strong::correlation::id>>( admin::service::name::restart::groups, algorithm::transform( groups, transform));
+                     admin::call::service( admin::service::name::restart::groups, algorithm::transform( groups, transform));
                   }
                } // restart
             } // call
@@ -366,8 +366,7 @@ domain:
 
          local::fetch::until( casual::domain::unittest::fetch::predicate::alias::has::instances( "sleep", 5));
 
-         auto tasks = local::call::scale( "sleep", 10);
-         ASSERT_TRUE( ! tasks.empty());
+         local::call::scale( "sleep", 10);
 
          local::fetch::until( casual::domain::unittest::fetch::predicate::alias::has::instances( "sleep", 10));
       }
@@ -380,8 +379,7 @@ domain:
 
          local::fetch::until( casual::domain::unittest::fetch::predicate::alias::has::instances( "sleep", 5));
 
-         auto tasks = local::call::scale( "sleep", 0);
-         ASSERT_TRUE( ! tasks.empty());
+         local::call::scale( "sleep", 0);
          
          local::fetch::until( casual::domain::unittest::fetch::predicate::alias::has::instances( "sleep", 0));
 
@@ -875,10 +873,9 @@ domain:
          // setup subscription to see when hit is done
          common::event::subscribe( common::process::handle(), { message::event::process::Exit::type()});
 
-         auto tasks = local::call::scale( "foo", 1);
-         ASSERT_TRUE( tasks.size() == 1) << "tasks: " << CASUAL_NAMED_VALUE( tasks);
+         local::call::scale( "foo", 1);
+      
 
- 
          // Consume the prepare::shutdown::Request
          auto send_reply = []()
          {
@@ -1085,27 +1082,6 @@ domain:
       {
          namespace
          {
-            template< typename C>
-            auto event_listen_call( C caller)
-            {
-               std::vector< strong::correlation::id> result;
-
-               auto condition = event::condition::compose( 
-                  event::condition::prelude( [&result, &caller](){ result = caller();}), 
-                  event::condition::done( [&result](){ return result.empty();})
-               );
-
-               // start and listen for events
-               event::listen( condition, 
-                  [ &result]( const message::event::Task& task)
-                  {
-                     if( task.done())
-                        if( algorithm::find( result, task.correlation))
-                           result.clear();
-                  });
-            }
-      
-
             namespace predicate
             {
                auto spawnpoint = []( auto& timepoint)
@@ -1139,7 +1115,7 @@ domain:
 
          auto now = platform::time::clock::type::now();
 
-         local::event_listen_call( [](){ return local::call::restart::aliases( { "sleep"});});
+         local::call::restart::aliases( { "sleep"});
 
          auto state = local::call::state();
 
@@ -1169,7 +1145,7 @@ domain:
 
          auto now = platform::time::clock::type::now();
 
-         local::event_listen_call( [](){ return local::call::restart::aliases( { "foo"});});
+         local::call::restart::aliases( { "foo"});
 
          auto state = local::call::state();
 
@@ -1215,7 +1191,7 @@ domain:
 
          auto now = platform::time::clock::type::now();
 
-         local::event_listen_call( [](){ return local::call::restart::groups( { "A"});});
+         local::call::restart::groups( { "A"});
 
          auto state = local::call::state();
 
@@ -1267,7 +1243,7 @@ domain:
 
          auto now = platform::time::clock::type::now();
 
-         local::event_listen_call( [](){ return local::call::restart::groups( { "B"});});
+         local::call::restart::groups( { "B"});
 
          auto state = local::call::state();
 
@@ -1320,7 +1296,7 @@ domain:
 
          auto now = platform::time::clock::type::now();
 
-         local::event_listen_call( [](){ return local::call::restart::groups( { "A", "B"});});
+         local::call::restart::groups( { "A", "B"});
 
          auto state = local::call::state();
 
@@ -1371,7 +1347,7 @@ domain:
 
          auto now = platform::time::clock::type::now();
 
-         local::event_listen_call( [](){ return local::call::restart::groups( {});});
+         local::call::restart::groups( {});
 
          auto state = local::call::state();
 
@@ -1437,10 +1413,7 @@ domain:
             {
                auto configuration( auto wanted, auto service)
                {
-                  local::event_listen_call( [ wanted, service]()
-                  { 
-                     return admin::call::service< std::vector< common::strong::correlation::id>>( service, wanted);
-                  });
+                  admin::call::service( service, wanted);
 
                   // return the new configuration model
                   return casual::configuration::model::transform( admin::call::service< casual::configuration::user::Model>( admin::service::name::configuration::get));

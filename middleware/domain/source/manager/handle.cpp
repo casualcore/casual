@@ -315,12 +315,15 @@ namespace casual
       namespace scale
       {
 
-         std::vector< common::strong::correlation::id> aliases( State& state, state::scale::Instances instances)
+         void aliases( casual::manager::service::protocol::concurrent::Finalize< void> finalize, State& state, state::scale::Instances instances)
          {
             Trace trace{ "domain::manager::handle::scale::aliases"};
             log::debug( "instances: ", instances);
 
-            auto done_event = task::create::event::parent( state, "scale aliases");
+            auto done_event = task::create::event::parent( state, "scale aliases", [ finalize = std::move( finalize)]( const State&) mutable
+            {
+               finalize();
+            });
 
             state::dependency::Group group;
             {
@@ -335,10 +338,7 @@ namespace casual
 
             auto scale_tasks = manager::task::create::scale::groups( state, { std::move( group)}); 
 
-            auto result = casual::task::ids( scale_tasks, prepare_task, done_event);
             state.tasks.then( std::move( prepare_task)).then( std::move( scale_tasks)).then( std::move( done_event));
-
-            return result;
          }
 
          void shutdown( State& state, std::vector< common::process::Handle> processes)
@@ -395,12 +395,15 @@ namespace casual
 
       namespace restart
       {
-         std::vector< common::strong::correlation::id> aliases( State& state, std::vector< std::string> aliases)
+         void aliases( casual::manager::service::protocol::concurrent::Finalize< void> finalize, State& state, std::vector< std::string> aliases)
          {
             Trace trace{ "domain::manager::handle::restart::aliases"};
             log::debug( "aliases: ", aliases);
 
-            auto done_event = task::create::event::parent( state, "restart aliases");
+            auto done_event = task::create::event::parent( state, "restart aliases", [ finalize = std::move( finalize)]( const State&) mutable
+            {
+               finalize();
+            });
 
             auto scalables = state.scalables( std::move( aliases));
 
@@ -414,17 +417,13 @@ namespace casual
             auto prepare_resurrection_task = manager::task::create::restart::exited::prepare( state, { group});
             auto resurrect_task = manager::task::create::scale::groups( state, { group});
 
-
-            auto result = casual::task::ids( restart_tasks, prepare_resurrection_task, resurrect_task, done_event);
             state.tasks.then( std::move( restart_tasks))
                .then( std::move( prepare_resurrection_task))
                .then( std::move( resurrect_task))
                .then( std::move( done_event));
-
-            return result;
          }
 
-         std::vector< common::strong::correlation::id> groups( State& state, std::vector< std::string> names)
+         void groups( casual::manager::service::protocol::concurrent::Finalize< void> finalize, State& state, std::vector< std::string> names)
          {
             Trace trace{ "domain::manager::handle::restart::groups"};
             log::debug( "names: ", names);
@@ -451,7 +450,10 @@ namespace casual
 
             };
 
-            auto done_event = task::create::event::parent( state, "restart groups");
+            auto done_event = task::create::event::parent( state, "restart groups", [ finalize = std::move( finalize)]( const State&) mutable
+            {
+               finalize();
+            });
 
             auto groups = state::order::shutdown( state);
 
@@ -465,13 +467,10 @@ namespace casual
             auto prepare_resurrection_task = manager::task::create::restart::exited::prepare( state, groups);
             auto resurrect_task = manager::task::create::scale::groups( state, groups);
 
-            auto result = casual::task::ids( restart_tasks, prepare_resurrection_task, resurrect_task, done_event);
             state.tasks.then( std::move( restart_tasks))
                .then( std::move( prepare_resurrection_task))
                .then( std::move( resurrect_task))
                .then( std::move( done_event));
-
-            return result;
          }
       } // restart
 

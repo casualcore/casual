@@ -20,6 +20,12 @@ namespace casual
       {
          return casual::manager::service::call< R>( common::communication::instance::outbound::domain::manager::device(), service, std::forward< Ts>( arguments)...);
       }
+
+      template< typename... Ts>
+      void service( std::string_view service, Ts&&... arguments)
+      {
+         casual::manager::service::call( common::communication::instance::outbound::domain::manager::device(), service, std::forward< Ts>( arguments)...);
+      }
       
    } // domain::manager::admin::call
    
