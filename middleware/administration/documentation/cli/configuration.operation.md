@@ -6,9 +6,12 @@
 host# casual --help configuration
 
 configuration [0..1]
-     configuration utility - does NOT actively configure anything
+     configuration utility
+     
+     This utility is used to get, post, put and edit the configuration of
+     the casual domain.
                     
-     Used to check and normalize configuration
+     Also functionality to normalize, validate and format the configuration.
 
    SUB OPTIONS:
 

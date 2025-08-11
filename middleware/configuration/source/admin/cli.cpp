@@ -575,9 +575,12 @@ This effects entities that has memberships to enabled groups
          {
             argument::Option options()
             {
-               constexpr auto description = R"(configuration utility - does NOT actively configure anything
+               constexpr auto description = R"(configuration utility
+
+This utility is used to get, post, put and edit the configuration of
+the casual domain.
                
-Used to check and normalize configuration
+Also functionality to normalize, validate and format the configuration.
 )";
                auto shared = std::make_shared< local::State>();
 
