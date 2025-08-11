@@ -98,6 +98,7 @@ documentation_target = make.LinkExecutable( 'bin/casual-administration-cli-docum
 unittest_lib = make.LinkLibrary( 'bin/casual-administration-unittest',
    [ 
       make.Compile( 'unittest/source/cli/command.cpp'),
+      make.Compile( 'unittest/source/build/compile.cpp'),
    ],
    [ 
       'casual-common',
@@ -119,9 +120,10 @@ make.LinkUnittest( 'unittest/bin/test-casual-administration',
       make.Compile( 'unittest/source/cli/test_gateway.cpp'),
       make.Compile( 'unittest/source/cli/test_service.cpp'),
       make.Compile( 'unittest/source/cli/test_pipe.cpp'),
-      make.Compile( 'unittest/source/build/test_rm.cpp'),
       make.Compile( 'unittest/source/cli/test_file.cpp'),
+      make.Compile( 'unittest/source/build/test_rm.cpp'),
       make.Compile( 'unittest/source/build/test_server.cpp'),
+      make.Compile( 'unittest/source/build/test_executable.cpp'),
    ],
    [ 
       unittest_lib,

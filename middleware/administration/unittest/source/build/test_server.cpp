@@ -7,6 +7,7 @@
 #include "common/unittest.h"
 
 #include "administration/unittest/cli/command.h"
+#include "administration/unittest/build/compile.h"
 
 #include "common/unittest/file.h"
 
@@ -19,21 +20,7 @@ namespace casual
       {
          namespace
          {
-            // compiles content and returns the object file
-            auto compile( std::string_view source_content)
-            {
-               auto source = common::unittest::file::temporary::content( ".cpp", source_content);
 
-               auto object_file = common::unittest::file::temporary::name( ".o");
-
-               auto capture = administration::unittest::cli::command::execute( "g++ -c ", source, " -o ", object_file, " -O3 -I ${CASUAL_MAKE_SOURCE_ROOT}/middleware/xatmi/include");
-
-               if( ! capture)
-                  common::code::raise::error( common::code::casual::invalid_argument, "failed to compile source: ", source, " with error: ", capture.standard.error);
-
-               return object_file;
-            }
-            
             auto compile_server()
             {
                auto content = R"(
@@ -48,7 +35,7 @@ extern "C"
 }
                )";
 
-               return compile( content);
+               return unittest::build::compile( content);
             }
 
             auto system_configuration()
@@ -159,7 +146,5 @@ server:
          EXPECT_TRUE( std::filesystem::file_size( output) > 0);
       }
 
-
-   } // administration
-   
+   } // administration   
 } // casual

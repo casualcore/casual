@@ -6,7 +6,7 @@
 
 #include "common/unittest.h"
 
-#include "tools/build/task.h"
+#include "tools/build/setting.h"
 
 namespace casual
 {
@@ -16,9 +16,9 @@ namespace casual
       {
          TEST( tools_build_server, add_directive)
          {
-            build::Directive directive;
+            setting::Directive directive;
 
-            auto add_directive = build::Directive::split( directive.directives);
+            auto add_directive = setting::Directive::split( directive.directives);
 
             add_directive( "-l a -l b -l c", {});
 

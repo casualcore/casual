@@ -43,14 +43,7 @@ namespace casual
             } // <unnamed>
          } // local
 
-         void validate( const Directive& settings)
-         {
-            if( ! settings.use_defaults && ! settings.output.empty())
-               code::raise::error( code::casual::invalid_argument, "output can't be used with 'no-defaults' - the 'output' has to be provided in a linker specific way");
-         }
-
-
-         void task( const std::filesystem::path& input, const Directive& directive)
+         void task( const std::filesystem::path& input, const setting::Directive& directive)
          {
             trace::Exit exit( "build task", directive.verbose);
 
