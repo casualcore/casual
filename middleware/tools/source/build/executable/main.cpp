@@ -158,10 +158,13 @@ namespace casual
                Settings settings;
 
                {
-                  argument::parse( "builds a casual executable",  common::algorithm::container::compose( 
+                  auto outcome = argument::parse( "builds a casual executable",  common::algorithm::container::compose( 
                      argument::Option{ std::tie( settings.executable.definition), { "-d", "--definition"}, "path of the definition file"},
                      build::setting::options( settings.directive)
                   ), argc, argv);
+
+                  if( outcome != argument::Outcome::parsed)
+                     return;
                }
 
                validate( settings);

@@ -116,27 +116,4 @@ This might be easier to use, depending och your build system.
 
 ## options
 
-```bash
-$ casual-build-server --help
-NAME
-   casual-build-server
-
-DESCRIPTION
-  builds a casual xatmi server
-
-OPTIONS                                    c  value    vc  description
------------------------------------------  -  -------  --  -----------------------------------------------
--o, --output                               ?  <value>   1  name of server to be built
--s, --service                              *  <value>   +  service names
--d, --server-definition                    ?  <value>   1  path to server definition file
--r, --resource-keys                        *  <value>   +  key of the resource
--c, --compiler                             ?  <value>   1  compiler to use
--f, --build-directives, --link-directives  *  <value>   +  additional compile and link directives
--p, --properties-file                      ?  <value>   1  path to resource properties file
---no-defaults                              ?               do not add any default compiler/link directives
---source-file                              ?  <value>   1  name of the intermediate source file
--k, --keep                                 ?               keep the intermediate source file
--v, --verbose                              ?               verbose output
---help                                     ?  <value>   *  use --help <option> to see further details
-
-```
+see [casual-build-server.development.md](./casual-build-server.development.md).
