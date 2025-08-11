@@ -1,6 +1,8 @@
 import casual.make.api as make
 import casual.middleware.make.api as dsl
 
+import os
+
 
 make.IncludePaths( ['include',
       '../common/include',
@@ -42,14 +44,14 @@ build_task_a = make.LinkArchive( 'bin/casual-tools-build-task',
     make.Compile( 'source/build/transform.cpp'),
    ])
 
-target = make.LinkExecutable( 'bin/casual-build-server',
+build_server = make.LinkExecutable( 'bin/casual-build-server',
    [ make.Compile( 'source/build/server/main.cpp')],
    [ common_a, build_task_a, 'casual-common', 'casual-configuration'])
 
 # setup dependency to simpler name 'casual-build-server'
-make.Dependencies( make.model.register('casual-build-server'), [target])
+make.Dependencies( make.model.register('casual-build-server'), [build_server])
 
-install_bin.append( target)
+install_bin.append( build_server)
 
 target = make.LinkExecutable( 'bin/casual-build-server-generate',
    [ make.Compile( 'source/build/server/generate/main.cpp')],
@@ -57,11 +59,11 @@ target = make.LinkExecutable( 'bin/casual-build-server-generate',
 
 install_bin.append( target)
 
-target = make.LinkExecutable( 'bin/casual-build-executable',
+build_executable = make.LinkExecutable( 'bin/casual-build-executable',
    [ make.Compile( 'source/build/executable/main.cpp')],
    [ build_task_a, common_a, 'casual-common', 'casual-configuration'])
 
-install_bin.append( target)
+install_bin.append( build_executable)
 
 target = make.LinkExecutable( 'bin/casual-build-resource-proxy',
    [ make.Compile( 'source/build/resource/proxy/main.cpp')],
@@ -97,6 +99,29 @@ make.LinkUnittest( 'bin/test-casual-tools',
 
 make.Install( install_bin,  dsl.paths().install + '/bin')
 make.Install( install_lib,  dsl.paths().install + '/lib')
+
+
+documentation_target = make.LinkExecutable( 'bin/casual-tools-documentation',
+   [ 
+        make.Compile( 'source/documentation/build.cpp'),
+   ],
+   [
+       'casual-common',
+   ])
+
+# GenerateDocumentation
+def casual_tools_documentation( input):
+   import casual.make.tools.executor as executor
+
+   directory = os.path.dirname( input[ 'target'].makefile())
+
+   print( "documentation: generate tools documentation")
+
+   executor.execute( show_command=False, command= [ 
+      directory + "/bin/casual-tools-documentation"
+   ])
+
+dsl.GenerateDocumentation( ".", dependencies = [ documentation_target, build_server, build_executable], generator_function = casual_tools_documentation)
 
 
 

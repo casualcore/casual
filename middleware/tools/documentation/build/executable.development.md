@@ -71,25 +71,4 @@ $ casual-build-executable --no-defaults --output my-executable --definition my-e
 
 ## options
 
-```bash
-$ casual-build-executable --help
-NAME
-   casual-build-executable
-
-DESCRIPTION
-  builds a casual executable
-
-OPTIONS                         c  value    vc  description
-------------------------------  -  -------  --  -----------------------------------------------
--o, --output                    ?  <value>   1  name of executable to be built
--d, --definition                ?  <value>   1  path of the definition file
--c, --compiler                  ?  <value>   1  compiler to use
--cl, --compile-link-directives  *  <value>   +  additional compile & link directives
--k, --keep                      ?               keep the intermediate file
---no-defaults                   ?               do not add any default compiler/link directives
---source                        ?  <value>   1  explicit name of the intermediate file
--v, --verbose                   ?               verbose output
---help                          ?  <value>   *  use --help <option> to see further details
-
-
-```
+see [casual-build-executable.development.md](./casual-build-executable.development.md).
