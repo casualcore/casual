@@ -29,9 +29,10 @@ install_bin = []
 install_lib = []
 
 common_a = make.LinkArchive( 'bin/casual-tools-common',
-  [
-    make.Compile( 'source/common.cpp'),
-    make.Compile( 'source/service/describe/invoke.cpp'),
+   [
+      make.Compile( 'source/common.cpp'),
+      make.Compile( 'source/build/setting.cpp'),
+      make.Compile( 'source/service/describe/invoke.cpp'),
    ])
 
 build_task_a = make.LinkArchive( 'bin/casual-tools-build-task',
