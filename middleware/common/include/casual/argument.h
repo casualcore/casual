@@ -553,41 +553,48 @@ namespace casual
 
       };
 
+      enum struct Outcome : short
+      {
+         parsed,
+         completion,
+         help,
+      };
+
       template< typename P>
       struct basic_parse
       {
          using policy_type = P;
 
          template< detail::concepts::container_like A>
-         static void operator () ( std::string_view description, std::vector< Option> options, A arguments) 
+         static Outcome operator () ( std::string_view description, std::vector< Option> options, A arguments) 
          {
             if constexpr( std::same_as< A, std::vector< std::string_view>>)
-               parse( description, std::move( options), std::move( arguments));
+               return parse( description, std::move( options), std::move( arguments));
             else
-               parse( description, std::move( options), std::vector< std::string_view>{ std::begin( arguments), std::end( arguments)});
+               return parse( description, std::move( options), std::vector< std::string_view>{ std::begin( arguments), std::end( arguments)});
          }
 
-         static void operator ()( std::string_view description, std::vector< Option> options, int argc, char const* const* argv)
+         static Outcome operator ()( std::string_view description, std::vector< Option> options, int argc, char const* const* argv)
          {
             assert( argc > 0);
-            parse( description, std::move( options), std::vector< std::string_view>{ argv + 1, argv + argc});
+            return parse( description, std::move( options), std::vector< std::string_view>{ argv + 1, argv + argc});
          }
 
-         static void operator () ( std::string_view description, std::vector< Option> options,  std::initializer_list< std::string_view> arguments)
+         static Outcome operator () ( std::string_view description, std::vector< Option> options,  std::initializer_list< std::string_view> arguments)
          {
-            parse( description, std::move( options), std::vector< std::string_view>{ std::begin( arguments), std::end( arguments)});
+            return parse( description, std::move( options), std::vector< std::string_view>{ std::begin( arguments), std::end( arguments)});
          }
 
       private:
 
-         static void parse( std::string_view description, std::vector< Option> options, std::vector< std::string_view> arguments)
+         static Outcome parse( std::string_view description, std::vector< Option> options, std::vector< std::string_view> arguments)
          {
             // special treatment for completion
             if( auto found = common::algorithm::find( arguments, reserved::name::completion))
             {
                common::algorithm::rotate( arguments, found);
                detail::complete( options, range_type{ arguments}.subspan( 1));
-               return;
+               return Outcome::completion;
             }
 
             options.push_back( policy_type::help_option( policy_type::help_names()));
@@ -598,11 +605,13 @@ namespace casual
             {
                common::algorithm::rotate( arguments, found);
                policy_type::help( description, options, range_type{ arguments}.subspan( 1));
-               return;
+               return Outcome::help;
             }
 
             // the regular parse
             detail::parse( options, arguments);
+
+            return Outcome::parsed;
          }
 
       };

@@ -256,10 +256,12 @@ namespace casual
                      output( indent, "{}\n", line);
                }
 
-               void print( std::span< const Option> options, platform::size::type indent);
+               void print( std::span< const Option> options, platform::size::type indent, std::optional< int> depth);
                
-               void print( const Option& option, platform::size::type indent = 0)
+               void print( const Option& option, platform::size::type indent, std::optional< int> depth)
                {
+                  if( depth)
+                     *depth -= 1;
 
                   if( option.names().active().empty() && ! option.names().deprecated().empty())
                      output( indent, "[deprecated] {} [{}]", string::join( option.names().deprecated(), ", "), format_option_cardinality( option.cardinality()));
@@ -277,37 +279,18 @@ namespace casual
 
                   if( ! option.suboptions().empty())
                   {
+                     if( depth && *depth <= 0)
+                        return;
+
                      output( indent + indent_increment, "SUB OPTIONS:\n\n");
-                     help::print( option.suboptions(), indent + ( indent_increment * 2));
+                     help::print( option.suboptions(), indent + ( indent_increment * 2), depth);
                   }
                }
 
-               void print( std::span< const Option> options, platform::size::type indent = 0)
+               void print( std::span< const Option> options, platform::size::type indent, std::optional< int> depth)
                {
                   for( auto& option : options)
-                     print( option, indent);
-               }
-
-               auto print_all_formatter()
-               {
-                  auto format_name = []( const Option& option){ return option.names().canonical();};
-                  auto format_arguments = []( const Option& option)
-                  { 
-                     return terminal::format::guard_empty( string::join( option.complete( true, {}), ','));
-                  };
-
-                  auto format_description = []( const Option& option)
-                  {
-                     if( auto found = algorithm::find( option.description(), '\n'))
-                        return std::string{ std::begin( option.description()), std::begin( found)};
-                     return terminal::format::guard_empty( option.description());
-                  };
-
-                  return terminal::format::formatter< const Option>::construct(
-                     terminal::format::column( "name", format_name, terminal::color::no_color),
-                     terminal::format::column( "value(s)", format_arguments, terminal::color::no_color),
-                     terminal::format::column( "description", format_description, terminal::color::no_color)
-                  );
+                     print( option, indent, depth);
                }
 
 
@@ -320,8 +303,7 @@ namespace casual
 
                   output( "\nOPTIONS\n\n");
 
-                  auto formatter = print_all_formatter();
-                  formatter.print( std::cout, options);
+                  print( options, indent_increment, 1);
                }
 
                void print( std::string_view description, std::span< const Option> options, range_type arguments)
@@ -336,7 +318,7 @@ namespace casual
 
                   auto print_option = []( auto& option, auto key, auto arguments, auto& state)
                   {
-                     print( option);
+                     print( option, 0, std::nullopt);
                   };
 
                   //! if the assign algorithm didn't consume all of the arguments, we didn't find anything.
