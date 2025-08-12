@@ -958,7 +958,7 @@ The following options has legend:
 
                      return argument::Option{
                         std::move( invoke),
-                        { "-q", "--list-queues"},
+                        argument::option::Names{ { "-lq", "--list-queues"}, { "-q"}},
                         R"(list information of all queues in current domain)"
                      };
                   }
@@ -980,34 +980,12 @@ The following options has legend:
 
                      return argument::Option{
                         std::move( invoke),
-                        { "-z", "--list-zombies"},
+                        argument::option::Names{ { "-lz", "--list-zombies"}, { "-z"}},
                         R"(list information of all zombie queues in current domain)"
                      };
                   }
                   
                } // queues
-
-               namespace remote
-               {
-                  namespace queues
-                  {
-                     auto option()
-                     {
-                        auto invoke = []()
-                        {
-                           auto state = call::state();
-                           auto formatter = format::remote::queues( state);
-                           formatter.print( std::cout, algorithm::sort( state.remote.queues));
-                        };
-                        
-                        return argument::Option{
-                           std::move( invoke),
-                           argument::option::Names( {}, { "-r", "--list-remote"}),
-                           R"(deprecated - use --list-instances)"
-                        };
-                     }
-                  } // queues
-               } // remote
 
                namespace queue::instances
                {
@@ -1042,7 +1020,7 @@ The following options has legend:
                      
                      return argument::Option{
                         std::move( invoke),
-                        {  "-g", "--list-groups"},
+                        argument::option::Names{ { "-lg", "--list-groups"}, { "-g"}},
                         "list information of all groups in current domain"
                      };
                   }
@@ -1062,7 +1040,7 @@ The following options has legend:
                      return argument::Option{
                         std::move( invoke),
                         complete::queues,
-                        {  "-m", "--list-messages"},
+                        argument::option::Names{ {  "-lm", "--list-messages"}, { "-m"}},
                         "list information of all messages of the provided queue"
                      };
                   }
@@ -1082,7 +1060,7 @@ The following options has legend:
                         
                         return argument::Option{
                            std::move( invoke),
-                           {  "--list-forward-services"},
+                           {  "-lfs", "--list-forward-services"},
                            "list information of all service forwards"
                         };
                      }
@@ -1100,7 +1078,7 @@ The following options has legend:
                         
                         return argument::Option{
                            std::move( invoke),
-                           {  "--list-forward-queues"},
+                           { "-lfq", "--list-forward-queues"},
                            "list information of all queue forwards"
                         };
                      }
@@ -1118,7 +1096,7 @@ The following options has legend:
                         
                         return argument::Option{
                            std::move( invoke),
-                           {  "--list-forward-groups"},
+                           { "-lfg", "--list-forward-groups"},
                            "list (aggregated) information of forward groups"
                         };
                      }
@@ -1597,20 +1575,15 @@ if used with `--force true` messages will be removed regardless of state.)";
                namespace recovery
                {
                   using Directive = ipc::message::group::message::recovery::Directive;
-                  namespace commit
+
+                  namespace detail
                   {
-
-                     auto option()
+                     auto create_option( Directive directive, argument::option::Names names, std::string description)
                      {
-                        auto invoke = []( common::transaction::global::ID gtrid, std::vector< common::transaction::global::ID> gtrids)
+                        auto invoke = [ directive]( std::vector< common::transaction::global::ID> gtrids)
                         {
-                           gtrids.insert( std::begin( gtrids), std::move( gtrid));
-                           auto commited = call::recover( std::move( gtrids), Directive::commit); 
-
-                           algorithm::for_each( commited, []( auto& gtrid)
-                           {
+                           for( auto& gtrid : call::recover( std::move( gtrids), directive))
                               common::log::line( std::cout, gtrid);
-                           });
                         };
 
                         auto complete = []( bool help, auto values) -> std::vector< std::string>
@@ -1622,45 +1595,29 @@ if used with `--force true` messages will be removed regardless of state.)";
                         };
 
                         return argument::Option{
-                           std::move( invoke),
+                           argument::option::one::many( std::move( invoke)),
                            complete,
-                           {  "--recover-transactions-commit"},
-                           R"(recover specific messages from a given queue with commit)"
+                           std::move( names),
+                           std::move( description)
                         };
-                     }
-                  } // commit
 
-                  namespace rollback
+
+                     }
+                     
+                  } // detail
+
+                  auto option()
                   {
-                     auto option()
-                     {
-                        auto invoke = []( common::transaction::global::ID gtrid, std::vector< common::transaction::global::ID> gtrids)
-                        {
-                           gtrids.insert( std::begin( gtrids), std::move( gtrid));
-                           auto rollbacked = call::recover( std::move( gtrids), Directive::rollback); 
+                     return argument::Option{
+                        [](){},
+                        { "--recover-transactions"},
+                        "recover global transactions with --commit or --rollback sub option"
+                     }({
+                        detail::create_option( Directive::commit, { { "--commit"}, {}}, "recover global transactions with commit"),
+                        detail::create_option( Directive::rollback, { { "--rollback"}, {}}, "recover global transactions with rollback"),
+                     });
+                  }
 
-                           algorithm::for_each( rollbacked, []( auto& gtrid)
-                           {
-                              common::log::line( std::cout, gtrid);
-                           });
-                        };
-
-                        auto complete = []( bool help, auto values) -> std::vector< std::string>
-                        {
-                           if( help)
-                              return { "<gtrid>"};
-
-                           return { "<value>"};
-                        };
-
-                        return argument::Option{
-                           std::move( invoke),
-                           complete,
-                           {  "--recover-transactions-rollback"},
-                           R"(recover specific messages from a given queue with rollback)"
-                        };
-                     }
-                  } // rollback
                } // recovery
             } // messages
 
@@ -1753,7 +1710,7 @@ casual queue --forward-scale-aliases a 2 b 0 c 10)"
                   return argument::Option{
                      argument::option::one::many( std::move( invoke)),
                      complete::queues,
-                     {  "--metric-reset"},
+                     { "-mr", "--metric-reset"},
                      R"(resets metrics for the provided queues
 
 if no queues are provided, metrics for all queues are reset.
@@ -1846,10 +1803,39 @@ casual queue --metric-reset a b)"
 
             } // information
 
-            namespace force
+            namespace deprecated
             {
+               auto list_remote_queues()
+               {
+                  auto invoke = []()
+                  {
+                     auto state = call::state();
+                     auto formatter = format::remote::queues( state);
+                     formatter.print( std::cout, algorithm::sort( state.remote.queues));
+                  };
+                  
+                  return argument::Option{
+                     std::move( invoke),
+                     argument::option::Names( {}, { "-r", "--list-remote"}),
+                     R"(deprecated - use --list-instances)"
+                  };
+               }
 
-            } // force
+               auto recover_transactions_commit()
+               {
+                  return argument::Option{
+                     messages::recovery::detail::create_option( messages::recovery::Directive::commit, { {}, { "--recover-transactions-commit"}}, "use --recover-transactions --commit instead")
+                  };
+               }
+
+               auto recover_transactions_rollback()
+               {
+                  return argument::Option{
+                     messages::recovery::detail::create_option( messages::recovery::Directive::rollback, { {}, { "--recover-transactions-rollback"}}, "use --recover-transactions --rollback instead")
+                  };
+               }
+
+            } // deprecated
 
          } // <unnamed>
       } // local
@@ -1875,14 +1861,15 @@ casual queue --metric-reset a b)"
             local::attributes::option(),
             local::clear::option(),
             local::messages::remove::option( shared),
-            local::messages::recovery::commit::option(),
-            local::messages::recovery::rollback::option(),
+            local::messages::recovery::option(),
             local::forward::scale::aliases::option(),
             local::metric::reset::option(),
             local::legend::option(),
             local::information::option(),
             casual::cli::state::option( &local::call::state),
-            local::list::remote::queues::option(),
+            local::deprecated::list_remote_queues(),
+            local::deprecated::recover_transactions_commit(),
+            local::deprecated::recover_transactions_rollback()
          });
       }
 

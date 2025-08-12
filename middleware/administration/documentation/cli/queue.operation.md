@@ -10,28 +10,28 @@ queue [0..1]
 
    SUB OPTIONS:
 
-      -q, --list-queues [0..1]
+      -lq, --list-queues [0..1]
            list information of all queues in current domain
 
-      -z, --list-zombies [0..1]
+      -lz, --list-zombies [0..1]
            list information of all zombie queues in current domain
 
       -lqi, --list-queue-instances [0..1]
            list instances for all queues, including external instances
 
-      -g, --list-groups [0..1]
+      -lg, --list-groups [0..1]
            list information of all groups in current domain
 
-      -m, --list-messages [0..1]  (<queue>) [1]
+      -lm, --list-messages [0..1]  (<queue>) [1]
            list information of all messages of the provided queue
 
-      --list-forward-services [0..1]
+      -lfs, --list-forward-services [0..1]
            list information of all service forwards
 
-      --list-forward-queues [0..1]
+      -lfq, --list-forward-queues [0..1]
            list information of all queue forwards
 
-      --list-forward-groups [0..1]
+      -lfg, --list-forward-groups [0..1]
            list (aggregated) information of forward groups
 
       --restore [0..1]  (<queue>) [0..*]
@@ -113,11 +113,16 @@ queue [0..1]
             --force [0..1]
                  force removal of message regardless of state
 
-      --recover-transactions-commit [0..1]  (<gtrid>) [1..*]
-           recover specific messages from a given queue with commit
+      --recover-transactions [0..1]
+           recover global transactions with --commit or --rollback sub option
 
-      --recover-transactions-rollback [0..1]  (<gtrid>) [1..*]
-           recover specific messages from a given queue with rollback
+         SUB OPTIONS:
+
+            --commit [0..1]  (<gtrid>) [1..*]
+                 recover global transactions with commit
+
+            --rollback [0..1]  (<gtrid>) [1..*]
+                 recover global transactions with rollback
 
       --forward-scale-aliases [0..1]  (<alias>, <# instances>) [2..*]
            scales forward aliases to the requested number of instances
@@ -125,7 +130,7 @@ queue [0..1]
            Example:
            casual queue --forward-scale-aliases a 2 b 0 c 10
 
-      --metric-reset [0..1]  (<queue>) [1..*]
+      -mr, --metric-reset [0..1]  (<queue>) [1..*]
            resets metrics for the provided queues
            
            if no queues are provided, metrics for all queues are reset.
@@ -165,5 +170,11 @@ queue [0..1]
 
       [deprecated] -r, --list-remote [0..1]
            deprecated - use --list-instances
+
+      [deprecated] --recover-transactions-commit [0..1]  (<gtrid>) [1..*]
+           use --recover-transactions --commit instead
+
+      [deprecated] --recover-transactions-rollback [0..1]  (<gtrid>) [1..*]
+           use --recover-transactions --rollback instead
 
 ```
