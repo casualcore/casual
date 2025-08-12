@@ -364,210 +364,11 @@ namespace casual
                {
                   namespace instances 
                   {
-                     namespace server
-                     {
-                        struct Type
-                        {
-                           const typename admin::model::Server::instance_type* instance = nullptr;
-                           const admin::model::Server* server = nullptr;
+                  
 
-                           friend bool operator < ( const Type& lhs, const Type& rhs)
-                           {
-                              auto tie = []( const Type& value)
-                              {
-                                 return std::tie( value.server->alias, value.instance->spawnpoint);
-                              };
-                              return tie( lhs) < tie( rhs);
-                           }
-                        };
-
-                        void invoke()
-                        {
-                           const auto state = call::state();
-
-                           std::vector< Type> instances;
-
-                           algorithm::for_each( state.servers, [&instances]( auto& server)
-                           {
-                              Type result;
-                              result.server = &server;
-                              algorithm::transform( server.instances, instances, [&result]( auto& instance)
-                              {
-                                 result.instance = &instance;
-                                 return result;
-                              });
-                           });
-
-                           algorithm::sort( instances);
-
-                           auto create_formatter = []()
-                           {
-                              auto format_pid = []( auto& i) { return i.instance->handle.pid;};
-                              auto format_ipc = []( auto& i) { return i.instance->handle.ipc;};
-                              auto format_state = []( auto& i) { return i.instance->state;};
-                              auto format_alias = []( auto& i) { return i.server->alias;};
-                              auto format_spawnpoint = []( auto& i) { return common::chronology::utc::offset( i.instance->spawnpoint);};
-
-                              return terminal::format::formatter< Type>::construct(
-                                 terminal::format::column( "pid", format_pid, terminal::color::white, terminal::format::Align::right),
-                                 terminal::format::column( "ipc", format_ipc, terminal::color::no_color, terminal::format::Align::right),
-                                 terminal::format::column( "state", format_state, terminal::color::yellow, terminal::format::Align::left),
-                                 terminal::format::column( "alias", format_alias, terminal::color::cyan, terminal::format::Align::left),
-                                 terminal::format::column( "spawnpoint", format_spawnpoint, terminal::color::blue, terminal::format::Align::left)
-                              );
-                           };
-
-                           create_formatter().print( std::cout, instances);
-                        }
-
-                        constexpr auto description = R"(list all running server instances)";
-                     } // server
-
-                     namespace executable
-                     {
-                        struct Type
-                        {
-                           const typename admin::model::Executable::instance_type* instance = nullptr;
-                           const admin::model::Executable* executable = nullptr;
-
-                           friend bool operator < ( const Type& lhs, const Type& rhs)
-                           {
-                              auto tie = []( const Type& value)
-                              {
-                                 return std::tie( value.executable->alias, value.instance->spawnpoint);
-                              };
-                              return tie( lhs) < tie( rhs);
-                           }
-                        };
-
-                        void invoke()
-                        {
-                           const auto state = call::state();
-
-                           std::vector< Type> instances;
-
-                           algorithm::for_each( state.executables, [&instances]( auto& executable)
-                           {
-                              Type result;
-                              result.executable = &executable;
-                              algorithm::transform( executable.instances, instances, [&result]( auto& instance)
-                              {
-                                 result.instance = &instance;
-                                 return result;
-                              });
-                           });
-
-                           algorithm::sort( instances);
-
-                           auto create_formatter = []()
-                           {
-                              auto format_pid = []( auto& i) { return i.instance->handle;};
-                              auto format_state = []( auto& i) { return i.instance->state;};
-                              auto format_alias = []( auto& i) { return i.executable->alias;};
-                              auto format_spawnpoint = []( auto& i) { return common::chronology::utc::offset( i.instance->spawnpoint);};
-
-                              return terminal::format::formatter< Type>::construct(
-                                 terminal::format::column( "pid", format_pid, terminal::color::white, terminal::format::Align::right),
-                                 terminal::format::column( "state", format_state, terminal::color::yellow, terminal::format::Align::left),
-                                 terminal::format::column( "alias", format_alias, terminal::color::cyan, terminal::format::Align::left),
-                                 terminal::format::column( "spawnpoint", format_spawnpoint, terminal::color::blue, terminal::format::Align::left)
-                              );
-                           };
-
-                           create_formatter().print( std::cout, instances);
-                        }
-
-                        constexpr auto description = R"(list all running executable instances)";
-                     } // executable
                   } // instances
                } // list
 
-
-
-               namespace environment
-               {
-                  namespace set
-                  {
-                     void call( const std::string& name, const std::string& value, std::vector< std::string> aliases)
-                     {
-                        admin::model::set::Environment environment;
-                        environment.variables.emplace_back( string::compose( name, '=', value));
-                        environment.aliases = std::move( aliases);
-
-                        call::environment::set( environment);
-                     }
-
-                     auto complete = []( bool help, auto values) -> std::vector< std::string>
-                     {
-                        if( help)
-                           return { "<variable>", "<value>", "[<alias>*]"};
-
-                        auto list_environment = []()
-                        {
-                           auto transform_name = []( auto& variable)
-                           {
-                              return std::string{ variable.name()};
-                           };
-
-                           return algorithm::transform( common::environment::variable::system(), transform_name);
-                        };
-
-                        switch( values.size())
-                        {
-                           case 0: return list_environment();
-                           case 1: return { "<value>"};
-                           default: return fetch::aliases();
-                        }
-                     };
-
-                     constexpr auto description = R"(set an environment variable for explicit aliases
-                     
-if 0 aliases are provided, the environment variable will be set 
-for all servers and executables 
-                     )";
-
-                  } // set
-
-                  namespace unset
-                  {
-                     void call( const std::string& name, std::vector< std::string> aliases)
-                     {
-                        admin::model::unset::Environment environment;
-                        environment.variables.emplace_back( name);
-                        environment.aliases = std::move( aliases);
-
-                        call::environment::unset( environment);
-                     }
-
-                     auto complete = []( bool help, auto values) -> std::vector< std::string>
-                     {
-                        if( help)
-                           return { "<variable>", "[<alias>*]"};
-
-                        auto list_environment = []()
-                        {
-                           auto transform_name = []( auto& variable)
-                           {
-                              return std::string{ variable.name()};
-                           };
-
-                           return algorithm::transform( common::environment::variable::system(), transform_name);
-                        };
-
-                        switch( values.size())
-                        {
-                           case 0: return list_environment();
-                           default: return fetch::aliases();
-                        }
-                     };
-
-                     constexpr auto description = R"(unset an environment variable for explicit aliases
-                     
-if 0 aliases are provided, the environment variable will be unset 
-for all servers and executables 
-                     )";
-                  }
-               } // environment 
                
                namespace ping
                {
@@ -943,6 +744,165 @@ Fails if any configured server/executable fails to start or exits with an error 
 
                   constexpr auto executables_legend = process::legend;
 
+
+                  namespace instances 
+                  {
+                     auto to_string( common::strong::process::id pid) -> std::string
+                     {
+                        if( pid)
+                           return common::string::compose( pid);
+
+                        return terminal::output::directive().porcelain() ? "" : "-";
+                     }
+
+                     auto to_string( common::strong::ipc::id ipc) -> std::string
+                     {
+                        if( ipc)
+                           return common::string::compose( ipc);
+
+                        return terminal::output::directive().porcelain() ? "" : "-";
+                     }
+
+                     auto server()
+                     {
+                        auto invoke = []()
+                        {
+                           struct Type : admin::model::Server::instance_type
+                           {
+                              std::string alias;
+                           };
+
+                           const auto state = call::state();
+
+                           auto instances = common::algorithm::accumulate( state.servers, std::vector< Type>{}, []( auto result, auto& server)
+                           {
+                              algorithm::transform( server.instances, std::back_inserter( result), [ &server]( auto& instance)
+                              {
+                                 Type result;
+                                 result.alias = server.alias;
+                                 result.handle = instance.handle;
+                                 result.state = instance.state;
+                                 result.spawnpoint = instance.spawnpoint;
+                                 return result;
+                              });
+
+                              return result;
+                           });
+
+                           algorithm::sort( instances, []( auto& lhs, auto& rhs)
+                           {
+                              return std::tie( lhs.alias, lhs.spawnpoint) < std::tie( rhs.alias, rhs.spawnpoint);
+                           });
+
+                           auto create_formatter = []()
+                           {
+                              auto format_alias = []( auto& instance) { return instance.alias;};
+                              auto format_pid = []( auto& instance) { return to_string( instance.handle.pid);};
+                              auto format_ipc = []( auto& instance) { return to_string( instance.handle.ipc);};
+                              auto format_state = []( auto& instance) { return instance.state;};
+                              auto format_spawnpoint = []( auto& instance) { return terminal::format::guard_empty( common::chronology::utc::offset( instance.spawnpoint));};
+
+                              if( ! terminal::output::directive().porcelain())
+                              {
+                                 return terminal::format::formatter< Type>::construct(
+                                    terminal::format::column( "alias", format_alias, terminal::color::yellow, terminal::format::Align::left),
+                                    terminal::format::column( "state", format_state, terminal::color::cyan, terminal::format::Align::left),
+                                    terminal::format::column( "pid", format_pid, terminal::color::no_color, terminal::format::Align::right),
+                                    terminal::format::column( "ipc", format_ipc, terminal::color::no_color, terminal::format::Align::right),
+                                    terminal::format::column( "spawnpoint", format_spawnpoint, terminal::color::blue, terminal::format::Align::left)
+                                 );
+                              }
+                              else
+                              {
+                                 return terminal::format::formatter< Type>::construct(
+                                    terminal::format::column( "pid", format_pid),
+                                    terminal::format::column( "ipc", format_ipc),
+                                    terminal::format::column( "state", format_state),
+                                    terminal::format::column( "alias", format_alias),
+                                    terminal::format::column( "spawnpoint", format_spawnpoint)
+                                 );
+                              }
+                           };
+
+                           create_formatter().print( std::cout, instances);
+                        };
+
+                        return argument::Option{ 
+                           std::move( invoke), 
+                           { "-lis", "--list-instances-server"}, 
+                           R"(list all running server instances)"};
+                     }
+
+                     auto executable()
+                     {
+                        struct Type : admin::model::Executable::instance_type
+                        {
+                           std::string alias;
+                        };
+
+                        auto invoke = []()
+                        {
+                           const auto state = call::state();
+
+                           auto instances = common::algorithm::accumulate( state.executables, std::vector< Type>{}, []( auto result, auto& executable)
+                           {
+                              algorithm::transform( executable.instances, std::back_inserter( result), [ &executable]( auto& instance)
+                              {
+                                 Type result;
+                                 result.alias = executable.alias;
+                                 result.handle = instance.handle;
+                                 result.state = instance.state;
+                                 result.spawnpoint = instance.spawnpoint;
+                                 return result;
+                              });
+
+                              return result;
+                           });
+
+                           algorithm::sort( instances, []( auto& lhs, auto& rhs)
+                           {
+                              return std::tie( lhs.alias, lhs.spawnpoint) < std::tie( rhs.alias, rhs.spawnpoint);
+                           });
+
+                           auto create_formatter = []()
+                           {
+                              auto format_pid = []( auto& instance) { return to_string( instance.handle);};
+                              auto format_state = []( auto& instance) { return instance.state;};
+                              auto format_alias = []( auto& instance) { return instance.alias;};
+                              auto format_spawnpoint = []( auto& instance) { return terminal::format::guard_empty( common::chronology::utc::offset( instance.spawnpoint));};
+
+                              if( ! terminal::output::directive().porcelain())
+                              {
+                                 return terminal::format::formatter< Type>::construct(
+                                    terminal::format::column( "alias", format_alias, terminal::color::yellow, terminal::format::Align::left),
+                                    terminal::format::column( "state", format_state, terminal::color::cyan, terminal::format::Align::left),
+                                    terminal::format::column( "pid", format_pid, terminal::color::no_color, terminal::format::Align::right),
+                                    terminal::format::column( "spawnpoint", format_spawnpoint, terminal::color::blue, terminal::format::Align::left)
+                                 );
+                              }
+                              else
+                              {
+                                 return terminal::format::formatter< Type>::construct(
+                                    terminal::format::column( "pid", format_pid),
+                                    terminal::format::column( "state", format_state),
+                                    terminal::format::column( "alias", format_alias),
+                                    terminal::format::column( "spawnpoint", format_spawnpoint)
+                                 );
+                              }
+                           };
+
+                           create_formatter().print( std::cout, instances);
+                        };
+
+                        return argument::Option{ 
+                           std::move( invoke), 
+                           { "-lie", "--list-instances-executable"}, 
+                           R"(list all running executable instances)"};
+
+                     } // executable
+
+                  } // instances
+
                } // list
 
                namespace scale
@@ -1124,6 +1084,150 @@ note: some aliases are unrestartable
                   }
                } // log
 
+               namespace environment
+               {
+                  namespace detail
+                  {
+                     auto fetch_environment()
+                     {
+                        auto transform_name = []( auto& variable)
+                        {
+                           return std::string{ variable.name()};
+                        };
+
+                        return algorithm::transform( common::environment::variable::system(), transform_name);
+                     }
+
+                     
+                  } // detail
+
+                  namespace set
+                  {
+                     auto create( argument::option::Names names, std::string description)
+                     {
+                        auto invoke = []( const std::string& name, const std::string& value, std::vector< std::string> aliases)
+                        {
+                           admin::model::set::Environment environment;
+                           environment.variables.emplace_back( string::compose( name, '=', value));
+                           environment.aliases = std::move( aliases);
+
+                           call::environment::set( environment);
+                        };
+
+                        auto complete = []( bool help, auto values) -> std::vector< std::string>
+                        {
+                           if( help)
+                              return { "<variable>", "<value>", "[<alias>*]"};
+
+                           switch( values.size())
+                           {
+                              case 0: return detail::fetch_environment();
+                              case 1: return { "<value>"};
+                              default: return fetch::aliases();
+                           }
+                        };
+
+                        return argument::Option{ 
+                           std::move( invoke), 
+                           std::move( complete), 
+                           std::move( names), 
+                           std::move( description)};
+                     }
+
+                     auto create()
+                     {
+                        return create( 
+                           argument::option::Names{ { "--set"}, {}} , 
+                           R"(set an environment variable for explicit aliases
+                     
+if 0 aliases are provided, the environment variable will be set 
+for all servers and executables 
+)");
+                   
+                     }
+
+                  } // set
+
+                  namespace unset
+                  {
+                     auto create( argument::option::Names names, std::string description)
+                     {
+                        auto invoke = []( const std::string& name, std::vector< std::string> aliases)
+                        {
+                           admin::model::unset::Environment environment;
+                           environment.variables.emplace_back( name);
+                           environment.aliases = std::move( aliases);
+
+                           call::environment::unset( environment);
+                        };
+
+                        auto complete = []( bool help, auto values) -> std::vector< std::string>
+                        {
+                           if( help)
+                              return { "<variable>", "[<alias>*]"};
+
+                           switch( values.size())
+                           {
+                              case 0: return detail::fetch_environment();
+                              default: return fetch::aliases();
+                           }
+                        };
+
+                        return argument::Option{ 
+                           std::move( invoke), 
+                           std::move( complete), 
+                           std::move( names), 
+                           std::move( description)};
+                     }
+
+                     auto create()
+                     {
+                        return create( 
+                           argument::option::Names{ { "--unset"}, {}} , 
+                           R"(unset an environment variable for explicit aliases
+
+if 0 aliases are provided, the environment variable will be unset 
+for all servers and executables 
+)");
+
+                     }
+                  }
+
+                  auto create()
+                  {
+                     return argument::Option{ [](){}, 
+                        { "--environment"}, 
+                        R"(alter environment variables for the domain manager
+                  
+use sub-options --set and --unset to set/unset environment variables for the domain)"
+                        }({
+                           set::create(),
+                           unset::create()
+                        });
+                  }
+
+                  namespace deprecated
+                  {
+                     auto set()
+                     {
+                        return environment::set::create( 
+                           argument::option::Names{ {}, { "--set-environment"}}, 
+                           "@deprecated - use --environment --set instead");
+
+                     }
+
+                     auto unset()
+                     {
+                        return environment::unset::create( 
+                           argument::option::Names{ {}, { "--unset-environment"}}, 
+                           "@deprecated - use --environment --unset instead");
+                     }
+                     
+                  } // deprecated
+
+               } // environment 
+
+
                auto legend()
                {
 
@@ -1169,13 +1273,12 @@ The following options has legend:
                local::option::scale::aliases(),
                local::option::restart::aliases(),
                local::option::restart::groups(),
-               argument::Option( &local::action::list::instances::server::invoke, { "-lis", "--list-instances-server"}, local::action::list::instances::server::description),
-               argument::Option( &local::action::list::instances::executable::invoke, { "-lie", "--list-instances-executable"}, local::action::list::instances::executable::description),
+               local::option::list::instances::server(),
+               local::option::list::instances::executable(),
                local::option::boot(),
                local::option::boot_strict(),
                local::option::shutdown(),
-               argument::Option( &local::action::environment::set::call, local::action::environment::set::complete, { "--set-environment"}, local::action::environment::set::description)( argument::cardinality::any()),
-               argument::Option( &local::action::environment::unset::call, local::action::environment::unset::complete, { "--unset-environment"}, local::action::environment::unset::description)( argument::cardinality::any()),
+               local::option::environment::create(),
             
                argument::Option( argument::option::one::many( &local::action::ping::invoke), local::action::ping::complete(), { "--ping"}, local::action::ping::description),
                argument::Option( &local::action::global::state::invoke, local::action::global::state::complete(), { "--instance-global-state"}, local::action::global::state::description),
@@ -1190,6 +1293,8 @@ The following options has legend:
                configuration::admin::deprecated::post(),
                configuration::admin::deprecated::edit(),
                configuration::admin::deprecated::put(),
+               local::option::environment::deprecated::set(),
+               local::option::environment::deprecated::unset()
             });
          }
 

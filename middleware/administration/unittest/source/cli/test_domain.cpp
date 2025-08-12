@@ -74,7 +74,7 @@ domain:
 
       } // local
 
-      TEST( cli_domain, list_servers_executables)
+      TEST( cli_domain, list_servers_executables__list_instances)
       {
          common::unittest::Trace trace;
          
@@ -124,6 +124,7 @@ domain:
 
 )");
          {
+
 
 /*
 alias                       CI  I  state     restart  #r  path                                                                              
@@ -208,6 +209,79 @@ z       2  0  error       false   0  "/non/existent/path"
             EXPECT_TRUE( z.at( 3) == "error");
             EXPECT_TRUE( z.at( 4) == "false");
             EXPECT_TRUE( z.at( 5) == "0");
+         }
+
+         {
+/*
+alias                       state     pid   ipc                               spawnpoint                      
+--------------------------  --------  ----  --------------------------------  --------------------------------
+a                           running   9341  54fc964436e34773a2b7e815bffc0e3d  2025-08-12T11:20:29.167006+02:00
+a                           running   9342  6f78cef8713e4d998753dab4458267d6  2025-08-12T11:20:29.167436+02:00
+b                           disabled     -                                 -  -                               
+b                           disabled     -                                 -  -                               
+c                           error        -                                 -  -                               
+c                           error        -                                 -  -                               
+casual-domain-discovery     running   9336  0c84164f1eac435d9d204691cb51d217  2025-08-12T11:20:29.146341+02:00
+casual-domain-manager       running   9335  2197b18883cd43d8aebd2efdf53ea8a9  2025-08-12T11:20:29.144350+02:00
+casual-gateway-manager      running   9340  8328d46e4108481187e1ccae01dc7678  2025-08-12T11:20:29.161847+02:00
+casual-service-manager      running   9337  9c0fd67e3a34487186b1656ae5397e5e  2025-08-12T11:20:29.150649+02:00
+casual-transaction-manager  running   9338  625e81669dbe473597ae8008c60113a4  2025-08-12T11:20:29.151296+02:00
+*/
+
+            auto lines = local::execute_get_lines( "casual --header false --color false domain --list-instances-server");
+
+            auto a = string::adjacent::split( lines.at( 0), ' ');
+            EXPECT_TRUE( a.at( 0) == "a");
+            EXPECT_TRUE( a.at( 1) == "running");
+            EXPECT_TRUE( a.at( 2) != "-");
+            EXPECT_TRUE( a.at( 3) != "-");
+            EXPECT_TRUE( a.at( 4) != "-");
+            
+            auto b = string::adjacent::split( lines.at( 2), ' ');
+            EXPECT_TRUE( b.at( 0) == "b");
+            EXPECT_TRUE( b.at( 1) == "disabled");
+            EXPECT_TRUE( b.at( 2) == "-");
+            EXPECT_TRUE( b.at( 3) == "-");
+            EXPECT_TRUE( b.at( 4) == "-");
+
+            auto c = string::adjacent::split( lines.at( 4), ' ');
+            EXPECT_TRUE( c.at( 0) == "c");
+            EXPECT_TRUE( c.at( 1) == "error");
+            EXPECT_TRUE( c.at( 2) == "-");
+            EXPECT_TRUE( c.at( 3) == "-");
+            EXPECT_TRUE( c.at( 4) == "-");
+         }
+
+         {
+/*
+alias  state     pid    spawnpoint                      
+-----  --------  -----  --------------------------------
+x      running   10655  2025-08-12T11:28:13.622899+02:00
+x      running   10659  2025-08-12T11:28:13.623492+02:00
+y      disabled      -  -                               
+y      disabled      -  -                               
+z      error         -  -                               
+z      error         -  - 
+*/
+            auto lines = local::execute_get_lines( "casual --header false --color false domain --list-instances-executable");
+
+            auto x = string::adjacent::split( lines.at( 0), ' ');
+            EXPECT_TRUE( x.at( 0) == "x");
+            EXPECT_TRUE( x.at( 1) == "running");
+            EXPECT_TRUE( x.at( 2) != "-");
+            EXPECT_TRUE( x.at( 3) != "-");
+
+            auto y = string::adjacent::split( lines.at( 2), ' ');
+            EXPECT_TRUE( y.at( 0) == "y");
+            EXPECT_TRUE( y.at( 1) == "disabled");
+            EXPECT_TRUE( y.at( 2) == "-");
+            EXPECT_TRUE( y.at( 3) == "-");
+
+            auto z = string::adjacent::split( lines.at( 4), ' ');
+            EXPECT_TRUE( z.at( 0) == "z");
+            EXPECT_TRUE( z.at( 1) == "error");
+            EXPECT_TRUE( z.at( 2) == "-");
+            EXPECT_TRUE( z.at( 3) == "-");
          }
 
       }

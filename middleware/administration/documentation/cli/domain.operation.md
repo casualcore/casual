@@ -57,19 +57,24 @@ domain [0..1]
       -s, --shutdown [0..1]
            shutdown domain
 
-      --set-environment [0..*]  (<variable>, <value>, [<alias>*]) [2..*]
-           set an environment variable for explicit aliases
-                                
-           if 0 aliases are provided, the environment variable will be set 
-           for all servers and executables 
-                                
+      --environment [0..1]
+           alter environment variables for the domain manager
+                             
+           use sub-options --set and --unset to set/unset environment variables for the domain
 
-      --unset-environment [0..*]  (<variable>, [<alias>*]) [1..*]
-           unset an environment variable for explicit aliases
-                                
-           if 0 aliases are provided, the environment variable will be unset 
-           for all servers and executables 
-                                
+         SUB OPTIONS:
+
+            --set [0..1]  (<variable>, <value>, [<alias>*]) [2..*]
+                 set an environment variable for explicit aliases
+                                      
+                 if 0 aliases are provided, the environment variable will be set 
+                 for all servers and executables 
+
+            --unset [0..1]  (<variable>, [<alias>*]) [1..*]
+                 unset an environment variable for explicit aliases
+                 
+                 if 0 aliases are provided, the environment variable will be unset 
+                 for all servers and executables 
 
       --ping [0..1]  (<alias>) [1..*]
            ping all instances of the provided server alias
@@ -115,5 +120,11 @@ domain [0..1]
 
       [deprecated] --configuration-put [0..1]  (json, yaml, xml, ini) [1]
            @deprecated: use `casual configuration --put`
+
+      [deprecated] --set-environment [0..1]  (<variable>, <value>, [<alias>*]) [2..*]
+           @deprecated - use --environment --set instead
+
+      [deprecated] --unset-environment [0..1]  (<variable>, [<alias>*]) [1..*]
+           @deprecated - use --environment --unset instead
 
 ```
