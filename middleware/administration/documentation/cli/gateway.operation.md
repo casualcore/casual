@@ -38,12 +38,12 @@ gateway [0..1]
            prints state in the provided format to stdout
 
       [deprecated] -ls, --list-services [0..1]
-           removed - use casual service --list-instances
+           @removed - use casual service --list-instances
 
       [deprecated] -lq, --list-queues [0..1]
-           removed - use casual queue --list-queue-instances
+           @removed - use casual queue --list-queue-instances
 
       [deprecated] --rediscover [0..1]
-           moved to casual discover --rediscover
+           @removed - moved to casual discover --rediscover
 
 ```

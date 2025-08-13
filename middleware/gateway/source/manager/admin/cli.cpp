@@ -474,48 +474,7 @@ created
                      }
                   } // groups
 
-                  namespace resource
-                  {
-                     auto services()
-                     {
-                        auto invoke = []()
-                        {
-                           code::raise::error( code::casual::invalid_argument, "--list-services is removed - use casual service --list-instances");
-                        };
-
-                        return argument::Option{ 
-                           std::move( invoke), 
-                           argument::option::Names( {}, { "-ls", "--list-services"}), 
-                           "removed - use casual service --list-instances"};
-                     }
-
-                     auto queues()
-                     {
-                        auto invoke = []()
-                        {
-                           code::raise::error( code::casual::invalid_argument, "--list-queues is removed - use casual queue --list-queue-instances");
-                        };
-
-                        return argument::Option{ 
-                           std::move( invoke), 
-                           argument::option::Names( {}, { "-lq", "--list-queues"}), 
-                           "removed - use casual queue --list-queue-instances"};
-                     }
-                  }
                } // list
-
-               auto rediscover()
-               {
-                  auto invoke = []()
-                  {
-                     std::cerr << "use casual discover --rediscover instead\n";
-                  };
-
-                  return argument::Option{ 
-                     std::move( invoke),
-                     argument::option::Names( {}, { "--rediscover"}), 
-                     "moved to casual discover --rediscover"};
-               }
 
                namespace legend
                {
@@ -552,6 +511,55 @@ The following options has legend:
 
                } // legend
 
+               namespace removed
+               {
+                  namespace list
+                  {
+                     namespace resource
+                     {
+                        auto services()
+                        {
+                           auto invoke = []()
+                           {
+                              code::raise::error( code::casual::invalid_argument, "--list-services is removed - use casual service --list-instances");
+                           };
+
+                           return argument::Option{ 
+                              std::move( invoke), 
+                              argument::option::Names( {}, { "-ls", "--list-services"}), 
+                              "@removed - use casual service --list-instances"};
+                        }
+
+                        auto queues()
+                        {
+                           auto invoke = []()
+                           {
+                              code::raise::error( code::casual::invalid_argument, "--list-queues is removed - use casual queue --list-queue-instances");
+                           };
+
+                           return argument::Option{ 
+                              std::move( invoke), 
+                              argument::option::Names( {}, { "-lq", "--list-queues"}), 
+                              "@removed - use casual queue --list-queue-instances"};
+                        }
+                     }
+                  } // list
+
+                  auto rediscover()
+                  {
+                     auto invoke = []()
+                     {
+                        code::raise::error( code::casual::invalid_argument, "--rediscover is removed - use casual discover --rediscover");
+                     };
+
+                     return argument::Option{ 
+                        std::move( invoke),
+                        argument::option::Names( {}, { "--rediscover"}), 
+                        "@removed - moved to casual discover --rediscover"};
+                  }
+
+               } // removed
+
             } // option
          } // <unnamed>
       } // local
@@ -567,9 +575,9 @@ The following options has legend:
             casual::cli::state::option( &local::call::state),
             
             // removed... TODO: remove in 2.0
-            local::option::list::resource::services(),
-            local::option::list::resource::queues(),
-            local::option::rediscover() 
+            local::option::removed::list::resource::services(),
+            local::option::removed::list::resource::queues(),
+            local::option::removed::rediscover() 
          });
 
       }
