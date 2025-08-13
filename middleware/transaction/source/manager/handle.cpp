@@ -157,7 +157,9 @@ namespace casual
                      if( auto transaction = common::algorithm::find( state.transactions, trid))
                         return *transaction;
 
-                     return state.transactions.emplace_back( trid);
+                     auto& result = state.transactions.emplace_back( trid);
+                     result.known = common::chronology::time_point::clock::now();
+                     return result;
                   }
 
                } // transaction

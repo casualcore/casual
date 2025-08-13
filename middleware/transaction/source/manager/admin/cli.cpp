@@ -59,6 +59,18 @@ namespace casual
 
             namespace normalized
             {
+               auto compute_branch_count( const admin::model::State& state)
+               {
+                  std::map< common::strong::resource::id, platform::size::type> count;
+
+                  for( auto& transaction : state.transactions)
+                     for( auto& branch : transaction.branches)
+                        for( auto& resource : branch.resources)
+                           ++count[ resource.id];
+
+                  return count;
+               }
+
                namespace instance
                {
                   enum struct State : std::uint16_t
@@ -99,6 +111,7 @@ namespace casual
                //! fetch all instances, in a normalized form
                auto instances()
                {
+
                   auto accumulate_internal = []( auto result, auto& resource)
                   {
                      normalized::Instance value;
@@ -126,7 +139,6 @@ namespace casual
                         result.push_back( value);
                         return result;
                      });
-
                   };
 
                   auto transform_external = []( auto& instance)
@@ -139,6 +151,7 @@ namespace casual
                      value.description = instance.description;
                      return value;
                   };
+
 
                   auto state = call::state();
 
@@ -200,8 +213,8 @@ namespace casual
                   auto format_number_of_branches = []( auto& value) { return value.branches.size();};
                   auto format_owner = []( auto& value) -> std::string
                   {
-                     if( value.owner.pid)
-                        return string::compose( value.owner.pid);
+                     if( value.owner)
+                        return string::compose( value.owner);
                      else
                         return "-";
                   };
@@ -210,6 +223,9 @@ namespace casual
                   {
                      return value.stage;
                   };
+
+                  auto format_known = []( auto& value) { return terminal::format::guard_empty( common::chronology::utc::offset( value.known));};
+                  auto format_deadline = []( auto& value) { return terminal::format::guard_empty( common::chronology::utc::offset( value.deadline));};
 
                   auto format_resources = []( auto& value)
                   {
@@ -223,16 +239,50 @@ namespace casual
                      return common::string::compose( resources);
                   };
 
-                  return common::terminal::format::formatter< admin::model::Transaction>::construct(
-                     common::terminal::format::column( "global", format_global, common::terminal::color::yellow),
-                     common::terminal::format::column( "#branches", format_number_of_branches, common::terminal::color::no_color),
-                     common::terminal::format::column( "owner", format_owner, common::terminal::color::white, common::terminal::format::Align::right),
-                     common::terminal::format::column( "stage", format_stage, common::terminal::color::green, common::terminal::format::Align::left),
-                     common::terminal::format::column( "resources", format_resources, common::terminal::color::magenta, common::terminal::format::Align::left)
-                  );
+                  if( ! terminal::output::directive().porcelain())
+                  {
+                     return common::terminal::format::formatter< admin::model::Transaction>::construct(
+                        common::terminal::format::column( "global", format_global, common::terminal::color::yellow),
+                        common::terminal::format::column( "#branches", format_number_of_branches, common::terminal::color::no_color),
+                        common::terminal::format::column( "owner", format_owner, common::terminal::color::white, common::terminal::format::Align::right),
+                        common::terminal::format::column( "stage", format_stage, common::terminal::color::green, common::terminal::format::Align::left),
+                        common::terminal::format::column( "known", format_known, common::terminal::color::blue, common::terminal::format::Align::left),
+                        common::terminal::format::column( "deadline", format_deadline, common::terminal::color::blue, common::terminal::format::Align::left),
+                        common::terminal::format::column( "resources", format_resources, common::terminal::color::magenta, common::terminal::format::Align::left)
+                     );
+                  }
+                  else
+                  {
+                     return common::terminal::format::formatter< admin::model::Transaction>::construct(
+                        common::terminal::format::column( "global", format_global),
+                        common::terminal::format::column( "#branches", format_number_of_branches),
+                        common::terminal::format::column( "owner", format_owner),
+                        common::terminal::format::column( "stage", format_stage),
+                        common::terminal::format::column( "resources", format_resources),
+                        common::terminal::format::column( "known", format_known),
+                        common::terminal::format::column( "deadline", format_deadline)
+                     );
+                  }
                }
 
-               auto resource_proxy()
+               constexpr std::string_view transactions_legend = R"(
+global:
+   global transaction id
+#branches:
+   number of branches in the transaction
+owner:
+   owner of the transaction, if any
+stage:
+   current stage of the transaction
+known:
+   the time point this TM knows about the transaction
+deadline:
+   the deadline of the transaction, if any
+resources:
+   the resources involved in the transaction, as a comma separated list of resource ids
+)";
+
+               auto resource_proxy( const std::map< common::strong::resource::id, platform::size::type>& branch_count)
                {
 
                   struct format_number_of_instances
@@ -243,10 +293,27 @@ namespace casual
                      }
                   };
 
+                  auto format_openinfo = []( const admin::model::resource::Proxy& value)
+                  {
+                     return terminal::format::guard_empty( value.openinfo);
+                  };
+
+                  auto format_closeinfo = []( const admin::model::resource::Proxy& value)
+                  {
+                     return terminal::format::guard_empty( value.closeinfo);
+                  };
+
                   auto format_invoked = []( const admin::model::resource::Proxy& value)
                   {
                      auto result = accumulate_statistics( value);
                      return result.metrics.roundtrip.count;
+                  };
+
+                  auto format_branch_count = [ &branch_count]( const admin::model::resource::Proxy& value)
+                  {
+                     if( auto found = common::algorithm::find( branch_count, value.id))
+                        return found->second;
+                     return platform::size::type{ 0};
                   };
 
                   auto format_min = []( const admin::model::resource::Proxy& value)
@@ -288,8 +355,9 @@ namespace casual
                         common::terminal::format::column( "name", std::mem_fn( &admin::model::resource::Proxy::name), common::terminal::color::yellow),
                         common::terminal::format::column( "id", std::mem_fn( &admin::model::resource::Proxy::id), common::terminal::color::yellow, terminal::format::Align::right),
                         common::terminal::format::column( "key", std::mem_fn( &admin::model::resource::Proxy::key), common::terminal::color::yellow),
-                        common::terminal::format::column( "openinfo", std::mem_fn( &admin::model::resource::Proxy::openinfo), common::terminal::color::no_color),
-                        common::terminal::format::column( "closeinfo", std::mem_fn( &admin::model::resource::Proxy::closeinfo), common::terminal::color::no_color),
+                        common::terminal::format::column( "openinfo", format_openinfo, common::terminal::color::no_color),
+                        common::terminal::format::column( "closeinfo", format_closeinfo, common::terminal::color::no_color),
+                        common::terminal::format::column( "#B", format_branch_count, common::terminal::color::magenta, terminal::format::Align::right),
                         terminal::format::column( "invoked", format_invoked, terminal::color::blue, terminal::format::Align::right),
                         terminal::format::column( "min", format_min, terminal::color::blue, terminal::format::Align::right),
                         terminal::format::column( "max", format_max, terminal::color::blue, terminal::format::Align::right),
@@ -303,19 +371,20 @@ namespace casual
                   {
                      // we need to keep compatibility with porcelain
                      return common::terminal::format::formatter< admin::model::resource::Proxy>::construct(
-                        common::terminal::format::column( "name", std::mem_fn( &admin::model::resource::Proxy::name), common::terminal::color::yellow),
-                        common::terminal::format::column( "id", std::mem_fn( &admin::model::resource::Proxy::id), common::terminal::color::yellow, terminal::format::Align::right),
-                        common::terminal::format::column( "key", std::mem_fn( &admin::model::resource::Proxy::key), common::terminal::color::yellow),
-                        common::terminal::format::column( "openinfo", std::mem_fn( &admin::model::resource::Proxy::openinfo), common::terminal::color::no_color),
-                        common::terminal::format::column( "closeinfo", std::mem_fn( &admin::model::resource::Proxy::closeinfo), common::terminal::color::no_color),
-                        terminal::format::column( "invoked", format_invoked, terminal::color::blue, terminal::format::Align::right),
-                        terminal::format::column( "min", format_min, terminal::color::blue, terminal::format::Align::right),
-                        terminal::format::column( "max", format_max, terminal::color::blue, terminal::format::Align::right),
-                        terminal::format::column( "avg", format_avg, terminal::color::blue, terminal::format::Align::right),
-                        terminal::format::column( "#", format_number_of_instances{}, terminal::color::white, terminal::format::Align::right),
+                        common::terminal::format::column( "name", std::mem_fn( &admin::model::resource::Proxy::name)),
+                        common::terminal::format::column( "id", std::mem_fn( &admin::model::resource::Proxy::id)),
+                        common::terminal::format::column( "key", std::mem_fn( &admin::model::resource::Proxy::key)),
+                        common::terminal::format::column( "openinfo", format_openinfo),
+                        common::terminal::format::column( "closeinfo", format_closeinfo),
+                        terminal::format::column( "invoked", format_invoked),
+                        terminal::format::column( "min", format_min),
+                        terminal::format::column( "max", format_max),
+                        terminal::format::column( "avg", format_avg),
+                        terminal::format::column( "#", format_number_of_instances{}),
                         // last to keep compatibility
-                        terminal::format::column( "P", format_pending_count, terminal::color::magenta, terminal::format::Align::right),
-                        terminal::format::column( "PAT", format_avg_pending_time, terminal::color::magenta, terminal::format::Align::right)
+                        terminal::format::column( "P", format_pending_count),
+                        terminal::format::column( "PAT", format_avg_pending_time),
+                        terminal::format::column( "#B", format_branch_count)
                      );
                   }
                }
@@ -331,6 +400,8 @@ openinfo:
    configured openinfo for the resource
 closeinfo:
    configured closeinfo for the resource
+#B:
+   number of branches currently associated with the resource-proxy
 invoked:
    number of invocations to the resource-proxy
 min:
@@ -408,28 +479,56 @@ PAT:
                      terminal::format::column( "pid", format_pid, common::terminal::color::white, terminal::format::Align::right),
                      terminal::format::column( "ipc", format_ipc, common::terminal::color::no_color, terminal::format::Align::right),
                      terminal::format::column( "invoked", format_invoked, common::terminal::color::blue, terminal::format::Align::right),
-                     terminal::format::column( "min (s)", format_min, terminal::color::blue, terminal::format::Align::right),
-                     terminal::format::column( "max (s)", format_max, terminal::color::blue, terminal::format::Align::right),
-                     terminal::format::column( "avg (s)", format_avg, terminal::color::blue, terminal::format::Align::right),
+                     terminal::format::column( "min", format_min, terminal::color::blue, terminal::format::Align::right),
+                     terminal::format::column( "max", format_max, terminal::color::blue, terminal::format::Align::right),
+                     terminal::format::column( "avg", format_avg, terminal::color::blue, terminal::format::Align::right),
                      terminal::format::column( "rm-invoked", format_rm_invoked, common::terminal::color::blue, terminal::format::Align::right),
-                     terminal::format::column( "rm-min (s)", format_rm_min, terminal::color::blue, terminal::format::Align::right),
-                     terminal::format::column( "rm-max (s)", format_rm_max, terminal::color::blue, terminal::format::Align::right),
-                     terminal::format::column( "rm-avg (s)", format_rm_avg, terminal::color::blue, terminal::format::Align::right)
+                     terminal::format::column( "rm-min", format_rm_min, terminal::color::blue, terminal::format::Align::right),
+                     terminal::format::column( "rm-max", format_rm_max, terminal::color::blue, terminal::format::Align::right),
+                     terminal::format::column( "rm-avg", format_rm_avg, terminal::color::blue, terminal::format::Align::right)
                   );
                }
+
+               constexpr std::string_view internal_instances_legend = R"(
+id:
+   id of the instance
+pid:
+   process id of the instance
+ipc:
+   ipc of the instance
+invoked:
+   number of invocations to the instance
+min:
+   minimum-time - the minimum roundtrip time to the instance (in seconds)
+max:
+   maximum-time - the maximum roundtrip time to the instance (in seconds)
+avg:
+   average-time - the average roundtrip time to the instance (in seconds)
+rm-invoked:
+   number of invocations to the resource
+rm-min:
+   minimum-time - the minimum roundtrip time to the resource (in seconds)
+rm-max:
+   maximum-time - the maximum roundtrip time to the resource (in seconds)
+rm-avg:
+   average-time - the average roundtrip time to the resource (in seconds)
+)";
+
 
                auto external_instances()
                {
                   auto format_id = []( auto& value) { return value.id;};
                   auto format_pid = []( auto& value) { return value.process.pid;};
+                  auto format_ipc = []( auto& value) { return value.process.ipc;};
                   auto format_alias = []( auto& value) { return terminal::format::guard_empty( value.alias);};
                   auto format_description = []( auto& value) { return terminal::format::guard_empty( value.description);}; 
 
                   if( ! terminal::output::directive().porcelain())
                      return common::terminal::format::formatter< local::normalized::Instance>::construct(
                         common::terminal::format::column( "id", format_id, common::terminal::color::yellow, terminal::format::Align::left),
-                        common::terminal::format::column( "pid", format_pid, common::terminal::color::white, terminal::format::Align::right),
                         common::terminal::format::column( "alias", format_alias, common::terminal::color::blue, terminal::format::Align::left),
+                        common::terminal::format::column( "pid", format_pid, common::terminal::color::no_color, terminal::format::Align::right),
+                        common::terminal::format::column( "ipc", format_ipc, common::terminal::color::no_color, terminal::format::Align::right),
                         common::terminal::format::column( "description", format_description, common::terminal::color::yellow, terminal::format::Align::left)
                      );
                   else
@@ -437,9 +536,24 @@ PAT:
                         common::terminal::format::column( "id", format_id),
                         common::terminal::format::column( "alias", format_alias),
                         common::terminal::format::column( "pid", format_pid),
-                        common::terminal::format::column( "description", format_description)
+                        common::terminal::format::column( "description", format_description),
+                        common::terminal::format::column( "ipc", format_ipc)
                      );
                }
+
+               constexpr std::string_view external_instances_legend = R"(
+id:
+   id of the instance
+alias:
+   alias of the instance
+pid:
+   process id of the instance
+ipc:
+   ipc of the instance
+description:
+   description of the instance, if any. If the instance is a gateway outbound
+   this will hold the name of the other domain.
+)";
 
                auto instances()
                {
@@ -469,17 +583,49 @@ PAT:
 
                   auto format_id = []( auto& value) { return value.id;};
                   auto format_pid = []( auto& value) { return value.process.pid;};
+                  auto format_ipc = []( auto& value) { return value.process.ipc;};
                   auto format_alias = []( auto& value) { return terminal::format::guard_empty( value.alias);};
                   auto format_description = []( auto& value) { return terminal::format::guard_empty( value.description);};
 
-                  return terminal::format::formatter< local::normalized::Instance>::construct(
-                     terminal::format::column( "id", format_id, terminal::color::yellow, terminal::format::Align::left),
-                     terminal::format::custom::column( "state", format_state{}),
-                     terminal::format::column( "pid", format_pid, terminal::color::white, terminal::format::Align::right),
-                     terminal::format::column( "alias", format_alias, terminal::color::blue, terminal::format::Align::left),
-                     terminal::format::column( "description", format_description, terminal::color::yellow, terminal::format::Align::left)
-                  );
+                  if( ! terminal::output::directive().porcelain())
+                  {
+                     return terminal::format::formatter< local::normalized::Instance>::construct(
+                        terminal::format::column( "id", format_id, terminal::color::yellow, terminal::format::Align::left),
+                        terminal::format::column( "alias", format_alias, terminal::color::blue, terminal::format::Align::left),
+                        terminal::format::custom::column( "state", format_state{}),
+                        terminal::format::column( "pid", format_pid, terminal::color::no_color, terminal::format::Align::right),
+                        terminal::format::column( "ipc", format_ipc, terminal::color::no_color, terminal::format::Align::right),
+                        terminal::format::column( "description", format_description, terminal::color::yellow, terminal::format::Align::left)
+                     );
+                  }
+                  else
+                  {
+                     return terminal::format::formatter< local::normalized::Instance>::construct(
+                        terminal::format::column( "id", format_id),
+                        terminal::format::custom::column( "state", format_state{}),
+                        terminal::format::column( "pid", format_pid),
+                        terminal::format::column( "alias", format_alias),
+                        terminal::format::column( "description", format_description),
+                        terminal::format::column( "ipc", format_ipc)
+                     );
+                  }
                }
+
+               constexpr std::string_view instances_legend = R"(
+id:
+   id of the instance
+alias:
+   alias of the instance
+state:
+   state of the instance, one of: unknown, spawned, idle, busy, shutdown, external
+pid:
+   process id of the instance
+ipc:
+   ipc of the instance
+description:
+   description of the instance, if any. If the instance is a gateway outbound
+   this will hold the name of the other domain.
+)";
 
             } // format
 
@@ -509,7 +655,10 @@ PAT:
                         []()
                         {
                            auto state = call::state();
-                           format::resource_proxy().print( std::cout, algorithm::sort( state.resources));
+
+                           const auto branch_count = normalized::compute_branch_count( state);
+
+                           format::resource_proxy( branch_count).print( std::cout, algorithm::sort( state.resources));
                         },
                         { "-lr", "--list-resources" },
                         R"(list all resources)"
@@ -518,76 +667,126 @@ PAT:
                   
                } // resources
 
-               namespace external::instances
+               namespace resource::instances
                {
-                  auto option()
+                  void internal()
                   {
-                     auto invoke = []()
+                     auto transform = []( auto&& resources)
                      {
-                        auto is_external = []( auto& value){ return value.state == decltype( value.state)::external;};
+                        using instances_t = std::vector< admin::model::resource::Instance>;
 
-                        auto instances = normalized::instances();
-
-                        auto externals = algorithm::filter( instances, is_external);
-                        format::external_instances().print( std::cout, externals);
-                     };
-
-                     return argument::Option{
-                        invoke,
-                        argument::option::Names( { "--list-external-instances"}, { "--list-external-resources" }),
-                        R"(list external resource instances
-
-External resources only have one instance, hence resources and resource-instances are unambiguous.
-)"
-                     };
-                  }
-               } // external::instances
-
-               namespace internal::instances
-               {
-                  auto option()
-                  {
-                     return argument::Option{
-                        []()
+                        return algorithm::accumulate( resources, instances_t{}, []( auto instances, auto& resource)
                         {
-                           auto transform = []( auto&& resources)
-                           {
-                              using instances_t = std::vector< admin::model::resource::Instance>;
-
-                              return algorithm::accumulate( resources, instances_t{}, []( auto instances, auto& resource)
-                              {
-                                 return algorithm::container::append( resource.instances, std::move( instances));
-                              });
-                           };
-
-                           auto instances = transform( call::state().resources);
-                           format::internal_instances().print( std::cout, algorithm::sort( instances));
-                        },
-                        { "--list-internal-instances"},
-                        R"(list details of all internal resource instances)"
+                           return algorithm::container::append( resource.instances, std::move( instances));
+                        });
                      };
-                  }
-               } // internal::instances
 
-               namespace instances
-               {
+                     auto instances = transform( call::state().resources);
+                     format::internal_instances().print( std::cout, algorithm::sort( instances));
+                  }
+
+                  void external()
+                  {
+                     auto is_external = []( auto& value){ return value.state == decltype( value.state)::external;};
+
+                     auto instances = normalized::instances();
+
+                     auto externals = algorithm::filter( instances, is_external);
+                     format::external_instances().print( std::cout, externals);
+                  }
+
+                  enum struct Flag
+                  {
+                     none = 0,
+                     internal = 1,
+                     external = 2,
+                     all = internal | external
+                  };
+
+                  [[maybe_unused]] consteval void casual_enum_as_flag( Flag){};
+
+
                   auto option()
                   {
-                     auto invoke = []()
+                     struct Shared
                      {
-                        auto instances = normalized::instances();
+                        Flag flag = Flag::none;
+                     };
 
-                        format::instances().print( std::cout, instances);
+                     auto shared = std::make_shared< Shared>();
+
+                     auto invoke = [ shared]()
+                     {
+                        common::log::debug( "shared->flag: ", shared->flag);
+
+                        if( shared->flag == Flag::internal)
+                        {
+                           instances::internal();
+                        }
+                        else if( shared->flag == Flag::external)
+                        {
+                           instances::external();
+                        }
+                        else // Flag::all (or none)
+                        {
+                           auto instances = normalized::instances();
+                           format::instances().print( std::cout, instances);
+                        }
+                     };
+
+                     auto create_suboption = [ shared]( Flag flag, std::vector< std::string> names, std::string description)
+                     {  
+                        return argument::Option{
+                           [ flag, shared]() 
+                           { 
+                              shared->flag |= flag; 
+                              // we return preemptive to make sure this suboption is invoked before the main invoke
+                              return argument::option::invoke::preemptive{};
+                           },
+                           std::move( names),
+                           std::move( description)
+                        };
                      };
 
                      return argument::Option{
-                        invoke,
-                        { "-li", "--list-instances"},
-                        R"(list all resource instances, internal and external)"
-                     };
+                        std::move( invoke),
+                        argument::option::Names{ { "-lri", "--list-resource-instances"}, { "-li", "--list-instances"}},
+                        R"(list resource instances)"
+                     }({
+                        create_suboption( Flag::all, { "-a", "--all"}, "list both internal and external resource instances (default)"),
+                        create_suboption( Flag::internal, { "-i", "--internal"}, "list internal resource instances"),
+                        create_suboption( Flag::external, { "-e", "--external"}, "list external resource instances")
+                     });
                   }
-                  
-               } // instances
+
+               } // resource::instances
+
+               namespace deprecated
+               {
+                  namespace external::instances
+                  {
+                     auto option()
+                     {
+                        return argument::Option{
+                           &resource::instances::external,
+                           argument::option::Names( {}, { "--list-external-instances", "--list-external-resources" }),
+                           R"(@deprecated: use --list-resource-instances --external)"
+                        };
+                     }
+                  } // external::instances
+
+                  namespace internal::instances
+                  {
+                     auto option()
+                     {
+                        return argument::Option{
+                           &resource::instances::internal,
+                           argument::option::Names{ {}, { "--list-internal-instances" }},
+                           R"(@deprecated: use --list-resource-instances --internal)"
+                        };
+                     }
+                  } // internal::instances
+               } // deprecated
 
                namespace pending
                {
@@ -611,42 +810,43 @@ External resources only have one instance, hence resources and resource-instance
                } // pending
             } // list
 
-            namespace scale
+            namespace scale::resource::proxies
             {
-               namespace instances
+               auto option()
                {
-                  auto option()
+                  auto invoke = []( std::vector< std::tuple< std::string, int>> values)
                   {
-                     return argument::Option{
-                        [](  std::vector< std::tuple< std::string, int>> values)
-                        {
-                           call::scale::resource::proxy::instances( common::algorithm::transform( values, []( auto& value){
-                              if( std::get< 1>( value) < 0)
-                                 code::raise::error( code::casual::invalid_argument, "number of instances cannot be negative");
+                     call::scale::resource::proxy::instances( common::algorithm::transform( values, []( auto& value){
+                        if( std::get< 1>( value) < 0)
+                           code::raise::error( code::casual::invalid_argument, "number of instances cannot be negative");
 
-                              return admin::model::scale::resource::proxy::Instances{ 
-                                 .name = std::get< 0>( value),
-                                 .instances = std::get< 1>( value)
-                              };
-                           }));
-                        },
-                        []( bool help, auto values) -> std::vector< std::string>
-                        {
-                           if( help)
-                              return { "rm-id", "# instances"};
+                        return admin::model::scale::resource::proxy::Instances{ 
+                           .name = std::get< 0>( value),
+                           .instances = std::get< 1>( value)
+                        };
+                     }));
+                  };
 
-                           if( values.size() % 2 == 0)
-                              return algorithm::transform( call::state().resources, []( auto& r){ return r.name;});
-      
-                           return { std::string{ argument::reserved::name::suggestions}}; 
-                        },
-                        argument::option::Names( { "--scale-resource-proxies"}, { "-si", "--scale-instances"}),
-                        R"(scale resource proxy instances)"
-                     };
-                  }
+                  auto completer = []( bool help, auto values) -> std::vector< std::string>
+                  {
+                     if( help)
+                        return { "rm-id", "#instances"};
 
-               } // instances
-            } // scale
+                     if( values.size() % 2 == 0)
+                        return algorithm::transform( call::state().resources, []( auto& r){ return r.name;});
+
+                     return { std::string{ argument::reserved::name::suggestions}}; 
+                  };
+
+                  return argument::Option{
+                     std::move( invoke), 
+                     std::move( completer),
+                     argument::option::Names( { "-srp", "--scale-resource-proxies"}, { "-si", "--scale-instances"}),
+                     R"(scale resource proxy instances)"
+                  };
+               }
+
+            } // scale::resource::proxies
 
             namespace information
             {
@@ -932,7 +1132,8 @@ External resources only have one instance, hence resources and resource-instance
             {
                auto option()
                {
-                  auto legend_option = [](  std::string key, std::string_view legend)
+
+                  static constexpr auto legend_option = [](  std::string key, std::string_view legend)
                   {
                      return argument::Option{ [ key, legend]()
                         {
@@ -942,6 +1143,19 @@ External resources only have one instance, hence resources and resource-instance
                         string::compose( "list legend for ", key)
                      };
                   };
+
+                  auto list_resource_instances = argument::Option{ 
+                        [](){},
+                        { "--list-resource-instances"},
+                        R"(the legends for list resource instances suboptions
+
+The following suboptions has legend:
+)"
+                     }({
+                        legend_option( "--all", local::format::instances_legend),
+                        legend_option( "--internal", local::format::internal_instances_legend),
+                        legend_option( "--external", local::format::external_instances_legend)
+                     });
 
                   return argument::Option{
                      [](){},
@@ -953,7 +1167,9 @@ Documentation and description for abbreviations and acronyms used as columns in 
 The following options has legend:
 )"
                   }({
-                     legend_option( "--list-resources", local::format::resource_proxy_legend)
+                     legend_option( "--list-resources", local::format::resource_proxy_legend),
+                     legend_option( "--list-transactions", local::format::transactions_legend),
+                     std::move( list_resource_instances),
                   });
                }
 
@@ -967,17 +1183,17 @@ The following options has legend:
          return argument::Option{ [](){}, { "transaction"}, "transaction related administration"}( {
             local::list::transactions::option(),
             local::list::resources::option(),
-            local::list::instances::option(),
-            local::list::internal::instances::option(),
-            local::list::external::instances::option(),
+            local::list::resource::instances::option(),
             local::begin::option(),
             local::commit::option(),
             local::rollback::option(),
-            local::scale::instances::option(),
+            local::scale::resource::proxies::option(),
             local::list::pending::option(),
             local::legend::option(),
             local::information::option(),
             casual::cli::state::option( &local::call::state),
+            local::list::deprecated::internal::instances::option(),
+            local::list::deprecated::external::instances::option(),
          });
       }
 

@@ -75,11 +75,20 @@ domain:
                   return memory::guard( buffer, &tpfree);
                };
 
+
+               auto execute_get_lines( auto command)
+               {
+                  auto capture = administration::unittest::cli::command::execute( command);
+                  EXPECT_TRUE( capture) << CASUAL_NAMED_VALUE( capture);
+
+                  return string::split( capture.standard.out, '\n');
+               };
+
             } // cli
          } // <unnamed>
       } // local
 
-      TEST( cli_transaction, list_external_resources__expect_outbound_gateways_to_be_listed)
+      TEST( cli_transaction, list_resource_instances_external__expect_outbound_gateways_to_be_listed)
       {
          common::unittest::Trace trace;
 
@@ -106,23 +115,46 @@ domain:
             -  alias: outbound-B
                connections:
                   -  address: 127.0.0.1:7001
+                  -  address: 127.0.0.1:7001
+                  -  address: 127.0.0.1:7001
 )");
          gateway::unittest::fetch::until( gateway::unittest::fetch::predicate::outbound::connected());
 
          {
-            auto capture = administration::unittest::cli::command::execute( R"(casual transaction --list-external-instances --porcelain true)");
-            auto rows = string::split( algorithm::replace( capture.standard.out, '|', ' '), '\n');
 
-            EXPECT_TRUE( std::regex_match( rows.at( 0), std::regex{ "E-1 outbound-B .* domain-B" }));
-         }
-         
-         // expect exactly the same as above
-         // --list-external-resources is deprecated, and replaced with --list-external-instances, but we still support it.
-         {
-            auto capture = administration::unittest::cli::command::execute( R"(casual transaction --list-external-resources --porcelain true)");
-            auto rows = string::split( algorithm::replace( capture.standard.out, '|', ' '), '\n');
+            //EXPECT_TRUE( false) << administration::unittest::cli::command::execute( R"(casual transaction --list-resource-instances --external)").standard.out;
 
-            EXPECT_TRUE( std::regex_match( rows.at( 0), std::regex{ "E-1 outbound-B .* domain-B" }));
+/*
+id   alias       pid    ipc                               description
+---  ----------  -----  --------------------------------  -----------
+E-1  outbound-B  51294  58355322c4654c22bccaa9707da71ff2  domain-B   
+E-2  outbound-B  51294  efa9db8f60714107b713a5bd01edc260  domain-B   
+E-3  outbound-B  51294  7a3ba66c51d14e6ab6387c522d7518d9  domain-B
+*/
+
+
+            auto lines = local::cli::execute_get_lines( R"(casual --header false --color false transaction --list-resource-instances --external)");
+            
+            auto e1 = string::adjacent::split( lines.at( 0), ' ');
+            EXPECT_TRUE( e1.at( 0) == "E-1");
+            EXPECT_TRUE( e1.at( 1) == "outbound-B");
+            EXPECT_TRUE( ! e1.at( 2).empty());
+            EXPECT_TRUE( ! e1.at( 3).empty());
+            EXPECT_TRUE( e1.at( 4) == "domain-B");
+
+            auto e2 = string::adjacent::split( lines.at( 1), ' ');
+            EXPECT_TRUE( e2.at( 0) == "E-2");
+            EXPECT_TRUE( e2.at( 1) == "outbound-B");
+            EXPECT_TRUE( ! e2.at( 2).empty());
+            EXPECT_TRUE( ! e2.at( 3).empty());
+            EXPECT_TRUE( e2.at( 4) == "domain-B");
+
+            auto e3 = string::adjacent::split( lines.at( 2), ' ');
+            EXPECT_TRUE( e3.at( 0) == "E-3");
+            EXPECT_TRUE( e3.at( 1) == "outbound-B");
+            EXPECT_TRUE( ! e3.at( 2).empty());
+            EXPECT_TRUE( ! e3.at( 3).empty());
+            EXPECT_TRUE( e3.at( 4) == "domain-B");
          }
       }
 
@@ -161,40 +193,26 @@ domain:
          local::cli::call( "casual/example/resource/branch/echo");
          local::cli::call( "casual/example/resource/branch/echo");
 
-         // gtrid
-         {
-            const auto capture = administration::unittest::cli::command::execute( R"(casual transaction --list-transactions --porcelain true | awk -F'|' '{printf $1}')");
-            auto& trid = casual::transaction::context().current().trid;
-            EXPECT_EQ( capture.standard.out, common::string::compose( trid.global())) << CASUAL_NAMED_VALUE( capture) << "\nexpected: " << trid;
-         }
 
-         // branches
-         {
-            const auto capture = administration::unittest::cli::command::execute( R"(casual transaction --list-transactions --porcelain true | awk -F'|' '{printf $2}')");
-            constexpr auto expected = R"(3)";
-            EXPECT_EQ( capture.standard.out, expected) << CASUAL_NAMED_VALUE( capture) << "\nexpected: " << expected;
-         }
+/*
+global                            #branches  owner  stage     known                             deadline  resources
+--------------------------------  ---------  -----  --------  --------------------------------  --------  ---------
+d34f921bcf8f43c486284bcc15d66439  3              -  involved  2025-08-12T12:47:27.626377+02:00  -         [L-1]  
+*/
 
-         // owner
-         {
-            const auto capture = administration::unittest::cli::command::execute( R"(casual transaction --list-transactions --porcelain true | awk -F'|' '{printf $3}')");
-            constexpr auto expected = R"(-)";
-            EXPECT_EQ( capture.standard.out, expected) << CASUAL_NAMED_VALUE( capture) << "\nexpected: " << expected;
-         }
 
-         // stage
-         {
-            const auto capture = administration::unittest::cli::command::execute( R"(casual transaction --list-transactions --porcelain true | awk -F'|' '{printf $4}')");
-            constexpr auto expected = R"(involved)";
-            EXPECT_EQ( capture.standard.out, expected) << CASUAL_NAMED_VALUE( capture) << "\nexpected: " << expected;
-         }
+         auto lines = local::cli::execute_get_lines( R"(casual --header false --color false transaction --list-transactions)");
 
-         // resources
-         {
-            const auto capture = administration::unittest::cli::command::execute( R"(casual transaction --list-transactions --porcelain true | awk -F'|' '{printf $5}')");
-            constexpr auto expected = R"([L-1])";
-            EXPECT_EQ( capture.standard.out, expected) << CASUAL_NAMED_VALUE( capture) << "\nexpected: " << expected;
-         }
+         auto& current = casual::transaction::context().current().trid;
+
+         auto first = string::adjacent::split( lines.at( 0), ' ');
+         EXPECT_TRUE( first.at( 0) == common::string::compose( current.global()));
+         EXPECT_TRUE( first.at( 1) == "3"); // branches
+         EXPECT_TRUE( first.at( 2) == "-"); // owner
+         EXPECT_TRUE( first.at( 3) == "involved"); // stage
+         EXPECT_TRUE( ! first.at( 4).empty()); // known
+         EXPECT_TRUE( first.at( 5) == "-"); // deadline
+         EXPECT_TRUE( first.at( 6) == "[L-1]"); // resources
 
          ASSERT_TRUE( tx_commit() == TX_OK);
       }
@@ -203,15 +221,30 @@ domain:
       {
          auto a = local::cli::domain();
 
-         const auto capture = administration::unittest::cli::command::execute( R"(casual transaction --legend --list-resources)");
+         {
+            const auto capture = administration::unittest::cli::command::execute( R"(casual transaction --legend --list-resources)");
 
-         using namespace std::literals;
+            using namespace std::literals;
 
-         // check some legend specific strings
-         EXPECT_TRUE( algorithm::search( capture.standard.out, "min:"sv));
-         EXPECT_TRUE( algorithm::search( capture.standard.out, "openinfo:"sv));
-         EXPECT_TRUE( algorithm::search( capture.standard.out, "P:"sv)) << CASUAL_NAMED_VALUE( capture);
-         EXPECT_TRUE( algorithm::search( capture.standard.out, "PAT:"sv));
+            // check some legend specific strings
+            EXPECT_TRUE( algorithm::search( capture.standard.out, "min:"sv));
+            EXPECT_TRUE( algorithm::search( capture.standard.out, "openinfo:"sv));
+            EXPECT_TRUE( algorithm::search( capture.standard.out, "P:"sv)) << CASUAL_NAMED_VALUE( capture);
+            EXPECT_TRUE( algorithm::search( capture.standard.out, "PAT:"sv));
+         }
+
+         {
+            const auto capture = administration::unittest::cli::command::execute( R"(casual transaction --legend --list-transactions)");
+            using namespace std::literals;
+            // check some legend specific strings
+            EXPECT_TRUE( algorithm::search( capture.standard.out, "global:"sv));
+            EXPECT_TRUE( algorithm::search( capture.standard.out, "#branches:"sv));
+            EXPECT_TRUE( algorithm::search( capture.standard.out, "owner:"sv));
+            EXPECT_TRUE( algorithm::search( capture.standard.out, "stage:"sv));
+            EXPECT_TRUE( algorithm::search( capture.standard.out, "known:"sv));
+            EXPECT_TRUE( algorithm::search( capture.standard.out, "deadline:"sv));
+            EXPECT_TRUE( algorithm::search( capture.standard.out, "resources:"sv));
+         }
       }
 
       TEST( cli_transaction, pending_resource_proxies)
@@ -255,39 +288,35 @@ domain:
             EXPECT_TRUE( reply.buffer.data.size() == 512);
          });
 
-         // order of columns
-         // ----------------
-         // name:
-         // id: 
-         // key:
-         // openinfo:
-         // closeinfo:
-         // invoked:
-         // min:
-         // max:
-         // avg:
-         // #:
-         // P:
-         // PAT:
+         //EXPECT_TRUE( false) << administration::unittest::cli::command::execute( R"(casual transaction --list-resources)").standard.out;
+/*
 
-         auto output = string::split( administration::unittest::cli::command::execute( R"(casual --porcelain true transaction --list-resources)").standard.out, '|');
-         ASSERT_TRUE( output.size() == 12);
-         EXPECT_TRUE( output[ 0] == "example-resource-server");
-         EXPECT_TRUE( output[ 1] == "L-1");
-         EXPECT_TRUE( output[ 2] == "rm-mockup");
-         //EXPECT_TRUE( output[ 3] == ""); // openinfo
-         //EXPECT_TRUE( output[ 4] == ""); // closeinfo
-         EXPECT_TRUE( string::from< long>( output[ 5]) == 2); // invoked
-         EXPECT_TRUE( string::from< double>( output[ 6]) >= 0.02); // min
-         EXPECT_TRUE( string::from< double>( output[ 7]) >= 0.02); // max
-         EXPECT_TRUE( string::from< double>( output[ 8]) >= 0.02); // avg
-         EXPECT_TRUE( string::from< long>( output[ 9]) == 1); // #
-         EXPECT_TRUE( string::from< long>( output[ 10]) == 1); // P
-         EXPECT_TRUE( string::from< double>( output[ 11]) > 0.01); // PAT should be close to 0.02 but to be safe we expect at least half.
+name                     id   key        openinfo             closeinfo  #B  invoked  min    max    avg    P  PAT    #
+-----------------------  ---  ---------  -------------------  ---------  --  -------  -----  -----  -----  -  -----  -
+example-resource-server  L-1  rm-mockup  --sleep-commit 20ms  -           0        2  0.024  0.025  0.024  1  0.025  1
+*/
+
+         auto lines = local::cli::execute_get_lines( R"(casual --color false --header false transaction --list-resources)");
+
+         auto first = string::adjacent::split( lines.at( 0), ' ');
+
+         EXPECT_TRUE( first.at( 0) == "example-resource-server");
+         EXPECT_TRUE( first.at( 1) == "L-1");
+         EXPECT_TRUE( first.at( 2) == "rm-mockup");
+         EXPECT_TRUE( first.at( 3) == "--sleep-commit" && first.at( 4) == "20ms"); // openinfo, two parts since the string contains a space
+         EXPECT_TRUE( first.at( 5) == "-") <<  first.at( 5);  // closeinfo
+         EXPECT_TRUE( string::from< long>( first.at( 6)) == 0); // #B
+         EXPECT_TRUE( string::from< long>( first.at( 7)) == 2); // invoked
+         EXPECT_TRUE( string::from< double>( first.at( 8)) >= 0.02); // min
+         EXPECT_TRUE( string::from< double>( first.at( 9)) >= 0.02); // max
+         EXPECT_TRUE( string::from< double>( first.at( 10)) >= 0.02); // avg
+         EXPECT_TRUE( string::from< long>( first.at( 11)) == 1); // P
+         EXPECT_TRUE( string::from< double>( first.at( 12)) > 0.01); // PAT should be close to 0.02 but
+         EXPECT_TRUE( string::from< long>( first.at( 13)) == 1); // #, should be 1 since we only have one instance
       }
 
 
-      TEST( cli_transaction, list_instances)
+      TEST( cli_transaction, list_resource_instances)
       {
          auto b = local::cli::domain( R"(
 domain: 
@@ -332,28 +361,37 @@ domain:
 )");
          gateway::unittest::fetch::until( gateway::unittest::fetch::predicate::outbound::connected());
 
+        
+         //EXPECT_TRUE( false) << administration::unittest::cli::command::execute( R"(casual transaction --list-resource-instances)").standard.out;
 /*
-id   state     pid    alias                    description
----  --------  -----  -----------------------  -----------
-L-1  idle      80883  example-resource-server  -          
-L-1  idle      80884  example-resource-server  -          
-E-1  external  80881  QGA1                     queue-group
-E-2  external  80882  QGA2                     queue-group
-E-3  external  80886  outbound                 domain-B   
-E-4  external  80886  outbound                 domain-B   
-E-5  external  80886  outbound                 domain-B 
+id   alias                    state     pid    ipc                               description
+---  -----------------------  --------  -----  --------------------------------  -----------
+L-1  example-resource-server  idle      69754  d6a33f0ee67a4e2f8552dd4c5cb5fbc2  -          
+L-1  example-resource-server  idle      69755  2b94d744b3644ea285d36b236b2ced72  -          
+E-1  QGA2                     external  69753  ceadda0bf63a47a08e37cbb7c97c7fd0  queue-group
+E-2  QGA1                     external  69752  888c2f41069848208a46f1c89b884372  queue-group
+E-3  outbound                 external  69757  3d752a95f77049118500b4b8a3418f42  domain-B   
+E-4  outbound                 external  69757  258de77b43654fbfaa687ddea66e78c7  domain-B   
+E-5  outbound                 external  69757  81603fe1d1db4653813110841a5fe7be  domain-B
 */
+         
 
+         auto check_rows = []( auto rows)
+         {
+            EXPECT_TRUE( std::regex_match( rows.at( 0), std::regex{ "L-1[ ]+example-resource-server[ ]+idle.*-[ ]*"}));
+            EXPECT_TRUE( std::regex_match( rows.at( 1), std::regex{ "L-1[ ]+example-resource-server[ ]+idle.*-[ ]*"}));
+            EXPECT_TRUE( std::regex_match( rows.at( 2), std::regex{ "E-1[ ]+QGA[1,2][ ]+external.*queue-group[ ]*"}));
+            EXPECT_TRUE( std::regex_match( rows.at( 3), std::regex{ "E-2[ ]+QGA[1,2][ ]+external.*queue-group[ ]*"}));
+            EXPECT_TRUE( std::regex_match( rows.at( 4), std::regex{ "E-3[ ]+outbound[ ]+external.*domain-B[ ]*"}));
+            EXPECT_TRUE( std::regex_match( rows.at( 5), std::regex{ "E-4[ ]+outbound[ ]+external.*domain-B[ ]*"}));
+            EXPECT_TRUE( std::regex_match( rows.at( 6), std::regex{ "E-5[ ]+outbound[ ]+external.*domain-B[ ]*"}));
+         };
 
-         auto capture = administration::unittest::cli::command::execute( R"(casual --porcelain true transaction --list-instances)");
-         const auto rows = string::split( algorithm::replace( capture.standard.out, '|', ' '), '\n');
+         check_rows( local::cli::execute_get_lines( R"(casual --header false --color false transaction --list-resource-instances --all)"));
 
-         EXPECT_TRUE( std::regex_match( rows.at( 0), std::regex{ "L-1 idle .* example-resource-server.*"}));
-         EXPECT_TRUE( std::regex_match( rows.at( 2), std::regex{ "E-1 external .* QGA[1,2] queue-group"}));
-         EXPECT_TRUE( std::regex_match( rows.at( 3), std::regex{ "E-2 external .* QGA[1,2] queue-group"}));
-         EXPECT_TRUE( std::regex_match( rows.at( 4), std::regex{ "E-3 external .* outbound domain-B"}));
-         EXPECT_TRUE( std::regex_match( rows.at( 5), std::regex{ "E-4 external .* outbound domain-B"}));
-         EXPECT_TRUE( std::regex_match( rows.at( 6), std::regex{ "E-5 external .* outbound domain-B"}));
+         // should be the same with default flag (all)
+         check_rows( local::cli::execute_get_lines( R"(casual --header false --color false transaction --list-resource-instances)"));
+
       }
 
    } // administration

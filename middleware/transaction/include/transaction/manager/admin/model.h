@@ -271,13 +271,17 @@ namespace casual
          Global global;
          transaction::Stage stage{};
          std::vector< transaction::Branch> branches;
-         common::process::Handle owner;
+         common::strong::process::id owner;
+         common::chronology::time_point known;
+         common::chronology::time_point deadline;
 
          CASUAL_CONST_CORRECT_SERIALIZE(
             CASUAL_SERIALIZE( global);
             CASUAL_SERIALIZE( stage);
             CASUAL_SERIALIZE( branches);
             CASUAL_SERIALIZE( owner);
+            CASUAL_SERIALIZE( known);
+            CASUAL_SERIALIZE( deadline);
          )
       };
 

@@ -16,16 +16,19 @@ transaction [0..1]
       -lr, --list-resources [0..1]
            list all resources
 
-      -li, --list-instances [0..1]
-           list all resource instances, internal and external
+      -lri, --list-resource-instances [0..1]
+           list resource instances
 
-      --list-internal-instances [0..1]
-           list details of all internal resource instances
+         SUB OPTIONS:
 
-      --list-external-instances [0..1]
-           list external resource instances
-           
-           External resources only have one instance, hence resources and resource-instances are unambiguous.
+            -a, --all [0..1]
+                 list both internal and external resource instances (default)
+
+            -i, --internal [0..1]
+                 list internal resource instances
+
+            -e, --external [0..1]
+                 list external resource instances
 
       --begin [0..1]
            creates a 'single' transaction directive
@@ -53,7 +56,7 @@ transaction [0..1]
            
            @note: part of casual-pipe
 
-      --scale-resource-proxies [0..1]  (rm-id, # instances) [0..* {2}]
+      -srp, --scale-resource-proxies [0..1]  (rm-id, #instances) [0..* {2}]
            scale resource proxy instances
 
       -lp, --list-pending [0..1]
@@ -71,10 +74,35 @@ transaction [0..1]
             --list-resources [0..1]
                  list legend for --list-resources
 
+            --list-transactions [0..1]
+                 list legend for --list-transactions
+
+            --list-resource-instances [0..1]
+                 the legends for list resource instances suboptions
+                 
+                 The following suboptions has legend:
+
+               SUB OPTIONS:
+
+                  --all [0..1]
+                       list legend for --all
+
+                  --internal [0..1]
+                       list legend for --internal
+
+                  --external [0..1]
+                       list legend for --external
+
       --information [0..1]
            collect aggregated information about transactions in this domain
 
       --state [0..1]  (json, yaml, xml, ini, line) [0..1]
            prints state in the provided format to stdout
+
+      [deprecated] --list-internal-instances [0..1]
+           @deprecated: use --list-resource-instances --internal
+
+      [deprecated] --list-external-instances, --list-external-resources [0..1]
+           @deprecated: use --list-resource-instances --external
 
 ```

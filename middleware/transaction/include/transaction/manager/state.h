@@ -312,9 +312,9 @@ namespace casual
 
             common::process::Handle owner;
 
-            common::chronology::time_point started;
+            //! the time this TIM knows about the transaction
+            common::chronology::time_point known;
             common::chronology::time_point deadline;
-
 
 
             inline friend bool operator == ( const Transaction& lhs, const common::transaction::global::ID& rhs) { return lhs.global == rhs;}
@@ -326,7 +326,7 @@ namespace casual
                CASUAL_SERIALIZE( stage);
                CASUAL_SERIALIZE( global);
                CASUAL_SERIALIZE( branches);
-               CASUAL_SERIALIZE( started);
+               CASUAL_SERIALIZE( known);
                CASUAL_SERIALIZE( deadline);
             )
          };

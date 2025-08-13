@@ -72,7 +72,7 @@ namespace casual
                branch.trid.format(),
                branch.trid.owner().value(),
                State::prepared,
-               transaction.started,
+               transaction.known,
                transaction.deadline
             );
             ++m_stats.update.prepare;

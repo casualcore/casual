@@ -149,9 +149,10 @@ namespace casual
 
                   admin::model::Transaction result;
                   result.global.id = common::transcode::hex::encode( transaction.global.range());
-                  result.owner = transaction.owner;
+                  result.owner = transaction.owner.pid;
                   result.stage = stage( transaction.stage());
-
+                  result.known = transaction.known;
+                  result.deadline = transaction.deadline;
 
                   result.branches = common::algorithm::transform( transaction.branches, branch);
 
