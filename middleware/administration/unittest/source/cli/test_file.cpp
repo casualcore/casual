@@ -120,7 +120,7 @@ path                                                  pid     gtrid             
          // Commit the reservaton and check that something is returned
          {
             const auto gtrid = common::string::compose( transaction.trid.global());
-            const auto capture = local::execute( "casual file --recover-transactions-commit " + gtrid).standard.out;
+            const auto capture = local::execute( "casual file --recover-transactions --commit " + gtrid).standard.out;
             EXPECT_FALSE( capture.empty()) << capture;
          }
 

@@ -83,7 +83,7 @@ namespace casual
 
                      return argument::Option{
                         std::move( invoke),
-                        { "-r", "--list-reservations"},
+                        { "-lr", "--list-reservations"},
                         "list information of files currently reserved"
                      };
                   }
@@ -138,7 +138,7 @@ namespace casual
                         return argument::Option{
                            detail::invoke( manager::admin::model::recovery::Directive::commit),
                            detail::complete(),
-                           { "--recover-transactions-commit"},
+                           { "--commit"},
                            "recover global transactions with commit"
                         };
                      }
@@ -151,11 +151,23 @@ namespace casual
                         return argument::Option{
                            detail::invoke( manager::admin::model::recovery::Directive::rollback),
                            detail::complete(),
-                           { "--recover-transactions-rollback"},
+                           { "--rollback"},
                            "recover global transactions with rollback"
                         };
                      }
                   } // rollback
+
+                  auto option()
+                  {
+                     return argument::Option{
+                        [](){},
+                        { "--recover-transactions"},
+                        "recover global transactions with --commit or --rollback sub option"
+                     }({
+                        commit::option(),
+                        rollback::option()   
+                     });
+                  }
                } // recovery
 
             } // assets
@@ -169,10 +181,9 @@ namespace casual
          return argument::Option
          { [](){}, { "file"}, "file related administration"}
          ({
-            casual::cli::state::option(&local::detail::call::state),
             local::list::reservations::option(),
-            local::assets::recovery::commit::option(),
-            local::assets::recovery::rollback::option(),
+            local::assets::recovery::option(),
+            casual::cli::state::option(&local::detail::call::state),
          });
       }
 

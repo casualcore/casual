@@ -10,16 +10,21 @@ file [0..1]
 
    SUB OPTIONS:
 
-      --state [0..1]  (json, yaml, xml, ini, line) [0..1]
-           prints state in the provided format to stdout
-
-      -r, --list-reservations [0..1]
+      -lr, --list-reservations [0..1]
            list information of files currently reserved
 
-      --recover-transactions-commit [0..1]  (<gtrid>) [1..*]
-           recover global transactions with commit
+      --recover-transactions [0..1]
+           recover global transactions with --commit or --rollback sub option
 
-      --recover-transactions-rollback [0..1]  (<gtrid>) [1..*]
-           recover global transactions with rollback
+         SUB OPTIONS:
+
+            --commit [0..1]  (<gtrid>) [1..*]
+                 recover global transactions with commit
+
+            --rollback [0..1]  (<gtrid>) [1..*]
+                 recover global transactions with rollback
+
+      --state [0..1]  (json, yaml, xml, ini, line) [0..1]
+           prints state in the provided format to stdout
 
 ```
