@@ -402,7 +402,7 @@ domain:
       {
          if( value.m_implementation)
             return common::stream::write( out, *value.m_implementation);
-         return out << "nil";
+         return out;
       }
 
    } // domain::unittest

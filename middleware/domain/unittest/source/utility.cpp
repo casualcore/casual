@@ -9,7 +9,6 @@
 #include "domain/manager/admin/server.h"
 #include "domain/manager/admin/call.h"
 
-
 #include "common/unittest.h"
 
 namespace casual
@@ -32,6 +31,28 @@ namespace casual
             };
          } // <unnamed>
       } // local
+
+      namespace home
+      {
+         Directory::Directory()
+         {
+            environment::variable::set( "CASUAL_DOMAIN_HOME", m_home.path().string());
+
+            // reset all (hopefully) environment based 'values'
+            environment::reset();
+         }
+
+         Directory::~Directory()
+         {
+            // check if we have been moved from
+            if( ! m_home)
+               return;
+
+            environment::variable::unset( "CASUAL_DOMAIN_HOME");
+            environment::reset();
+         }
+
+      } // home
 
       manager::admin::model::State state()
       {

@@ -313,14 +313,18 @@ namespace casual
                      return pid;
                   }
 
-                   std::string read_from_pipe( int pipe)
+                  std::string read_from_pipe( int pipe)
                   {
+                     Trace trace{ "process::local::spawn::read_from_pipe"};
+                     log::debug( "pipe: ", pipe);
+
                      std::string result;
                      
                      std::array< char, 1024> buffer{};
                      while( true)
                      {
                         auto count = ::read( pipe, buffer.data(), buffer.size());
+                        log::debug( "count: ", count);
 
                         if( count == 0)
                            return result;
@@ -328,7 +332,10 @@ namespace casual
                            result.append( buffer.data(), buffer.data() + count);
                         else
                         {
-                           switch( auto code = code::system::last::error())
+                           auto code = code::system::last::error();
+                           log::debug( "code: ", code);
+
+                           switch( code)
                            {
                               case std::errc::interrupted: break;
                               default: 
@@ -456,6 +463,9 @@ namespace casual
 
             process::Capture capture( Execution&& execution)
             {
+               Trace trace{ "process::non::blocking::capture"};
+               log::debug( "execution: ", execution);
+
                if( ! execution.m_pid)
                   code::raise::error( code::casual::invalid_semantics, "invalid pid");
 
@@ -466,6 +476,8 @@ namespace casual
 
                capture.standard.out = local::spawn::read_from_pipe( execution.cout_pipe);
                capture.standard.error = local::spawn::read_from_pipe( execution.cerr_pipe);
+               
+               log::debug( "capture: ", capture);
                capture.exit = process::wait( std::exchange( execution.m_pid, {}));
 
                ::close( std::exchange( execution.cout_pipe, -1));

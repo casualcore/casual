@@ -51,14 +51,17 @@ namespace casual
                   return message::dispatch::handler( communication::ipc::inbound::device(),
                      []( const message::event::process::Spawn& event)
                      {
+                        log::debug( "event: ", event);
                         message::event::terminal::print( std::cout, event);
                      },
                      []( const message::event::process::Exit& event)
                      {
+                        log::debug( "event: ", event);
                         message::event::terminal::print( std::cout, event);
                      },
                      [&tasks]( message::event::Task& event)
                      {
+                        log::debug( "event: ", event);
                         message::event::terminal::print( std::cout, event);
                         if( event.done())
                            if( algorithm::find( tasks, event.correlation))
@@ -66,14 +69,17 @@ namespace casual
                      },
                      []( const message::event::sub::Task& event)
                      {
+                        log::debug( "event: ", event);
                         message::event::terminal::print( std::cout, event);
                      },
                      []( const message::event::Error& event)
                      {
+                        log::debug( "event: ", event);
                         message::event::terminal::print( std::cerr, event);
                      },
                      []( const message::event::Notification& event)
                      {
+                        log::debug( "event: ", event);
                         message::event::terminal::print( std::cout, event);
                      }
                   );
@@ -157,6 +163,32 @@ namespace casual
 
                std::vector< common::strong::correlation::id> boot( const std::vector< std::string>& pattern)
                {
+                  common::Trace trace{ "domain::manager::admin::call::boot"};
+
+                  const auto unittest_context = common::environment::variable::exists( common::environment::variable::name::internal::unittest::context);
+
+                  // make sure domain-manager do not inherit stdin/stdout/stderr
+                  // Otherwise it does not work to capture `casual domain --boot` during unittest.
+                  // This might be a problem, if we somewhere writes to stdout/stderr. Which we might
+                  // do as a last resort in some error cases.
+                  // To avoid potential problems we only do this if we are in a unittest context
+                  if( unittest_context)
+                  {
+                     auto set_close_on_exec = []( auto descriptor)
+                     {
+                        log::debug( "close on exec for descriptor: ", descriptor);
+
+                        auto flags = common::posix::result( ::fcntl( descriptor, F_GETFD));
+                        flags |= FD_CLOEXEC;
+                        common::posix::result( ::fcntl( descriptor, F_SETFD, flags));
+                     };
+
+                     set_close_on_exec( STDIN_FILENO);
+                     set_close_on_exec( STDOUT_FILENO);
+                     set_close_on_exec( STDERR_FILENO);
+                  }
+
+
                   auto correlation = common::strong::correlation::id::generate();
          
                   auto get_arguments = [&]()
@@ -181,8 +213,13 @@ namespace casual
                      return arguments;
                   };
 
+                  // If we are in a unittest context, we rely on `PATH` to include the path to casual-domain-manager.
+                  // Otherwise we use the install path.
+                  auto path = unittest_context ?
+                     std::filesystem::path{ "casual-domain-manager"} : common::environment::directory::install() / "bin" / "casual-domain-manager";
+
                   common::process::spawn(
-                     common::environment::directory::install() / "bin" / "casual-domain-manager",
+                     path,
                      get_arguments());  
                   
 
@@ -552,121 +589,136 @@ namespace casual
 
             namespace option
             {
-               auto boot()
+               namespace boot
                {
-                  auto invoke = []( const std::vector< std::string>& patterns)
+                  struct Shared
                   {
-                     if( ! terminal::output::directive().block())
+                     bool strict = false;
+                  };
+
+                  namespace detail
+                  {
+                     auto create( argument::option::Names names, std::string description, std::shared_ptr< Shared> shared)
                      {
-                        call::boot( patterns);
-                        return;
-                     }
-
-                     std::vector< common::strong::correlation::id> tasks;
-
-                     auto condition = common::event::condition::compose(
-                        common::event::condition::prelude( [&]()
+                        auto invoke = [ shared]( const std::vector< std::string>& patterns)
                         {
-                           tasks = call::boot( patterns);
-                        }),
-                        common::event::condition::done( [&tasks]()
-                        { 
-                           return tasks.empty();
-                        })
-                     );
+                           if( ! terminal::output::directive().block() && ! shared->strict)
+                           {
+                              call::boot( patterns);
+                              return;
+                           }
 
-                     // listen for events
-                     common::event::only::unsubscribe::listen( 
-                        condition,
-                        local::event::handler( tasks));
-                  };
+                           std::vector< common::strong::correlation::id> tasks;
 
-                  auto completion = []( bool help, auto values) -> std::vector< std::string>
+                           auto condition = common::event::condition::compose(
+                              common::event::condition::prelude( [&]()
+                              {
+                                 tasks = call::boot( patterns);
+                              }),
+                              common::event::condition::error( [ shared]( auto& error)
+                              {
+                                 if( shared->strict)
+                                    call::shutdown();
+                                 
+                                 throw error;
+                              }),
+                              common::event::condition::done( [&tasks]()
+                              { 
+                                 return tasks.empty();
+                              })
+                           );
+
+                           auto handler = local::event::handler( tasks);
+
+                           if( shared->strict)
+                           {
+                              // override handlers for 'error' events
+                              handler.insert( []( const message::event::process::Exit& event)
+                              {
+                                 message::event::terminal::print( std::cout, event);
+
+                                 if( event.state.status != 0)
+                                    code::raise::error( code::casual::domain_incomplete_boot, "process exited with error");
+                              },
+                              []( const message::event::Error& event)
+                              {
+                                 message::event::terminal::print( std::cout, event);
+                                 code::raise::error( code::casual::domain_incomplete_boot, event.message);
+                              });
+                           }
+
+                           // listen for events
+                           common::event::only::unsubscribe::listen( 
+                              condition,
+                              std::move( handler));
+
+                           common::log::debug( "booted domain with patterns: ", patterns);
+                        };
+
+                        auto completion = []( bool help, auto values) -> std::vector< std::string>
+                        {
+                           if( help)
+                              return { "<glob patterns>"};
+
+                           return { "<value>"};
+                        };
+                        
+
+
+                        return argument::Option{
+                           std::move( invoke), 
+                           std::move( completion), 
+                           std::move( names),
+                           std::move( description)};
+                     }
+                     
+                  } // detail
+
+                  auto create()
                   {
-                     if( help)
-                        return { "<glob patterns>"};
+                     auto shared = std::make_shared< Shared>();
 
-                     return { "<value>"};
-                  };
-                  
+                     constexpr auto strict_description = R"(Fails if any configured server/executable fails to start or exits with an error
+during the boot sequence
 
-                  constexpr auto description = R"(boot domain
+casual --boot --strict <glob patterns>)";
+
+
+                     auto strict_suboption = argument::Option{
+                        [ shared]()
+                        {
+                           shared->strict = true;
+                           return argument::option::invoke::preemptive{};
+                        },
+                        { "--strict"},
+                        strict_description};
+
+
+                     constexpr auto description = R"(boot domain
 
 With supplied configuration files, in the form of glob patterns.
 )";
 
-                  return argument::Option{
-                     std::move( invoke), 
-                     std::move( completion), 
-                     { "-b", "--boot"},
-                     description};
+                     return detail::create( argument::option::Names{ { "-b", "--boot"}, {}}, description, std::move( shared))( { std::move( strict_suboption)});
+                     
+                  }
+
+                  namespace deprecated
+                  {
+                     auto boot_strict()
+                     {
+                        auto shared = std::make_shared< Shared>();
+                        shared->strict = true;
+
+                        constexpr auto description = R"(@deprecated - use --boot --strict <glob patterns>)";
+
+                        return detail::create( argument::option::Names{ {}, { "--boot-strict"}}, description, std::move( shared)); 
+                     }
+                     
+                  } // deprecated
                   
                } // boot
 
-               auto boot_strict()
-               {
-                  auto invoke = []( const std::vector< std::string>& patterns)
-                  {
-                     std::vector< common::strong::correlation::id> tasks;
-
-                     auto condition = common::event::condition::compose(
-                        common::event::condition::prelude( [ &]
-                        {
-                           tasks = call::boot( patterns);
-                        }),
-                        common::event::condition::error( []( auto& error)
-                        {
-                           call::shutdown();
-                           throw error;
-                        }),
-                        common::event::condition::done( [ &tasks]
-                        { 
-                           return tasks.empty();
-                        })
-                     );
-
-                     auto handler = local::event::handler( tasks);
-
-                     // override handlers for 'error' events
-                     handler.insert( []( const message::event::process::Exit& event)
-                     {
-                        message::event::terminal::print( std::cout, event);
-
-                        if( event.state.status != 0)
-                           code::raise::error( code::casual::domain_incomplete_boot, "process exited with error");
-                     },
-                     []( const message::event::Error& event)
-                     {
-                        message::event::terminal::print( std::cout, event);
-                        code::raise::error( code::casual::domain_incomplete_boot, event.message);
-                     });
-
-                     common::event::only::unsubscribe::listen( 
-                        condition,
-                        std::move( handler));
-                  };
-
-                  auto completion = []( bool help, auto values) -> std::vector< std::string>
-                  {
-                     if( help)
-                        return { "<glob patterns>"};
-
-                     return { "<value>"};
-                  };
-
-                  constexpr auto description = R"(boot domain
-
-With supplied configuration files, in the form of glob patterns.
-
-Fails if any configured server/executable fails to start or exits with an error during the boot sequence.
-)";
-
-                  return argument::Option{
-                     std::move( invoke), 
-                     std::move( completion), 
-                     { "--boot-strict"},
-                     description};
-               }
 
                auto shutdown()
                {
@@ -1275,8 +1327,7 @@ The following options has legend:
                local::option::restart::groups(),
                local::option::list::instances::server(),
                local::option::list::instances::executable(),
-               local::option::boot(),
-               local::option::boot_strict(),
+               local::option::boot::create(),
                local::option::shutdown(),
                local::option::environment::create(),
             
@@ -1294,7 +1345,8 @@ The following options has legend:
                configuration::admin::deprecated::edit(),
                configuration::admin::deprecated::put(),
                local::option::environment::deprecated::set(),
-               local::option::environment::deprecated::unset()
+               local::option::environment::deprecated::unset(),
+               local::option::boot::deprecated::boot_strict()
             });
          }
 

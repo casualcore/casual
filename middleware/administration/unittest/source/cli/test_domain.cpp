@@ -14,6 +14,7 @@
 #include "common/environment.h"
 
 #include "domain/unittest/manager.h"
+#include "domain/unittest/utility.h"
 
 namespace casual
 {
@@ -73,6 +74,88 @@ domain:
          } // <unnamed>      
 
       } // local
+
+
+      TEST( cli_domain, boot)
+      {
+         common::unittest::Trace trace;
+
+         casual::domain::unittest::home::Directory home;
+
+         auto configuration = common::unittest::file::temporary::content( ".yaml", R"(
+domain:
+   name: A
+   servers:
+      -  alias: a
+         path: "${CASUAL_MAKE_SOURCE_ROOT}/middleware/example/server/bin/casual-example-server"          
+            
+)");
+
+         // boot
+         {
+            auto capture = administration::unittest::cli::command::execute( "casual domain --boot ", configuration);
+            EXPECT_TRUE( capture) << CASUAL_NAMED_VALUE( capture);
+         }
+
+         // shutdown
+         {
+            auto capture = administration::unittest::cli::command::execute( "casual domain --shutdown");
+            EXPECT_TRUE( capture) << CASUAL_NAMED_VALUE( capture);
+         }
+
+      }
+
+
+      TEST( cli_domain, boot_strict)
+      {
+         common::unittest::Trace trace;
+
+         casual::domain::unittest::home::Directory home;
+
+         auto configuration = common::unittest::file::temporary::content( ".yaml", R"(
+domain:
+   name: A
+   servers:
+      -  alias: a
+         path: "${CASUAL_MAKE_SOURCE_ROOT}/middleware/example/server/bin/casual-example-server"          
+            
+)");
+
+         // boot
+         {
+            auto capture = administration::unittest::cli::command::execute( "casual domain --boot ", configuration , " --strict");
+            EXPECT_TRUE( capture) << CASUAL_NAMED_VALUE( capture);
+         }
+
+         // shutdown
+         {
+            auto capture = administration::unittest::cli::command::execute( "casual domain --shutdown");
+            EXPECT_TRUE( capture) << CASUAL_NAMED_VALUE( capture);
+         }
+
+      }
+
+      TEST( cli_domain, boot_strict__non_existent_path___expect_boot_failure)
+      {
+         common::unittest::Trace trace;
+
+         casual::domain::unittest::home::Directory home;
+
+         auto configuration = common::unittest::file::temporary::content( ".yaml", R"(
+domain:
+   name: A
+   servers:
+      -  alias: a
+         path: "/non/existent/path"          
+            
+)");
+
+         // boot
+         {
+            auto capture = administration::unittest::cli::command::execute( "casual domain --boot ", configuration , " --strict");
+            EXPECT_TRUE( capture.exit == std::to_underlying( common::code::casual::domain_incomplete_boot)) << CASUAL_NAMED_VALUE( capture);
+         }
+      }
 
       TEST( cli_domain, list_servers_executables__list_instances)
       {

@@ -418,10 +418,10 @@ namespace casual
          {};
 
          Option( detail::concepts::invocable auto invocable, std::vector< std::string> names, std::string description)
-            : Option{ std::move( invocable), option::Names{ names}, std::move( description)} {}
+            : Option{ std::move( invocable), option::Names{ std::move( names)}, std::move( description)} {}
 
          Option( detail::concepts::invocable auto invocable, detail::concepts::completable auto completer, std::vector< std::string> names, std::string description)
-            : Option{ std::move( invocable), std::move( completer), option::Names{ names}, std::move( description)} {}
+            : Option{ std::move( invocable), std::move( completer), option::Names{ std::move( names)}, std::move( description)} {}
          
          //! 'construction continuation'. 
          //! @returns this object with cardinality set to the provided `cardinality`.

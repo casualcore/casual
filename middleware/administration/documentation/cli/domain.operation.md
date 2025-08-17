@@ -47,12 +47,13 @@ domain [0..1]
            
            With supplied configuration files, in the form of glob patterns.
 
-      --boot-strict [0..1]  (<glob patterns>) [0..*]
-           boot domain
-           
-           With supplied configuration files, in the form of glob patterns.
-           
-           Fails if any configured server/executable fails to start or exits with an error during the boot sequence.
+         SUB OPTIONS:
+
+            --strict [0..1]
+                 Fails if any configured server/executable fails to start or exits with an error
+                 during the boot sequence
+                 
+                 casual --boot --strict <glob patterns>
 
       -s, --shutdown [0..1]
            shutdown domain
@@ -126,5 +127,8 @@ domain [0..1]
 
       [deprecated] --unset-environment [0..1]  (<variable>, [<alias>*]) [1..*]
            @deprecated - use --environment --unset instead
+
+      [deprecated] --boot-strict [0..1]  (<glob patterns>) [0..*]
+           @deprecated - use --boot --strict <glob patterns>
 
 ```

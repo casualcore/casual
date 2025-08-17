@@ -7,6 +7,7 @@
 #pragma once
 
 #include "common/unittest.h"
+#include "common/unittest/file.h"
 
 #include "domain/manager/admin/model.h"
 
@@ -16,6 +17,29 @@ namespace casual
 {
    namespace domain::unittest
    {
+      namespace home
+      {
+         //! creates a temporary directory that is used as the domain home.
+         //! Sets the environment variable `CASUAL_DOMAIN_HOME` to the path of the directory.
+         //! and unsets it when the object is destroyed.
+         struct Directory
+         {
+            Directory();
+            ~Directory();
+
+            Directory( Directory&&) noexcept = default;
+            Directory& operator = ( Directory&&)  noexcept = default;
+
+            CASUAL_LOG_SERIALIZE(
+               CASUAL_SERIALIZE( m_home);
+            )
+
+         private:
+            common::unittest::directory::temporary::Scoped m_home;
+         };
+         
+      } // home
+
       manager::admin::model::State state();
 
       common::process::Handle server( const manager::admin::model::State& state, std::string_view alias, platform::size::type index = 0);

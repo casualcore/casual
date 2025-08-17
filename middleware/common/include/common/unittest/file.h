@@ -78,6 +78,9 @@ namespace casual
                inline auto string() const { return m_path.string();}
                inline operator const std::filesystem::path&() const & { return m_path;}
 
+               //! @return true if the path is not empty -> not moved from
+               inline explicit operator bool() const { return ! m_path.empty();}
+
                friend std::ostream& operator << ( std::ostream& out, const Scoped& value);
 
             private:

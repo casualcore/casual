@@ -58,8 +58,17 @@ namespace casual
                Trace trace{ "administration::unittest::cli::command::non::blocking::detail::execute"};
 
                // make sure we've got casual stuff in the path
-               auto path = string::compose( "PATH=", environment::expand( "${CASUAL_MAKE_SOURCE_ROOT}/middleware/administration/bin:${PATH}")); 
+               auto path = environment::expand( string::compose( "PATH=",
+                  "${CASUAL_MAKE_SOURCE_ROOT}/middleware/administration/bin:",
+                  "${CASUAL_MAKE_SOURCE_ROOT}/middleware/domain/bin:",
+                  "${CASUAL_MAKE_SOURCE_ROOT}/middleware/queue/bin:",
+                  "${CASUAL_MAKE_SOURCE_ROOT}/middleware/transaction/bin:",
+                  "${CASUAL_MAKE_SOURCE_ROOT}/middleware/service/bin:",
+                  "${CASUAL_MAKE_SOURCE_ROOT}/middleware/gateway/bin:",
+                  "${PATH}"
+               ));
 
+               
                // ignore child signals
                auto guard = local::signal::handler();
 
@@ -70,6 +79,9 @@ namespace casual
 
          Capture capture( Execution&& execution)
          {
+            // ignore child signals
+            auto guard = local::signal::handler();
+
             return common::process::non::blocking::capture( std::move( execution));
          }
 
