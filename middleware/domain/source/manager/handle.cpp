@@ -186,10 +186,20 @@ namespace casual
             {
                Trace trace{ "domain::manager::handle::mandatory::boot::prepare"};
 
+               auto deduce_path = []( auto name)
+               {
+                  auto path = common::process::path().parent_path() / name;
+
+                  if( std::filesystem::exists( path))
+                     return path;
+
+                  return std::filesystem::path{ name};
+               };
+
                {
                   auto manager = state::Server::create();
                   manager.alias = "casual-service-manager";
-                  manager.path = common::process::path().parent_path() / "casual-service-manager";
+                  manager.path = deduce_path( "casual-service-manager");
                   manager.scale( 1);
                   manager.memberships.push_back( state.group_id.master);
                   manager.note = "service lookup and management";
@@ -201,7 +211,7 @@ namespace casual
                {
                   auto tm = state::Server::create();
                   tm.alias = "casual-transaction-manager";
-                  tm.path = common::process::path().parent_path() / "casual-transaction-manager";
+                  tm.path = deduce_path( "casual-transaction-manager");
                   tm.scale( 1);
                   tm.memberships.push_back( state.group_id.transaction);
                   tm.note = "manage transaction in this domain";
@@ -213,7 +223,7 @@ namespace casual
                {
                   auto queue = state::Server::create();
                   queue.alias = "casual-queue-manager";
-                  queue.path = common::process::path().parent_path() / "casual-queue-manager";
+                  queue.path = deduce_path( "casual-queue-manager");
                   queue.scale( 1);
                   queue.memberships.push_back( state.group_id.queue);
                   queue.note = "manage queues in this domain";
@@ -225,7 +235,7 @@ namespace casual
                {
                   auto gateway = state::Server::create();
                   gateway.alias = "casual-gateway-manager";
-                  gateway.path = common::process::path().parent_path() / "casual-gateway-manager";
+                  gateway.path = deduce_path( "casual-gateway-manager");
                   gateway.scale( 1);
                   gateway.memberships.push_back( state.group_id.gateway);
                   gateway.note = "manage connections to and from other domains";
