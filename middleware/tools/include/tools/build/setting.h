@@ -19,7 +19,7 @@ namespace casual
 {
    namespace tools::build::setting
    {
-      namespace directive
+      namespace mandatory
       {
          struct Paths
          {
@@ -52,9 +52,9 @@ namespace casual
             )
          };
          
-      } // directive
+      } // mandatory
 
-      struct Directive
+      struct Mandatory
       {
 
          std::string compiler = "g++";
@@ -65,17 +65,17 @@ namespace casual
 
          std::vector< std::string> libraries;
 
-         directive::Paths paths;
+         mandatory::Paths paths;
 
-         directive::Source source;
+         mandatory::Source source;
 
-         directive::System system;
+         mandatory::System system;
 
          bool verbose = false;
          bool use_defaults = true;
 
 
-         friend void validate( const Directive& settings);
+         friend void validate( const Mandatory& settings);
 
          CASUAL_LOG_SERIALIZE(
             CASUAL_SERIALIZE( compiler);
@@ -103,7 +103,10 @@ namespace casual
          }
       };
 
-      std::vector< argument::Option> options( Directive& directive);
+      namespace mandatory
+      {
+         std::vector< argument::Option> options( Mandatory& mandatory);
+      } // mandatory
 
       
    } // tools::build::setting

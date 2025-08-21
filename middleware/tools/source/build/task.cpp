@@ -43,7 +43,7 @@ namespace casual
             } // <unnamed>
          } // local
 
-         void task( const std::filesystem::path& input, const setting::Directive& directive)
+         void task( const std::filesystem::path& input, const setting::Mandatory& directive)
          {
             trace::Exit exit( "build task", directive.verbose);
 

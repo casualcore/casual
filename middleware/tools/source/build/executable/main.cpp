@@ -39,7 +39,7 @@ namespace casual
             struct Settings
             {
 
-               setting::Directive directive;
+               setting::Mandatory directive;
 
                struct
                {
@@ -160,7 +160,7 @@ namespace casual
                {
                   auto outcome = argument::parse( "builds a casual executable",  common::algorithm::container::compose( 
                      argument::Option{ std::tie( settings.executable.definition), { "-d", "--definition"}, "path of the definition file"},
-                     build::setting::options( settings.directive)
+                     build::setting::mandatory::options( settings.directive)
                   ), argc, argv);
 
                   if( outcome != argument::Outcome::parsed)

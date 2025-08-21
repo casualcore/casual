@@ -40,7 +40,7 @@ namespace casual
          {
             struct Settings
             {
-               setting::Directive directive;
+               setting::Mandatory directive;
 
                struct 
                {
@@ -212,7 +212,7 @@ namespace casual
 
                   auto outcome = argument::parse( "builds a casual xatmi server", common::algorithm::container::compose( 
                      local::option::server_definition( settings),
-                     build::setting::options( settings.directive),
+                     build::setting::mandatory::options( settings.directive),
                      argument::Option( service::argument( settings.service.names), {"-s", "--service"}, "service names")( argument::cardinality::any()),
                      argument::Option( argument::option::one::many( settings.resource.keys), {"-r", "--resource-keys"}, "key of the resource")( argument::cardinality::any()),
                      argument::Option( std::tie( settings.service.transaction.mode), complete::transaction::mode(), {  "--default-transaction-mode"}, "the transaction mode for services specified with --service|-s")

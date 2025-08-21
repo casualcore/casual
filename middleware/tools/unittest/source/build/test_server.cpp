@@ -16,9 +16,9 @@ namespace casual
       {
          TEST( tools_build_server, add_directive)
          {
-            setting::Directive directive;
+            setting::Mandatory directive;
 
-            auto add_directive = setting::Directive::split( directive.directives);
+            auto add_directive = setting::Mandatory::split( directive.directives);
 
             add_directive( "-l a -l b -l c", {});
 
