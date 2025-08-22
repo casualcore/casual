@@ -534,7 +534,7 @@ namespace casual
 
                         return argument::Option{ 
                            invoke,
-                           { "--list-routes"}, 
+                           { "-lr", "--list-routes"}, 
                            "list service routes"};
                      }
 

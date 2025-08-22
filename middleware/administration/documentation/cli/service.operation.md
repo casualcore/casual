@@ -26,7 +26,7 @@ service [0..1]
             -a, --all [0..1]
                  include hidden services
 
-      --list-routes [0..1]
+      -lr, --list-routes [0..1]
            list service routes
 
       -mr, --metric-reset [0..1]  (<service>...) [0..*]
