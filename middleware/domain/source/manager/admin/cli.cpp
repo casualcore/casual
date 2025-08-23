@@ -1243,7 +1243,7 @@ for all servers and executables
 )");
 
                      }
-                  }
+                  } // unset
 
                   auto create()
                   {
@@ -1254,8 +1254,8 @@ for all servers and executables
 use sub-options --set and --unset to set/unset environment variables for the domain)"
                         }({
                            set::create(),
-                           unset::create()
-                        });
+                           unset::create(),
+                        }, argument::cardinality::one());
                   }
 
                   namespace deprecated

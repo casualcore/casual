@@ -1615,7 +1615,7 @@ if used with `--force true` messages will be removed regardless of state.)";
                      }({
                         detail::create_option( Directive::commit, { { "--commit"}, {}}, "recover global transactions with commit"),
                         detail::create_option( Directive::rollback, { { "--rollback"}, {}}, "recover global transactions with rollback"),
-                     });
+                     }, argument::cardinality::one());
                   }
 
                } // recovery

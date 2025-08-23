@@ -165,8 +165,8 @@ namespace casual
                         "recover global transactions with --commit or --rollback sub option"
                      }({
                         commit::option(),
-                        rollback::option()   
-                     });
+                        rollback::option()
+                     }, argument::cardinality::one());
                   }
                } // recovery
 

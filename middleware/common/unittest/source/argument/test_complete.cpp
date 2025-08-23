@@ -33,6 +33,8 @@ namespace casual
 
    TEST( argument_complete, basic_completer)
    {
+      unittest::Trace trace;
+
       {
          auto invoke = [](){};
 
@@ -55,6 +57,8 @@ namespace casual
 
    TEST( argument_complete, simple)
    {
+      unittest::Trace trace;
+
       struct
       {
          long a{};
@@ -100,8 +104,10 @@ namespace casual
    }
 
 
-   TEST( argument_complete, nested_options)
+   TEST( argument_complete, suboptions)
    {
+      unittest::Trace trace;
+
       struct
       {
          long a{};
@@ -152,8 +158,131 @@ namespace casual
       }
    }
 
+   TEST( argument_complete, suboptions_cardinality)
+   {
+      unittest::Trace trace;
+
+      struct
+      {
+         long a{};
+         long a1{};
+         long a2{};
+         long b{};
+         long b1{};
+         long b2{};
+         long b3{};
+         long b4{};
+
+      } state;
+
+      auto options = std::vector< argument::Option>{ 
+         argument::Option{ std::tie( state.a), { "-a"}, ""}( {     
+            argument::Option{ std::tie( state.a1), { "-a1"}, ""},
+            argument::Option{ std::tie( state.a2), { "-a2"}, ""},
+         }, argument::cardinality::one()),
+         argument::Option{ std::tie( state.b), { "-b"}, ""}( {
+            argument::Option{ std::tie( state.b1), { "-b1"}, ""},
+            argument::Option{ std::tie( state.b2), { "-b2"}, ""},
+            argument::Option{ std::tie( state.b3), { "-b3"}, ""},
+            argument::Option{ std::tie( state.b4), { "-b4"}, ""}
+         }, argument::cardinality::range( 2, 3)),
+      };
+
+      // completion for -a, expect only suboptions -a1 and -a2
+      {
+         auto output = local::parse_complete( options, { "-a", "42"});
+         ASSERT_TRUE( output.size() == 2) << CASUAL_NAMED_VALUE( output);
+         EXPECT_TRUE( output.at( 0) == "-a1");
+         EXPECT_TRUE( output.at( 1) == "-a2");
+      }
+
+      // completion for -a 42 -a1 43, expect suboptions to be exhausted -> -b
+      {
+         auto output = local::parse_complete( options, { "-a", "42", "-a1", "43"});
+         ASSERT_TRUE( output.size() == 1) << CASUAL_NAMED_VALUE( output);
+         EXPECT_TRUE( output.at( 0) == "-b");
+      }
+
+      // completion for -b 42 -b1 42, expect -b2, -b3, -b4
+      {
+         auto output = local::parse_complete( options, { "-b", "42", "-b1", "42"});
+         ASSERT_TRUE( output.size() == 3) << CASUAL_NAMED_VALUE( output);
+         EXPECT_TRUE( output.at( 0) == "-b2");
+         EXPECT_TRUE( output.at( 1) == "-b3");
+         EXPECT_TRUE( output.at( 2) == "-b4");
+      }
+
+      // completion for -b 42 -b1 42 -b3 42, expect -b2, -b4, -a
+      {
+         auto output = local::parse_complete( options, { "-b", "42", "-b1", "42", "-b3", "42"});
+         ASSERT_TRUE( output.size() == 3) << CASUAL_NAMED_VALUE( output);
+         EXPECT_TRUE( output.at( 0) == "-b2");
+         EXPECT_TRUE( output.at( 1) == "-b4");
+         EXPECT_TRUE( output.at( 2) == "-a");
+      }
+
+      // completion for -b 42 -b1 42 -b3 42 -b2 42, expect suboptions to be exhausted -> -a
+      {
+         auto output = local::parse_complete( options, { "-b", "42", "-b1", "42", "-b3", "42", "-b2", "42"});
+         ASSERT_TRUE( output.size() == 1) << CASUAL_NAMED_VALUE( output);
+         EXPECT_TRUE( output.at( 0) == "-a");
+      }
+   }
+
+   TEST( argument_complete, suboptions_cardinality_suboptions_has_option_cardinality_any)
+   {
+      unittest::Trace trace;
+
+      struct
+      {
+         long a{};
+         long a1{};
+         long a2{};
+         long a3{};
+         long b{};
+         long b1{};
+         long b2{};
+
+      } state;
+
+      auto options = std::vector< argument::Option>{ 
+         argument::Option{ std::tie( state.a), { "-a"}, ""}( {     
+            argument::Option{ std::tie( state.a1), { "-a1"}, ""}( argument::cardinality::fixed( 2)),
+            argument::Option{ std::tie( state.a2), { "-a2"}, ""}( argument::cardinality::zero_one()),
+            argument::Option{ std::tie( state.a3), { "-a3"}, ""}( argument::cardinality::any()),
+         }, argument::cardinality::fixed( 2)),
+         argument::Option{ std::tie( state.b), { "-b"}, ""}( {
+            argument::Option{ std::tie( state.b1), { "-b1"}, ""},
+            argument::Option{ std::tie( state.b2), { "-b2"}, ""},
+         }, argument::cardinality::one()),
+      };
+
+      // completion for -a 42, -a1 42, -a1 43 -> -a1 exhausted, suboptions cardinality fixed 2 not satisfied -> -a2, -a3
+      {
+         auto output = local::parse_complete( options, { "-a", "42", "-a1", "42", "-a1", "43"});
+         ASSERT_TRUE( output.size() == 2) << CASUAL_NAMED_VALUE( output);
+         EXPECT_TRUE( output.at( 0) == "-a2");
+         EXPECT_TRUE( output.at( 1) == "-a3");
+      }
+
+      // completion for -a 42, -a1 42, -a2 42 -> 
+      // * suboptions cardinality fixed 2 satisfied -> -a1 and -a2 is "locked"
+      // * -a2 is exhausted
+      // * -a1 is not satisfied
+      // expect only a1
+      {
+         auto output = local::parse_complete( options, { "-a", "42", "-a1", "42", "-a2", "42"});
+         ASSERT_TRUE( output.size() == 1) << CASUAL_NAMED_VALUE( output);
+         EXPECT_TRUE( output.at( 0) == "-a1");
+
+      }
+
+   }
+
    TEST( argument_complete, immediate_flags)
    {
+      unittest::Trace trace;
+
       struct State
       {
          long a{};
@@ -215,8 +344,10 @@ namespace casual
    }
 
 
-   TEST( argument_complete, nested_flags)
+   TEST( argument_complete, suboptions_flags)
    {
+      unittest::Trace trace;
+
       auto flag = []()
       {
       };
@@ -255,6 +386,7 @@ namespace casual
 
    TEST( argument_complete, option_with_flag)
    {
+      unittest::Trace trace;
 
       auto callback = []( long a, std::optional< long> b)
       {
@@ -296,7 +428,5 @@ namespace casual
          EXPECT_TRUE( output.at( 0) == "-b");
          EXPECT_TRUE( output.at( 1) == "-c");
       }
-   }
-
-   
+   }   
 } // casual

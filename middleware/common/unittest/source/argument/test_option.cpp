@@ -179,7 +179,7 @@ namespace casual
    {
       unittest::Trace trace;
 
-      constexpr static auto create = []( auto tie, auto name, std::vector< argument::Option> suboptions = {})
+      constexpr static auto create = []( auto tie, auto name, std::initializer_list< argument::Option> suboptions = {})
       {
          return argument::Option{ tie, argument::option::Names{ { name}}, ""}( std::move( suboptions));
       };
@@ -219,9 +219,9 @@ namespace casual
       {
          State state;
          auto options = std::vector{ 
-               create( std::tie( state.a), "-a", std::vector< argument::Option>{ 
+               create( std::tie( state.a), "-a", { 
                   create( std::tie( state.b), "-b")}),
-               create( std::tie( state.c), "-c", std::vector< argument::Option>{ 
+               create( std::tie( state.c), "-c", { 
                   create( std::tie( state.d), "-d"),
                   create( std::tie( state.e), "-e"),
                })
@@ -240,10 +240,10 @@ namespace casual
       {
          State state;
          auto options = std::vector{ 
-               create( std::tie( state.a), "-a", std::vector< argument::Option>{ 
-                  create( std::tie( state.b), "-b", std::vector< argument::Option>{ 
-                     create( std::tie( state.c), "-c", std::vector< argument::Option>{ 
-                        create( std::tie( state.d), "-d", std::vector< argument::Option>{ 
+               create( std::tie( state.a), "-a", { 
+                  create( std::tie( state.b), "-b", { 
+                     create( std::tie( state.c), "-c", { 
+                        create( std::tie( state.d), "-d", { 
                            create( std::tie( state.e), "-e")
             })})})})};
 
@@ -263,7 +263,7 @@ namespace casual
    {
       unittest::Trace trace;
 
-      constexpr static auto create = []( long& value, auto name, std::vector< argument::Option> suboptions = {})
+      constexpr static auto create = []( long& value, auto name, std::initializer_list< argument::Option> suboptions = {})
       {
          auto assign_value = [ &value]( long argument){ value = argument;};
 
@@ -282,9 +282,9 @@ namespace casual
 
       {
          State state;
-         auto options = std::vector{ create( state.a, "-a", std::vector< argument::Option>{ 
+         auto options = std::vector{ create( state.a, "-a", { 
                create( state.b, "-b"),
-               create( state.c, "-c", std::vector< argument::Option>{ 
+               create( state.c, "-c", { 
                   create( state.d, "-d"),
                   create( state.e, "-e"),
                })
@@ -307,9 +307,9 @@ namespace casual
       {
          State state;
          auto options = std::vector{ 
-               create( state.a, "-a", std::vector< argument::Option>{ 
+               create( state.a, "-a", { 
                   create( state.b, "-b")}),
-               create( state.c, "-c", std::vector< argument::Option>{ 
+               create( state.c, "-c", { 
                   create( state.d, "-d"),
                   create( state.e, "-e"),
                })
@@ -330,10 +330,10 @@ namespace casual
       {
          State state;
          auto options = std::vector{ 
-               create( state.a, "-a", std::vector< argument::Option>{ 
-                  create( state.b, "-b", std::vector< argument::Option>{ 
-                     create( state.c, "-c", std::vector< argument::Option>{ 
-                        create( state.d, "-d", std::vector< argument::Option>{ 
+               create( state.a, "-a", { 
+                  create( state.b, "-b", { 
+                     create( state.c, "-c", { 
+                        create( state.d, "-d", { 
                            create( state.e, "-e")
             })})})})};
 
@@ -350,5 +350,4 @@ namespace casual
       }
    }
 
-   
 } // casual

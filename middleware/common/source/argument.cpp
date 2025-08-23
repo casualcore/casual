@@ -42,7 +42,6 @@ namespace casual
                   }
 
                private:
-                  
                   std::vector< std::span< O>> m_hierarchy;
                };
             } // hierarchy
@@ -92,7 +91,7 @@ namespace casual
                   if( std::empty( current))
                      return arguments;
                      
-                  if( auto found = algorithm::find( option.suboptions(), key); found && found->pure_flag())
+                  if( auto found = algorithm::find( option.suboptions().options, key); found && found->pure_flag())
                   {
                      // consume the immediate flag, and continue to search for more.
                      callback( *found, key, range_type{});
@@ -105,7 +104,7 @@ namespace casual
             }
 
 
-            inline range_type traverse( auto state, range_type arguments, auto callback, auto callback_end)
+            inline range_type traverse( auto state, range_type arguments, auto callback, auto callback_end, std::optional< Cardinality> sibling_cardinality = {})
             {
                while( ! std::empty( arguments))
                {
@@ -117,14 +116,14 @@ namespace casual
                      auto current = consume_immediate_flags( arguments.subspan( 1), *option, callback);
 
                      // first we need to check the suboptions for the next "key"
-                     if( auto found = find::next( current, option->suboptions()))
+                     if( auto found = find::next( current, option->suboptions().options))
                      {
                         auto [ chosen, remains] = common::algorithm::divide_at( current, std::begin( found));
 
                         callback( *option, key, chosen);
 
                         // continue with the suboption
-                        arguments = local::traverse( state + option->suboptions(), remains, callback, callback_end);
+                        arguments = local::traverse( state + option->suboptions().options, remains, callback, callback_end, option->suboptions().cardinality);
                      }
                      // otherwise we check the siblings for the next "key"
                      else if( auto found = find::next( current, state.current()))
@@ -149,7 +148,7 @@ namespace casual
                      // otherwise, we haven't found any "next key", we assign all arguments to option
                      else 
                      {
-                        callback_end( *option, key, current, state);
+                        callback_end( *option, key, current, state, sibling_cardinality);
                         return {};
                      }
                   }
@@ -175,7 +174,7 @@ namespace casual
                      assigned.push_back( std::move( *invocable));
                };
 
-               auto assign_end = [ assign]( auto& option, auto key, auto arguments, auto& state)
+               auto assign_end = [ assign]( auto& option, auto key, auto arguments, auto& state, auto&& sibling_cardinality)
                {           
                   assign( option, key, arguments);
                };
@@ -188,10 +187,84 @@ namespace casual
                return assigned;
             }
 
+            std::string format_option_cardinality( const Cardinality& cardinality)
+            {
+               if( cardinality.many()) 
+                  return std::format( "{}..*", cardinality.min());
+               if( cardinality.fixed()) 
+                  return string::to( cardinality.min());
+               return std::format( "{}..{}", cardinality.min(), cardinality.max());
+            }
+
+            std::string format_value_cardinality( const Cardinality& cardinality)
+            {
+               if( cardinality == cardinality::zero())
+                  return {};
+
+               if( cardinality.step() > 1)
+                  return std::format( "{} {{{}}}", format_option_cardinality( cardinality), cardinality.step());
+               else
+                  return format_option_cardinality( cardinality);
+                  
+            }
+
+            platform::size::type unique_used_options( std::span< const Option> options)
+            {
+               return algorithm::accumulate( options, 0l, []( platform::size::type count, const auto& option)
+               {
+                  if( option.usage() > 0)
+                     return count + 1;
+                  return count;
+               });
+            }
+
+
+            namespace filter
+            {
+               auto is_used = []( const auto& option)
+               {
+                  return option.usage() > 0;
+               };
+
+               auto not_exhausted = []( const auto& option)
+               {
+                  return ! option.exhausted();
+               };
+
+               auto satisfied = []( const auto& option)
+               {
+                  return option.satisfied_min();
+               };
+
+            } // filter
+
             namespace validate
             {
                inline void options( std::span< const Option> options)
                {
+                  constexpr static auto validate_suboptions = []( const Option& option)
+                  {
+                     auto suboption_names = []( std::span< const Option> suboptions)
+                     {
+                        return algorithm::transform( suboptions, []( const Option& suboption)
+                        {
+                           return suboption.names().canonical();
+                        });
+                     };
+
+                     auto used_suboptions = unique_used_options( option.suboptions().options);
+
+                     auto& options = option.suboptions().options;
+                     auto cardinality = option.suboptions().cardinality;
+
+                     if( ! cardinality.valid( used_suboptions))
+                        common::code::raise::error( common::code::casual::invalid_argument, "cardinality not satisfied for suboptions: ", 
+                           suboption_names( options), " [", format_option_cardinality( cardinality), ']');
+
+                     // recursive validation
+                     validate::options( options);
+                  };
+
                   auto validate = []( const auto& option)
                   {
                      auto usage = option.usage();
@@ -199,7 +272,7 @@ namespace casual
                      
                      // if the option is assigned/used, we need to validate the suboptions. 
                      if( usage > 0)
-                        validate::options( option.suboptions());
+                        validate_suboptions( option);
                   };
 
                   std::ranges::for_each( options, validate);
@@ -229,27 +302,6 @@ namespace casual
                   output( 0, format, std::forward< Ts>( ts)...);
                }
 
-               std::string format_option_cardinality( const Cardinality& cardinality)
-               {
-                  if( cardinality.many()) 
-                     return std::format( "{}..*", cardinality.min());
-                  if( cardinality.fixed()) 
-                     return string::to( cardinality.min());
-                  return std::format( "{}..{}", cardinality.min(), cardinality.max());
-               }
-
-               std::string format_value_cardinality( const Cardinality& cardinality)
-               {
-                  if( cardinality == cardinality::zero())
-                     return {};
-
-                  if( cardinality.step() > 1)
-                     return std::format( "{} {{{}}}", format_option_cardinality( cardinality), cardinality.step());
-                  else
-                     return format_option_cardinality( cardinality);
-                     
-               }
-
                void description( std::string_view description, platform::size::type indent)
                {
                   for( auto line : string::split( description, '\n'))
@@ -277,13 +329,19 @@ namespace casual
                   description( option.description(), indent + 5);
                   output( "\n");
 
-                  if( ! option.suboptions().empty())
+                  if( ! option.suboptions().options.empty())
                   {
                      if( depth && *depth <= 0)
                         return;
 
-                     output( indent + indent_increment, "SUB OPTIONS:\n\n");
-                     help::print( option.suboptions(), indent + ( indent_increment * 2), depth);
+                     auto cardinality = option.suboptions().cardinality;
+                     
+                     if( cardinality != argument::cardinality::any())
+                        output( indent + indent_increment, "SUB OPTIONS [{}]:\n\n", format_option_cardinality( option.suboptions().cardinality));
+                     else
+                        output( indent + indent_increment, "SUB OPTIONS:\n\n");
+
+                     help::print( option.suboptions().options, indent + ( indent_increment * 2), depth);
                   }
                }
 
@@ -316,7 +374,7 @@ namespace casual
                   auto discard_assign = []( auto& option, auto key, auto arguments)
                   {};
 
-                  auto print_option = []( auto& option, auto key, auto arguments, auto& state)
+                  auto print_option = []( auto& option, auto key, auto arguments, auto& state, auto&& sibling_cardinality)
                   {
                      print( option, 0, std::nullopt);
                   };
@@ -391,7 +449,9 @@ namespace casual
                option.use();
             };
 
-            auto complete_option = []( Option& option, auto key, range_type arguments, local::hierarchy::State< Option>& state)
+            // this will only be called once, when the _traverse_ has
+            // exhausted all options down the hierarchy
+            auto complete_option = []( Option& option, auto key, range_type arguments, local::hierarchy::State< Option>& state, std::optional< Cardinality> sibling_cardinality)
             {
                // fake "usage" the option 
                option.use();
@@ -419,15 +479,57 @@ namespace casual
 
                auto print_suggestions = []( auto options)
                {
-                  auto is_active = []( const auto& option){ return ! option.exhausted();};
-
-                  for( auto& active : options | std::ranges::views::filter( is_active))
+                  for( auto& active : options | std::ranges::views::filter( local::filter::not_exhausted))
                     std::cout << active.names().canonical() << '\n';
                };
 
-               // we need to add possible suboptions
-               print_suggestions( option.suboptions());
+               // take care of suboptions
+               if( ! option.suboptions().options.empty())
+               {
+                  // we need to add possible suboptions
+                  print_suggestions( option.suboptions().options);
 
+                  // if we have a min cardinality > 0, we only suggest suboptions
+                  if( option.suboptions().cardinality.min() > 0)
+                     return;
+               }
+
+               // if current option has sibling cardinality, we use this to deduce if 
+               // we can restrict suggestions.
+               if( sibling_cardinality)
+               {
+                  auto siblings = state.current();
+
+                  auto used_siblings_count = local::unique_used_options( siblings);
+
+                  if( used_siblings_count < sibling_cardinality->min())
+                  {
+                     // we only suggest siblings
+                     print_suggestions( siblings);
+                     return;
+                  }
+                  else if( used_siblings_count >= sibling_cardinality->max())
+                  {
+                     // sibling cardinality is fulfilled, we still need to check if
+                     // the actual option cardinality still allow for sibling suggestions.
+                     auto used_siblings = siblings | std::ranges::views::filter( local::filter::is_used);
+
+                     // suggest not exhausted siblings.
+                     print_suggestions( used_siblings);
+
+                     // if all used siblings are satisfied, we suggest parents
+                     if( std::ranges::all_of( used_siblings, local::filter::satisfied))
+                     {
+                        for( auto options : std::views::reverse( state.parents()))
+                           print_suggestions( options);
+                     }
+
+                     return;
+                  }
+                  // otherwise we suggest all options below
+               }
+       
+               
                // traverse up in the option hierarchy and add all options that is not exhausted.
                for( auto options : std::views::reverse( state.all()))
                   print_suggestions( options);
