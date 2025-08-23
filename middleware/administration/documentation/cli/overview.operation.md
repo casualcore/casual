@@ -50,8 +50,7 @@ _option_ takes.
 semantic                                               | example
 -------------------------------------------------------|---------------------------------------------
 `<option name> <cardinality>`                          | `--list-servers [0..1]`
-`<option name> <cardinality> (<values>) <cardinality>` | `-restart-aliases [0..1]  (<alias>) [1..*]`
-
+`<option name> <cardinality> (<values>) <cardinality>` | `--restart-aliases [0..1]  (<alias>) [1..*]`
 
 
 notation example  | description
@@ -61,6 +60,39 @@ notation example  | description
 `[2..*]`          | _two to infinity_
 `[1..* {2}]`      | _one to infinity_. if more than `1`, the step is `2`. Possible occurrences: `1, 3, 5, ...`
 
+
+#### sub options
+
+Sub options can also have a cardinality which restrict how many sub options can 
+and or has to be used by the user.
+
+Note: The sub option cardinality refers to the number of unique sub options that can or must be used by the user.
+
+**examples** 
+
+Mutually exclusive: exactly one of the sub options has to be used
+
+```
+SUB OPTIONS [1]:
+    
+    -a 
+        some option a
+    -b
+        some option b
+```
+
+At most one sub option can be used
+
+```
+SUB OPTIONS [0..1]:
+    
+    -a 
+        some option a
+    -b
+        some option b
+```
+ 
+The default cardinality is _any_ `[0..*]`, and is not shown with anything.
 
 
 ## bash completion

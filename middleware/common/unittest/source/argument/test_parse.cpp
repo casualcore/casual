@@ -10,9 +10,11 @@
 
 namespace casual
 {
+   using namespace common;
 
    TEST( argument_parse, empty)
    {
+      unittest::Trace trace;
 
       argument::parse( "", {}, {});
 
@@ -20,6 +22,8 @@ namespace casual
 
    TEST( argument_parse, simple)
    {
+      unittest::Trace trace;
+
       struct
       {
          long a{};
@@ -40,6 +44,7 @@ namespace casual
 
    TEST( argument_parse, simple_nested)
    {
+      unittest::Trace trace;
       
       std::vector< std::string> invoked;
 
@@ -67,6 +72,8 @@ namespace casual
 
    TEST( argument_parse, immediate_flag)
    {
+      unittest::Trace trace;
+
       struct State
       {
          long a{};
@@ -109,7 +116,7 @@ namespace casual
                argument::Option{ callback( state), { "-a"}, ""}( {
                   argument::Option{ argument::option::flag( state.f1) , { "-f1"}, ""},
                   argument::Option{ argument::option::flag( state.f2) , { "-f2"}, ""}
-               })
+               }),
             }, 
             { "-a", "-f2", "-f1", "1", "2", "3"});
 
@@ -127,7 +134,7 @@ namespace casual
                argument::Option{ callback( state), { "-a"}, ""}( {
                   argument::Option{ argument::option::flag( state.f1) , { "-f1"}, ""},
                   argument::Option{ argument::option::flag( state.f2) , { "-f2"}, ""}
-               })
+               }),
             }, 
             { "-a", "1", "2", "3", "-f2", "-f1"});
 
@@ -141,6 +148,8 @@ namespace casual
 
    TEST( argument_parse, invalid_value_cardinality)
    {
+      unittest::Trace trace;
+
       struct
       {
          long a{};
@@ -184,6 +193,8 @@ namespace casual
 
    TEST( argument_parse, help)
    {
+      unittest::Trace trace;
+
       struct
       {
          long a{};
@@ -235,4 +246,63 @@ namespace casual
 
    }
    
+   
+   TEST( argument_parse, suboption_cardinality)
+   {
+      unittest::Trace trace;
+
+      struct State
+      {
+         long a{};
+         long a_1{};
+         long a_2{};
+         long b{};
+         long b_1{};
+         long b_2{};
+      };
+
+      State state;
+
+      auto options = std::vector{
+         argument::Option{ std::tie( state.a), { "-a"}, ""}( {
+            argument::Option{ std::tie( state.a_1), { "-a1"}, ""},
+            argument::Option{ std::tie( state.a_2), { "-a2"}, ""}
+         }, argument::cardinality::one()),
+         argument::Option{ std::tie( state.b), { "-b"}, ""}( {
+            argument::Option{ std::tie( state.b_1), { "-b1"}, ""},
+            argument::Option{ std::tie( state.b_2), { "-b2"}, ""}
+         }, argument::cardinality::fixed( 2)),
+      };
+
+      {
+         // suboptions has cardinality 1, but we provide 0
+         auto arguments = std::vector< std::string_view>{ "-a", "42"};
+         EXPECT_CODE( argument::parse( "", options, arguments), code::casual::invalid_argument);
+      }
+
+      {
+         // suboptions has cardinality 1, but we provide 2
+         auto arguments = std::vector< std::string_view>{ "-a", "42", "-a1", "43", "-a2", "44"};
+         EXPECT_CODE( argument::parse( "", options, arguments), code::casual::invalid_argument);
+      }
+
+      {
+         // suboptions has cardinality 1, we provide 1
+         auto arguments = std::vector< std::string_view>{ "-a", "42", "-a2", "43"};
+         EXPECT_TRUE( argument::parse( "", options, arguments) == argument::Outcome::parsed);
+      }
+
+      {
+         // suboptions has cardinality 2, we provide 1
+         auto arguments = std::vector< std::string_view>{ "-b", "42", "-b1", "43"};
+         EXPECT_CODE( argument::parse( "", options, arguments), code::casual::invalid_argument);
+      }
+
+      {
+         // suboptions had cardinality 2, we provide 2
+         auto arguments = std::vector< std::string_view>{ "-b", "42", "-b1", "43", "-b2", "44"};
+         EXPECT_TRUE( argument::parse( "", options, arguments) == argument::Outcome::parsed);
+      }
+   }
+
 } // casual

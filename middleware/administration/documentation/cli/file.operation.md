@@ -16,7 +16,7 @@ file [0..1]
       --recover-transactions [0..1]
            recover global transactions with --commit or --rollback sub option
 
-         SUB OPTIONS:
+         SUB OPTIONS [1]:
 
             --commit [0..1]  (<gtrid>) [1..*]
                  recover global transactions with commit

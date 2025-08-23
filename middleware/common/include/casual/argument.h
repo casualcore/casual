@@ -378,11 +378,6 @@ namespace casual
                return common::algorithm::find( lhs.m_active, key) || common::algorithm::find( lhs.m_deprecated, key);
             }
 
-            CASUAL_LOG_SERIALIZE(
-               CASUAL_SERIALIZE( m_active);
-               CASUAL_SERIALIZE( m_deprecated);
-            )
-
             inline const auto& active() const { return m_active;}
             inline const auto& deprecated() const { return m_deprecated;}
             
@@ -432,12 +427,12 @@ namespace casual
             return result;
          }
 
-         //! 'construction continuation'. 
+         //! suboptions - 'construction continuation'. 
          //! @returns this object with suboptions set to the provided `suboptions`.
-         inline Option operator () ( std::vector< Option> suboptions) &&
+         inline Option operator () ( std::vector< Option> suboptions, Cardinality cardinality = cardinality::any()) &&
          {
             auto result = std::move( *this);
-            result.m_suboptions = std::move( suboptions);
+            result.m_suboptions = { .options = std::move( suboptions), .cardinality = cardinality};
             return result;
          }
 
@@ -475,16 +470,21 @@ namespace casual
          inline auto cardinality() const { return m_cardinality;}
          inline auto& description() const { return m_description;}
 
-         inline bool pure_flag() const { return value_cardinality() == cardinality::zero() && suboptions().empty();}
+         inline bool pure_flag() const { return value_cardinality() == cardinality::zero() && suboptions().options.empty();}
 
          //! @returns true if another "usage" would invalidate option cardinality
-         inline bool exhausted() const
-         {
-            return ! m_cardinality.valid( m_usage + 1);
-         }
+         inline bool exhausted() const { return ! m_cardinality.valid( m_usage + 1);}
+
+         //! @return true if current "usage" satisfies min cardinality
+         inline bool satisfied_min() const { return m_usage >= m_cardinality.min();}
 
       private:
 
+         struct Suboptions
+         {
+            std::vector< Option> options;
+            Cardinality cardinality = cardinality::any();
+         };
 
          struct Interface
          {
@@ -543,11 +543,13 @@ namespace casual
             return std::make_shared< model_type>( std::move( invocable), std::move( completer));
          }
 
+
+
          option::Names m_names;
          std::shared_ptr< Interface> m_invocable;
          // the option cardinality
          Cardinality m_cardinality = cardinality::zero_one();
-         std::vector< Option> m_suboptions;
+         Suboptions m_suboptions;
          platform::size::type m_usage{};
          std::string m_description;
 
@@ -592,6 +594,7 @@ namespace casual
             // special treatment for completion
             if( auto found = common::algorithm::find( arguments, reserved::name::completion))
             {
+               // rotate away the <completion> token
                common::algorithm::rotate( arguments, found);
                detail::complete( options, range_type{ arguments}.subspan( 1));
                return Outcome::completion;
@@ -621,6 +624,7 @@ namespace casual
 
       namespace option
       {
+
          //! return a functor that sets the provided `value`
          //! to `true` when invoked
          inline auto flag( bool& value)

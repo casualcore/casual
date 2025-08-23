@@ -63,7 +63,7 @@ domain [0..1]
                              
            use sub-options --set and --unset to set/unset environment variables for the domain
 
-         SUB OPTIONS:
+         SUB OPTIONS [1]:
 
             --set [0..1]  (<variable>, <value>, [<alias>*]) [2..*]
                  set an environment variable for explicit aliases
