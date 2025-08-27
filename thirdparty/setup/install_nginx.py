@@ -9,7 +9,7 @@ import subprocess
 
 from shutil import copyfile
 
-NGINX_VERSION = "1.22.1"
+NGINX_VERSION = "1.28.0"
 BASENAME = "nginx-" + NGINX_VERSION
 SOURCE_ROOT = os.getenv("CASUAL_MAKE_SOURCE_ROOT")
 CASUAL_THIRDPARTY = os.getenv("CASUAL_THIRDPARTY")
