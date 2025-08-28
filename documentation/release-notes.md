@@ -1,6 +1,59 @@
 ![casual](/resources/casual-box-left.png)
 # release notes
 
+## 1.8
+
+We're proud to announce the release of casual version `1.8`.
+
+### performance improvements
+
+`casual` now uses epoll on Linux and kqueue on BSD platforms for multiplexing, 
+providing more efficient I/O operations compared to previous methods.
+
+### CLI normalization
+
+CLI options have been normalized across all components (gateway, transaction, 
+domain, service, queue, file) for consistency and better user experience. 
+This includes standardized list options and improved help output.
+
+### file reserve mechanism
+
+Introduced a file reserve mechanism within XA transactions, allowing files to be 
+isolated from other transactions when using the API, enhancing data integrity 
+in transactional file operations.
+
+### HTTP inbound forwarding
+
+Added support for forwarding HTTP requests directly to services. This includes 
+sending raw HTTP data to services, with new nginx directives like `casual_forward_service`
+for easy configuration.
+
+### header functionality
+
+Extended header support for service calls and tpcall/tpacall. Users can now 
+associate and propagate headers with buffers, enabling better integration with 
+external systems.
+
+### refactoring and cleanup
+
+Major refactoring efforts include moving service, server, and transaction contexts 
+out of the common module to their respective modules, improving code organization 
+and maintainability. Various code cleanups and simplifications have been performed 
+throughout.
+
+### logging improvements
+
+Simplified logging by removing verbose levels and reducing the number of log 
+categories. This makes debugging easier while reducing log noise.
+
+### other enhancements
+
+- Improved argument help to print only one level for better readability
+- Added `--all` flag to `--list-instances` for services to show hidden services
+- Enhanced transaction ID handling and cleanup
+- Enabled indexing by EU Open Source Software Catalogue
+
+
 ## 1.7
 
 We're proud to announce the release of casual middleware version `1.7`.
