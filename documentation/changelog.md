@@ -1,6 +1,40 @@
 # Changelog
 This is the changelog for `casual` and all changes are listed in this document.
 
+## [1.8.0] - 2025-08-27
+
+### Added
+
+- common: using epoll on linux for multiplexing ([#89](https://github.com/casualcore/casual/issues/89))
+- common: using kqueue for 'select' on BSD plattforms ([#89](https://github.com/casualcore/casual/issues/89))
+- file: introduce file reserve mechanism within xa transactions ([#13](https://github.com/casualcore/casual/issues/13))
+- cli: suboption cardinality
+- domain: `domain --boot-strict` -> `domain --boot --strict`
+- gateway: normalize cli options ([#252](https://github.com/casualcore/casual/issues/252))
+- transaction: normalize cli options ([#252](https://github.com/casualcore/casual/issues/252))
+- domain: normalize cli options ([#252](https://github.com/casualcore/casual/issues/252))
+- service: normalize cli options ([#252](https://github.com/casualcore/casual/issues/252))
+- queue: normalize cli options ([#252](https://github.com/casualcore/casual/issues/252))
+- service: added `--all` to `--list-instances` to show hidden services
+- argument: improved --help to print only one level
+- tools: normalized options for build-server/executable ([#567](https://github.com/casualcore/casual/issues/567))
+- domain: --restart-aliases also scale-out to configured ([#215](https://github.com/casualcore/casual/issues/215))
+- http: inbound forward service -> send 'raw' http data to service ([#12](https://github.com/casualcore/casual/issues/12))
+- xatmi: header functionality for service and tpcall/tpacall ([#12](https://github.com/casualcore/casual/issues/12))
+- common: cleanup transaction::ID, transaction::global::ID ([#573](https://github.com/casualcore/casual/issues/573))
+- gateway: propagate header in service call request/reply
+- unittest: moved service stuff from common-unittest to service-unittest
+- refactoring: move service/server/transaction out of common ([#556](https://github.com/casualcore/casual/issues/556))
+- documentation: enable indexing by EU Open Source Software Catalogue
+- log: simplified logging - removed all verbose
+- log: reduced the number of log-categories
+- build: upgrade nginx to 1.28.0
+- http: removed possibility to force base64 transcoding over the wire
+
+### Fixes
+- common: time_point is not logged with iso8601 utc offset in some places ([#552](https://github.com/casualcore/casual/issues/552))
+
+
 ## [1.7.9] - 2025-07-13
 
 ### Fixes
