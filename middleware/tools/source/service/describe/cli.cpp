@@ -152,7 +152,7 @@ namespace casual
 
                   std::vector< std::string> describe_format()
                   {
-                     return { "json", "yaml", "xml", "ini"};
+                     return { "json", "toml", "yaml", "xml"};
                   }
 
 

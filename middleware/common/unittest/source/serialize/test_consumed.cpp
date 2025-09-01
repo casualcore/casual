@@ -21,7 +21,7 @@ namespace casual
 
       INSTANTIATE_TEST_SUITE_P( common_serialize_consumed_archive,
             archive_maker,
-            ::testing::Values("yaml", "json", "xml"));
+            ::testing::Values("json", "toml", "yaml", "xml"));
 
       TEST_P( archive_maker, default_ctor)
       {

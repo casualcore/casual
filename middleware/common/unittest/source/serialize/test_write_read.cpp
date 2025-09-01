@@ -12,9 +12,9 @@
 
 #include "common/serialize/macro.h"
 #include "common/serialize/json.h"
+#include "common/serialize/toml.h"
 #include "common/serialize/yaml.h"
 #include "common/serialize/xml.h"
-#include "common/serialize/ini.h"
 #include "common/serialize/line.h"
 #include "common/serialize/native/binary.h"
 #include "common/serialize/archive/consume.h"
@@ -147,6 +147,35 @@ namespace casual
             } // relaxed  
 
             template< typename B>
+            struct toml : base< B>
+            {
+               template< typename T>
+               static auto reader( T&& buffer) { return serialize::toml::strict::reader( buffer);}
+
+               static auto writer() { return serialize::toml::writer();}
+            };
+
+            namespace relaxed
+            {
+               template< typename B>
+               struct toml : policy::toml< B>
+               {
+                  template< typename T>
+                  static auto reader( T&& buffer) { return serialize::toml::relaxed::reader( buffer);}
+               };
+            } // relaxed
+
+            namespace consumed
+            {
+               template< typename B>
+               struct toml : policy::toml< B>
+               {
+                  template< typename T>
+                  static auto reader( T&& buffer) { return serialize::toml::consumed::reader( buffer);}
+               };
+            } // consumed
+
+            template< typename B>
             struct yaml : base< B>
             {
                template< typename T>
@@ -155,7 +184,7 @@ namespace casual
                static auto writer() { return serialize::yaml::writer();}
             };
 
-            namespace relaxed    
+            namespace relaxed
             {
                template< typename B>
                struct yaml : policy::yaml< B>
@@ -173,7 +202,7 @@ namespace casual
                   template< typename T>
                   static auto reader( T&& buffer) { return serialize::yaml::consumed::reader( buffer);}
                };
-            } // relaxed  
+            } // consumed
 
             template< typename B>
             struct xml : base< B>
@@ -219,6 +248,13 @@ namespace casual
             holder::basic< holder::policy::relaxed::json< platform::binary::type>>,
             holder::basic< holder::policy::relaxed::json< std::stringstream>>,
             holder::basic< holder::policy::consumed::json< std::string>>,
+            holder::basic< holder::policy::toml< std::string>>,
+            holder::basic< holder::policy::toml< platform::binary::type>>,
+            holder::basic< holder::policy::toml< std::stringstream>>,
+            holder::basic< holder::policy::relaxed::toml< std::string>>,
+            holder::basic< holder::policy::relaxed::toml< platform::binary::type>>,
+            holder::basic< holder::policy::relaxed::toml< std::stringstream>>,
+            // holder::basic< holder::policy::consumed::toml< std::string>>,
             holder::basic< holder::policy::yaml< std::string>>,
             holder::basic< holder::policy::yaml< platform::binary::type>>,
             holder::basic< holder::policy::yaml< std::stringstream>>,

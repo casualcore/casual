@@ -47,7 +47,7 @@ namespace casual
             template< typename C>
             void generate( std::filesystem::path file, const C& configuration)
             {
-               for( auto format : { "yaml", "json", "xml", "ini"})
+               for( auto format : { "json", "toml", "yaml", "xml"})
                   local::generate( file, format, configuration);
             }
 

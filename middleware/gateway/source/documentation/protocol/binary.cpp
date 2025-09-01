@@ -133,7 +133,7 @@ namespace casual
                {
                   auto complete = []( bool help, auto values)
                   {
-                     return std::vector< std::string>{ "yaml", "json", "xml", "ini"};
+                     return std::vector< std::string>{ "json", "toml", "yaml", "xml"};
                   };
 
                   argument::parse( R"(binary dump examples for interdomain protocol

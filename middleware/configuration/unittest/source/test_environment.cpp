@@ -67,7 +67,7 @@ namespace casual
 
       INSTANTIATE_TEST_SUITE_P( protocol,
             configuration_environment,
-         ::testing::Values(".yaml", ".json", ".xml", ".ini"));
+         ::testing::Values(".json", ".toml", ".yaml", ".xml"));
 
 
       namespace local

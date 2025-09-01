@@ -9,7 +9,7 @@
 #include <gtest/gtest.h>
 
 
-#include "common/serialize/ini.h"
+#include "common/serialize/toml.h"
 
 #include "common/unittest.h"
 
@@ -24,14 +24,14 @@ namespace casual
 {
    namespace common
    {
-      namespace
+      namespace local
       {
-         namespace local
+         namespace 
          {
             template<typename T>
             void value_to_string( T&& value, std::string& string)
             {
-               auto writer = serialize::ini::writer();
+               auto writer = serialize::toml::writer();
                writer << CASUAL_NAMED_VALUE( value);
                writer.consume( string);
             }
@@ -39,79 +39,79 @@ namespace casual
             template<typename T>
             void string_to_value( const std::string& string, T& value)
             {
-               auto reader = serialize::ini::strict::reader( string);
+               auto reader = serialize::toml::strict::reader( string);
                reader >> CASUAL_NAMED_VALUE( value);
             }
 
-         } // local
-      } //
+         } //
+      } // local
 
-      TEST( common_serialize_ini_archive, writer_archive_type)
+      TEST( common_serialize_toml_archive, writer_archive_type)
       {
          common::unittest::Trace trace;
 
-         auto writer = serialize::ini::writer();
+         auto writer = serialize::toml::writer();
 
          static_assert( serialize::archive::is::dynamic< decltype( writer)>);
          EXPECT_TRUE( writer.dynamic_properties() == common::serialize::archive::Property::named) << CASUAL_NAMED_VALUE( writer.dynamic_properties());
       }
 
-      TEST( common_serialize_ini_archive, reader_archive_type)
+      TEST( common_serialize_toml_archive, reader_archive_type)
       {
          common::unittest::Trace trace;
 
          std::string buffer;
-         auto reader = serialize::ini::strict::reader( buffer);
+         auto reader = serialize::toml::strict::reader( buffer);
 
          static_assert( serialize::archive::is::dynamic< decltype( reader)>);
          EXPECT_TRUE( reader.dynamic_properties() == common::serialize::archive::Property::named) << CASUAL_NAMED_VALUE( reader.dynamic_properties());
       }
 
-      TEST( common_serialize_ini_archive, write_read_string_with_new_line)
+      TEST( common_serialize_toml_archive, write_read_string_with_new_line)
       {
          common::unittest::Trace trace;
 
-         std::string ini;
+         std::string toml;
          std::string source = "foo\nbar";
-         local::value_to_string( source, ini);
+         local::value_to_string( source, toml);
          std::string target;
-         local::string_to_value( ini, target);
+         local::string_to_value( toml, target);
 
          EXPECT_TRUE( source == target);
       }
 
-      TEST( common_serialize_ini_archive, write_read_boolean)
+      TEST( common_serialize_toml_archive, write_read_boolean)
       {
          common::unittest::Trace trace;
 
-         std::string ini;
-         local::value_to_string( true, ini);
+         std::string toml;
+         local::value_to_string( true, toml);
          bool target = false;
-         local::string_to_value( ini, target);
+         local::string_to_value( toml, target);
          EXPECT_TRUE( target == true);
       }
 
-      TEST( common_serialize_ini_archive, write_read_decimal)
+      TEST( common_serialize_toml_archive, write_read_decimal)
       {
          common::unittest::Trace trace;
 
-         std::string ini;
+         std::string toml;
          float source = 3.14;
-         local::value_to_string( source, ini);
+         local::value_to_string( source, toml);
          float target = 0.0;
-         local::string_to_value( ini, target);
+         local::string_to_value( toml, target);
          EXPECT_TRUE( source == target);
       }
 
-      TEST( common_serialize_ini_archive, write_read_container)
+      TEST( common_serialize_toml_archive, write_read_container)
       {
          common::unittest::Trace trace;
 
-         std::string ini;
+         std::string toml;
          std::vector<long> source{ 1, 3, 5, 7 };
-         local::value_to_string( source, ini);
+         local::value_to_string( source, toml);
          std::vector<long> target;
-         local::string_to_value( ini, target);
+         local::string_to_value( toml, target);
          EXPECT_TRUE( source == target);
       }
 
@@ -159,7 +159,8 @@ namespace casual
             bool boolean;
             FirstVO first;
             short tiny;
-            std::vector<OtherVO> others;
+            std::vector< OtherVO> others;
+            std::vector< std::vector< OtherVO>> nested;
 
             CASUAL_CONST_CORRECT_SERIALIZE
             (
@@ -167,15 +168,16 @@ namespace casual
                CASUAL_SERIALIZE( first);
                CASUAL_SERIALIZE( tiny);
                CASUAL_SERIALIZE( others);
+               CASUAL_SERIALIZE( nested);
             )
 
          };
 
-         TEST( common_serialize_ini_archive, write_read_serializable)
+         TEST( common_serialize_toml_archive, write_read_serializable)
          {
             common::unittest::Trace trace;
 
-            std::string ini;
+            std::string toml;
             SomeVO source;
             source.boolean = true;
             source.first.integer = 654321;
@@ -194,10 +196,25 @@ namespace casual
                source.others.push_back( other);
             }
 
+            {
+               SomeVO::OtherVO nested;
+               nested.first_inner.huge = 123456789;
+               nested.other_inner.huge = 987654321;
+               source.nested.push_back( std::vector {nested});
+            }
+            {
+               SomeVO::OtherVO nested;
+               nested.first_inner.huge = 13579;
+               nested.other_inner.huge = 97531;
+               source.nested.push_back( std::vector {nested});
+            }
+            {
+               source.nested.emplace_back();
+            }
 
-            local::value_to_string( source, ini);
+            local::value_to_string( source, toml);
             SomeVO target;
-            local::string_to_value( ini, target);
+            local::string_to_value( toml, target);
 
             EXPECT_TRUE( source.boolean == target.boolean);
             EXPECT_TRUE( source.first.integer == target.first.integer);
@@ -208,27 +225,40 @@ namespace casual
             EXPECT_TRUE( source.others.at( 0).other_inner.huge == target.others.at( 0).other_inner.huge);
             EXPECT_TRUE( source.others.at( 1).first_inner.huge == target.others.at( 1).first_inner.huge);
             EXPECT_TRUE( source.others.at( 1).other_inner.huge == target.others.at( 1).other_inner.huge);
+
+            EXPECT_TRUE( source.nested.at( 0).at( 0).other_inner.huge == target.nested.at( 0).at( 0).other_inner.huge);
          }
 
-
-         TEST( common_serialize_ini_archive, test_control_characters)
+         TEST( common_serialize_toml_archive, serialize_non_objects)
          {
-            common::unittest::Trace trace;
-
-            std::vector< char> result;
-            for( short idx = 0; idx < 255; ++idx)
             {
-               if( std::iscntrl( static_cast<char>( idx), std::locale{}))
-               {
-                  result.push_back( idx);
-               }
+               long source{ 42};
+               auto writer = serialize::toml::writer();
+               writer << casual::common::serialize::named::value::make( source, nullptr);
+               std::string toml;
+               writer.consume( toml);
+               
+               auto reader = serialize::toml::strict::reader( toml);
+               long target;
+               reader >> casual::common::serialize::named::value::make( target, nullptr);
+
+               EXPECT_TRUE( source == target) << toml;
             }
 
-            auto expected = std::vector< char>{ 0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,127};
+            {
+               std::vector< short> source{ 1, 2, 3};
+               auto writer = serialize::toml::writer();
+               writer << casual::common::serialize::named::value::make( source, nullptr);
+               std::string toml;
+               writer.consume( toml);
+               
+               auto reader = serialize::toml::strict::reader( toml);
+               std::vector< short> target;
+               reader >> casual::common::serialize::named::value::make( target, nullptr);
 
-            EXPECT_TRUE( result == expected);
+               EXPECT_TRUE( source == target) << toml;
+            }
          }
       }
-
    } // common
 } // casual

@@ -29,7 +29,7 @@ namespace casual
                {
                   return []( bool, auto values) -> std::vector< std::string>
                   {
-                     return { "json", "yaml", "xml", "ini"};
+                     return { "json", "toml", "yaml", "xml"};
                   };
                }
                               
