@@ -1,4 +1,4 @@
-string development
+string
 ==================
 
 sample

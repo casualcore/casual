@@ -1,4 +1,4 @@
-# log development
+# log
 
 ## create new categories
 

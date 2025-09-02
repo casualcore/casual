@@ -6,13 +6,12 @@ development
    :maxdepth: 2
    :glob:
 
-   ../buffer/**/*.development
-   ../common/**/*.development
-   ../configuration/**/*.development
-   ../tools/**/*.development
+   ../tools/documentation/build/tools.development
+   ../buffer/**/buffer.development
    ../domain/**/environment.development
-   ../administration/**/*.development
    ../domain/**/*.development
+   ../common/**/*.development
+   ../administration/**/*.development
    ../service/**/*.development
    ../transaction/**/*.development
    ../gateway/**/*.development

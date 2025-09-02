@@ -16,7 +16,7 @@ Before we get started, we need to confirm that everything is installed and that 
 $ casual --version
 key       value
 --------  ----------------------------------------
-casual    1.7.0
+casual    1.8.0
 commit    aaa9becd066149dc7ea6cd93985ecfc4c39f3a51
 compiler  g++: 13.3.0
 ```
@@ -94,7 +94,7 @@ By running the command `casual domain --information`, you can see that your conf
 $ casual domain --information
 key                                             value
 ----------------------------------------------  --------------------------------
-version.casual                                  1.7.0
+version.casual                                  1.8.0
 version.compiler                                g++: 13.3.0
 domain.identity.name                            bobs-domain
 ...
@@ -334,7 +334,7 @@ If we list the queues again we can see that our message has been placed on the q
 $ casual queue --list-queues
 name     group           rc  rd     count  size  avg  E   EQ  DQ  UC  last
 -------  --------------  --  -----  -----  ----  ---  --  --  --  --  --------------------------------
-a        my-queue-group   0  0.000      1    12   12  ED   1   0   0  2024-11-12T20:24:56.291389+01:00
+a        my-queue-group   0  0.000      1    12   12  ED   1   0   0  2025-09-09T20:24:56.291389+01:00
 b        my-queue-group   0  0.000      0     0    0  ED   0   0   0  -
 c        my-queue-group   0  0.000      0     0    0  ED   0   0   0  -
 a.error  my-queue-group   0  0.000      0     0    0  ED   0   0   0  -
@@ -348,7 +348,7 @@ We can also list all the messages of an individual queue:
 $ casual queue --list-messages a
 id                                S  size  trid  rd  type      reply  available  timestamp
 --------------------------------  -  ----  ----  --  --------  -----  ---------  --------------------------------
-46b2bda5488b4a9cabbf2473c9476c78  C    12         0  X_OCTET/                 -  2024-11-12T20:24:56.291389+01:00
+46b2bda5488b4a9cabbf2473c9476c78  C    12         0  X_OCTET/                 -  2025-09-09T20:24:56.291389+01:00
 ```
 
 Just as you can use the CLI to put a message on the queue, you can use it to take one off it:
@@ -465,9 +465,9 @@ Our new forward group should be up and running:
 
 ```bash
 $ casual queue --list-forward-groups
-alias             pid    S  services  queues  commits  rollbacks  last
-----------------  -----  -  --------  ------  -------  ---------  ----
-my-forward-group  79474  E         1       1        0          0  -
+alias             pid    services  queues  commits  rollbacks  last
+----------------  -----  --------  ------  -------  ---------  --------------------------------
+my-forward-group  32864         1       1        0          0  -
 ```
 
 We can also look at the individual forwards:
@@ -497,9 +497,9 @@ We can expect to find a message on `c`:
 $ casual queue --list-queues
 name     group           rc  rd     count  size  avg  E   EQ  DQ  UC  last
 -------  --------------  --  -----  -----  ----  ---  --  --  --  --  --------------------------------
-a        my-queue-group   0  0.000      0     0    0  ED   2   2   0  2024-11-12T20:31:55.306181+01:00
-b        my-queue-group   0  0.000      0     0    0  ED   2   2   0  2024-11-12T20:31:55.306619+01:00
-c        my-queue-group   0  0.000      1    14   14  ED   1   0   0  2024-11-12T20:31:55.307367+01:00
+a        my-queue-group   0  0.000      0     0    0  ED   2   2   0  2025-09-09T20:31:55.306181+01:00
+b        my-queue-group   0  0.000      0     0    0  ED   2   2   0  2025-09-09T20:31:55.306619+01:00
+c        my-queue-group   0  0.000      1    14   14  ED   1   0   0  2025-09-09T20:31:55.307367+01:00
 a.error  my-queue-group   0  0.000      0     0    0  ED   0   0   0  -
 b.error  my-queue-group   0  0.000      0     0    0  ED   0   0   0  -
 c.error  my-queue-group   0  0.000      0     0    0  ED   0   0   0  -
@@ -524,7 +524,7 @@ We now have zero running instances of the forward:
 $ casual queue --list-forward-services
 alias               group             source  target                    reply  delay     S  CI  I  commits  rollbacks  last
 ------------------  ----------------  ------  ------------------------  -----  --------  -  --  -  -------  ---------  --------------------------------
-my-forward-service  my-forward-group  b       casual/example/uppercase  c      0.000000  E   0  0        1          0  2024-11-12T20:31:55.307684+01:0
+my-forward-service  my-forward-group  b       casual/example/uppercase  c      0.000000  E   0  0        1          0  2025-09-09T20:31:55.307684+01:0
 ```
 
 Note that the forwards will try to complete any ongoing calls before scaling down, so it might take a while before they reach the configured number of instances.
@@ -669,7 +669,7 @@ Our new outbound group will establish a connection to the other domain. Use the 
 $ casual gateway --list-connections
 name           id                                group        bound  runlevel   P    local            peer            created
 -------------  --------------------------------  -----------  -----  ---------  ---  ---------------  --------------  --------------------------------
-remote-domain  f0dac037b2ff458985a82d349670cac3  my-outbound  out    connected  1.4  127.0.0.1:53933  127.0.0.1:7778  2024-11-12T20:43:41.977759+01:00
+remote-domain  f0dac037b2ff458985a82d349670cac3  my-outbound  out    connected  1.5  127.0.0.1:53933  127.0.0.1:7778  2025-09-09T20:43:41.977759+01:00
 ```
 
 However, if we look at the available services...
