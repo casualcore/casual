@@ -34,7 +34,15 @@ namespace casual
             common::buffer::Payload buffer;
             header::Fields header;
             long user = 0;
-            platform::descriptor::type descriptor;
+            common::strong::correlation::id correlation;
+
+            CASUAL_LOG_SERIALIZE(
+               CASUAL_SERIALIZE( buffer);
+               CASUAL_SERIALIZE( header);
+               CASUAL_SERIALIZE( user);
+               CASUAL_SERIALIZE( correlation);
+            )
+
          };
       } // reply
 
@@ -53,28 +61,27 @@ namespace casual
       struct Fail
       {
          reply::Result result;
-         inline friend std::ostream& operator << ( std::ostream& out, const Fail& value) 
-         { 
-            return out << "{ buffer: " << value.result.buffer
-               << ", buffer: " << value.result.descriptor
-               << ", user: " << value.result.user
-               << '}';
-         }
+
+         CASUAL_LOG_SERIALIZE(
+            CASUAL_SERIALIZE( result);
+         )
       };
 
       struct Context
       {
          static Context& instance();
 
-         platform::descriptor::type async( const std::string& service, common::buffer::payload::Send buffer, async::Flag flags, const header::Fields& header);
+         common::strong::correlation::id async( const std::string& service, common::buffer::payload::Send buffer, async::Flag flags, const header::Fields& header);
+         common::strong::correlation::id async( service::Lookup&& lookup, common::buffer::payload::Send buffer, async::Flag flags, const header::Fields& header);
 
-         platform::descriptor::type async( service::Lookup&& lookup, common::buffer::payload::Send buffer, async::Flag flags, const header::Fields& header);
-
-         reply::Result reply( platform::descriptor::type descriptor, reply::Flag flags);
+         reply::Result reply( const common::strong::correlation::id& correlation, reply::Flag flags);
+         //! receives the next reply regardless of correlation.
+         //! `reply::Flag::any` is implicit
+         reply::Result reply( reply::Flag flags);
 
          sync::Result sync( const std::string& service, common::buffer::payload::Send buffer, sync::Flag flags, const header::Fields& header);
 
-         void cancel( platform::descriptor::type descriptor);
+         void cancel( const common::strong::correlation::id& correlation);
 
          void clear();
 
@@ -93,7 +100,7 @@ namespace casual
 
       private:
          Context();
-         bool receive( common::message::service::call::Reply& reply, platform::descriptor::type descriptor, reply::Flag);
+         bool receive( common::message::service::call::Reply& reply, const common::strong::correlation::id& correlation, reply::Flag);
 
          State m_state;
       };

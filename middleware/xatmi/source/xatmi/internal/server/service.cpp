@@ -46,7 +46,7 @@ namespace casual
 
                   // if we have a header, we associate it with the buffer handle -> give user access to it via handle
                   if( ! argument.header.empty())
-                     context().header().associate( common::buffer::handle::type{ result.data}, std::move( argument.header));
+                     context().header.associate( common::buffer::handle::type{ result.data}, std::move( argument.header));
 
                   return result;
                }
@@ -55,7 +55,7 @@ namespace casual
                {
                   if( jump.buffer.data)
                   {
-                     context().header().disassociate( common::buffer::handle::type{ jump.buffer.data});
+                     context().header.disassociate( common::buffer::handle::type{ jump.buffer.data});
                      return common::buffer::pool::holder().release( jump.buffer.data, jump.buffer.size);
                   }
 
@@ -66,7 +66,7 @@ namespace casual
                {
                   auto handle = common::buffer::handle::type{ jump.buffer.data};
 
-                  if( auto found = internal::context().header().find( handle))
+                  if( auto found = internal::context().header.find( handle))
                      return *found;
 
                   return {};
@@ -102,7 +102,9 @@ namespace casual
 
                casual::server::service::invoke::Result operator () ( casual::server::service::invoke::Parameter&& argument)
                {
-                  auto& xatmi_state = xatmi::internal::context().state();
+                  auto& xatmi_state = xatmi::internal::context().state;
+
+                  auto finalize_guard = common::execute::scope( [](){ xatmi::internal::context().finalize();});
 
                   // Set destination for the coming jump...
                   // we can't wrap the jump in some abstraction since it's
@@ -152,7 +154,7 @@ namespace casual
                void invoke( casual::server::service::invoke::Parameter& argument)
                {
 
-                  auto& xatmi_state = casual::xatmi::internal::context().state();
+                  auto& xatmi_state = casual::xatmi::internal::context().state;
 
                   // Type of buffer needed by Cobol API TPSVCSTART(), so save information.
                   // dismantle() returns a tuple with two "range".

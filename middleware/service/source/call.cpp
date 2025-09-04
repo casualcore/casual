@@ -27,7 +27,7 @@ namespace casual
 
       namespace send
       {
-         descriptor_type invoke( std::string service, const payload_type& payload, const Complement& complement)
+         common::strong::correlation::id invoke( std::string service, const payload_type& payload, const Complement& complement)
          {
             common::Trace trace{ "service::send::invoke"};
 
@@ -38,12 +38,20 @@ namespace casual
 
       namespace receive
       {
-         Result invoke( descriptor_type descriptor, Flag flags)
+         Result invoke( const common::strong::correlation::id& correlation, Flag flags)
          {
             common::Trace trace{ "service::receive::invoke"};
 
-            return call::context().reply( descriptor, flags);
+            return call::context().reply( correlation, flags);
          }
+
+         Result invoke( Flag flags)
+         {
+            common::Trace trace{ "service::receive::invoke"};
+
+            return call::context().reply( flags);
+         }
+
       } // receive
 
    } // service

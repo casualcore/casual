@@ -20,14 +20,14 @@ int tpsvcinfo_cobol_support(const TPSVCINFO** tpsvcinfo,
    // that isn't an invoked service.
    // should perhaps add a method to context that verifies that
    // there is an active service call, and generates an error
-   // if not (TBD !). Then use that method instead of state()
-   // (or in additon to state()).
+   // if not (TBD !). Then use that method instead of state
+   // (or in additon to state).
    //return casual::xatmi::internal::error::wrap( [&](){
    //   something...
    //});
-   *tpsvcinfo = &casual::xatmi::internal::context().state().information.argument;
-   *buffer_type = casual::xatmi::internal::context().state().buffer_type.c_str();
-   *buffer_subtype = casual::xatmi::internal::context().state().buffer_subtype.c_str();
+   *tpsvcinfo = &casual::xatmi::internal::context().state.information.argument;
+   *buffer_type = casual::xatmi::internal::context().state.buffer_type.c_str();
+   *buffer_subtype = casual::xatmi::internal::context().state.buffer_subtype.c_str();
    return 0; //Assumne OK. Only for now!!!! prototyping! 
 }
 

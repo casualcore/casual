@@ -28,6 +28,10 @@ namespace casual
             void update_handle( common::buffer::handle::type old_handle, common::buffer::handle::type new_handle) noexcept;
             void clear() noexcept;
 
+            CASUAL_LOG_SERIALIZE(
+               CASUAL_SERIALIZE( m_fields);
+            )
+
          private:
             struct Holder
             {
@@ -35,12 +39,47 @@ namespace casual
                casual::header::Fields fields;
 
                friend bool operator == ( const Holder& lhs, common::buffer::handle::type rhs) { return lhs.handle == rhs; }
+
+               CASUAL_LOG_SERIALIZE(
+                  CASUAL_SERIALIZE( handle);
+                  CASUAL_SERIALIZE( fields);
+               )
             };
 
             std::vector< Holder> m_fields;
          };
          
       } // header
+
+      namespace descriptor
+      {
+         struct Context
+         {
+            Context();
+
+            platform::descriptor::type map( const common::strong::correlation::id& correlation);
+            const common::strong::correlation::id& map( platform::descriptor::type descriptor) const;
+
+            //! erase the 'mapping' and return the corresponding descriptor. 
+            //! -1 if `correlation` is not found
+            platform::descriptor::type extract( const common::strong::correlation::id& correlation);
+
+            void remove( platform::descriptor::type descriptor);
+            void clear();
+            bool empty() const;
+
+            CASUAL_LOG_SERIALIZE(
+               CASUAL_SERIALIZE( m_correlations);
+            )
+         
+         private:
+
+            std::size_t index( platform::descriptor::type descriptor) const;
+
+            std::vector< common::strong::correlation::id> m_correlations;
+         };
+         
+      } // descriptor
 
       namespace state
       {
@@ -118,6 +157,12 @@ namespace casual
          // NOTE: Should perhaps be renamed to "service_normal_return" or something
          // something like that. It is set to true by Context::normal_return()...  
          bool TPRETURN_called{};
+
+         CASUAL_LOG_SERIALIZE(
+            CASUAL_SERIALIZE( buffer_type);
+            CASUAL_SERIALIZE( buffer_subtype);
+            CASUAL_SERIALIZE( TPRETURN_called);
+         )
       };
 
       //! @attention Only used for XATMI. To hold stuff that is used in the XATMI context
@@ -135,18 +180,20 @@ namespace casual
          //! called from extern casual_service_forward
          void forward( const char* service, char* data, long size);
 
-         inline State& state() noexcept { return m_state; }
-         inline header::Context& header() noexcept { return m_header; }
-
          void finalize();
 
-      
-      private:
-         Context() = default;
+         State state;
+         header::Context header; //! holds the header context
+         descriptor::Context descriptor; //! holds the descriptor context
 
-         State m_state;
-         header::Context m_header; //! holds the header context
-         
+         CASUAL_LOG_SERIALIZE(
+            CASUAL_SERIALIZE( state);
+            CASUAL_SERIALIZE( header);
+            CASUAL_SERIALIZE( descriptor);
+         )
+
+      private:
+         Context() = default;         
       };
 
       //! @attention Only used for XATMI.

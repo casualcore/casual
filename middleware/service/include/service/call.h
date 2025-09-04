@@ -20,8 +20,6 @@ namespace casual
    namespace service
    {
       using payload_type = common::buffer::Payload;
-      using descriptor_type = platform::descriptor::type;
-
 
       namespace call
       {
@@ -47,7 +45,7 @@ namespace casual
             header::Fields header;
          };
 
-         descriptor_type invoke( std::string service, const payload_type& payload, const Complement& complement = {});
+         common::strong::correlation::id invoke( std::string service, const payload_type& payload, const Complement& complement = {});
 
       } // send
 
@@ -56,7 +54,11 @@ namespace casual
          using Result = casual::service::call::reply::Result;
          using Flag = casual::service::call::reply::Flag;
 
-         Result invoke( descriptor_type descriptor, Flag flags = Flag{});
+         Result invoke( const common::strong::correlation::id& correlation, Flag flags = Flag{});
+
+         //! receives the next reply regardless of correlation. 
+         //! `Flag::any` is implicit
+         Result invoke( Flag flags = Flag{});
       } // receive
 
    } // service

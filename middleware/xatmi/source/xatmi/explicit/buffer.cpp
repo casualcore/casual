@@ -45,7 +45,7 @@ char* casual_buffer_reallocate( const char* ptr, long size)
       auto raw = casual::common::buffer::pool::holder().reallocate( handle, size < 0 ? 0 : size).raw();
 
       // update header associated with the handle, if any
-      casual::xatmi::internal::context().header().update_handle( handle, casual::common::buffer::handle::type{ raw });
+      casual::xatmi::internal::context().header.update_handle( handle, casual::common::buffer::handle::type{ raw });
 
       return raw;
    }
@@ -98,7 +98,7 @@ void casual_buffer_free( const char* const buffer)
    {
       auto handle = casual::common::buffer::handle::type{ buffer};
 
-      casual::xatmi::internal::context().header().disassociate( handle);
+      casual::xatmi::internal::context().header.disassociate( handle);
       casual::common::buffer::pool::holder().deallocate( handle);
    }
    catch( ...)

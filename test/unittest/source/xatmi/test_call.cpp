@@ -25,6 +25,7 @@
 
 #include "casual/xatmi.h"
 #include "casual/xatmi/extended.h"
+#include "casual/xatmi/internal/context.h"
 
 
 #include <map>
@@ -572,6 +573,10 @@ domain:
          EXPECT_TRUE( tx_commit() == TX_OK);
 
          tpfree( buffer);
+
+         // expect the global context for descriptor mapping to be empty
+         EXPECT_TRUE( xatmi::internal::context().descriptor.empty()) << CASUAL_NAMED_VALUE( xatmi::internal::context().descriptor);
+
       }
 
       TEST( test_xatmi_call, tx_begin__tpcall_service_echo__tx_commit___expect_ok)

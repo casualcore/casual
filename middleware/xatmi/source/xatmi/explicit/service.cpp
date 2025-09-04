@@ -34,6 +34,10 @@ namespace local
 {
    namespace
    {
+
+
+
+
       template< typename R, typename Flag>
       void handle_reply_buffer( R&& result, Flag flags, char** odata, long* olen)
       {
@@ -52,7 +56,7 @@ namespace local
          if( ! result.header.empty())
          {
             casual::common::log::debug( "result.header: ", result.header);
-            casual::xatmi::internal::context().header().associate( casual::common::buffer::handle::type{ *odata}, result.header);
+            casual::xatmi::internal::context().header.associate( casual::common::buffer::handle::type{ *odata}, result.header);
          }
 
       }
@@ -92,7 +96,7 @@ int casual_service_call( const char* const service, char* idata, const long ilen
       auto maybe_block = casual::xatmi::internal::signal::maybe_block( flags);
 
       auto get_complement = [ &](){
-         if( auto header = casual::xatmi::internal::context().header().find( handle))
+         if( auto header = casual::xatmi::internal::context().header.find( handle))
             return casual::service::call::Complement{ .flags = flags, .header = *header};
          else
             return casual::service::call::Complement{ .flags = flags};
@@ -153,17 +157,24 @@ int casual_service_asynchronous_send( const char* const service, char* idata, co
 
       auto maybe_block = casual::xatmi::internal::signal::maybe_block( flags);
 
+      auto& context = casual::xatmi::internal::context();
+
       auto get_complement = [ &](){
-         if( auto header = casual::xatmi::internal::context().header().find( handle))
+         if( auto header = context.header.find( handle))
             return casual::service::send::Complement{ .flags = flags, .header = *header};
          else
             return casual::service::send::Complement{ .flags = flags};
       };
 
-      return casual::service::send::invoke(
+      auto correlation = casual::service::send::invoke(
             service,
             buffer.payload(),
             get_complement());
+
+      if( casual::common::flag::contains( flags, Flag::no_reply))
+         return 0;
+      else
+         return context.descriptor.map( correlation);
    }
    catch( ...)
    {
@@ -172,7 +183,7 @@ int casual_service_asynchronous_send( const char* const service, char* idata, co
    return -1;
 }
 
-int casual_service_asynchronous_receive( int *const descriptor, char** odata, long* olen, const long bitmap)
+int casual_service_asynchronous_receive( int* descriptor, char** odata, long* olen, long bitmap)
 {
    casual::xatmi::internal::clear();
 
@@ -191,11 +202,23 @@ int casual_service_asynchronous_receive( int *const descriptor, char** odata, lo
       if( ! casual::common::flag::valid( valid_flags, flags))
          casual::common::code::raise::error( casual::common::code::xatmi::argument, "flags: ", flags, " outside of: ", valid_flags);
 
+      if( ! descriptor)
+         casual::common::code::raise::error( casual::common::code::xatmi::argument, "descriptor is nullptr");
+
+      auto& context = casual::xatmi::internal::context();
+
       auto maybe_block = casual::xatmi::internal::signal::maybe_block( flags);
 
-      auto result = casual::service::receive::invoke( *descriptor, flags);
+      auto result = [ &]()
+      {
+         if( casual::common::flag::contains( flags, Flag::any))
+            return casual::service::receive::invoke( flags);
+         else
+            return casual::service::receive::invoke( context.descriptor.map( *descriptor), flags);
+      }();
 
-      *descriptor = result.descriptor;
+      *descriptor = context.descriptor.extract( result.correlation);
+
       casual::xatmi::internal::user::code::set( result.user);
 
       local::handle_reply_buffer( result, flags, odata, olen);
@@ -207,7 +230,9 @@ int casual_service_asynchronous_receive( int *const descriptor, char** odata, lo
       casual::xatmi::internal::error::set( casual::common::code::xatmi::service_fail);
       casual::xatmi::internal::user::code::set( fail.result.user);
 
-      *descriptor = fail.result.descriptor;
+      if( fail.result.correlation)
+         *descriptor = casual::xatmi::internal::context().descriptor.extract( fail.result.correlation);
+
       casual::common::buffer::pool::holder().deallocate( casual::common::buffer::handle::type{ *odata});
       auto result = casual::common::buffer::pool::holder().insert( std::move( fail.result.buffer));
       *odata = std::get< 0>( result).raw();
@@ -226,10 +251,15 @@ int casual_service_asynchronous_receive( int *const descriptor, char** odata, lo
    return -1;
 }
 
-int casual_service_asynchronous_cancel( int id)
+int casual_service_asynchronous_cancel( int descriptor)
 {
-   return casual::xatmi::internal::error::wrap( [id](){
-      casual::service::call::context().cancel( id);
+   return casual::xatmi::internal::error::wrap( [descriptor]()
+   {
+      // could fail if the descriptor is a pending call within a transaction -> we need
+      // to keep the descriptor in context, user might want to try to receive the reply
+      casual::service::call::context().cancel( casual::xatmi::internal::context().descriptor.map( descriptor));
+      // cancel went ok, we can remove the descriptor from context
+      casual::xatmi::internal::context().descriptor.remove( descriptor);
    });
 }
 

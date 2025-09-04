@@ -52,7 +52,7 @@ namespace casual
             {
                struct Reply 
                {
-                  platform::descriptor::type descriptor;
+                  common::strong::correlation::id correlation;
                   common::message::service::call::caller::Request message;
                };
 
@@ -128,29 +128,28 @@ namespace casual
                      common::log::debug( "no_reply - no descriptor reservation");
 
                      // No reply, hence no descriptor and no transaction (we validated this before)
-                     return Reply{ 0, std::move( message)};
+                     return Reply{ {}, std::move( message)};
                   }
                   else
                   {
                      common::log::debug( "descriptor reservation - flags: ", flags);
 
-                     auto& descriptor = state.pending.reserve( message.correlation);
+                     auto& correlation = state.pending.reserve( message.correlation);
 
                      if( ! common::flag::contains( flags, async::Flag::no_transaction) && transaction)
                      {
                         message.trid = transaction.trid;
-                        transaction.associate( message.correlation);
+                        transaction.associate( correlation);
                      }
 
-                    
-                     return Reply{ descriptor.descriptor, std::move( message) };
+                     return Reply{ correlation, std::move( message)};
                   }
                }
             } // prepare
          } // <unnamed>
       } // local
       
-      descriptor_type Context::async( service::Lookup&& service, common::buffer::payload::Send buffer, async::Flag flags, const header::Fields& header)
+      common::strong::correlation::id Context::async( service::Lookup&& service, common::buffer::payload::Send buffer, async::Flag flags, const header::Fields& header)
       {
          common::Trace trace( "service::call::Context::async lookup");
 
@@ -166,7 +165,7 @@ namespace casual
          auto prepared = local::prepare::message( m_state, std::move( buffer), std::move( header), flags, target);
 
          // If some thing goes wrong we unreserve the descriptor
-         auto unreserve = common::execute::scope( [&](){ m_state.pending.unreserve( prepared.descriptor);});
+         auto unreserve = common::execute::scope( [&](){ m_state.pending.unreserve( prepared.correlation);});
 
 
          if( target.state != decltype( target.state)::idle)
@@ -181,14 +180,14 @@ namespace casual
 
             common::communication::device::blocking::send( target.process.ipc, prepared.message);
          }
-         common::log::line( common::log::category::event::service, "send|", target.service.name, '|', prepared.descriptor);
+         common::log::line( common::log::category::event::service, "send|", target.service.name, '|', prepared.correlation);
 
          unreserve.release();
-         return prepared.descriptor;
+         return prepared.correlation;
       }
 
 
-      descriptor_type Context::async( const std::string& service, common::buffer::payload::Send buffer, async::Flag flags, const header::Fields& header)
+      common::strong::correlation::id Context::async( const std::string& service, common::buffer::payload::Send buffer, async::Flag flags, const header::Fields& header)
       {
          return async( local::prepare::lookup( service, flags, m_state.deadline), std::move( buffer), flags, header); 
       }
@@ -218,10 +217,10 @@ namespace casual
          } // <unnamed>
       } // local
 
-      reply::Result Context::reply( descriptor_type descriptor, reply::Flag flags)
+      reply::Result Context::reply( const common::strong::correlation::id& correlation, reply::Flag flags)
       {
          common::Trace trace( "calling::Context::reply");
-         common::log::debug( "descriptor: ", descriptor, " flags: ", flags);
+         common::log::debug( "correlation: ", correlation, " flags: ", flags);
 
          //
          // TODO: validate input...
@@ -240,18 +239,16 @@ namespace casual
 
                return std::make_pair(
                   std::move( reply),
-                  m_state.pending.get( reply.correlation).descriptor);
+                  m_state.pending.validate( reply.correlation));
             }
             else
             {
-               auto& pending = m_state.pending.get( descriptor);
-
-               if( ! local::receive( reply, flags, pending.correlation))
+               if( ! local::receive( reply, flags, m_state.pending.validate( correlation)))
                   common::code::raise::error( common::code::xatmi::no_message);
 
                return std::make_pair(
                   std::move( reply),
-                  pending.descriptor);
+                  correlation);
             }
          };
 
@@ -261,14 +258,14 @@ namespace casual
 
          common::log::line( common::log::category::event::service , "receive|", xatmi_descriptor, '|', reply.code.result);
 
-         result.descriptor = xatmi_descriptor;
+         result.correlation = xatmi_descriptor;
          result.user = reply.code.user;
          result.buffer = std::move( reply.buffer);
          result.header = std::move( reply.header);
 
 
          // We unreserve pending (at end of scope, regardless of outcome)
-         auto discard = common::execute::scope( [&](){ m_state.pending.unreserve( result.descriptor);});
+         auto discard = common::execute::scope( [&](){ m_state.pending.unreserve( result.correlation);});
 
          // Update transaction state
          casual::transaction::context().update( reply);
@@ -290,6 +287,11 @@ namespace casual
             }
          }
          return result;
+      }
+
+      reply::Result Context::reply( reply::Flag flags)
+      {
+         return reply( common::strong::correlation::id{}, flags | reply::Flag::any);
       }
 
       namespace local
@@ -356,11 +358,10 @@ namespace casual
       }
 
 
-      void Context::cancel( descriptor_type descriptor)
+      void Context::cancel( const common::strong::correlation::id& correlation)
       {
-         m_state.pending.discard( descriptor);
+         m_state.pending.discard( correlation);
       }
-
 
       void Context::clear()
       {
@@ -420,7 +421,7 @@ namespace casual
       }
 
 
-      bool Context::receive( common::message::service::call::Reply& reply, descriptor_type descriptor, reply::Flag flags)
+      bool Context::receive( common::message::service::call::Reply& reply, const common::strong::correlation::id& correlation, reply::Flag flags)
       {
          if( common::flag::contains( flags, reply::Flag::any))
          {
@@ -429,8 +430,6 @@ namespace casual
          }
          else
          {
-            auto& correlation = m_state.pending.get( descriptor).correlation;
-
             return local::receive( reply, flags, correlation);
          }
       }

@@ -20,102 +20,67 @@ namespace casual
    {
       namespace state
       {
-         Pending::Pending()
-            : m_descriptors{
-            { 1, false },
-            { 2, false },
-            { 3, false },
-            { 4, false },
-            { 5, false },
-            { 6, false },
-            { 7, false },
-            { 8, false }}
-         {}
-
-         pending::Descriptor& Pending::reserve( const correlation_type& correlation)
+         namespace local
          {
-            auto& descriptor = reserve();
+            namespace
+            {
+               auto is_inactive = []( auto& correlation){ return ! correlation.valid();};
+               auto is_active = []( auto& correlation){ return correlation.valid();};
+            } // <unnamed>
+         } // local
 
-            descriptor.correlation = correlation;
-
-            return descriptor;
+         Pending::Pending()
+         {
+            m_correlations.reserve( 4);
          }
 
-         pending::Descriptor& Pending::reserve()
+         const common::strong::correlation::id& Pending::reserve( const common::strong::correlation::id& correlation)
          {
-            if( auto found = common::algorithm::find_if( m_descriptors, common::predicate::negate( std::mem_fn( &pending::Descriptor::active))))
+            if( auto found = common::algorithm::find_if( m_correlations, local::is_inactive))
             {
-               found->active = true;
-               found->target = {};
+               *found = correlation;
                return *found;
             }
+
+            return m_correlations.emplace_back( correlation);
+         }
+
+
+         void Pending::unreserve( const common::strong::correlation::id& correlation)
+         {
+            if( auto found = common::algorithm::find( m_correlations, correlation))
+               *found = {};
             else
+               common::code::raise::error( common::code::xatmi::descriptor, "invalid call correlation: ", correlation);
+         } 
+
+         const common::strong::correlation::id& Pending::validate( const common::strong::correlation::id& correlation) const
+         {
+            if( common::algorithm::contains( m_correlations, correlation))
+               return correlation;
+
+            common::code::raise::error( common::code::xatmi::descriptor, "failed to locate pending from correlation: ", correlation);
+         }
+
+
+         void Pending::discard( const common::strong::correlation::id& correlation)
+         {
+            if( auto found = common::algorithm::find( m_correlations, correlation))
             {
-               m_descriptors.emplace_back( m_descriptors.back().descriptor + 1, true);
-               return m_descriptors.back();
+               // Can't be associated with a transaction
+               if( casual::transaction::context().associated( *found))
+                  common::code::raise::error( common::code::xatmi::transaction, "correlation is associated with a transaction - ", *found);
+
+               // Discards the correlation (directly if in cache, or later if not)
+               common::communication::ipc::inbound::device().discard( *found);
+
+               unreserve( *found);
             }
-         }
-
-         void Pending::unreserve( descriptor_type descriptor)
-         {
-            if( auto found = common::algorithm::find( m_descriptors, descriptor))
-               found->active = false;
-            else
-               common::code::raise::error( common::code::xatmi::descriptor, "invalid call descriptor: ", descriptor);
-         }
-
-         bool Pending::active( descriptor_type descriptor) const
-         {
-            if( auto found = common::algorithm::find( m_descriptors, descriptor))
-               return found->active;
-            
-            return false;
-         }
-
-         const pending::Descriptor& Pending::get( descriptor_type descriptor) const
-         {
-            auto found = common::algorithm::find( m_descriptors, descriptor);
-            if( ! found || ! found->active)
-               common::code::raise::error( common::code::xatmi::descriptor, "invalid call descriptor: ", descriptor);
-
-            return *found;
-         }
-
-         pending::Descriptor& Pending::get( descriptor_type descriptor)
-         {
-            auto found = common::algorithm::find( m_descriptors, descriptor);
-            if( ! found || ! found->active)
-               common::code::raise::error( common::code::xatmi::descriptor, "invalid call descriptor: ", descriptor);
-
-            return *found;
-         }
-
-         const pending::Descriptor& Pending::get( const correlation_type& correlation) const
-         {
-            auto found = common::algorithm::find_if( m_descriptors, [&]( const auto& d){ return d.correlation == correlation;});
-            if( ! ( found && found->active))
-               common::code::raise::error( common::code::xatmi::descriptor, "failed to locate pending from correlation: ", correlation);
-               
-            return *found;
-         }
-
-         void Pending::discard( descriptor_type descriptor)
-         {
-            const auto& holder = get( descriptor);
-
-            // Can't be associated with a transaction
-            if( casual::transaction::context().associated( holder.correlation))
-               common::code::raise::error( common::code::xatmi::transaction, "descriptor is associated with a transaction - ", holder.descriptor);
-
-            // Discards the correlation (directly if in cache, or later if not)
-            common::communication::ipc::inbound::device().discard( holder.correlation);
-
-            unreserve( descriptor);
          }
 
          bool Pending::empty() const
          {
-            return common::algorithm::all_of( m_descriptors, common::predicate::negate( std::mem_fn( &pending::Descriptor::active)));
+            return common::algorithm::all_of( m_correlations, local::is_inactive);
          }
 
          std::vector< common::strong::correlation::id> Pending::finalize()
@@ -124,14 +89,8 @@ namespace casual
 
             std::vector< common::strong::correlation::id> result;
 
-            for( auto& descriptor : m_descriptors)
-            {
-               if( descriptor.active)
-               {
-                  result.push_back( descriptor.correlation);
-                  descriptor.active = false;
-               }
-            }
+            for( auto& correlation : m_correlations | std::views::filter( local::is_active))
+               result.push_back( std::exchange( correlation, {}));
 
             return result;
          }

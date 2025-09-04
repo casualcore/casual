@@ -122,26 +122,25 @@ namespace casual
             template< typename R>
             struct basic_receive
             {
-               using descriptor_type = platform::descriptor::type;
                using result_policy = R;
                using result_type = basic_result< service::receive::Result, result_policy>;
                using Flag = service::receive::Flag;
 
-               basic_receive( descriptor_type descriptor) : m_descriptor( descriptor) {}
+               basic_receive( common::strong::correlation::id correlation) : m_correlation( correlation) {}
 
                result_type operator () () const
                {
-                  return { service::receive::invoke( m_descriptor)};
+                  return { service::receive::invoke( m_correlation)};
                }
 
                result_type operator () ( Flag flags) const
                {
-                  return { service::receive::invoke( m_descriptor, flags)};
+                  return { service::receive::invoke( m_correlation, flags)};
                }
 
 
             private:
-               platform::descriptor::type m_descriptor;
+               common::strong::correlation::id m_correlation;
             };
 
             template< typename I, typename R>

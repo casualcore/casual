@@ -18,48 +18,22 @@ namespace casual
 {
    namespace service::call
    {
-      using descriptor_type = platform::descriptor::type;
-      using correlation_type = common::strong::correlation::id;
-
       namespace state
       {
-         namespace pending
-         {
-            struct Descriptor
-            {
-               using Contract = common::service::execution::timeout::contract::Type;
-
-               Descriptor( descriptor_type descriptor, bool active = true)
-                  : descriptor( descriptor), active( active) {}
-
-               descriptor_type descriptor;
-               bool active;
-               correlation_type correlation;
-               common::strong::process::id target{};
-               Contract contract{ Contract::linger};
-
-               inline friend bool operator == ( const Descriptor& lhs, descriptor_type rhs) { return lhs.descriptor == rhs;}
-            };
-            
-         } // pending
-
          struct Pending
          {
             Pending();
 
             //! Reserves a descriptor and associates it to message-correlation
-            pending::Descriptor& reserve( const correlation_type& correlation);
+            const common::strong::correlation::id& reserve( const common::strong::correlation::id& correlation);
 
-            void unreserve( descriptor_type descriptor);
+            void unreserve( const common::strong::correlation::id& correlation);
 
-            bool active( descriptor_type descriptor) const;
+            //! @throws if `correlation` is not found in pending correlations
+            const common::strong::correlation::id& validate( const common::strong::correlation::id& correlation) const;
 
-            const pending::Descriptor& get( descriptor_type descriptor) const;
-            const pending::Descriptor& get( const correlation_type& correlation) const;
-            pending::Descriptor& get( descriptor_type descriptor);
-
-            //! Tries to discard descriptor, throws if fail.
-            void discard( descriptor_type descriptor);
+            //! Tries to discard descriptor
+            void discard( const common::strong::correlation::id& correlation);
 
             //! @returns true if there are no pending replies or associated transactions.
             //!  Thus, it's ok to do a service-forward
@@ -68,11 +42,8 @@ namespace casual
             //! @returns all in-flight correlations, and clear state.
             std::vector< common::strong::correlation::id> finalize();
 
-
          private:
-
-            pending::Descriptor& reserve();
-            std::vector< pending::Descriptor> m_descriptors;
+            std::vector< common::strong::correlation::id> m_correlations;
          };
          
       } // state
