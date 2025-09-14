@@ -93,14 +93,27 @@ domain:
 
          // boot
          {
-            auto capture = administration::unittest::cli::command::execute( "casual domain --boot ", configuration);
+            auto capture = administration::unittest::cli::command::execute( "casual --color false domain --boot ", configuration);
             EXPECT_TRUE( capture) << CASUAL_NAMED_VALUE( capture);
+            
+            // test a few strings we expect in the output
+            EXPECT_TRUE( capture.standard.out.contains( "task: boot domain: A - started")) << CASUAL_NAMED_VALUE( capture.standard.out);
+            EXPECT_TRUE( capture.standard.out.contains( "  sub task: .casual.queue - started")) << CASUAL_NAMED_VALUE( capture.standard.out);
+            EXPECT_TRUE( capture.standard.out.contains( "  sub task: .casual.queue - done")) << CASUAL_NAMED_VALUE( capture.standard.out);
+            EXPECT_TRUE( capture.standard.out.contains( "task: boot domain: A - done")) << CASUAL_NAMED_VALUE( capture.standard.out);
+            
          }
 
          // shutdown
          {
-            auto capture = administration::unittest::cli::command::execute( "casual domain --shutdown");
+            auto capture = administration::unittest::cli::command::execute( "casual --color false domain --shutdown");
             EXPECT_TRUE( capture) << CASUAL_NAMED_VALUE( capture);
+
+            // test a few strings we expect in the output
+            EXPECT_TRUE( capture.standard.out.contains( "task: shutdown domain: A - started")) << CASUAL_NAMED_VALUE( capture.standard.out);
+            EXPECT_TRUE( capture.standard.out.contains( "  sub task: .casual.queue - started")) << CASUAL_NAMED_VALUE( capture.standard.out);
+            EXPECT_TRUE( capture.standard.out.contains( "  sub task: .casual.queue - done")) << CASUAL_NAMED_VALUE( capture.standard.out);
+            EXPECT_TRUE( capture.standard.out.contains( "task: shutdown domain: A - done")) << CASUAL_NAMED_VALUE( capture.standard.out);
          }
 
       }
@@ -368,6 +381,80 @@ z      error         -  -
          }
 
       }
+
+      TEST( cli_domain, scale_aliases)
+      {
+         common::unittest::Trace trace;
+         
+         auto domain = local::domain( R"(
+domain:
+   servers:
+      -  path: "${CASUAL_MAKE_SOURCE_ROOT}/middleware/example/server/bin/casual-example-server"
+         memberships: [ user]
+         instances: 1
+)");
+            
+         {
+            auto capture = administration::unittest::cli::command::execute( "casual --color false domain --scale-aliases casual-example-server 2");
+            EXPECT_TRUE( capture) << CASUAL_NAMED_VALUE( capture);
+
+            // test a few strings we expect in the output
+            EXPECT_TRUE( capture.standard.out.contains( "task: scale aliases - started"));
+            EXPECT_TRUE( capture.standard.out.contains( "  sub task: scale - started"));
+            EXPECT_TRUE( capture.standard.out.contains( "  alias spawn: casual-example-server"));
+            EXPECT_TRUE( capture.standard.out.contains( "  sub task: scale - done"));
+            EXPECT_TRUE( capture.standard.out.contains( "task: scale aliases - done"));
+         }
+      }
+
+      TEST( cli_domain, restart_aliases)
+      {
+         common::unittest::Trace trace;
+         
+         auto domain = local::domain( R"(
+domain:
+   servers:
+      -  path: "${CASUAL_MAKE_SOURCE_ROOT}/middleware/example/server/bin/casual-example-server"
+         memberships: [ user]
+         instances: 2
+)");
+            
+         {
+            auto capture = administration::unittest::cli::command::execute( "casual --color false domain --restart-aliases casual-example-server");
+            EXPECT_TRUE( capture) << CASUAL_NAMED_VALUE( capture);
+
+            // test a few strings we expect in the output
+            EXPECT_TRUE( capture.standard.out.contains( "task: restart aliases - started"));
+            EXPECT_TRUE( capture.standard.out.contains( "  sub task: casual-example-server - started"));
+            EXPECT_TRUE( capture.standard.out.contains( "  sub task: casual-example-server - done"));
+            EXPECT_TRUE( capture.standard.out.contains( "task: restart aliases - done"));
+
+         }
+         
+      }
+
+      TEST( cli_domain, restart_groups)
+      {
+         common::unittest::Trace trace;
+         
+         auto domain = local::domain( R"(
+domain:
+   servers:
+      -  path: "${CASUAL_MAKE_SOURCE_ROOT}/middleware/example/server/bin/casual-example-server"
+         memberships: [ user]
+         instances: 2
+)");
+
+         auto capture = administration::unittest::cli::command::execute( "casual --color false domain --restart-groups user");
+         EXPECT_TRUE( capture) << CASUAL_NAMED_VALUE( capture);
+
+         // test a few strings we expect in the output
+         EXPECT_TRUE( capture.standard.out.contains( "task: restart groups - started"));
+         EXPECT_TRUE( capture.standard.out.contains( "  sub task: casual-example-server - started"));
+         EXPECT_TRUE( capture.standard.out.contains( "  sub task: casual-example-server - done"));
+         EXPECT_TRUE( capture.standard.out.contains( "task: restart groups - done"));
+      }
+
 
       TEST( cli_domain, scale_out_to_5__expected_configured_instances_5)
       {
