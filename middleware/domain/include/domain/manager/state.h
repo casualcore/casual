@@ -301,8 +301,8 @@ namespace casual
             struct Group
             {
                std::string description;
-               std::vector< Server::id_type> servers;
-               std::vector< Executable::id_type> executables;
+               std::vector< strong::server::id> servers;
+               std::vector< strong::executable::id> executables;
 
                inline explicit operator bool() const noexcept { return ! servers.empty() || ! executables.empty();}
 

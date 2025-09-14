@@ -38,12 +38,6 @@ namespace casual
                   auto task = casual::task::create::unit( 
                      [ &state, description, done = std::move( done)]( casual::task::unit::id id) mutable
                      {
-                        if( done)
-                           exception::guard( [ &state, &done]()
-                           {
-                              done( state);
-                           });
-
                         manager::task::event::dispatch( state, [ &id, &description]()
                         {
                            Event event{ common::process::handle()};
@@ -52,6 +46,14 @@ namespace casual
                            event.state = decltype( event.state)::done;
                            return event;
                         });
+
+                        if( done)
+                        {
+                           exception::guard( [ &state, &done]()
+                           {
+                              done( state);
+                           });
+                        }
 
                         return casual::task::unit::action::Outcome::abort;
                      }
@@ -445,6 +447,8 @@ namespace casual
                            Trace trace{ "domain::manager::task::create::scale::local::group::create_task action"};
                            log::debug( "action: ", id);
 
+                           *shared = action( state);
+
                            manager::task::event::dispatch( state, [&]()
                            {
                               common::message::event::sub::Task event{ common::process::handle()};
@@ -453,8 +457,6 @@ namespace casual
                               event.state = decltype( event.state)::started;
                               return event;
                            });
-
-                           *shared = action( state);
 
                            group::scale( state, *shared);
 
@@ -489,7 +491,7 @@ namespace casual
                   Trace trace{ "domain::manager::task::create::scale::prepare action"};
 
                   state.scale( instances);
-                  
+
                   // indicate that the whole task is done. via `abort` 
                   return casual::task::unit::action::Outcome::abort;
                }));

@@ -149,8 +149,6 @@ namespace casual
                }
 
             } // scale
-
-
          } // <unnamed>
       } // local
 
@@ -260,27 +258,29 @@ namespace casual
             return event;
          });
 
-         // we need to send task event with the supplied correlation -> caller able to correlate
-         manager::task::event::dispatch( state, [ &correlation]()
+         auto description = string::compose( "boot domain: ", common::domain::identity().name);
+
+         // potentially send a "start event" for boot
+         manager::task::event::dispatch( state, [ &correlation, &description]()
          {
-               common::message::event::Task event{ common::process::handle()};
-               event.correlation = correlation;
-               event.description = "boot domain";
-               event.state = decltype( event.state)::started;
-               return event;
+            common::message::event::Task event{ common::process::handle()};
+            event.correlation = correlation;
+            event.description = description;
+            event.state = decltype( event.state)::started;
+            return event;
          });
 
          // make sure we sett runlevel when we're done.
-         auto done_callback = [ &state, correlation]( casual::task::unit::id)
+         auto done_callback = [ &state, correlation, description = std::move( description)]( casual::task::unit::id) mutable
          {
             state.runlevel = decltype( state.runlevel())::running;
 
             // we ignore the actual id of the task unit and use the supplied correlation -> caller able to correlate
-            manager::task::event::dispatch( state, [ &correlation]()
+            manager::task::event::dispatch( state, [ &correlation, &description]()
             {
                   common::message::event::Task event{ common::process::handle()};
                   event.correlation = correlation;
-                  event.description = "boot domain";
+                  event.description = description;
                   event.state = decltype( event.state)::done;
                   return event;
             });
@@ -301,8 +301,22 @@ namespace casual
          // abort all abortable running or pending task
          state.tasks.cancel();
 
+         // we send a 'start' task to the user. Only for CLI output purposes
+         auto correlation = strong::correlation::id::generate();
+         auto description = string::compose( "shutdown domain: ", common::domain::identity().name);
 
-         auto done_event = task::create::event::parent( state, string::compose( "shutdown domain: ", common::domain::identity()));
+         // potentially send a "start event" for shutdown
+         manager::task::event::dispatch( state, [ correlation, &description]()
+         {
+            common::message::event::Task event{ common::process::handle()};
+            event.correlation = correlation;
+            event.description = description;
+            event.state = decltype( event.state)::started;
+            return event;
+         });
+
+
+         auto done_event = task::create::event::parent( state, description);
 
          // prepare scaling to 0
          auto prepare_shutdown = []( auto& entity)
@@ -324,11 +338,19 @@ namespace casual
 
       namespace scale
       {
-
          void aliases( casual::manager::service::protocol::concurrent::Finalize< void> finalize, State& state, state::scale::Instances instances)
          {
             Trace trace{ "domain::manager::handle::scale::aliases"};
             log::debug( "instances: ", instances);
+
+            // potentially send a "start event" for scale aliases
+            manager::task::event::dispatch( state, []()
+            {
+               common::message::event::Task event{ common::process::handle()};
+               event.description = "scale aliases";
+               event.state = decltype( event.state)::started;
+               return event;
+            });
 
             auto done_event = task::create::event::parent( state, "scale aliases", [ finalize = std::move( finalize)]( const State&) mutable
             {
@@ -339,16 +361,19 @@ namespace casual
             {
                auto transform_id = []( auto& entity){ return entity.id;};
 
-               group.description = "scale aliases";
+               group.description = "scale";
                algorithm::transform( instances.servers, group.servers, transform_id);
                algorithm::transform( instances.executables, group.executables, transform_id);
             }
 
             auto prepare_task = manager::task::create::scale::prepare( state, std::move( instances));
 
-            auto scale_tasks = manager::task::create::scale::groups( state, { std::move( group)}); 
+            auto scale_tasks = manager::task::create::scale::groups( state, { std::move( group)});
 
-            state.tasks.then( std::move( prepare_task)).then( std::move( scale_tasks)).then( std::move( done_event));
+            state.tasks
+               .then( std::move( prepare_task))
+               .then( std::move( scale_tasks))
+               .then( std::move( done_event));
          }
 
          void shutdown( State& state, std::vector< common::process::Handle> processes)
@@ -410,6 +435,15 @@ namespace casual
             Trace trace{ "domain::manager::handle::restart::aliases"};
             log::debug( "aliases: ", aliases);
 
+            // potentially send a "start event" for restart aliases
+            manager::task::event::dispatch( state, []()
+            {
+               common::message::event::Task event{ common::process::handle()};
+               event.description = "restart aliases";
+               event.state = decltype( event.state)::started;
+               return event;
+            });
+            
             auto done_event = task::create::event::parent( state, "restart aliases", [ finalize = std::move( finalize)]( const State&) mutable
             {
                finalize();
@@ -418,6 +452,8 @@ namespace casual
             auto scalables = state.scalables( std::move( aliases));
 
             state::dependency::Group group{
+               // description is only used for the restart-exit scaling
+               .description = "resurrection",
                .servers = scalables.servers,
                .executables = scalables.executables,
             };
@@ -437,6 +473,15 @@ namespace casual
          {
             Trace trace{ "domain::manager::handle::restart::groups"};
             log::debug( "names: ", names);
+
+            // potentially send a "start event" for restart groups
+            manager::task::event::dispatch( state, []()
+            {
+               common::message::event::Task event{ common::process::handle()};
+               event.description = "restart groups";
+               event.state = decltype( event.state)::started;
+               return event;
+            });
 
             auto filter_groups = []( auto groups, const std::vector< std::string>& names)
             {
