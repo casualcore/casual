@@ -1,6 +1,11 @@
 # Changelog
 This is the changelog for `casual` and all changes are listed in this document.
 
+## [1.7.10] - 2025-09-17
+
+### Fixes
+- gateway: outbound/inbound don't handle service-call `no_reply` correctly ([#603](https://github.com/casualcore/casual/issues/603))
+
 ## [1.7.9] - 2025-07-13
 
 ### Fixes
