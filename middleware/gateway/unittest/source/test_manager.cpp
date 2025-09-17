@@ -1174,7 +1174,63 @@ domain:
             // all should be 0 pending
             EXPECT_TRUE(( algorithm::all_of( metrics, []( auto& metric){ return metric.pending == platform::time::unit::zero();})));
          }
+      }
 
+      TEST( gateway_manager, async_call_no_reply__expect_no_pending_state)
+      {
+         common::unittest::Trace trace;
+
+         auto b = local::domain( R"(
+domain: 
+   name: B   
+   servers:
+      - path: ${CASUAL_MAKE_SOURCE_ROOT}/middleware/example/server/bin/casual-example-server
+        memberships: [ user]
+
+   gateway:
+      inbound:
+         groups:
+            -  connections: 
+                  -  address: 127.0.0.1:7012
+)");
+
+         auto a = local::domain( R"(
+domain: 
+   name: A
+   gateway:
+      outbound:
+         groups:
+            -  connections:
+                  -  address: 127.0.0.1:7012
+)");
+
+
+         auto state = unittest::fetch::until( unittest::fetch::predicate::outbound::connected());
+         
+         ASSERT_TRUE( state.connections.size() == 1);
+         auto connection = state.connections.at( 0);
+
+         
+         // send call request to a->b connection with no-reply flag
+         {
+            common::message::service::call::callee::Request request{ common::process::handle()};
+            request.service.name = "casual/example/echo";
+            request.buffer.type = common::buffer::type::binary;
+            request.buffer.data = common::unittest::random::binary( 128);
+            request.flags = common::message::service::call::request::Flag::no_reply | common::message::service::call::request::Flag::no_transaction;
+            
+            communication::device::blocking::send( connection.ipc, request);
+         }
+
+         // we expect no pending tasks in the outbound group
+         {
+            auto state = unittest::state();
+
+            ASSERT_TRUE( state.outbound.groups.size() == 1);
+            auto& outbound = state.outbound.groups.at( 0);
+
+            EXPECT_TRUE( outbound.pending.tasks.empty()) << CASUAL_NAMED_VALUE( state);
+         }
       }
 
       TEST( gateway_manager_connect, inbound__native_tcp_connect_disconnect_10_times___expect_still_listening)

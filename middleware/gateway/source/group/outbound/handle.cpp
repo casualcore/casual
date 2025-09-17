@@ -180,6 +180,9 @@ namespace casual
                      {
                         void reply( State& state, const common::message::service::call::callee::Request& message, strong::execution::span::id parent, code::xatmi code)
                         {
+                           if( flag::contains( message.flags, decltype( message.flags)::no_reply))
+                              return;
+
                            auto reply = common::message::reverse::type( message);
                            reply.code.result = code;
                            
@@ -286,21 +289,17 @@ namespace casual
                            auto connection = state.connections.find_external( descriptor);
                            CASUAL_ASSERT( connection);
 
+                           // we only prepare a reply task and associate the transaction if the call is NOT no_reply
+                           if( ! flag::contains( message.flags, decltype( message.flags)::no_reply))
+                           {
+                              state.tasks.add( detail::create::task( state, std::as_const( message), parent, connection->descriptor()));
+                              transaction::associate_and_involve( state, std::as_const( message), connection->descriptor());
+                           }
+
                            if( message::protocol::compatible< common::message::service::call::callee::Request>( connection->protocol()))
-                           {
                               tcp::send( state, connection->descriptor(), message);
-
-                              state.tasks.add( detail::create::task( state, message, parent, connection->descriptor()));
-                              transaction::associate_and_involve( state, message, connection->descriptor());
-                           }
                            else
-                           {
-                              // we need to do this first, since we're doing a destructive transform on the message (we cant use after moved)
-                              state.tasks.add( detail::create::task( state, message, parent, connection->descriptor()));
-                              transaction::associate_and_involve( state, message, connection->descriptor());
-
                               tcp::send( state, connection->descriptor(), message::protocol::transform::to< common::message::service::call::v1_2::callee::Request>( std::move( message)));
-                           }
 
                         };
                      }

@@ -262,6 +262,10 @@ namespace casual
                            local::fake_service_error_reply( state, descriptor, shared->message, code::xatmi::timeout);
                            break;
                      }
+
+                     // if the call was no-reply, we're done
+                     if( flag::contains( shared->message.flags, decltype( shared->message.flags)::no_reply))
+                        return casual::task::concurrent::unit::Dispatch::done;
                      
                      return casual::task::concurrent::unit::Dispatch::pending;
 
