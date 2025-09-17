@@ -34,6 +34,10 @@ This is the changelog for `casual` and all changes are listed in this document.
 ### Fixes
 - common: time_point is not logged with iso8601 utc offset in some places ([#552](https://github.com/casualcore/casual/issues/552))
 
+## [1.7.10] - 2025-09-17
+
+### Fixes
+- gateway: outbound/inbound don't handle service-call `no_reply` correctly ([#603](https://github.com/casualcore/casual/issues/603))
 
 ## [1.7.9] - 2025-07-13
 
