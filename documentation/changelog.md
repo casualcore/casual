@@ -1,6 +1,11 @@
 # Changelog
 This is the changelog for `casual` and all changes are listed in this document.
 
+## [1.8.1] - 2025-09-18
+
+### Fixes
+- merge: forward-porting from `1.7.10`
+
 ## [1.8.0] - 2025-08-27
 
 ### Added
