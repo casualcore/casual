@@ -841,7 +841,7 @@ namespace casual
 
       }
 
-      TEST_F( buffer_field_repository, DISABLED_match__expecting_match)
+      TEST_F( buffer_field_repository, match__expecting_match)
       {
          common::unittest::Trace trace;
 
@@ -849,7 +849,7 @@ namespace casual
          ASSERT_TRUE( buffer != nullptr);
 
          ASSERT_FALSE( casual_field_add_string( &buffer, FLD_STRING1, "First string 1"));
-         ASSERT_FALSE( casual_field_add_string( &buffer, FLD_STRING1, "First string 1"));
+         ASSERT_FALSE( casual_field_add_string( &buffer, FLD_STRING1, "Other string"));
          ASSERT_FALSE( casual_field_add_float( &buffer, FLD_FLOAT1, 3.14));
 
          int match = 0;
@@ -860,7 +860,7 @@ namespace casual
          tpfree( buffer);
       }
 
-      TEST_F( buffer_field_repository, DISABLED_match__expecting_optimized_match)
+      TEST_F( buffer_field_repository, match__expecting_optimized_match)
       {
          common::unittest::Trace trace;
 
@@ -875,6 +875,80 @@ namespace casual
 
          const void* regex = nullptr;
          ASSERT_FALSE( casual_field_make_expression( R"x(FLD_STRING1\[1\] = Other string)x", &regex));
+
+         int match = 0;
+         ASSERT_FALSE( casual_field_match_expression( buffer, regex, &match));
+
+         EXPECT_TRUE( match);
+
+         ASSERT_FALSE( casual_field_free_expression( regex));
+
+         tpfree( buffer);
+      }
+
+      TEST_F( buffer_field_repository, match_all_field_types__expecting_match)
+      {
+         common::unittest::Trace trace;
+
+         auto buffer = tpalloc( CASUAL_FIELD, "", 512);
+         ASSERT_TRUE( buffer != nullptr);
+
+         auto match = []( const char* buffer, std::string_view expression)
+         {
+            int match = 0;
+            if( auto result = casual_field_match( buffer, expression.data(), &match))
+               throw std::runtime_error{ common::string::compose( "failed to match: ", ::casual_field_description( result))};
+
+            return match != 0;
+         };
+
+         auto some_binary = common::unittest::random::binary( 16);
+
+         ASSERT_FALSE( casual_field_add_string( &buffer, FLD_STRING1, "string"));
+         ASSERT_FALSE( casual_field_add_char( &buffer, FLD_CHAR1, 'a'));
+         ASSERT_FALSE( casual_field_add_short( &buffer, FLD_SHORT1, 123));
+         ASSERT_FALSE( casual_field_add_long( &buffer, FLD_LONG1, 123456));
+         ASSERT_FALSE( casual_field_add_float( &buffer, FLD_FLOAT1, 3.14));
+         ASSERT_FALSE( casual_field_add_double( &buffer, FLD_DOUBLE1, 3.14159));
+         {
+            auto string_like = common::binary::span::to_string_like( some_binary);
+            ASSERT_FALSE( casual_field_add_binary( &buffer, FLD_BINARY1, string_like.data(), string_like.size()));
+         }
+         
+         EXPECT_TRUE( match( buffer, R"(FLD_STRING1\[0\] = string)"));
+         EXPECT_TRUE( match( buffer, R"(FLD_CHAR1\[0\] = a)"));
+         EXPECT_TRUE( match( buffer, R"(FLD_SHORT1\[0\] = 123)"));
+         EXPECT_TRUE( match( buffer, R"(FLD_LONG1\[0\] = 123456)"));
+         EXPECT_TRUE( match( buffer, R"(FLD_FLOAT1\[0\] = 3.14)"));
+         EXPECT_TRUE( match( buffer, R"(FLD_DOUBLE1\[0\] = 3.14159)"));
+
+         {
+            // base64 has to many non regex friendly characters
+            // so we skip the test for now
+            //auto base64 = common::transcode::base64::encode( some_binary);
+            //EXPECT_TRUE( match( buffer, common::string::compose( R"(FLD_BINARY1\[0\] = )", base64))) << base64;
+         }
+
+         tpfree( buffer);
+      }
+
+      TEST_F( buffer_field_repository, match_start_and_end_of_line__expect__match)
+      {
+         common::unittest::Trace trace;
+
+         auto buffer = tpalloc( CASUAL_FIELD, "", 512);
+         ASSERT_TRUE( buffer != nullptr);
+
+         ASSERT_FALSE( casual_field_add_string( &buffer, FLD_STRING1, "string 1"));
+         ASSERT_FALSE( casual_field_add_string( &buffer, FLD_STRING2, "string 2"));
+         ASSERT_FALSE( casual_field_add_string( &buffer, FLD_STRING1, "string 3"));
+         ASSERT_FALSE( casual_field_add_string( &buffer, FLD_STRING2, "string 4"));
+         ASSERT_FALSE( casual_field_add_float( &buffer, FLD_FLOAT1, 3.14));
+
+
+         const void* regex = nullptr;
+         // match the second added string - the whole line
+         ASSERT_FALSE( casual_field_make_expression( R"x(^FLD_STRING2\[0\] = string 2$)x", &regex));
 
          int match = 0;
          ASSERT_FALSE( casual_field_match_expression( buffer, regex, &match));

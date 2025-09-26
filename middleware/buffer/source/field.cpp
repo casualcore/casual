@@ -1887,7 +1887,7 @@ namespace casual
                               stream << local::decode< long>( data);
                               break;
                            case CASUAL_FIELD_CHAR:
-                              stream << data;
+                              stream << *reinterpret_cast< const char*>( data);
                               break;
                            case CASUAL_FIELD_FLOAT:
                               stream << local::decode< float>( data);
@@ -1896,7 +1896,7 @@ namespace casual
                               stream << local::decode< double>( data);
                               break;
                            case CASUAL_FIELD_STRING:
-                              stream << data;
+                              stream << reinterpret_cast< const char*>( data);
                               break;
                            case CASUAL_FIELD_BINARY:
                            default:
@@ -1918,7 +1918,12 @@ namespace casual
 
                }
 
-            } //
+               auto regex_options()
+               {
+                  return std::regex::multiline | std::regex::ECMAScript;
+               }
+
+            } // <unnamed>
 
          } // transform
 
@@ -1949,7 +1954,7 @@ int casual_field_match( const char* const buffer, const char* const expression, 
    {
       if( match)
       {
-         *match = std::regex_search( std::move( stream).str(), std::regex{ expression});
+         *match = std::regex_search( std::move( stream).str(), std::regex{ expression, casual::buffer::field::transform::regex_options()});
       }
    }
    catch( const std::regex_error&)
@@ -1964,7 +1969,7 @@ int casual_field_make_expression( const char* expression, const void** regex)
 {
    try
    {
-      *regex = new std::regex{ expression, std::regex::optimize};
+      *regex = new std::regex{ expression, casual::buffer::field::transform::regex_options() | std::regex::optimize};
    }
    catch( const std::regex_error&)
    {
