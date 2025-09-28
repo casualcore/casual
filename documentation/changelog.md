@@ -1,6 +1,12 @@
 # Changelog
 This is the changelog for `casual` and all changes are listed in this document.
 
+## [1.8.2] - 2025-09-28
+
+### Fixes
+- buffer: casual_field_match does not "to_string" correctly ([#89](https://github.com/casualcore/casual/issues/89))
+
+
 ## [1.8.1] - 2025-09-18
 
 ### Fixes
