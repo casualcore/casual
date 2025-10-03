@@ -27,6 +27,8 @@
 #include "casual/xatmi/extended.h"
 #include "casual/xatmi/internal/context.h"
 
+#include "service/unittest/utility.h"
+
 
 #include <map>
 #include <vector>
@@ -299,6 +301,32 @@ domain:
 
          EXPECT_TRUE( tpcall( "casual/example/echo", buffer, 128, &buffer, &len, 0) == 0) << "tperrno: " << tperrnostring( tperrno);
 
+         tpfree( buffer);
+      }
+
+
+      TEST( test_xatmi_call, tpacall_x_octet__alloc_2000__send_128__expect_received_128)
+      {
+         common::unittest::Trace trace;
+
+         auto domain = local::domain();
+
+
+         auto buffer = tpalloc( X_OCTET, nullptr, 2000);
+         unittest::random::range( std::span{ buffer, 128});
+
+         auto receive_buffer = tpalloc( X_OCTET, nullptr, 0);
+         auto len = tptypes( receive_buffer, nullptr, nullptr);
+
+         // only send 128 bytes
+         EXPECT_TRUE( tpcall( "casual/example/echo", buffer, 128, &receive_buffer, &len, 0) == TPOK) << "tperrno: " << tperrnostring( tperrno);
+
+         ASSERT_TRUE( tptypes( receive_buffer, nullptr, nullptr) == 128) << "len: " << tptypes( receive_buffer, nullptr, nullptr);
+
+         EXPECT_TRUE( std::ranges::equal( std::span{ buffer, 128}, std::span{ receive_buffer, 128}));
+
+
+         tpfree( receive_buffer);
          tpfree( buffer);
       }
 

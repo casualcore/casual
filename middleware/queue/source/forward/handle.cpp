@@ -687,7 +687,7 @@ namespace casual
                               return;
                            }
 
-                           message::service::call::caller::Request request{ pending->buffer};
+                           message::service::call::caller::Request request{ buffer::payload::Send{ pending->buffer}};
                            request.process = process::handle();
                            request.correlation = pending->correlation;
                            request.trid = pending->trid;

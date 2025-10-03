@@ -17,21 +17,32 @@ namespace casual
    {
       namespace call
       {
-         Result invoke( std::string service, const payload_type& payload, const Complement& complement)
+         Result invoke( std::string service, common::buffer::payload::Send payload, const Complement& complement)
          {
             common::Trace trace{ "service::call::invoke"};
 
             return call::context().sync( std::move( service), payload, complement.flags, complement.header);
          }
+
+         Result invoke( std::string service, const common::buffer::Payload& payload, const Complement& complement)
+         {
+            return invoke( std::move( service), common::buffer::payload::Send{ payload}, complement);
+         }
+
       } // call
 
       namespace send
       {
-         common::strong::correlation::id invoke( std::string service, const payload_type& payload, const Complement& complement)
+         common::strong::correlation::id invoke( std::string service, common::buffer::payload::Send payload, const Complement& complement)
          {
             common::Trace trace{ "service::send::invoke"};
 
             return call::context().async( std::move( service), payload, complement.flags, complement.header);
+         }
+
+         common::strong::correlation::id invoke( std::string service, const common::buffer::Payload& payload, const Complement& complement)
+         {
+            return invoke( std::move( service), common::buffer::payload::Send{ payload}, complement);
          }
 
       } // send

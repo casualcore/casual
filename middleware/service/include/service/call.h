@@ -19,8 +19,6 @@ namespace casual
 {
    namespace service
    {
-      using payload_type = common::buffer::Payload;
-
       namespace call
       {
          using Flag = casual::service::call::sync::Flag;
@@ -32,7 +30,8 @@ namespace casual
             header::Fields header;
          };
 
-         Result invoke( std::string service, const payload_type& payload, const Complement& complement = {});
+         Result invoke( std::string service, common::buffer::payload::Send payload, const Complement& complement = {});
+         Result invoke( std::string service, const common::buffer::Payload& payload, const Complement& complement = {});
       } // call
 
       namespace send
@@ -45,7 +44,8 @@ namespace casual
             header::Fields header;
          };
 
-         common::strong::correlation::id invoke( std::string service, const payload_type& payload, const Complement& complement = {});
+         common::strong::correlation::id invoke( std::string service, common::buffer::payload::Send payload, const Complement& complement = {});
+         common::strong::correlation::id invoke( std::string service, const common::buffer::Payload& payload, const Complement& complement = {});
 
       } // send
 

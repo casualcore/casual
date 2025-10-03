@@ -34,10 +34,6 @@ namespace local
 {
    namespace
    {
-
-
-
-
       template< typename R, typename Flag>
       void handle_reply_buffer( R&& result, Flag flags, char** odata, long* olen)
       {
@@ -66,6 +62,8 @@ namespace local
 
 int casual_service_call( const char* const service, char* idata, const long ilen, char** odata, long* olen, const long bitmap)
 {
+   casual::common::Trace trace( "casual_service_call");
+
    casual::xatmi::internal::clear();
 
    if( service == nullptr)
@@ -93,6 +91,8 @@ int casual_service_call( const char* const service, char* idata, const long ilen
 
       auto buffer = casual::common::buffer::pool::holder().get( handle, ilen);
 
+      casual::common::log::debug( "buffer: ", buffer);
+
       auto maybe_block = casual::xatmi::internal::signal::maybe_block( flags);
 
       auto get_complement = [ &](){
@@ -102,7 +102,7 @@ int casual_service_call( const char* const service, char* idata, const long ilen
             return casual::service::call::Complement{ .flags = flags};
       };
 
-      auto result = casual::service::call::invoke( service, buffer.payload(), get_complement());
+      auto result = casual::service::call::invoke( service, buffer, get_complement());
 
       casual::xatmi::internal::user::code::set( result.user);
       local::handle_reply_buffer( result, flags, odata, olen);
@@ -128,6 +128,8 @@ int casual_service_call( const char* const service, char* idata, const long ilen
 
 int casual_service_asynchronous_send( const char* const service, char* idata, const long ilen, const long bitmap)
 {
+   casual::common::Trace trace( "casual_service_asynchronous_send");
+
    casual::xatmi::internal::clear();
 
    if( service == nullptr)
@@ -168,7 +170,7 @@ int casual_service_asynchronous_send( const char* const service, char* idata, co
 
       auto correlation = casual::service::send::invoke(
             service,
-            buffer.payload(),
+            buffer,
             get_complement());
 
       if( casual::common::flag::contains( flags, Flag::no_reply))
@@ -185,6 +187,8 @@ int casual_service_asynchronous_send( const char* const service, char* idata, co
 
 int casual_service_asynchronous_receive( int* descriptor, char** odata, long* olen, long bitmap)
 {
+   casual::common::Trace trace( "casual_service_asynchronous_receive");
+
    casual::xatmi::internal::clear();
 
    try 

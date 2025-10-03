@@ -131,15 +131,16 @@ namespace casual
 
       namespace payload
       {
-
+         //! A view over a payload, with information about how much of the buffer
+         //! that the user wants to use (transport) and how much that is reserved by the pool.
          struct Send
          {
             using size_type = platform::binary::size::type;
 
-            inline Send( const Payload& payload, size_type transport, size_type reserved)
+            explicit inline Send( const Payload& payload, size_type transport, size_type reserved)
                :  m_payload( payload), m_transport{ transport}, m_reserved{ reserved} {}
 
-            inline Send( const Payload& payload)
+            explicit inline Send( const Payload& payload)
                : m_payload( payload), m_transport( payload.data.size()) {}
 
             inline const Payload& payload() const noexcept { return m_payload.get();};

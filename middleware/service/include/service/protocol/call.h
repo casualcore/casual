@@ -114,7 +114,7 @@ namespace casual
 
             private:
 
-               service::payload_type m_payload;
+               common::buffer::Payload m_payload;
                input_policy m_input;
 
             };
@@ -194,7 +194,7 @@ namespace casual
                }
 
             private:
-               service::payload_type m_payload;
+               common::buffer::Payload m_payload;
                input_policy m_input;
             };
 

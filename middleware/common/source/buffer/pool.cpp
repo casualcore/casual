@@ -113,7 +113,7 @@ namespace casual
       payload::Send Holder::get( buffer::handle::type handle, platform::binary::size::type user_size)
       {
          if( ! handle)
-            return null_payload();
+            return payload::Send{ null_payload()};
 
          return get_pool( handle).get( handle, user_size);
       }
@@ -121,7 +121,7 @@ namespace casual
       payload::Send Holder::get( buffer::handle::type handle)
       {
          if( ! handle)
-            return null_payload();
+            return payload::Send{ null_payload()};
 
          return get_pool( handle).get( handle);
       }
