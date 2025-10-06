@@ -1,6 +1,12 @@
 # Changelog
 This is the changelog for `casual` and all changes are listed in this document.
 
+## [1.8.3] - 2025-10-06
+
+### Fixes
+- xatmi: tp(a)call does not respect user supplied buffer size ([#614](https://github.com/casualcore/casual/issues/614))
+
+
 ## [1.8.2] - 2025-09-28
 
 ### Fixes
