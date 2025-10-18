@@ -54,27 +54,6 @@ namespace casual
 
             namespace format
             {
-               struct Resource : common::compare::Order< Resource>
-               {
-                  Resource( std::string resource, std::string name, common::strong::domain::id id, std::string peer)
-                     : resource{ std::move( resource)}, name{ std::move( name)}, id{ id}, peer{ std::move( peer)} {}
-
-                  std::string resource;
-                  std::string name;
-                  common::strong::domain::id id;
-                  std::string peer;
-
-                  inline auto tie() const noexcept { return std::tie( resource, name, id, peer);}
-
-                  CASUAL_CONST_CORRECT_SERIALIZE(
-                     CASUAL_SERIALIZE( resource);
-                     CASUAL_SERIALIZE( name);
-                     CASUAL_SERIALIZE( id);
-                     CASUAL_SERIALIZE( peer);
-                  )
-
-               };
-
                std::string_view dash_if_empty( const std::string& string)
                {
                   if( string.empty())

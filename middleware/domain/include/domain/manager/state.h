@@ -344,14 +344,12 @@ namespace casual
                
             } // stakeholder
 
-            struct Stakeholder : common::compare::Equality< Stakeholder>
+            struct Stakeholder
             {
                stakeholder::Contract contract;
                common::process::Handle process;
 
                inline friend bool operator == ( const Stakeholder& lhs, common::strong::process::id rhs) noexcept { return lhs.process == rhs;}
-
-               inline auto tie() const noexcept { return std::tie( process);}
 
                CASUAL_LOG_SERIALIZE(
                   CASUAL_SERIALIZE( contract);

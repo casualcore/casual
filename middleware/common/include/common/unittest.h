@@ -15,7 +15,6 @@
 #include "common/execute.h"
 #include "common/exception/capture.h"
 #include "common/code/raise.h"
-#include "common/compare.h"
 #include "common/communication/ipc.h"
 #include "common/transaction/id.h"
 
@@ -28,7 +27,7 @@ namespace casual
    namespace common::unittest
    {
       using base_message = common::message::basic_message< common::message::Type::unittest_message>;
-      struct Message : base_message, Compare< Message>
+      struct Message : base_message
       {
          Message();
          Message( platform::binary::type payload);
@@ -41,9 +40,9 @@ namespace casual
             CASUAL_SERIALIZE( payload);
          )
 
-         platform::binary::type payload;
+         inline friend bool operator == ( const Message&, const Message&) = default;
 
-         inline auto tie() const noexcept { return std::tie( correlation, payload);}
+         platform::binary::type payload;
       };
 
       namespace message::transport

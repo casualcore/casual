@@ -12,7 +12,6 @@
 #include "common/serialize/macro.h"
 #include "casual/platform.h"
 #include "common/message/type.h"
-#include "common/compare.h"
 #include "common/transaction/id.h"
 
 #include "common/domain.h"
@@ -269,17 +268,17 @@ namespace casual
 
          namespace listener
          {
-            struct Address : common::Compare< Address>
+            struct Address
             {
                std::string host;
                std::string port;
+
+               inline friend auto operator <=> ( const Address& lhs, const Address& rhs) = default;
 
                CASUAL_CONST_CORRECT_SERIALIZE(
                   CASUAL_SERIALIZE( host);
                   CASUAL_SERIALIZE( port);
                )
-
-               inline auto tie() const noexcept { return std::tie( host, port);}
             };
 
             enum struct Runlevel : short
@@ -302,7 +301,7 @@ namespace casual
 
          } // listener
 
-         struct Listener : common::Compare< Listener>
+         struct Listener 
          {
             std::string group;
             listener::Runlevel runlevel{};
@@ -311,11 +310,13 @@ namespace casual
             common::chronology::time_point created{};
          
             //@ deprecated
-            struct
+            struct Limit
             {
                std::string note = "NOT USED";
                platform::binary::size::type size = 0;
                platform::binary::size::type messages = 0;
+
+               inline friend auto operator <=> ( const Limit&, const Limit&) = default;
                
                CASUAL_CONST_CORRECT_SERIALIZE(
                   CASUAL_SERIALIZE( note);
@@ -333,7 +334,7 @@ namespace casual
                CASUAL_SERIALIZE( limit);
             )
 
-            inline auto tie() const noexcept { return std::tie( group, address);}
+            inline friend auto operator <=> ( const Listener& lhs, const Listener& rhs) = default;
          };
 
          namespace connection
@@ -343,6 +344,8 @@ namespace casual
                common::strong::process::id pid{};
                common::strong::file::descriptor::id descriptor{};
 
+               inline friend auto operator <=> ( const Identifier&, const Identifier&) = default;
+
                CASUAL_CONST_CORRECT_SERIALIZE(
                   CASUAL_SERIALIZE( pid);
                   CASUAL_SERIALIZE( descriptor);
@@ -350,18 +353,19 @@ namespace casual
             };
          }
 
-         struct Routing : common::Compare< Routing>
+         struct Routing 
          {
             std::string name;
             std::vector< connection::Identifier> connections;
 
             inline friend bool operator == ( const Routing& lhs, std::string_view name) { return lhs.name == name;}
+            inline friend auto operator <=> ( const Routing& lhs, const Routing& rhs) = default;
 
             CASUAL_CONST_CORRECT_SERIALIZE(
                CASUAL_SERIALIZE( name);
                CASUAL_SERIALIZE( connections);
             )
-            inline auto tie() const noexcept { return std::tie( name);}
+            
 
          };
 

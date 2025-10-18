@@ -271,13 +271,13 @@ namespace casual
          } // discard
       } // lookup
 
-      struct Attributes : common::compare::Equality< Attributes>
+      struct Attributes 
       {
          std::string properties;
          std::string reply;
          common::chronology::time_point available;
 
-         inline auto tie() const noexcept { return std::tie( properties, reply, available);}
+         inline friend auto operator <=> ( const Attributes&, const Attributes&) = default;
          
          CASUAL_CONST_CORRECT_SERIALIZE(
             CASUAL_SERIALIZE( properties);

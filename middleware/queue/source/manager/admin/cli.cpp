@@ -91,17 +91,16 @@ namespace casual
                   }
                } // instance
 
-               struct Instance : compare::Order< Instance>
+               struct Instance
                {
-                  instance::State state = instance::State::internal;
                   std::string queue;
+                  instance::State state = instance::State::internal;
                   process::Handle process;
                   std::string alias;
                   std::string description;
                   platform::size::type order{};
 
-                  auto tie() const noexcept { return std::tie( queue, state, alias, description);}
-
+                  inline friend auto operator <=> ( const Instance& lhs, const Instance& rhs) = default;
                };
 
                auto instances( const manager::admin::model::State& state)

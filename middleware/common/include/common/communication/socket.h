@@ -8,7 +8,6 @@
 
 
 #include "common/strong/id.h"
-#include "common/compare.h"
 
 #include <fcntl.h>
 #include <sys/socket.h>

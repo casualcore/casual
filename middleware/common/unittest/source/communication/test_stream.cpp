@@ -7,7 +7,6 @@
 #include "common/unittest.h"
 #include "common/communication/stream.h"
 #include "common/message/type.h"
-#include "common/compare.h"
 #include "common/message/dispatch.h"
 
 namespace casual
@@ -23,28 +22,28 @@ namespace casual
                namespace
                {
                   using base_message = common::message::basic_message< common::message::Type::unittest_message>;
-                  struct Message : base_message, Compare< Message>
+                  struct Message : base_message
                   {
                      long m_long{};
                      short m_short{};
                      std::string m_string;
                      platform::binary::type m_binary;
+
+                     inline friend bool operator == ( const Message&, const Message&) = default;
                      
                      CASUAL_CONST_CORRECT_SERIALIZE(
-                     {
                         base_message::serialize( archive);
                         CASUAL_SERIALIZE( m_long);
                         CASUAL_SERIALIZE( m_short);
                         CASUAL_SERIALIZE( m_string);
                         CASUAL_SERIALIZE( m_binary);
-                     })
-
-                     auto tie() const { return std::tie( m_long, m_short, m_string, m_binary);}
+                     )
                   };
 
                   auto message()
                   {
                      local::Message result;
+                     result.correlation = strong::correlation::id::generate();
                      unittest::random::set( result.m_long);
                      unittest::random::set( result.m_short);
                      result.m_string = unittest::random::string( 128);

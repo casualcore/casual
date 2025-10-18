@@ -121,7 +121,7 @@ namespace casual
 
             namespace v1_3
             {
-               struct Queue : common::Compare< Queue>
+               struct Queue 
                {
                   Queue() = default;
                   inline Queue( std::string name, platform::size::type retries) : name{ std::move( name)}, retries{ retries} {}
@@ -131,8 +131,8 @@ namespace casual
                   platform::size::type retries{};
 
                   inline friend bool operator == ( const Queue& lhs, std::string_view rhs) { return lhs.name == rhs;}
-
-                  inline auto tie() const noexcept { return std::tie( name);}
+                  inline friend bool operator == ( const Queue& lhs, const Queue& rhs) { return lhs.name == rhs.name;}
+                  inline friend auto operator <=> ( const Queue& lhs, const Queue& rhs) { return lhs.name <=> rhs.name;}
 
                   CASUAL_CONST_CORRECT_SERIALIZE(
                      CASUAL_SERIALIZE( name);

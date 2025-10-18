@@ -7,7 +7,6 @@
 #pragma once
 
 #include "common/traits.h"
-#include "common/compare.h"
 #include "common/serialize/macro.h"
 #include "common/uuid.h"
 

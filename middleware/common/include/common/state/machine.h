@@ -40,6 +40,8 @@ namespace casual
 
          inline friend auto operator <=> ( Machine lhs, Enum rhs) { return lhs.m_current <=> rhs;}
          inline friend bool operator == ( Machine lhs, Enum rhs) { return lhs.m_current == rhs;}
+         inline friend auto operator <=> ( Machine, Machine) = default;
+         inline friend bool operator == ( Machine, Machine) = default;
 
          inline friend std::ostream& operator << ( std::ostream& out, Machine value) { return out << description( value.m_current);}
 

@@ -1131,12 +1131,15 @@ namespace casual
                         Trace trace{ "domain::manager::handle::configuration::stakeholder::registration"};
                         common::log::debug( "message: ", message);
 
-                        state::configuration::Stakeholder stakeholder;
-                        stakeholder.process = message.process;
-                        stakeholder.contract = message.contract;
+                        state::configuration::Stakeholder stakeholder{
+                           .contract = message.contract,
+                           .process = message.process
+                        };
 
-                        // make sure we can ask for configuration state later...
-                        algorithm::append_unique_value( stakeholder, state.configuration.stakeholders);
+                        if( auto found = algorithm::find( state.configuration.stakeholders, message.process.pid))
+                           *found = std::move( stakeholder);
+                        else
+                           state.configuration.stakeholders.push_back( std::move( stakeholder));
 
                         state.multiplex.send( message.process, common::message::reverse::type( message));
                      };

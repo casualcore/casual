@@ -11,7 +11,6 @@
 #include "casual/concepts.h"
 #include "common/algorithm.h"
 #include "common/string.h"
-#include "common/compare.h"
 #include "common/code/raise.h"
 #include "common/code/serialize.h"
 
@@ -716,7 +715,7 @@ PRAGMA synchronous;
          }
       } // scoped
 
-      struct Version : casual::common::Compare< Version>
+      struct Version
       {
          Version() = default;
          Version( long major, long minor) : major{ major}, minor{ minor} {}
@@ -726,7 +725,7 @@ PRAGMA synchronous;
          
          explicit operator bool() { return *this != Version{};}
 
-         inline auto tie() const -> decltype( std::tie( major, minor)) { return std::tie( major, minor);}
+         inline friend auto operator <=> ( const Version&, const Version&) = default;
 
          friend std::ostream& operator << ( std::ostream& out, const Version& value) 
          { 

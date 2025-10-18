@@ -1067,16 +1067,14 @@ note: some aliases are unrestartable
 
                namespace log
                {
-                  struct Type : common::compare::Order< Type>
+                  struct Type 
                   {
-                     Type( strong::process::id pid, std::string alias, std::filesystem::path path) 
-                        : pid{ pid}, alias{ std::move( alias)}, path{ std::move( path)} {}
-
-                     strong::process::id pid;
                      std::string alias;
+                     strong::process::id pid;
                      std::filesystem::path path;
 
-                     auto tie() const noexcept { return std::tie( alias, pid);}
+                     inline friend auto operator <=> ( const Type&, const Type&) = default;
+
                   };
 
                   auto reopen()
@@ -1094,7 +1092,7 @@ note: some aliases are unrestartable
                         auto instances = algorithm::accumulate( state.executables, std::vector< Type>{}, []( auto result, auto& executable)
                         {
                            for( auto& instance : executable.instances)
-                              result.emplace_back( Type{ instance.handle, executable.alias, executable.path});
+                              result.push_back( Type{ .alias = executable.alias, .pid = instance.handle, .path = executable.path});
                         
                            return result;
                         });

@@ -505,12 +505,14 @@ namespace casual
       {
          namespace
          {
-            struct Foo : compare::Equality< Foo>
+            struct Foo 
             {
                std::string a;
                long b = 0;
                bool c = false;
                std::tuple< int, std::string> d;
+
+               inline friend bool operator == ( const Foo&, const Foo&) = default;
 
                CASUAL_CONST_CORRECT_SERIALIZE(
                   CASUAL_SERIALIZE( a);
@@ -518,11 +520,6 @@ namespace casual
                   CASUAL_SERIALIZE( c);
                   CASUAL_SERIALIZE( d);
                )
-
-               auto tie() const 
-               {
-                  return std::tie( a, b, c, d);
-               }
             };
          } // <unnamed>
       } // local

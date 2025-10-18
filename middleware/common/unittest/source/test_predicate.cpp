@@ -107,14 +107,15 @@ namespace casual
       {
          namespace
          {
-            struct State : Compare< State>
+            struct State
             {
                State( int a, int b) : a{ a}, b{ b} {}
                
                int a{};
                int b{};
+
+               inline friend auto operator <=> ( const State&, const State&) = default;
                
-               auto tie() const noexcept { return std::tie( a, b);}
                friend std::ostream& operator << ( std::ostream& out, const State& s) { return out << "{ a: " << s.a << ", b: " << s.b << '}';}
             };
 

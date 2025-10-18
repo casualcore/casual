@@ -85,7 +85,7 @@ namespace casual
 
                   } // instance
 
-                  struct Instance : compare::Order< Instance>
+                  struct Instance 
                   {
                      std::string service;
                      instance::State state{};
@@ -94,7 +94,7 @@ namespace casual
                      std::string description;
                      platform::size::type hops{};
 
-                     auto tie() const noexcept { return std::tie( service, hops, alias, description);}                     
+                     inline friend auto operator <=> ( const Instance& lhs, const Instance& rhs) = default;               
                   };
 
                   std::vector< Instance> instances( const admin::model::State& state)

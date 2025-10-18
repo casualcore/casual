@@ -411,6 +411,7 @@ namespace casual
 
          constexpr friend bool operator == ( const basic_message& lhs, message::Type rhs) { return message::type( lhs) == rhs;}
          constexpr friend bool operator == ( const basic_message& lhs, const strong::correlation::id& rhs) { return lhs.correlation == rhs;}
+         inline friend bool operator == ( const basic_message& lhs, const basic_message& rhs) = default;
 
          CASUAL_CONST_CORRECT_SERIALIZE(
             // correlation is part of ipc::message::Complete, and is

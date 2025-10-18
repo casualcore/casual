@@ -48,7 +48,7 @@ namespace casual
          } // entity
 
          template< typename C>
-         struct Entity : common::Compare< Entity< C>>
+         struct Entity
          {
             explicit Entity( C configuration) : configuration{ std::move( configuration)}
             {}
@@ -59,8 +59,8 @@ namespace casual
 
             inline friend bool operator == ( const Entity& lhs, const std::string& rhs) { return lhs.configuration.alias == rhs;}
             inline friend bool operator == ( const Entity& lhs, common::process::compare_equal_to_handle auto rhs) { return lhs.process.pid == rhs;}
-
-            auto tie() const { return std::tie( configuration);}
+            inline friend bool operator == ( const Entity&, const Entity&) = default;
+            inline friend auto operator <=> ( const Entity&, const Entity&) = default;
 
             CASUAL_LOG_SERIALIZE(
                CASUAL_SERIALIZE( state);
