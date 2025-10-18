@@ -330,8 +330,8 @@ namespace casual
 
             namespace format
             {
-
-               auto type_info()
+               template< typename T>
+               void type( std::ostream& out, T&& value, std::initializer_list< type::Name> roles)
                {
                   auto format_size = []( const type::Info& info)
                   {
@@ -341,21 +341,14 @@ namespace casual
                         return common::string::compose( '[', info.network.size.min, "..*]");
                      return common::string::compose( '[', info.network.size.min, "..", info.network.size.max, ']');
                   };
-                  return common::terminal::format::formatter< type::Info>::construct( 
-                     std::string{ " | "},
+
+                  common::terminal::format::print( common::terminal::format::Delimiter{ " | " },
+                     extract::types( std::forward< T>( value), std::move( roles)),
                      common::terminal::format::column( "role name", []( const type::Info& i) { return i.name.role;}, common::terminal::color::no_color),
                      common::terminal::format::column( "network type", []( const type::Info& i) { return i.network.type;}, common::terminal::color::no_color),
                      common::terminal::format::column( "network size", format_size, common::terminal::color::no_color, common::terminal::format::Align::right),
                      common::terminal::format::column( "description", []( const type::Info& i) { return i.name.description;}, common::terminal::color::no_color)
                   );
-               }
-
-               template< typename T>
-               void type( std::ostream& out, T&& value, std::initializer_list< type::Name> roles)
-               {
-                  auto formatter = type_info();
-
-                  formatter.print( out, extract::types( std::forward< T>( value), std::move( roles)));
                }
 
 

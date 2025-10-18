@@ -199,7 +199,7 @@ namespace casual
                   return value;
                }
 
-               auto messages()
+               auto messages( auto&& messages)
                {
                   auto format_state = []( auto& message)
                   {
@@ -218,7 +218,7 @@ namespace casual
                   auto format_timestamp = []( auto& message) { return normalize::timestamp( message.timestamp);};
                   auto format_available = []( auto& message) { return normalize::timestamp( message.available);};
 
-                  return terminal::format::formatter< manager::admin::model::Message>::construct(
+                  terminal::format::print( messages,
                      terminal::format::column( "id", []( auto& message) { return message.id;}, terminal::color::yellow),
                      terminal::format::column( "S", format_state, terminal::color::no_color),
                      terminal::format::column( "size", []( auto& message) { return message.size;}, terminal::color::cyan, terminal::format::Align::right),
@@ -231,7 +231,7 @@ namespace casual
                   );
                }
 
-               auto groups()
+               auto groups( auto&& groups)
                {
                   auto format_alias = []( auto& group) { return hyphen_if_empty( group.alias);};
                   auto format_pid = []( auto& group) { return group.process.pid;};
@@ -245,7 +245,7 @@ namespace casual
                      return "-";
                   };
 
-                  return terminal::format::formatter< manager::admin::model::Group>::construct(
+                  terminal::format::print( groups,
                      terminal::format::column( "alias", format_alias, terminal::color::yellow),
                      terminal::format::column( "pid", format_pid, terminal::color::white, terminal::format::Align::right),
                      terminal::format::column( "ipc", format_ipc, terminal::color::no_color, terminal::format::Align::right),
@@ -255,18 +255,18 @@ namespace casual
                   );
                }
 
-               auto affected()
+               auto affected( auto&& affected)
                {
                   auto format_name = []( auto& value) { return value.queue;};
 
-                  return terminal::format::formatter< queue::restore::Affected>::construct(
+                  terminal::format::print( affected,
                      terminal::format::column( "name", format_name, terminal::color::yellow, terminal::format::Align::right),
                      terminal::format::column( "count", std::mem_fn( &queue::restore::Affected::count), terminal::color::green)
                   );
                }
 
 
-               auto queues( const manager::admin::model::State& state)
+               auto queues( const manager::admin::model::State& state, auto&& queues)
                {
                   using second_t = std::chrono::duration< double>;
 
@@ -300,7 +300,7 @@ namespace casual
                   
                   if( ! terminal::output::directive().porcelain())
                   {
-                     return terminal::format::formatter< manager::admin::model::Queue>::construct(
+                     terminal::format::print( queues,
                         terminal::format::column( "name", []( const auto& q){ return q.name;}, terminal::color::yellow),
                         terminal::format::column( "group", format_group),
                         terminal::format::column( "rc", []( const auto& q){ return q.retry.count;}, common::terminal::color::blue, terminal::format::Align::right),
@@ -317,7 +317,7 @@ namespace casual
                   }
                   else
                   {
-                     return terminal::format::formatter< manager::admin::model::Queue>::construct(
+                     terminal::format::print( queues,
                         terminal::format::column( "name", []( const auto& q){ return q.name;}),
                         terminal::format::column( "group", format_group),
                         terminal::format::column( "rc", []( const auto& q){ return q.retry.count;}),
@@ -338,14 +338,14 @@ namespace casual
                namespace remote
                {
                   //! @deprecated
-                  auto queues( const manager::admin::model::State& state)
+                  auto queues( auto&& queues)
                   {
                      auto format_pid = [&]( auto& queue){ return queue.process.pid;};
 
                      auto format_name = []( auto& queue){ return queue.name;};
          
          
-                     return terminal::format::formatter< manager::admin::model::remote::Queue>::construct(
+                     terminal::format::print( queues,
                         terminal::format::column( "name", format_name, terminal::color::yellow),
                         terminal::format::column( "pid", format_pid, common::terminal::color::blue)
                      );
@@ -355,7 +355,7 @@ namespace casual
 
                namespace queue
                {
-                  auto instances()
+                  auto instances( auto&& instances)
                   {
                      struct format_state
                      {
@@ -385,7 +385,7 @@ namespace casual
                      
                      auto format_description = []( auto& instance){ return hyphen_if_empty( instance.description);};
          
-                     return terminal::format::formatter< local::normalize::Instance>::construct(
+                     terminal::format::print( instances,
                         terminal::format::column( "queue", format_queue, terminal::color::yellow),
                         terminal::format::custom::column( "state", format_state{}),
                         terminal::format::column( "pid", format_pid, terminal::color::white, terminal::format::Align::right),
@@ -469,7 +469,7 @@ namespace casual
 
                   using time_type = std::chrono::duration< double>;
 
-                  auto services( const manager::admin::model::State& state)
+                  auto services( const manager::admin::model::State& state, auto&& services)
                   {
                      auto column_target = []()
                      {
@@ -500,7 +500,7 @@ namespace casual
 
                      if( ! terminal::output::directive().porcelain())
                      {
-                        return terminal::format::formatter< manager::admin::model::forward::Service>::construct(
+                        terminal::format::print( services,
                            column_alias(),
                            column_group( state.forward.groups),
                            column_source(),
@@ -517,7 +517,7 @@ namespace casual
                      }
                      else
                      {
-                        return terminal::format::formatter< manager::admin::model::forward::Service>::construct(
+                        terminal::format::print( services,
                            column_alias(),
                            column_group( state.forward.groups),
                            column_source(),
@@ -534,7 +534,7 @@ namespace casual
                      }
                   }
    
-                  auto queues( const manager::admin::model::State& state)
+                  auto queues( const manager::admin::model::State& state, auto&& queues)
                   {
                      auto column_target = []()
                      {
@@ -551,7 +551,7 @@ namespace casual
 
                      if( ! terminal::output::directive().porcelain())
                      {
-                        return terminal::format::formatter< manager::admin::model::forward::Queue>::construct(
+                        terminal::format::print( queues,
                            column_alias(),
                            column_group( state.forward.groups),
                            column_source(),
@@ -567,7 +567,7 @@ namespace casual
                      }
                      else
                      {
-                        return terminal::format::formatter< manager::admin::model::forward::Queue>::construct(
+                        terminal::format::print( queues,
                            column_alias(),
                            column_group( state.forward.groups),
                            column_source(),
@@ -583,7 +583,7 @@ namespace casual
                      }
                   }
 
-                  auto groups( const manager::admin::model::State& state)
+                  auto groups( const manager::admin::model::State& state, auto&& groups)
                   {
                      auto column_pid = []()
                      {
@@ -669,7 +669,7 @@ namespace casual
 
                      if( ! terminal::output::directive().porcelain())
                      {
-                        return terminal::format::formatter< manager::admin::model::forward::Group>::construct(
+                        terminal::format::print( groups,
                            column_alias(),
                            column_pid(),
                            column_services(),
@@ -681,7 +681,7 @@ namespace casual
                      }
                      else
                      {
-                        return terminal::format::formatter< manager::admin::model::forward::Group>::construct(
+                        terminal::format::print( groups,
                            column_alias(),
                            column_pid(),
                            column_services(),
@@ -951,9 +951,7 @@ The following options has legend:
                      {
                         auto state = call::state();
 
-                        auto formatter = format::queues( state);
-
-                        formatter.print( std::cout, algorithm::sort( state.queues));
+                        format::queues( state, algorithm::sort( state.queues));
                      };
 
                      return argument::Option{
@@ -973,9 +971,8 @@ The following options has legend:
                      {
                         auto state = call::state();
 
-                        auto formatter = format::queues( state);
+                        format::queues( state, algorithm::sort( state.zombies));
 
-                        formatter.print( std::cout, algorithm::sort( state.zombies));
                      };
 
                      return argument::Option{
@@ -994,9 +991,7 @@ The following options has legend:
                      auto invoke = []()
                      {
                         auto state = call::state();
-                        auto instances = normalize::instances( state);
-                        auto formatter = format::queue::instances();
-                        formatter.print( std::cout, instances);
+                        format::queue::instances( normalize::instances( state));
                      };
                      
                      return argument::Option{
@@ -1015,7 +1010,7 @@ The following options has legend:
                      auto invoke = []()
                      {
                         auto state = call::state();
-                        format::groups().print( std::cout, state.groups);
+                        format::groups( state.groups);
                      };
                      
                      return argument::Option{
@@ -1033,8 +1028,7 @@ The following options has legend:
                      auto invoke = []( const std::string& queue)
                      {
                         auto messages = call::messages( queue);
-                        auto formatter = format::messages();
-                        formatter.print( std::cout, messages);
+                        format::messages( messages);
                      };
                      
                      return argument::Option{
@@ -1055,7 +1049,7 @@ The following options has legend:
                         auto invoke = []()
                         {
                            auto state = call::state();
-                           format::forward::services( state).print( std::cout, state.forward.services);
+                           format::forward::services( state, state.forward.services);
                         };
                         
                         return argument::Option{
@@ -1073,7 +1067,7 @@ The following options has legend:
                         auto invoke = []()
                         {
                            auto state = call::state();
-                           format::forward::queues( state).print( std::cout, state.forward.queues);
+                           format::forward::queues( state, state.forward.queues);
                         };
                         
                         return argument::Option{
@@ -1091,7 +1085,7 @@ The following options has legend:
                         auto invoke = []()
                         {
                            auto state = call::state();
-                           format::forward::groups( state).print( std::cout, state.forward.groups);
+                           format::forward::groups( state, state.forward.groups);
                         };
                         
                         return argument::Option{
@@ -1509,7 +1503,7 @@ Example:
                {
                   auto invoke = []( const std::vector< std::string>& queues)
                   {
-                     format::affected().print( std::cout, queue::restore::queue( queues));
+                     format::affected( queue::restore::queue( queues));
                   };
 
                   return argument::Option{
@@ -1627,7 +1621,7 @@ if used with `--force true` messages will be removed regardless of state.)";
                {
                   auto invoke = []( const std::vector< std::string>& queues)
                   {
-                     format::affected().print( std::cout, queue::clear::queue( queues));
+                     format::affected( queue::clear::queue( queues));
                   };
 
                   return argument::Option{
@@ -1792,7 +1786,7 @@ casual queue --metric-reset a b)"
                {
                   auto invoke = []()
                   {
-                     terminal::formatter::key::value().print( std::cout, information::call());
+                     terminal::format::pair::print( information::call());
                   };
 
                   return argument::Option{
@@ -1810,8 +1804,7 @@ casual queue --metric-reset a b)"
                   auto invoke = []()
                   {
                      auto state = call::state();
-                     auto formatter = format::remote::queues( state);
-                     formatter.print( std::cout, algorithm::sort( state.remote.queues));
+                     format::remote::queues( algorithm::sort( state.remote.queues));
                   };
                   
                   return argument::Option{

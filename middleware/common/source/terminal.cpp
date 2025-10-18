@@ -119,7 +119,7 @@ Hence, column order can differ between `porcelain` and "regular".
                return local::deduce::option( local::option::header_default());
          }
 
-         bool Directive::explict_header() const
+         bool Directive::explicit_header() const
          {
             return ! m_header.empty() && m_header != "auto" && local::deduce::option( m_header);
          }
@@ -220,7 +220,7 @@ Hence, column order can differ between `porcelain` and "regular".
 
       namespace format
       {
-         namespace customize
+         namespace ostream
          {
             namespace local
             {
@@ -236,7 +236,7 @@ Hence, column order can differ between `porcelain` and "regular".
                } // <unnamed>
             } // local
 
-            Stream::Stream( std::ostream& stream)
+            scope::scope( std::ostream& stream)
                : m_stream( &stream),
                   m_flags( stream.flags( local::flags())),
                   m_precision( stream.precision( output::directive().precision()))
@@ -244,12 +244,12 @@ Hence, column order can differ between `porcelain` and "regular".
 
             }
 
-            Stream::~Stream()
+            scope::~scope()
             {
                m_stream->flags( m_flags);
                m_stream->precision( m_precision);
             }
-         }
+         } // ostream
 
       } // format
 

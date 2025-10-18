@@ -267,10 +267,14 @@ namespace casual
 
             namespace format
             {
-               template< typename P>
-               auto process()
+               auto processes( auto& processes)
                {
-                  auto format_configured_instances = []( const P& entity)
+                  auto format_alias = []( const auto& entity)
+                  {
+                     return entity.alias;
+                  };
+
+                  auto format_configured_instances = []( const auto& entity)
                   {
                      return algorithm::count_if( entity.instances, []( auto& instances)
                      {
@@ -280,7 +284,7 @@ namespace casual
                      });
                   };
 
-                  auto format_running_instances = []( const P& entity)
+                  auto format_running_instances = []( const auto& entity)
                   {
                      return common::algorithm::count_if( entity.instances, []( auto& instance)
                      {
@@ -288,14 +292,14 @@ namespace casual
                      });
                   };
 
-                  auto format_restart = []( const P& entity)
+                  auto format_restart = []( const auto& entity)
                   {
                      if( entity.restart) 
                         return "true";
                      return "false";
                   };
 
-                  auto format_state = []( const P& entity)
+                  auto format_state = []( const auto& entity)
                   {
                      if( ! entity.enabled) 
                         return "disabled";
@@ -308,32 +312,37 @@ namespace casual
                      return "enabled";
                   };
 
-                  auto format_restarts = []( const P& entity)
+                  auto format_restarts = []( const auto& entity)
                   {
                      return entity.restarts;
                   };
 
+                  auto format_path = []( const auto& entity)
+                  {
+                     return entity.path;
+                  };
+
                   if( ! terminal::output::directive().porcelain())
                   {
-                     return terminal::format::formatter< P>::construct(
-                        terminal::format::column( "alias", std::mem_fn( &P::alias), terminal::color::yellow, terminal::format::Align::left),
+                     terminal::format::print( processes,
+                        terminal::format::column( "alias", format_alias, terminal::color::yellow, terminal::format::Align::left),
                         terminal::format::column( "CI", format_configured_instances, terminal::color::no_color, terminal::format::Align::right),
                         terminal::format::column( "I", format_running_instances, terminal::color::white, terminal::format::Align::right),
                         terminal::format::column( "state", format_state, terminal::color::white, terminal::format::Align::left),
                         terminal::format::column( "restart", format_restart, terminal::color::blue, terminal::format::Align::right),
                         terminal::format::column( "#r", format_restarts, terminal::color::red, terminal::format::Align::right),
-                        terminal::format::column( "path", std::mem_fn( &P::path), terminal::color::blue, terminal::format::Align::left)
+                        terminal::format::column( "path", format_path, terminal::color::blue, terminal::format::Align::left)
                      );
                   }
                   else
                   {
-                     return terminal::format::formatter< P>::construct(
-                        terminal::format::column( "alias", std::mem_fn( &P::alias)),
+                     terminal::format::print( processes,
+                        terminal::format::column( "alias", format_alias),
                         terminal::format::column( "CI", format_configured_instances),
                         terminal::format::column( "I", format_running_instances),
                         terminal::format::column( "restart", format_restart),
                         terminal::format::column( "#r", format_restarts),
-                        terminal::format::column( "path", std::mem_fn( &P::path)),
+                        terminal::format::column( "path", format_path),
                         terminal::format::column( "state", format_state)
                      );
                   }
@@ -341,20 +350,6 @@ namespace casual
 
 
             } // format
-
-            namespace print
-            {
-               template< typename VO>
-               void processes( std::ostream& out, std::vector< VO>& processes)
-               {
-                  out << std::boolalpha;
-
-                  auto formatter = format::process< VO>();
-
-                  formatter.print( std::cout, processes);
-               }
-
-            } // print
 
             namespace predicate
             {
@@ -412,7 +407,7 @@ namespace casual
                   void invoke( std::vector< std::string> aliases)
                   {
                      // make sure we set precision and such for cout.
-                     terminal::format::customize::Stream scope{ std::cout};
+                     terminal::format::ostream::scope scope{ std::cout};
 
                      auto state = local::call::state();
 
@@ -578,7 +573,7 @@ namespace casual
 
                   void invoke()
                   {
-                     terminal::formatter::key::value().print( std::cout, call());
+                     terminal::format::pair::print( call());
                   }
 
                   constexpr auto description = R"(collect aggregated general information about this domain)";
@@ -768,7 +763,7 @@ With supplied configuration files, in the form of glob patterns.
                      {
                         auto state = call::state();
 
-                        print::processes( std::cout, algorithm::sort( state.servers, predicate::less::alias));
+                        format::processes( algorithm::sort( state.servers, predicate::less::alias));
                      };
 
                      return argument::Option{
@@ -785,7 +780,7 @@ With supplied configuration files, in the form of glob patterns.
                      {
                         auto state = call::state();
 
-                        print::processes( std::cout, algorithm::sort( state.executables, predicate::less::alias));
+                        format::processes( algorithm::sort( state.executables, predicate::less::alias));
                      };
 
                      return argument::Option{
@@ -846,7 +841,6 @@ With supplied configuration files, in the form of glob patterns.
                               return std::tie( lhs.alias, lhs.spawnpoint) < std::tie( rhs.alias, rhs.spawnpoint);
                            });
 
-                           auto create_formatter = []()
                            {
                               auto format_alias = []( auto& instance) { return instance.alias;};
                               auto format_pid = []( auto& instance) { return to_string( instance.handle.pid);};
@@ -856,7 +850,7 @@ With supplied configuration files, in the form of glob patterns.
 
                               if( ! terminal::output::directive().porcelain())
                               {
-                                 return terminal::format::formatter< Type>::construct(
+                                 terminal::format::print( instances,
                                     terminal::format::column( "alias", format_alias, terminal::color::yellow, terminal::format::Align::left),
                                     terminal::format::column( "state", format_state, terminal::color::cyan, terminal::format::Align::left),
                                     terminal::format::column( "pid", format_pid, terminal::color::no_color, terminal::format::Align::right),
@@ -866,7 +860,7 @@ With supplied configuration files, in the form of glob patterns.
                               }
                               else
                               {
-                                 return terminal::format::formatter< Type>::construct(
+                                 terminal::format::print( instances,
                                     terminal::format::column( "pid", format_pid),
                                     terminal::format::column( "ipc", format_ipc),
                                     terminal::format::column( "state", format_state),
@@ -875,8 +869,6 @@ With supplied configuration files, in the form of glob patterns.
                                  );
                               }
                            };
-
-                           create_formatter().print( std::cout, instances);
                         };
 
                         return argument::Option{ 
@@ -916,7 +908,6 @@ With supplied configuration files, in the form of glob patterns.
                               return std::tie( lhs.alias, lhs.spawnpoint) < std::tie( rhs.alias, rhs.spawnpoint);
                            });
 
-                           auto create_formatter = []()
                            {
                               auto format_pid = []( auto& instance) { return to_string( instance.handle);};
                               auto format_state = []( auto& instance) { return instance.state;};
@@ -925,7 +916,7 @@ With supplied configuration files, in the form of glob patterns.
 
                               if( ! terminal::output::directive().porcelain())
                               {
-                                 return terminal::format::formatter< Type>::construct(
+                                 terminal::format::print( instances,
                                     terminal::format::column( "alias", format_alias, terminal::color::yellow, terminal::format::Align::left),
                                     terminal::format::column( "state", format_state, terminal::color::cyan, terminal::format::Align::left),
                                     terminal::format::column( "pid", format_pid, terminal::color::no_color, terminal::format::Align::right),
@@ -934,16 +925,14 @@ With supplied configuration files, in the form of glob patterns.
                               }
                               else
                               {
-                                 return terminal::format::formatter< Type>::construct(
+                                 terminal::format::print( instances,
                                     terminal::format::column( "pid", format_pid),
                                     terminal::format::column( "state", format_state),
                                     terminal::format::column( "alias", format_alias),
                                     terminal::format::column( "spawnpoint", format_spawnpoint)
                                  );
                               }
-                           };
-
-                           create_formatter().print( std::cout, instances);
+                           }
                         };
 
                         return argument::Option{ 
@@ -1112,20 +1101,17 @@ note: some aliases are unrestartable
 
                         algorithm::sort( instances);
 
-                        auto create_formatter = []()
                         {
                            auto format_pid = []( auto& i) { return i.pid;};
                            auto format_alias = []( auto& i) { return i.alias;};
                            auto format_path = []( auto& i) { return i.path;};
 
-                           return terminal::format::formatter< Type>::construct(
+                           terminal::format::print( instances,
                               terminal::format::column( "pid", format_pid, terminal::color::white, terminal::format::Align::right),
                               terminal::format::column( "alias", format_alias, terminal::color::cyan, terminal::format::Align::left),
                               terminal::format::column( "path", format_path, terminal::color::blue, terminal::format::Align::left)
                            );
-                        };
-
-                        create_formatter().print( std::cout, instances);
+                        }
                      };
 
                      return argument::Option{

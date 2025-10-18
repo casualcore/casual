@@ -100,7 +100,7 @@ namespace casual
                   return value.alias;
                };
 
-               auto connections()
+               auto connections( auto&& connections)
                {
                   auto format_domain_name = []( auto& value)
                   { 
@@ -177,11 +177,9 @@ namespace casual
                      }
                   };
 
-                  using Formatter = terminal::format::formatter<  manager::admin::model::Connection>;
-
                   if( ! terminal::output::directive().porcelain())
                   {
-                     return Formatter::construct( 
+                     terminal::format::print( connections,
                         terminal::format::column( "name", format_domain_name, terminal::color::yellow),
                         terminal::format::column( "id", format_domain_id, terminal::color::no_color),
                         terminal::format::column( "group", format::group, terminal::color::yellow),
@@ -216,7 +214,7 @@ namespace casual
                      auto format_ipc = []( auto& value){ return value.process.ipc;};
 
                      
-                     return Formatter::construct( 
+                     terminal::format::print( connections,
                         terminal::format::column( "name", format_domain_name),
                         terminal::format::column( "id", format_domain_id),
                         terminal::format::column( "bound", format_bound),
@@ -232,9 +230,8 @@ namespace casual
                   }
                }
 
-               auto listeners() 
+               auto listeners( auto&& listeners) 
                {
-                  using Formatter = terminal::format::formatter<  manager::admin::model::Listener>;
 
                   if( ! terminal::output::directive().porcelain())
                   {
@@ -271,7 +268,7 @@ namespace casual
                         }
                      };
 
-                     return Formatter::construct( 
+                     terminal::format::print( listeners,
                         terminal::format::column( "group", format::group, terminal::color::yellow),
                         terminal::format::custom::column( "runlevel", format_runlevel{}),
                         terminal::format::column( "address", format_address, terminal::color::white),
@@ -311,7 +308,7 @@ namespace casual
                         return "<unknown>";
                      };
 
-                     return Formatter::construct( 
+                     terminal::format::print( listeners, 
                         terminal::format::column( "host", format_host),
                         terminal::format::column( "port", format_port),
                         terminal::format::column( "limit size", format_limit_size),
@@ -341,7 +338,7 @@ namespace casual
                      return value.connect;
                   };
 
-                  auto inbound()
+                  auto inbound( auto&& groups)
                   {
                      auto format_limit = []( auto& value) -> std::string
                      { 
@@ -350,9 +347,8 @@ namespace casual
                         return "-";
                      };
 
-                     using Formatter = terminal::format::formatter< manager::admin::model::inbound::Group>;
 
-                     return Formatter::construct( 
+                     terminal::format::print( groups,
                         terminal::format::column( "alias", format::alias, terminal::color::yellow),
                         terminal::format::column( "pid", format_pid, terminal::color::white),
                         terminal::format::column( "runlevel", format_runlevel, terminal::color::no_color),
@@ -361,16 +357,14 @@ namespace casual
                      );
                   }
 
-                  auto outbound()
+                  auto outbound( auto&& groups)
                   {
                      auto format_order = []( auto& value)
                      { 
                         return value.order;
                      };
 
-                     using Formatter = terminal::format::formatter< manager::admin::model::outbound::Group>;
-
-                     return Formatter::construct( 
+                     terminal::format::print( groups,
                         terminal::format::column( "alias", format::alias, terminal::color::yellow),
                         terminal::format::column( "pid", format_pid, terminal::color::white),
                         terminal::format::column( "runlevel", format_runlevel, terminal::color::no_color),
@@ -392,7 +386,7 @@ namespace casual
                      {
                         auto invoke = []()
                         {
-                           format::connections().print( std::cout, call::state().connections);
+                           format::connections( call::state().connections);
                         };
 
                         return argument::Option{ 
@@ -436,7 +430,7 @@ created
                   {
                      auto invoke = []()
                      {
-                        format::listeners().print( std::cout, call::state().listeners);
+                        format::listeners( call::state().listeners);
                      };
 
                      return argument::Option{ 
@@ -451,7 +445,7 @@ created
                      {
                         auto invoke = []()
                         {
-                           format::groups::inbound().print( std::cout, call::state().inbound.groups);
+                           format::groups::inbound( call::state().inbound.groups);
                         };
 
                         return argument::Option{ 
@@ -464,7 +458,7 @@ created
                      {
                         auto invoke = []()
                         {
-                           format::groups::outbound().print( std::cout, call::state().outbound.groups);
+                           format::groups::outbound( call::state().outbound.groups);
                         };
 
                         return argument::Option{ 

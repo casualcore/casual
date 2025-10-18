@@ -82,12 +82,12 @@ namespace casual
                {
                   auto option()
                   {
-                     static constexpr auto create_formatter = []()
+                     static constexpr auto format_provider = []( auto& providers)
                      {
                         auto format_pid = []( auto& provider) { return provider.process.pid;};
                         auto format_abilities = []( auto& provider) { return provider.abilities;};
 
-                        return terminal::format::formatter< model::Provider >::construct(
+                        terminal::format::print( providers,
                            terminal::format::column( "pid", format_pid, terminal::color::white, terminal::format::Align::right),
                            terminal::format::column( "abilities", format_abilities, terminal::color::yellow, terminal::format::Align::left)
                         );
@@ -96,7 +96,7 @@ namespace casual
                      auto invoke = []()
                      {
                         auto state = local::call::state();
-                        create_formatter().print( std::cout, state.providers);
+                        format_provider( state.providers);
                      };
 
                      return argument::Option{
@@ -119,12 +119,12 @@ These are the providers that has registered them self with discovery abilities
                {
                   auto option()
                   {
-                     static constexpr auto create_formatter = []()
+                     static constexpr auto format_services = []( auto& services)
                      {
                         auto format_name = []( auto& service) { return service.name;};
                         auto format_hops = []( auto& service) { return service.property.hops;};
 
-                        return terminal::format::formatter< message::discovery::reply::content::Service>::construct(
+                        terminal::format::print( services,
                            terminal::format::column( "name", format_name, terminal::color::yellow, terminal::format::Align::left),
                            terminal::format::column( "hops", format_hops, terminal::color::white, terminal::format::Align::right)
                         );
@@ -133,7 +133,7 @@ These are the providers that has registered them self with discovery abilities
                      auto invoke = []( std::vector< std::string> services)
                      {
                         auto reply = local::call::discover( std::move( services), {});
-                        create_formatter().print( std::cout, reply.content.services);
+                        format_services( reply.content.services);
                      };
 
                      return argument::Option{
@@ -152,11 +152,11 @@ Will try to find provided services in other domains.
                {
                   auto option()
                   {
-                     static constexpr auto create_formatter = []()
+                     static constexpr auto format_queues = []( auto& queues)
                      {
                         auto format_name = []( auto& queue) { return queue.name;};
 
-                        return terminal::format::formatter< message::discovery::reply::content::Queue>::construct(
+                        terminal::format::print( queues,
                            terminal::format::column( "name", format_name, terminal::color::yellow, terminal::format::Align::left)
                         );
                      };
@@ -164,7 +164,7 @@ Will try to find provided services in other domains.
                      auto invoke = []( std::vector< std::string> queues)
                      {
                         auto reply = local::call::discover( {}, std::move( queues));
-                        create_formatter().print( std::cout, reply.content.queues);
+                        format_queues( reply.content.queues);
                      };
 
                      return argument::Option{
@@ -240,9 +240,9 @@ Will try to find provided queues in other domains.
 
                auto option()
                {
-                  static constexpr auto create_formatter = []()
+                  static constexpr auto format_rows = []( auto&& rows)
                   {
-                     return terminal::format::formatter< metric::Row>::construct(
+                     terminal::format::print( rows,
                         terminal::format::column( "name", std::mem_fn( &Row::name), terminal::color::yellow, terminal::format::Align::left),
                         terminal::format::column( "completed", std::mem_fn( &Row::completed), terminal::color::white, terminal::format::Align::right),
                         terminal::format::column( "pending", std::mem_fn( &Row::pending), terminal::color::white, terminal::format::Align::right)
@@ -253,7 +253,7 @@ Will try to find provided queues in other domains.
                   {
                      communication::instance::outbound::detail::optional::Device device{ discovery::instance::identity};
                      auto reply = communication::ipc::call( device, common::message::counter::Request( process::handle()));
-                     create_formatter().print( std::cout, metric::transform( reply));
+                     format_rows( metric::transform( reply));
                   };
 
                   return argument::Option{

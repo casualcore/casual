@@ -207,7 +207,7 @@ namespace casual
                   return result;
                }
 
-               auto transaction()
+               auto transaction( auto&& transactions)
                {
                   auto format_global = []( auto& value) { return value.global.id;};
                   auto format_number_of_branches = []( auto& value) { return value.branches.size();};
@@ -241,7 +241,7 @@ namespace casual
 
                   if( ! terminal::output::directive().porcelain())
                   {
-                     return common::terminal::format::formatter< admin::model::Transaction>::construct(
+                     common::terminal::format::print( transactions,
                         common::terminal::format::column( "global", format_global, common::terminal::color::yellow),
                         common::terminal::format::column( "#branches", format_number_of_branches, common::terminal::color::no_color),
                         common::terminal::format::column( "owner", format_owner, common::terminal::color::white, common::terminal::format::Align::right),
@@ -253,7 +253,7 @@ namespace casual
                   }
                   else
                   {
-                     return common::terminal::format::formatter< admin::model::Transaction>::construct(
+                     common::terminal::format::print( transactions,
                         common::terminal::format::column( "global", format_global),
                         common::terminal::format::column( "#branches", format_number_of_branches),
                         common::terminal::format::column( "owner", format_owner),
@@ -282,7 +282,7 @@ resources:
    the resources involved in the transaction, as a comma separated list of resource ids
 )";
 
-               auto resource_proxy( const std::map< common::strong::resource::id, platform::size::type>& branch_count)
+               auto resource_proxy( auto&& resources, const std::map< common::strong::resource::id, platform::size::type>& branch_count)
                {
 
                   struct format_number_of_instances
@@ -351,7 +351,7 @@ resources:
 
                   if( ! terminal::output::directive().porcelain())
                   {
-                     return common::terminal::format::formatter< admin::model::resource::Proxy>::construct(
+                     return common::terminal::format::print( resources,
                         common::terminal::format::column( "name", std::mem_fn( &admin::model::resource::Proxy::name), common::terminal::color::yellow),
                         common::terminal::format::column( "id", std::mem_fn( &admin::model::resource::Proxy::id), common::terminal::color::yellow, terminal::format::Align::right),
                         common::terminal::format::column( "key", std::mem_fn( &admin::model::resource::Proxy::key), common::terminal::color::yellow),
@@ -370,7 +370,7 @@ resources:
                   else
                   {
                      // we need to keep compatibility with porcelain
-                     return common::terminal::format::formatter< admin::model::resource::Proxy>::construct(
+                     return common::terminal::format::print( resources,
                         common::terminal::format::column( "name", std::mem_fn( &admin::model::resource::Proxy::name)),
                         common::terminal::format::column( "id", std::mem_fn( &admin::model::resource::Proxy::id)),
                         common::terminal::format::column( "key", std::mem_fn( &admin::model::resource::Proxy::key)),
@@ -420,7 +420,7 @@ PAT:
 )";
 
 
-               auto internal_instances()
+               auto internal_instances( auto&& instances)
                {
                   auto format_pid = []( const admin::model::resource::Instance& value) 
                   {
@@ -474,7 +474,7 @@ PAT:
                      return std::chrono::duration_cast< time_type>( value.metrics.resource.total / value.metrics.resource.count).count();
                   };
 
-                  return common::terminal::format::formatter< admin::model::resource::Instance>::construct(
+                  return common::terminal::format::print( instances,
                      terminal::format::column( "id", std::mem_fn( &admin::model::resource::Instance::id), common::terminal::color::yellow, terminal::format::Align::right),
                      terminal::format::column( "pid", format_pid, common::terminal::color::white, terminal::format::Align::right),
                      terminal::format::column( "ipc", format_ipc, common::terminal::color::no_color, terminal::format::Align::right),
@@ -515,7 +515,7 @@ rm-avg:
 )";
 
 
-               auto external_instances()
+               auto external_instances( auto&& instances)
                {
                   auto format_id = []( auto& value) { return value.id;};
                   auto format_pid = []( auto& value) { return value.process.pid;};
@@ -524,7 +524,7 @@ rm-avg:
                   auto format_description = []( auto& value) { return terminal::format::guard_empty( value.description);}; 
 
                   if( ! terminal::output::directive().porcelain())
-                     return common::terminal::format::formatter< local::normalized::Instance>::construct(
+                     common::terminal::format::print( instances,
                         common::terminal::format::column( "id", format_id, common::terminal::color::yellow, terminal::format::Align::left),
                         common::terminal::format::column( "alias", format_alias, common::terminal::color::blue, terminal::format::Align::left),
                         common::terminal::format::column( "pid", format_pid, common::terminal::color::no_color, terminal::format::Align::right),
@@ -532,7 +532,7 @@ rm-avg:
                         common::terminal::format::column( "description", format_description, common::terminal::color::yellow, terminal::format::Align::left)
                      );
                   else
-                     return common::terminal::format::formatter< local::normalized::Instance>::construct(
+                     common::terminal::format::print( instances,
                         common::terminal::format::column( "id", format_id),
                         common::terminal::format::column( "alias", format_alias),
                         common::terminal::format::column( "pid", format_pid),
@@ -555,7 +555,7 @@ description:
    this will hold the name of the other domain.
 )";
 
-               auto instances()
+               auto instances( auto&& instances)
                {
                   struct format_state
                   {
@@ -589,7 +589,7 @@ description:
 
                   if( ! terminal::output::directive().porcelain())
                   {
-                     return terminal::format::formatter< local::normalized::Instance>::construct(
+                     terminal::format::print( instances,
                         terminal::format::column( "id", format_id, terminal::color::yellow, terminal::format::Align::left),
                         terminal::format::column( "alias", format_alias, terminal::color::blue, terminal::format::Align::left),
                         terminal::format::custom::column( "state", format_state{}),
@@ -600,7 +600,7 @@ description:
                   }
                   else
                   {
-                     return terminal::format::formatter< local::normalized::Instance>::construct(
+                     terminal::format::print( instances,
                         terminal::format::column( "id", format_id),
                         terminal::format::custom::column( "state", format_state{}),
                         terminal::format::column( "pid", format_pid),
@@ -639,7 +639,7 @@ description:
                         []()
                         {
                            auto state = call::state();
-                           format::transaction().print( std::cout, state.transactions);
+                           format::transaction( state.transactions);
                         },
                         { "-lt", "--list-transactions"},
                         R"(list current transactions)"
@@ -658,7 +658,7 @@ description:
 
                            const auto branch_count = normalized::compute_branch_count( state);
 
-                           format::resource_proxy( branch_count).print( std::cout, algorithm::sort( state.resources));
+                           format::resource_proxy( algorithm::sort( state.resources), branch_count);
                         },
                         { "-lr", "--list-resources" },
                         R"(list all resources)"
@@ -682,7 +682,7 @@ description:
                      };
 
                      auto instances = transform( call::state().resources);
-                     format::internal_instances().print( std::cout, algorithm::sort( instances));
+                     format::internal_instances( algorithm::sort( instances));
                   }
 
                   void external()
@@ -692,7 +692,7 @@ description:
                      auto instances = normalized::instances();
 
                      auto externals = algorithm::filter( instances, is_external);
-                     format::external_instances().print( std::cout, externals);
+                     format::external_instances( externals);
                   }
 
                   enum struct Flag
@@ -730,7 +730,7 @@ description:
                         else // Flag::all (or none)
                         {
                            auto instances = normalized::instances();
-                           format::instances().print( std::cout, instances);
+                           format::instances( instances);
                         }
                      };
 
@@ -920,7 +920,7 @@ description:
                auto option()
                {
                   return argument::Option{
-                     [](){ terminal::formatter::key::value().print( std::cout, call());},
+                     [](){ terminal::format::pair::print( call());},
                      { "--information"},
                      R"(collect aggregated information about transactions in this domain)"
                   };

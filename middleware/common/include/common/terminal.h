@@ -14,6 +14,7 @@
 
 #include <string>
 #include <ostream>
+#include <iostream>
 #include <iomanip>
 #include <vector>
 #include <sstream>
@@ -34,7 +35,7 @@ namespace casual
             bool header() const;
             //! user has used --header true explicitly
             //! @note this is to enable print header with porcelain -> not break backward compatible
-            bool explict_header() const;
+            bool explicit_header() const;
             inline auto precision() const { return m_precision;}
             inline auto block() const { return m_block;}
             inline auto verbose() const { return m_verbose;}
@@ -73,7 +74,7 @@ namespace casual
 
       struct Color
       {
-         explicit Color( const char* color) : m_color{ color} {}
+         explicit Color( std::string_view color) : m_color{ color} {}
 
          struct Proxy
          {
@@ -97,8 +98,10 @@ namespace casual
 
          friend Proxy operator << ( std::ostream& out, const Color& color);
 
+         auto value() const { return m_color; }
+
       private:
-         const char* m_color;
+         std::string_view m_color;
 
       };
 
@@ -106,15 +109,15 @@ namespace casual
       {
          namespace value
          {
-            constexpr auto no_color = "\033[0m";
-            constexpr auto black = "\033[0;30m";
-            constexpr auto red = "\033[0;31m";
-            constexpr auto green = "\033[0;32m";
-            constexpr auto yellow = "\033[0;33m";
-            constexpr auto blue = "\033[0;34m";
-            constexpr auto magenta = "\033[0;35m";
-            constexpr auto cyan = "\033[0;36m";
-            constexpr auto white = "\033[0;37m";
+            constexpr std::string_view no_color = "\033[0m";
+            constexpr std::string_view black = "\033[0;30m";
+            constexpr std::string_view red = "\033[0;31m";
+            constexpr std::string_view green = "\033[0;32m";
+            constexpr std::string_view yellow = "\033[0;33m";
+            constexpr std::string_view blue = "\033[0;34m";
+            constexpr std::string_view magenta = "\033[0;35m";
+            constexpr std::string_view cyan = "\033[0;36m";
+            constexpr std::string_view white = "\033[0;37m";
          } // value
 
          extern Color no_color;
@@ -147,19 +150,19 @@ namespace casual
 
       namespace format
       {
-         namespace customize
+         namespace ostream
          {
-            struct Stream
+            struct scope
             {
-               Stream( std::ostream& stream);
-               ~Stream();
+               scope( std::ostream& stream);
+               ~scope();
 
             private:
                std::ostream* m_stream;
                std::ios::fmtflags m_flags;
                std::streamsize m_precision;
             };
-         }
+         } // ostream
 
          enum class Align
          {
@@ -167,230 +170,11 @@ namespace casual
             right
          };
 
-         template< typename T>
-         struct formatter
+         //! explicit type to denote a delimiter
+         struct Delimiter
          {
-            using value_type = T;
-
-            template< typename... Columns>
-            static auto construct( Columns&&... columns)
-            {
-               return formatter{ "  ", initialize( std::forward< Columns>( columns)...)};
-            }
-
-            template< typename... Columns>
-            static auto construct( std::string delimiter, Columns&&... columns)
-            {
-               return formatter{ std::move( delimiter), initialize( std::forward< Columns>( columns)...)};
-            }
-
-
-            template< typename R>
-            void calculate_width( R&& range, const std::ostream& out)
-            {
-               for( auto& column : m_columns)
-                  column.calculate_width( range, out);
-            }
-
-            void print_headers( std::ostream& out)
-            {
-               if( output::directive().header())
-               {
-                  auto print_delimiter = [&](){
-                     out << m_delimiter;
-                  };
-
-                  out << std::setfill( ' ');
-                  {
-                     auto print_name = [&out]( const column_holder& c){
-                        out << std::left << std::setw( c.width()) << c.name();
-                     };
-
-                     algorithm::for_each_interleave( m_columns, print_name, print_delimiter);
-                     out << '\n';
-                  }
-
-                  {
-                     auto print_row = [&out]( const column_holder& c){
-                        out << std::string( c.width(), '-');
-                     };
-                     algorithm::for_each_interleave( m_columns, print_row, print_delimiter);
-                     out << '\n';
-                  }
-               }
-            }
-
-            void print_porcelain_headers( std::ostream& out)
-            {
-               auto print_delimiter = [&](){
-                  out << '|';
-               };
-
-               auto print_name = [&out]( const column_holder& c){
-                  out << c.name();
-               };
-
-               algorithm::for_each_interleave( m_columns, print_name, print_delimiter);
-               out << '\n';
-            }
-
-
-
-            template< typename R>
-            std::ostream& print_rows( std::ostream& out, R&& rows)
-            {
-               if( output::directive().porcelain())
-               {
-                  for( auto& row : rows)
-                  {
-                     auto print_delimiter = [&out](){
-                        out << '|';
-                     };
-
-                     auto print_column = [&out,&row]( const column_holder& c){
-                        c.print( out, row, false);
-                     };
-
-                     algorithm::for_each_interleave( m_columns, print_column, print_delimiter);
-                     out << '\n';
-                  }
-               }
-               else
-               {
-                  for( auto& row : rows)
-                  {
-                     auto print_delimiter = [&](){
-                        out << m_delimiter;
-                     };
-
-                     auto print_column = [&out,&row]( const column_holder& c){
-                        c.print( out, row);
-                     };
-
-                     algorithm::for_each_interleave( m_columns, print_column, print_delimiter);
-                     out << '\n';
-                  }
-               }
-               return out;
-            }
-
-
-            template< typename R>
-            std::ostream& print( std::ostream& out, R&& range)
-            {
-               customize::Stream stream( out);
-
-               if( ! output::directive().porcelain())
-               {
-                  calculate_width( range, out);
-                  print_headers( out);
-               }
-               else if( output::directive().explict_header())
-               {
-                  print_porcelain_headers( out);
-               }
-
-               print_rows( out, range);
-
-               return out;
-            }
-
-            template< typename Iter>
-            std::ostream& print( std::ostream& out, Iter first, Iter last)
-            {
-               return print( out, range::make( first, last));
-            }
-
-
-            struct Concept
-            {
-               virtual ~Concept() = default;
-               virtual std::string name() const = 0;
-               virtual std::size_t width( const value_type& value, const std::ostream& out) const = 0;
-               virtual void print( std::ostream& out, const value_type& value, std::size_t size) const = 0;
-            };
-
-
-            struct column_holder
-            {
-               column_holder( std::unique_ptr< Concept> column)
-                  : m_column( std::move( column)), m_width( m_column->name().size()) {}
-
-               template< typename Range>
-               void calculate_width( Range&& range, const std::ostream& out)
-               {
-                  for( auto& row : range)
-                  {
-                     m_width = std::max( m_width, m_column->width( row, out));
-                  }
-               }
-
-               std::string name() const
-               {
-                  return m_column->name();
-               }
-
-               void print( std::ostream& out, const value_type& value, bool width = true) const
-               {
-                  m_column->print( out, value, width ? m_width : 0);
-               }
-
-
-               std::size_t width() const
-               {
-                  return m_width;
-               }
-
-               std::unique_ptr< Concept> m_column;
-               std::size_t m_width;
-            };
-
-
-            template< typename I>
-            struct basic_column : Concept
-            {
-               using implementation_type = I;
-               basic_column( implementation_type implementation) : m_implementation( std::move( implementation)) {}
-
-               std::string name() const override { return m_implementation.name();}
-               void print( std::ostream& out, const value_type& value, std::size_t width) const override
-               {
-                  m_implementation.print( out, value, width);
-               }
-
-               std::size_t width( const value_type& value, const std::ostream& out) const override { return m_implementation.width( value, out);}
-
-               I m_implementation;
-            };
-
-            using columns_type = std::vector< column_holder>;
-
-            static columns_type initialize()
-            {
-               return {};
-            }
-
-            template< typename C, typename... Cs>
-            static columns_type initialize( C&& column, Cs&&... columns)
-            {
-               auto result = initialize( std::forward< Cs>( columns)...);
-
-               auto basic = std::make_unique< basic_column< typename std::decay< C>::type>>( std::forward< C>( column));
-
-               result.emplace( std::begin( result), std::move( basic));
-               return result;
-            }
-
-         protected:
-            formatter( std::string delimiter, columns_type columns)
-               : m_delimiter( std::move( delimiter)), 
-               m_columns( std::move( columns))
-            {
-
-            }
-            
-            std::string m_delimiter;
-            columns_type m_columns;
+            explicit Delimiter( std::string_view value) : value( value) {}
+            std::string_view value;
          };
 
          template< typename B>
@@ -411,22 +195,21 @@ namespace casual
          {
             using binder_type = B;
 
-            default_column( binder_type binder,
-                  Align align = Align::left,
-                  common::terminal::Color color = common::terminal::color::red)
-            : m_color( std::move( color)),
-               m_align( align == Align::left ? std::left : std::right),
-               binder( std::move( binder)) {}
+            default_column( binder_type binder, Align align = Align::left, common::terminal::Color color = common::terminal::color::red)
+               : m_color( std::move( color)),
+                  m_align( align == Align::left ? std::left : std::right),
+                  binder( std::move( binder)) 
+            {}
 
 
             template< typename VT>
             std::size_t width( VT&& value, const std::ostream& out) const
             {
-               std::ostringstream repsentation;
-               repsentation.flags( out.flags());
-               repsentation.precision( out.precision());
-               stream::write( repsentation, binder( value));
-               return std::move( repsentation.str()).size();
+               std::ostringstream representation;
+               representation.flags( out.flags());
+               representation.precision( out.precision());
+               stream::write( representation, binder( value));
+               return std::move( representation.str()).size();
             }
 
             template< typename VT>
@@ -492,31 +275,198 @@ namespace casual
             return value;
          }
 
-      } // format      
-
-      namespace formatter
-      {
-         namespace key
+         namespace detail
          {
-            //! returns a formatter for `std::tuple< std::string, std::string>`, with column-names
-            //! 'key' and 'value'. 
-            inline auto value()
+            struct Bookkeeping
             {
-               // TODO maintainence: we use this in cli::information, but should it be declared here? If so,
-               // should other "general" formatters be here too? 
-               // The whole 'terminal' stuff is not that good to begin with, make this dission if and when we
-               // rewrite the 'terminal' stuff.
+               std::size_t width = 0;
+            };
+
+            auto calculate_width( std::ostream& out, concepts::range auto&& range, const auto&... columns)
+            {
+               std::array< detail::Bookkeeping, sizeof...( columns)> bookkeeping;
+
+               // first calculate widths for each column name. We know that we need at least that width
+               {
+                  std::size_t index = 0;
+                  ( ( bookkeeping[ index++].width = columns.name().size()), ...);
+               }
+
+               // then possibly expand widths based on column data
+
+               auto calculate = [ &out]( const auto& row, std::size_t index, auto& bookkeeping, const auto& column)
+               {
+                  bookkeeping[ index].width = std::max( bookkeeping[ index].width, column.width( row, out));
+               };
+
+               for( auto& row : range)
+               {
+                  std::size_t index = 0;
+                  ( ( calculate( row, index++, bookkeeping, columns)), ...);
+               }
+
+               return bookkeeping;
+            }
+
+            void print_headers( std::ostream& out, Delimiter delimiter, const auto& bookkeeping, const auto&... columns)
+            {
+               if( ! output::directive().header())
+                  return;
+
+               {
+                  auto print_names = [ &]( std::size_t index, const auto& column)
+                  {
+                     out << std::left << std::setw( bookkeeping[ index].width) << column.name();
+
+                     // if not last index, print delimiter
+                     if( index < bookkeeping.size() - 1)
+                        out << delimiter.value;
+                  };
+
+                  std::size_t index = 0;
+                  ( ( print_names( index++, columns)), ...);
+
+                  out << '\n';
+               }
+
+               {
+                  auto print_separators = [ &]( const auto& meta)
+                  {
+                     out << std::string( meta.width, '-');
+                  };
+
+                  auto print_delimiter = [ &]() { out << delimiter.value;};
+
+                  algorithm::for_each_interleave( bookkeeping, print_separators, print_delimiter);
+
+                  out << '\n';
+               }
+            }
+
+            void print_porcelain_headers( std::ostream& out, const auto&... columns)
+            {
+               constexpr auto column_count = sizeof...( columns);
+
+               auto print_name = [&]( std::size_t index, const auto& column)
+               {
+                  if( index < column_count - 1)
+                     out << column.name() << '|';
+                  else
+                     out << column.name();
+               };
+
+               std::size_t index = 0;
+               ( ( print_name( index++, columns)), ...);
+
+               out << '\n';
+            }
+
+            void print_rows( std::ostream& out, Delimiter delimiter, concepts::range auto&& range, const auto& bookkeeping, const auto&... columns)
+            {
+               auto print_row = [&]( const auto& row)
+               {
+                  auto print_column = [&]( std::size_t index, const auto& column)
+                  {
+                     column.print( out, row, bookkeeping[ index].width);
+
+                     // if not last index, print delimiter
+                     if( index < bookkeeping.size() - 1)
+                        out << delimiter.value;
+                  };
+
+                  std::size_t index = 0;
+                  ( ( print_column( index++, columns)), ...);
+
+                  out << '\n';
+               };
+
+               std::ranges::for_each( range, print_row);
+            }
+
+            void print_porcelain_rows( std::ostream& out, concepts::range auto&& range, const auto&... columns)
+            {
+               auto print_row = [&]( const auto& row)
+               {
+                  auto print_column = [&]( std::size_t index, const auto& column)
+                  {
+                     column.print( out, row, false);
+
+                     // if not last index, print delimiter
+                     if( index < sizeof...( columns) - 1)
+                        out << '|';
+                  };
+
+                  std::size_t index = 0;
+                  ( ( print_column( index++, columns)), ...);
+
+                  out << '\n';
+               };
+
+               std::ranges::for_each( range, print_row);
+            }
+
+         } // detail
+
+
+         void print( std::ostream& out, Delimiter delimiter, concepts::range auto&& range, auto&&... columns)
+         {
+            static_assert( sizeof...( columns) > 0, "at least one column must be specified");
+
+            // set user defined stream settings
+            ostream::scope scope( out);
+
+            if( ! output::directive().porcelain())
+            {
+               auto bookkeeping = detail::calculate_width( out, range, columns...);
+               detail::print_headers( out, delimiter, bookkeeping, columns...);
+               detail::print_rows( out, delimiter, range, bookkeeping, columns...);
+            }
+            else
+            {
+               if( output::directive().explicit_header())
+                  detail::print_porcelain_headers( out, columns...);
+               
+               detail::print_porcelain_rows( out, range, columns...);
+            }
+         }
+
+         void print( std::ostream& out, concepts::range auto&& range, auto&&... columns)
+         {
+            print( out, Delimiter{ "  "}, range, columns...);
+         }
+
+         void print( Delimiter delimiter, concepts::range auto&& range, auto&&... columns)
+         {
+            print( std::cout, delimiter, range, columns...);
+         }
+
+
+         void print( concepts::range auto&& range, auto&&... columns)
+         {
+            print( std::cout, range, columns...);
+         }
+
+         namespace pair
+         {
+            void print( std::ostream& out, concepts::range auto&& range)
+            {
                auto get_first = []( auto& pair) -> const std::string& { return std::get< 0>( pair);};
                auto get_second = []( auto& pair) -> const std::string& { return std::get< 1>( pair);};
 
-               return terminal::format::formatter< std::tuple< std::string, std::string>>::construct(
+               format::print( out, range,
                   terminal::format::column( "key", get_first, terminal::color::yellow, terminal::format::Align::left),
                   terminal::format::column( "value", get_second, terminal::color::no_color, terminal::format::Align::left)
                );
             }
-         } // key
 
-      } // formatter
+            void print( concepts::range auto&& range)
+            {
+               print( std::cout, std::forward< decltype( range)>( range));
+            }
+
+         } // pair
+
+      } // format
       
    } // common::terminal
 } // casual

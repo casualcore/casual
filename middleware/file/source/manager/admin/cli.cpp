@@ -55,12 +55,13 @@ namespace casual
                {
                   auto requests( const manager::admin::model::State& state)
                   {
-                     return common::terminal::format::formatter< manager::admin::model::Request>::construct(
+                     common::terminal::format::print( state.requests, 
                         common::terminal::format::column( "path", []( const auto& r){ return r.path;}, common::terminal::color::yellow),
                         common::terminal::format::column( "pid", []( const auto& r){ return r.pid;}, common::terminal::color::white),
                         common::terminal::format::column( "gtrid", []( const auto& r){ return r.gtrid;}),
                         common::terminal::format::column( "stage", []( const auto& r){ return description( r.stage);}),
-                        common::terminal::format::column( "time", []( const auto& r){ return std::chrono::floor< std::chrono::microseconds>( r.time);}, common::terminal::color::blue));
+                        common::terminal::format::column( "time", []( const auto& r){ return std::chrono::floor< std::chrono::microseconds>( r.time);}, common::terminal::color::blue)
+                     );
                   }
                } // format
 
@@ -75,10 +76,7 @@ namespace casual
                      auto invoke = []()
                      {
                         auto state = detail::call::state();
-
-                        auto formatter = detail::format::requests( state);
-
-                        formatter.print( std::cout, state.requests);
+                        detail::format::requests( state);
                      };
 
                      return argument::Option{

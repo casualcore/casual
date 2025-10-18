@@ -164,7 +164,7 @@ namespace casual
                      return value;
                   }
 
-                  auto services()
+                  auto services( std::span< const admin::model::Service> services)
                   {
 
                      auto format_timeout_duration_string = []( const auto& value) -> std::string
@@ -272,7 +272,7 @@ namespace casual
 
                      if( ! terminal::output::directive().porcelain())
                      {
-                        return terminal::format::formatter< admin::model::Service>::construct( 
+                        terminal::format::print( services,
                            terminal::format::column( "name", std::mem_fn( &admin::model::Service::name), terminal::color::yellow, terminal::format::Align::left),
                            terminal::format::column( "category", format_category, terminal::color::no_color, terminal::format::Align::left),
                            terminal::format::column( "V", format_visibility, terminal::color::no_color, terminal::format::Align::left),
@@ -293,7 +293,7 @@ namespace casual
                      }
                      else
                      {
-                        return terminal::format::formatter< admin::model::Service>::construct( 
+                        terminal::format::print( services,
                            terminal::format::column( "name", std::mem_fn( &admin::model::Service::name)),
                            terminal::format::column( "category", format_category),
                            terminal::format::column( "mode", std::mem_fn( &admin::model::Service::transaction)),
@@ -315,16 +315,16 @@ namespace casual
                   }
 
 
-                  auto routes()
+                  auto routes( std::span< const admin::model::Route> routes)
                   {
-                     return terminal::format::formatter< model::Route>::construct( 
+                     terminal::format::print( routes,
                         terminal::format::column( "name", std::mem_fn( &model::Route::service), terminal::color::yellow, terminal::format::Align::left),
                         terminal::format::column( "target", std::mem_fn( &model::Route::target), terminal::color::no_color, terminal::format::Align::left)
                      );
                   }
 
 
-                  auto instances()
+                  auto instances( std::span< const normalized::Instance> instances)
                   {
                      auto format_pid = []( auto& instance){ return instance.process.pid;};
 
@@ -371,7 +371,7 @@ namespace casual
 
                      if( ! terminal::output::directive().porcelain())
                      {
-                        return terminal::format::formatter< normalized::Instance>::construct(
+                        terminal::format::print( instances,
                            terminal::format::column( "service", format_service_name, terminal::color::yellow),
                            terminal::format::custom::column( "state", format_state{}),
                            terminal::format::column( "hops", format_hops, terminal::color::no_color, terminal::format::Align::right),
@@ -382,7 +382,7 @@ namespace casual
                      }
                      else
                      {
-                        return terminal::format::formatter< normalized::Instance>::construct(
+                        terminal::format::print( instances,
                            terminal::format::column( "service", format_service_name),
                            terminal::format::column( "pid", format_pid),
                            terminal::format::custom::column( "state", format_state{}),
@@ -459,7 +459,7 @@ namespace casual
                            auto state = manager::admin::api::state();
                            auto services = algorithm::sort( algorithm::filter( state.services, filter));
 
-                           format::services().print( std::cout, services);
+                           format::services( services);
                         };
 
                         auto flag = argument::Option{ [ shared]()
@@ -503,8 +503,7 @@ namespace casual
 
                            auto filtered = algorithm::sort( algorithm::filter( instances, filter));
 
-                           auto formatter = format::instances();
-                           formatter.print( std::cout, filtered);
+                           format::instances( filtered);
                         };
 
                         auto flag = argument::Option{ [ shared]()
@@ -527,9 +526,7 @@ namespace casual
                         auto invoke = []()
                         {
                            auto state = admin::api::state();
-
-                           auto formatter = format::routes();
-                           formatter.print( std::cout, state.routes);
+                           format::routes( state.routes);
                         };
 
                         return argument::Option{ 
@@ -677,7 +674,7 @@ The following options has legend:
                   {
                      auto invoke = []()
                      {
-                        terminal::formatter::key::value().print( std::cout, information::compose());
+                        terminal::format::pair::print( information::compose());
                      };
 
                      return argument::Option{ 
@@ -704,7 +701,7 @@ The following options has legend:
                            auto state = manager::admin::api::state();
                            auto services = algorithm::sort( algorithm::filter( state.services, is_hidden));
 
-                           format::services().print( std::cout, services);
+                           format::services( services);
                         };
 
                         return argument::Option{ 

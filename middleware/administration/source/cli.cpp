@@ -96,7 +96,7 @@ namespace casual
                      };
                      common::algorithm::for_each( managers, dispatch);
 
-                     common::terminal::formatter::key::value().print( std::cout, information);
+                     common::terminal::format::pair::print( information);
                   };
 
                   constexpr auto description = R"(collect general aggregated information about the domain
@@ -136,7 +136,7 @@ valid directives:
                         { "compiler", build_version.compiler}
                      };
 
-                     common::terminal::formatter::key::value().print( std::cout, version);
+                     common::terminal::format::pair::print( version);
                   };
                   return argument::Option{
                      std::move( invoke),
@@ -259,13 +259,11 @@ Note: only works for 'servers' with a message pump)"
 
                         auto reply = common::communication::ipc::call( address.at( 0).ipc, common::message::counter::Request( common::process::handle()));
 
-                        auto formatter = common::terminal::format::formatter< common::message::counter::Entry>::construct(
+                        common::terminal::format::print( reply.entries,
                            common::terminal::format::column( "type", []( auto& entry){ return entry.type;}, common::terminal::color::yellow),
                            common::terminal::format::column( "sent", []( auto& entry){ return entry.sent;}, common::terminal::color::cyan, common::terminal::format::Align::right),
                            common::terminal::format::column( "received", []( auto& entry){ return entry.received;}, common::terminal::color::cyan, common::terminal::format::Align::right)
-                        );  
-
-                        formatter.print( std::cout, reply.entries);
+                        );
                      };
 
                      return argument::Option{
