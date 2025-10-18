@@ -349,30 +349,71 @@ namespace casual
             Forward set_union( Forward lhs, Forward rhs)
             {
                local::range::update( std::move( rhs.groups), lhs.groups, local::predicate::equal::alias());
-               
                return lhs;
             }
 
             Forward set_difference( Forward lhs, Forward rhs)
             {
                local::range::remove( std::move( rhs.groups), lhs.groups, local::predicate::equal::alias());
-               
                return lhs;
             }
 
             Forward set_intersection( Forward lhs, Forward rhs)
             {
                local::range::intersection( std::move( rhs.groups), lhs.groups, local::predicate::equal::alias());
-               
                return lhs;
             }
+
+            
+            namespace fanout
+            {
+               Group set_union( Group lhs, Group rhs)
+               {
+                  lhs.note = algorithm::coalesce( std::move( rhs.note), std::move( lhs.note));
+                  local::range::replace( std::move( rhs.queues), lhs.queues, local::predicate::equal::alias());
+                  return lhs; 
+               }
+
+               Group set_difference( Group lhs, Group rhs)
+               {
+                  local::range::remove( std::move( rhs.queues), lhs.queues, local::predicate::equal::alias());
+                  return lhs; 
+               }
+
+               Group set_intersection( Group lhs, Group rhs)
+               {
+                  local::range::intersection( std::move( rhs.queues), lhs.queues, local::predicate::equal::alias());
+                  return lhs; 
+               }
+
+            } // fanout
+
+            Fanout set_union( Fanout lhs, Fanout rhs)
+            {
+               local::range::update( std::move( rhs.groups), lhs.groups, local::predicate::equal::alias());
+               return lhs;
+            }
+
+            Fanout set_difference( Fanout lhs, Fanout rhs)
+            {
+               local::range::remove( std::move( rhs.groups), lhs.groups, local::predicate::equal::alias());
+               return lhs;
+            }
+
+            Fanout set_intersection( Fanout lhs, Fanout rhs)
+            {
+               local::range::intersection( std::move( rhs.groups), lhs.groups, local::predicate::equal::alias());
+               return lhs;
+            }
+
 
             Model set_union( Model lhs, Model rhs)
             {
                lhs.note = algorithm::coalesce( std::move( rhs.note), std::move( lhs.note));
 
                local::range::update( std::move( rhs.groups), lhs.groups, local::predicate::equal::alias());
-               lhs.forward = set_union( lhs.forward, std::move( rhs.forward));
+               lhs.forward = set_union( std::move( lhs.forward), std::move( rhs.forward));
+               lhs.fanout = set_union( std::move( lhs.fanout), std::move( rhs.fanout));
 
                return lhs;
             }
@@ -380,7 +421,8 @@ namespace casual
             Model set_difference( Model lhs, Model rhs)
             {
                local::range::remove( std::move( rhs.groups), lhs.groups, local::predicate::equal::alias());
-               lhs.forward = set_difference( lhs.forward, std::move( rhs.forward));
+               lhs.forward = set_difference( std::move( lhs.forward), std::move( rhs.forward));
+               lhs.fanout = set_difference( std::move( lhs.fanout), std::move( rhs.fanout));
 
                return lhs;
             }
@@ -389,6 +431,7 @@ namespace casual
             {
                local::range::intersection( std::move( rhs.groups), lhs.groups, local::predicate::equal::alias());
                lhs.forward = set_intersection( lhs.forward, std::move( rhs.forward));
+               lhs.fanout = set_intersection( lhs.fanout, std::move( rhs.fanout));
 
                return lhs;
             }
@@ -585,6 +628,17 @@ namespace casual
                algorithm::for_each( group.services, normalizer);
                algorithm::for_each( group.queues, normalizer);
             });;
+
+            auto fanout_normalizer = alias::normalize::mutator( state, []( auto&){ return "fanout";});
+            
+            algorithm::for_each( model.queue.fanout.groups, [&fanout_normalizer, &state]( auto& group)
+            {
+               fanout_normalizer( group);
+
+               // normalize the fanouts
+               auto normalizer = alias::normalize::mutator( state, []( auto& value){ return value.source;});
+               algorithm::for_each( group.queues, normalizer);
+            });
          }
 
          // normalize alias for gateway
@@ -651,7 +705,15 @@ namespace casual
             };
 
             algorithm::for_each( model.queue.forward.groups, update_forward_groups);
+
+            auto update_queue_fanout_groups = [ &]( auto& group)
+            {
+               algorithm::for_each( group.queues, update_enabled);
+            };
+
+            algorithm::for_each( model.queue.fanout.groups, update_queue_fanout_groups);
          }
+
 
          return model;
       }

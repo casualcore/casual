@@ -307,6 +307,27 @@ domain:
                      target:
                         service: casual/example/sink
                      note: will get alias b2.2
+      fanout:
+         groups:
+            -  alias: fanout-group-1
+               note: "forwards dequeues from 'a1' and enqueues to several target queues"
+               queues:
+                  -  alias: fa1
+                     source: a1
+                     instances: 2
+                     memberships:
+                        -  A
+                     targets:
+                        -  queue: b1
+                           delay: 1s
+                        -  queue: c1
+                        -  queue: d1
+            -  alias: fanout-group-2
+               queues:
+                  -  source: a2
+                     targets:
+                        -  queue: b2
+                        -  queue: c2
 )");
             }
 

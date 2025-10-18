@@ -15,6 +15,7 @@
 #include "common/message/service.h"
 #include "common/signal/timer.h"
 #include "common/unittest/environment.h"
+#include "common/unittest/file.h"
 
 
 #include "common/serialize/macro.h"

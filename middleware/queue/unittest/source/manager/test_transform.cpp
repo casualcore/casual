@@ -102,10 +102,36 @@ alias: A
                last: 3000000000
 )";
 
+         constexpr auto fanout_replies = R"(
+-  alias: FA1
+   process:
+      pid: 44
+   note: note-FA1
+   queues:
+      -  alias: fq1
+         source: a
+         instances:
+            configured: 3
+            running: 2
+         targets:
+            -  queue: b
+               delay: 1000000000
+            -  queue: c
+               delay: 2000000000
+         metric:
+            commit:
+               count: 15
+               last: 4000000000
+            rollback:
+               count: 4
+               last: 5000000000
+)";
+
          auto model = transform::model::state( 
             manager::State{},
             unittest::serialize::create::value< std::vector< ipc::message::group::state::Reply>>( "yaml", group_replies),
-            unittest::serialize::create::value< std::vector< ipc::message::forward::group::state::Reply>>( "yaml", forward_replies)
+            unittest::serialize::create::value< std::vector< ipc::message::forward::group::state::Reply>>( "yaml", forward_replies),
+            unittest::serialize::create::value< std::vector< ipc::message::fanout::group::state::Reply>>( "yaml", fanout_replies)
          );
 
          constexpr auto expected_model = R"(
@@ -181,7 +207,31 @@ forward:
             rollback:
                count: 3
                last: 3000000000
-         
+fanout:
+   groups:
+      -  alias: FA1
+         process:
+            pid: 44
+         note: note-FA1
+   queues:
+      -  group: 44
+         alias: fq1
+         source: a
+         instances:
+            configured: 3
+            running: 2
+         targets:
+            -  queue: b
+               delay: 1000000000
+            -  queue: c
+               delay: 2000000000
+         metric:
+            commit:
+               count: 15
+               last: 4000000000
+            rollback:
+               count: 4
+               last: 5000000000
 )";
 
 

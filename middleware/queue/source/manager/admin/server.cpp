@@ -49,10 +49,17 @@ namespace casual
                      ipc::message::forward::group::state::Request{ process::handle()});
                });
 
+               auto fanout_state = algorithm::transform( filter_running( state.fanout.groups), [&]( auto& fanout)
+               {
+                  return communication::device::async::call( fanout.process.ipc, 
+                     ipc::message::fanout::group::state::Request{ process::handle()});
+               });
+
                return transform::model::state( 
                   state,
                   algorithm::transform( group_states, future_get),
-                  algorithm::transform( forward_state, future_get));
+                  algorithm::transform( forward_state, future_get),
+                  algorithm::transform( fanout_state, future_get));
             }
 
             namespace messages
@@ -232,8 +239,7 @@ namespace casual
                   {
                      Trace trace{ "queue::manager::admin::local::forward::scale::aliases"};
                      log::debug( "aliases: ", aliases);
-
-
+                     
                      auto origin = state.forward.groups;
 
                      // update the configuration

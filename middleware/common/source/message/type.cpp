@@ -171,6 +171,11 @@ namespace casual
             case Type::queue_forward_group_configuration_update_reply: return "queue_forward_group_configuration_update_reply";
             case Type::queue_forward_group_state_request: return "queue_forward_group_state_request";
             case Type::queue_forward_group_state_reply: return "queue_forward_group_state_reply";
+            case Type::queue_fanout_group_connect: return "queue_fanout_group_connect";
+            case Type::queue_fanout_group_configuration_update_request: return "queue_fanout_group_configuration_update_request";
+            case Type::queue_fanout_group_configuration_update_reply: return "queue_fanout_group_configuration_update_reply";
+            case Type::queue_fanout_group_state_request: return "queue_fanout_group_state_request";
+            case Type::queue_fanout_group_state_reply: return "queue_fanout_group_state_reply";
             case Type::gateway_inbound_connect: return "gateway_inbound_connect";
             case Type::gateway_inbound_configuration_update_request: return "gateway_inbound_configuration_update_request";
             case Type::gateway_inbound_configuration_update_reply: return "gateway_inbound_configuration_update_reply";

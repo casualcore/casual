@@ -53,6 +53,8 @@ namespace casual
             
             buffer_type_duplicate,
 
+            constraint_violation,
+
             internal_out_of_bounds,
             internal_unexpected_value,
             internal_correlation,

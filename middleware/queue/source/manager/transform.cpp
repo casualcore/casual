@@ -16,11 +16,13 @@ namespace casual
          admin::model::State state(
             const manager::State& state,
             std::vector< ipc::message::group::state::Reply> groups,
-            std::vector< ipc::message::forward::group::state::Reply> forwards)
+            std::vector< ipc::message::forward::group::state::Reply> forwards,
+            std::vector< ipc::message::fanout::group::state::Reply> fanouts)
          {
             Trace trace{ "common::queue::manager::transform::model::state"};
             log::debug( "groups: ", groups);
             log::debug( "forwards: ", forwards);
+            log::debug( "fanouts: ", fanouts);
 
             admin::model::State result;
 
@@ -138,7 +140,54 @@ namespace casual
                };
 
                algorithm::transform( forward.queues, std::back_inserter( result.forward.queues), transform_queue);
+            }
 
+            // fanout
+            for( auto& fanout : fanouts)
+            {
+               result.fanout.groups.push_back(
+                  admin::model::fanout::Group{ 
+                     .alias = std::move( fanout.alias), 
+                     .process = fanout.process, 
+                     .note = std::move( fanout.note)
+                  });
+
+
+                   
+               auto transform_queue = [ &fanout]( auto& queue)
+               {
+                  auto transform_target = []( auto& target)
+                  {
+                     return admin::model::fanout::Queue::Target{ 
+                        .queue = std::move( target.queue), 
+                        .delay = target.delay
+                     };
+                  };
+
+                  return admin::model::fanout::Queue{
+                     .group = fanout.process.pid,
+                     .alias = std::move( queue.alias),
+                     .source = std::move( queue.source),
+                     .targets = algorithm::transform( queue.targets, transform_target),
+                     .instances = admin::model::fanout::Instances{ 
+                        .configured = queue.instances.configured, 
+                        .running = queue.instances.running, 
+                        .stopped = queue.instances.stopped
+                     },
+                     .metric = admin::model::fanout::Metric{ 
+                        .commit = { 
+                           .count = queue.metric.commit.count, 
+                           .last = queue.metric.commit.last},
+                        .rollback = { 
+                           .count = queue.metric.rollback.count, 
+                           .last = queue.metric.rollback.last}
+                     },
+                     .note = std::move(  queue.note),
+                     .enabled = queue.enabled
+                  };
+               };
+
+               algorithm::transform( fanout.queues, std::back_inserter( result.fanout.queues), transform_queue);
             }
 
             // find remote queues and add to model
@@ -210,6 +259,7 @@ namespace casual
 
          result.groups = algorithm::transform( state.groups, configuration);
          result.forward.groups = algorithm::transform( state.forward.groups, configuration);
+         result.fanout.groups = algorithm::transform( state.fanout.groups, configuration);
 
          return result;
       }

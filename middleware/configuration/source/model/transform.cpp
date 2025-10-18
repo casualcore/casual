@@ -486,7 +486,7 @@ namespace casual
                                  reply.queue = service.reply->queue;
 
                                  if( service.reply->delay)
-                                    reply.delay =  common::chronology::from::string( service.reply->delay.value());
+                                    reply.delay = common::chronology::from::string( service.reply->delay.value());
                
                                  result.reply = std::move( reply);
                               }
@@ -511,6 +511,48 @@ namespace casual
                            });
                         }
                         
+                        return result;
+                     });
+                  }
+
+                  if( source.fanout && source.fanout->groups)
+                  {
+                     result.fanout.groups = algorithm::transform( *source.fanout->groups, []( auto& group)
+                     {
+                        configuration::model::queue::fanout::Group result;
+                        result.alias = group.alias.value_or( "");
+                        result.note = group.note.value_or( "");
+
+                        if( ! group.queues)
+                           return result;
+
+                        result.queues = algorithm::transform( *group.queues, []( auto& queue)
+                        {
+                           configuration::model::queue::fanout::Queue result;
+                           result.alias = queue.alias.value_or( "");
+                           result.source = queue.source;
+                           result.note = queue.note.value_or( "");
+                           result.memberships = queue.memberships.value_or( result.memberships);
+
+                           if( queue.instances)
+                              result.instances = *queue.instances;
+
+                           if( queue.targets)
+                           {
+                              result.targets = algorithm::transform( *queue.targets, []( auto& target)
+                              {
+                                 configuration::model::queue::fanout::Queue::Target result;
+                                 result.queue = target.queue;
+                                 if( target.delay)
+                                    result.delay = common::chronology::from::string( *target.delay);
+                                 return result;
+                              });
+
+                           }
+                           
+                           return result;
+                        });
+
                         return result;
                      });
                   }
@@ -864,7 +906,7 @@ namespace casual
                   Trace trace{ "configuration::model::local::model::queue"};
 
                   user::domain::queue::Manager result;
-                  result.note  = null_if_empty( queue.note);
+                  result.note = null_if_empty( queue.note);
 
                   // set the default directory, if any. Either all groups has the same, ore non has any
                   {
@@ -954,7 +996,42 @@ namespace casual
                      }));
                      result.forward = std::move( forward);
                   }
-                  
+
+                  if( ! queue.fanout.groups.empty())
+                  {
+                     user::domain::queue::Fanout fanout;
+
+                     fanout.groups = null_if_empty( algorithm::transform( queue.fanout.groups, []( auto& group)
+                     {
+                        user::domain::queue::fanout::Group result;
+                        result.alias = group.alias;
+                        result.note = null_if_empty( group.note);
+
+                        result.queues = null_if_empty( algorithm::transform( group.queues, []( auto& queue)
+                        {
+                           user::domain::queue::fanout::Queue result;
+                           result.alias = queue.alias;
+                           result.instances = queue.instances;
+                           result.note = null_if_empty( queue.note);
+                           result.memberships = null_if_empty( queue.memberships);
+                           result.source = queue.source;
+
+                           result.targets = null_if_empty( algorithm::transform( queue.targets, []( auto& target)
+                           {
+                              user::domain::queue::fanout::queue::Target result;
+                              result.queue = target.queue;
+                              if( target.delay > std::chrono::seconds::zero())
+                                 result.delay = chronology::to::string( target.delay);
+                              return result;
+                           }));
+
+                           return result;
+                        }));
+                        return result;
+                     }));
+                     result.fanout = std::move( fanout);
+                  }
+
                   return result;
                }
             } // model

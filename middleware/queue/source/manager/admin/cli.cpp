@@ -182,6 +182,148 @@ namespace casual
 
             namespace format
             {
+               using duration_type = std::chrono::duration< double>;
+
+               template< typename P = std::identity>
+               auto column_alias( P projection = {})
+               {
+                  return terminal::format::column( "alias", [projection]( auto& value){ return projection( value).alias;}, terminal::color::yellow);
+               };
+
+               auto column_pid ()
+               {
+                  return terminal::format::column( "pid", []( auto& value){ return value.process.pid;}, terminal::color::white);
+               };
+
+               template< typename P = std::identity>
+               auto column_source( P projection = {})
+               {
+                  return terminal::format::column( "source", [projection]( auto& value){ return projection( value).source;}, terminal::color::white);
+               };
+
+               auto column_group( auto& groups)
+               {
+                  return terminal::format::column( "group", [ &groups]( auto& value)
+                  { 
+                     if( auto found = algorithm::find( groups, value.group))
+                        return found->alias;
+                     return std::to_string( value.group.value());
+                  }, terminal::color::white);
+               };
+
+               auto column_enabled()
+               {
+                  // todo: is this the best title?
+                  return terminal::format::column( "S", []( auto& value)
+                  {
+                     return value.enabled ? "E" : "D";
+                  });
+               }
+
+               auto column_configured_instances()
+               { 
+                  return terminal::format::column( "CI", []( auto& value)
+                  { 
+                     return value.instances.configured;
+                  }, terminal::color::white, terminal::format::Align::right);
+               }
+
+               auto column_running_instances()
+               { 
+                  return terminal::format::column( "I", []( auto& value)
+                  { 
+                     return value.instances.running;
+                  }, terminal::color::white, terminal::format::Align::right);
+               }
+
+               auto column_metric_commit()
+               {
+                  return terminal::format::column( "commits", []( auto& value)
+                  { 
+                     return value.metric.commit.count;
+                  }, terminal::color::cyan, terminal::format::Align::right);
+               }
+
+               auto column_metric_rollback()
+               {
+                  return terminal::format::column( "rollbacks", []( auto& value)
+                  { 
+                     return value.metric.rollback.count;
+                  }, terminal::color::cyan, terminal::format::Align::right);
+               }
+
+               auto column_metric_last()
+               {
+                  return terminal::format::column( "last", []( auto& value)
+                  {
+                     return local::normalize::timestamp( std::max( value.metric.commit.last, value.metric.rollback.last));
+                  }, terminal::color::blue);
+               };
+
+               namespace aggregated
+               {
+                  auto column_queues_count = []( const auto& queues)
+                  {
+                     return terminal::format::column( "queues", [&queues]( auto& value)
+                     { 
+                        return algorithm::count( queues, value.process.pid);
+
+                     }, terminal::color::blue, terminal::format::Align::right);
+                  };
+
+                  namespace detail
+                  {
+                     auto aggregate_metric( auto pid, const auto&... ranges)
+                     {
+                        auto accumulate_range = [pid]( const auto& range)
+                        {
+                           using metric_type = decltype( common::range::front( range).metric);
+
+                           return algorithm::accumulate( range, metric_type{}, [pid]( auto result, auto& value)
+                           {
+                              if( value != pid)
+                                 return result;
+
+                              return result + value.metric;
+                           });
+                        };
+
+                        return ( accumulate_range( ranges) + ...);
+                     }
+                  } // detail
+
+                  auto column_commit( const auto&... ranges)
+                  {
+                     return terminal::format::column( "commits", [&ranges...]( auto& value)
+                     {
+                        auto metric = detail::aggregate_metric( value.process.pid, ranges...);
+
+                        return metric.commit.count;
+                     }, terminal::color::cyan, terminal::format::Align::right);
+                  };
+
+                  auto column_rollback( const auto&... ranges)
+                  {
+                     return terminal::format::column( "rollbacks", [&ranges...]( auto& value)
+                     { 
+                        auto metric = detail::aggregate_metric( value.process.pid, ranges...);
+
+                        return metric.rollback.count;
+                     }, terminal::color::cyan, terminal::format::Align::right);
+                  };
+
+                  auto column_last( const auto&... ranges)
+                  {
+                     return terminal::format::column( "last", [&ranges...]( auto& value)
+                     {
+                        auto metric = detail::aggregate_metric( value.process.pid, ranges...);
+
+                        return local::normalize::timestamp( std::max( metric.commit.last, metric.rollback.last));
+                     }, terminal::color::blue);
+                  };
+                  
+               } // aggregated
+
                auto empty_representation()
                {
                   if( ! terminal::output::directive().porcelain())
@@ -267,11 +409,9 @@ namespace casual
 
                auto queues( const manager::admin::model::State& state, auto&& queues)
                {
-                  using second_t = std::chrono::duration< double>;
-
                   auto format_retry_delay = []( auto& queue)
                   {
-                     return std::chrono::duration_cast< second_t>( queue.retry.delay).count();
+                     return std::chrono::duration_cast< format::duration_type>( queue.retry.delay).count();
                   };
                   
                   auto format_group = [&]( auto& queue)
@@ -396,78 +536,7 @@ namespace casual
                } // queue
 
                namespace forward
-               {
-                  auto column_alias = []()
-                  {
-                     return terminal::format::column( "alias", []( auto& forward){ return forward.alias;}, terminal::color::yellow);
-                  };
-
-                  auto column_group = []( auto& groups)
-                  {
-                     return terminal::format::column( "group", [&groups]( auto& forward)
-                     { 
-                        if( auto found = algorithm::find( groups, forward.group))
-                           return found->alias;
-                        return std::to_string( forward.group.value());
-                     }, terminal::color::white);
-                  };
-
-                  auto column_enabled = []()
-                  {
-                     // todo: is this the best title?
-                     return terminal::format::column( "S", []( auto& forward)
-                     {
-                        return forward.enabled ? "E" : "D";
-                     });
-                  };
-                  
-                  auto column_configured_instances = []()
-                  { 
-                     return terminal::format::column( "CI", []( auto& forward)
-                     { 
-                        return forward.instances.configured;
-                     }, terminal::color::white, terminal::format::Align::right);
-                  };
-
-                  auto column_running_instances = []()
-                  { 
-                     return terminal::format::column( "I", []( auto& forward)
-                     { 
-                        return forward.instances.running;
-                     }, terminal::color::white, terminal::format::Align::right);
-                  };
-
-                  auto column_source = []()
-                  {
-                     return terminal::format::column( "source", []( auto& forward){ return forward.source;}, terminal::color::white);
-                  };
-
-                  auto column_commit = []()
-                  {
-                     return terminal::format::column( "commits", []( auto& forward)
-                     { 
-                        return forward.metric.commit.count;
-                     }, terminal::color::cyan, terminal::format::Align::right);
-                  };
-
-                  auto column_rollback = []()
-                  {
-                     return terminal::format::column( "rollbacks", []( auto& forward)
-                     { 
-                        return forward.metric.rollback.count;
-                     }, terminal::color::cyan, terminal::format::Align::right);
-                  };
-
-                  auto column_last = []()
-                  {
-                     return terminal::format::column( "last", []( auto& forward)
-                     {
-                        return local::normalize::timestamp( std::max( forward.metric.commit.last, forward.metric.rollback.last));
-                     }, terminal::color::blue);
-                  };
-
-                  using time_type = std::chrono::duration< double>;
-
+               {               
                   auto services( const manager::admin::model::State& state, auto&& services)
                   {
                      auto column_target = []()
@@ -493,42 +562,42 @@ namespace casual
                            if( ! forward.reply)
                               return std::string{ "-"};
 
-                           return std::to_string( std::chrono::duration_cast< time_type>( forward.reply.value().delay).count());
+                           return std::to_string( std::chrono::duration_cast< format::duration_type>( forward.reply.value().delay).count());
                         }, terminal::color::cyan, terminal::format::Align::right);
                      };
 
                      if( ! terminal::output::directive().porcelain())
                      {
                         terminal::format::print( services,
-                           column_alias(),
-                           column_group( state.forward.groups),
-                           column_source(),
+                           local::format::column_alias(),
+                           local::format::column_group( state.forward.groups),
+                           local::format::column_source(),
                            column_target(),
                            column_reply_name(),
                            column_reply_delay(),
-                           column_enabled(),
-                           column_configured_instances(),
-                           column_running_instances(),
-                           column_commit(),
-                           column_rollback(),
-                           column_last()
+                           local::format::column_enabled(),
+                           local::format::column_configured_instances(),
+                           local::format::column_running_instances(),
+                           local::format::column_metric_commit(),
+                           local::format::column_metric_rollback(),
+                           local::format::column_metric_last()
                         );
                      }
                      else
                      {
                         terminal::format::print( services,
-                           column_alias(),
-                           column_group( state.forward.groups),
-                           column_source(),
+                           local::format::column_alias(),
+                           local::format::column_group( state.forward.groups),
+                           local::format::column_source(),
                            column_target(),
                            column_reply_name(),
                            column_reply_delay(),
-                           column_configured_instances(),
-                           column_running_instances(),
-                           column_commit(),
-                           column_rollback(),
-                           column_last(),
-                           column_enabled()
+                           local::format::column_configured_instances(),
+                           local::format::column_running_instances(),
+                           local::format::column_metric_commit(),
+                           local::format::column_metric_rollback(),
+                           local::format::column_metric_last(),
+                           local::format::column_enabled()
                         );
                      }
                   }
@@ -544,51 +613,46 @@ namespace casual
                      {
                         return terminal::format::column( "delay", []( auto& forward)
                         { 
-                           return std::chrono::duration_cast< time_type>( forward.target.delay).count();
+                           return std::chrono::duration_cast< format::duration_type>( forward.target.delay).count();
                         }, terminal::color::white, terminal::format::Align::right);
                      };
 
                      if( ! terminal::output::directive().porcelain())
                      {
                         terminal::format::print( queues,
-                           column_alias(),
-                           column_group( state.forward.groups),
-                           column_source(),
+                           local::format::column_alias(),
+                           local::format::column_group( state.forward.groups),
+                           local::format::column_source(),
                            column_target(),
                            column_target_delay(),
-                           column_enabled(),
-                           column_configured_instances(),
-                           column_running_instances(),
-                           column_commit(),
-                           column_rollback(),
-                           column_last()
+                           local::format::column_enabled(),
+                           local::format::column_configured_instances(),
+                           local::format::column_running_instances(),
+                           local::format::column_metric_commit(),
+                           local::format::column_metric_rollback(),
+                           local::format::column_metric_last()
                         );
                      }
                      else
                      {
                         terminal::format::print( queues,
-                           column_alias(),
-                           column_group( state.forward.groups),
+                           local::format::column_alias(),
+                           local::format::column_group( state.forward.groups),
                            column_source(),
                            column_target(),
                            column_target_delay(),
-                           column_configured_instances(),
-                           column_running_instances(),
-                           column_commit(),
-                           column_rollback(),
-                           column_last(),
-                           column_enabled()
+                           local::format::column_configured_instances(),
+                           local::format::column_running_instances(),
+                           local::format::column_metric_commit(),
+                           local::format::column_metric_rollback(),
+                           local::format::column_metric_last(),
+                           local::format::column_enabled()
                         );
                      }
                   }
 
                   auto groups( const manager::admin::model::State& state, auto&& groups)
                   {
-                     auto column_pid = []()
-                     {
-                        return terminal::format::column( "pid", []( auto& group){ return group.process.pid;}, terminal::color::white);
-                     };
-
                      auto column_services = [&state]()
                      {
                         return terminal::format::column( "services", [&state]( auto& group)
@@ -598,96 +662,28 @@ namespace casual
                         }, terminal::color::blue, terminal::format::Align::right);
                      };
 
-                     auto column_queues = [&state]()
-                     {
-                        return terminal::format::column( "queues", [&state]( auto& group)
-                        { 
-                           return algorithm::count( state.forward.queues, group.process.pid);
-
-                        }, terminal::color::blue, terminal::format::Align::right);
-                     };
-                     
-                     auto aggregate = [&state]( auto pid, auto extractor)
-                     {
-                        auto accumulate = [extractor, pid]( auto& forwards)
-                        {
-                           return algorithm::accumulate( forwards, decltype( extractor( range::front( forwards))){}, [pid, extractor]( auto result, auto& forward)
-                           {
-                              if( forward == pid)
-                                 return result + extractor( forward);
-                              return result;
-                           });
-                        };
-
-                        return accumulate( state.forward.queues) + accumulate( state.forward.services);
-                     };
-
-                     auto column_commit = [=]()
-                     {
-                        return terminal::format::column( "commits", [=]( auto& group)
-                        { 
-                           return aggregate( group.process.pid, []( auto& forward)
-                           { 
-                              return forward.metric.commit.count;
-                           });
-                        }, terminal::color::cyan, terminal::format::Align::right);
-                     };
-
-                     auto column_rollback = [=]()
-                     {
-                        return terminal::format::column( "rollbacks", [=]( auto& group)
-                        { 
-                           return aggregate( group.process.pid, []( auto& forward)
-                           { 
-                              return forward.metric.rollback.count;
-                           });
-                        }, terminal::color::cyan, terminal::format::Align::right);
-                     };
-
-
-                     auto column_last = [&state]()
-                     {
-                        return terminal::format::column( "last", [&state]( auto& group)
-                        { 
-                           common::chronology::time_point result{};
-                           auto last = [&result, pid = group.process.pid]( auto& forward)
-                           {
-                              auto max = std::max( forward.metric.commit.last, forward.metric.rollback.last);
-
-                              if( forward == pid && result < max)
-                                 result = max;
-                           };
-
-                           algorithm::for_each( state.forward.queues, last);
-                           algorithm::for_each( state.forward.services, last);
-
-                           return local::normalize::timestamp( result);
-                           
-                        }, terminal::color::blue);
-                     };
-
                      if( ! terminal::output::directive().porcelain())
                      {
                         terminal::format::print( groups,
-                           column_alias(),
-                           column_pid(),
+                           local::format::column_alias(),
+                           local::format::column_pid(),
                            column_services(),
-                           column_queues(),
-                           column_commit(),
-                           column_rollback(),
-                           column_last()
+                           local::format::aggregated::column_queues_count( state.forward.queues),
+                           local::format::aggregated::column_commit(  state.forward.services, state.forward.queues),
+                           local::format::aggregated::column_rollback( state.forward.services, state.forward.queues),
+                           local::format::aggregated::column_last( state.forward.services, state.forward.queues)
                         );
                      }
                      else
                      {
                         terminal::format::print( groups,
-                           column_alias(),
-                           column_pid(),
+                           local::format::column_alias(),
+                           local::format::column_pid(),
                            column_services(),
-                           column_queues(),
-                           column_commit(),
-                           column_rollback(),
-                           column_last()
+                           local::format::aggregated::column_queues_count( state.forward.queues),
+                           local::format::aggregated::column_commit( state.forward.services, state.forward.queues),
+                           local::format::aggregated::column_rollback( state.forward.services, state.forward.queues),
+                           local::format::aggregated::column_last( state.forward.services, state.forward.queues)
                         );
                      }
                   }
@@ -904,6 +900,52 @@ namespace casual
 )";
 
                   } // forward
+
+                  namespace fanout
+                  {
+                     constexpr auto groups = R"(legend: list-fanout-groups
+   alias:
+      alias of the fanout group
+   pid:
+      the pid of the process that is running the fanout group
+   queues:
+      number of queue fanouts attached to the fanout group
+   commits:
+      accumulated number of commits for all queues within the fanout group
+   rollbacks:
+      accumulated number of rollbacks for all queues within the fanout group
+   last:
+      the last time one of the group queues committed or rollbacked a message
+)";
+
+
+                     constexpr auto queues = R"(legend: list-fanout-queues
+   alias:
+      alias of the fanout queue
+   group:
+      which fanout group the queue is attached to
+   source:
+      the queue to dequeue from
+   T#:
+      number of target queues attached to the fanout queue
+   S:
+      the state of the fanout queue
+         E: enabled
+         D: disabled
+   CI:
+      configured 'instances'
+   I:
+      running 'instances'
+   commits:
+      number of commits the fanout queue has performed
+   rollbacks:
+      number of rollbacks the fanout queue has performed
+   last:
+      the last time the fanout queue did something
+)";
+
+                  } // fanout
+
                } // list 
 
                auto option()
@@ -934,6 +976,8 @@ The following options has legend:
                      legend_option( "--list-forward-groups", legend::list::forward::groups),
                      legend_option( "--list-forward-services", legend::list::forward::services),
                      legend_option( "--list-forward-queues", legend::list::forward::queues),
+                     legend_option( "--list-fanout-groups", legend::list::fanout::groups),
+                     legend_option( "--list-fanout-queues", legend::list::fanout::queues)
                   });
                }
 
@@ -1096,6 +1140,140 @@ The following options has legend:
                   } // queues
 
                } // forward
+
+               namespace fanout
+               {
+                  namespace groups
+                  {
+                     namespace detail
+                     {
+                        auto format( const admin::model::Fanout& fanout)
+                        {
+                           terminal::format::print( fanout.groups,
+                              local::format::column_alias(),
+                              local::format::column_pid(),
+                              local::format::aggregated::column_queues_count( fanout.queues),
+                              local::format::aggregated::column_commit( fanout.queues),
+                              local::format::aggregated::column_rollback( fanout.queues),
+                              local::format::aggregated::column_last( fanout.queues)
+                           );
+                        }
+                        
+                     } // detail
+
+                     auto option()
+                     {
+                        auto invoke = []()
+                        {
+                           auto state = call::state();
+                           detail::format( state.fanout);
+                        };
+                        
+                        return argument::Option{
+                           std::move( invoke),
+                           { "--list-fanout-groups"},
+                           "list information of all fanout groups in current domain"
+                        };
+                     }
+                     
+                  } // groups
+
+                  namespace queues
+                  {
+                     namespace detail
+                     {
+                        auto format( const admin::model::Fanout& fanout)
+                        {
+                           auto target_count = []( auto& queue){ return queue.targets.size();};
+                          
+                           terminal::format::print( fanout.queues,
+                              local::format::column_alias(),
+                              local::format::column_group( fanout.groups),
+                              local::format::column_source(),
+                              terminal::format::column( "T#", target_count, terminal::color::blue),
+                              local::format::column_enabled(),
+                              local::format::column_configured_instances(),
+                              local::format::column_running_instances(),
+                              local::format::column_metric_commit(),
+                              local::format::column_metric_rollback(),
+                              local::format::column_metric_last()
+
+                           );
+                        }
+                     } // detail
+
+                     auto option()
+                     {
+                        auto invoke = []()
+                        {
+                           auto state = call::state();
+                           detail::format( state.fanout);
+                        };
+                        
+                        return argument::Option{
+                           std::move( invoke),
+                           { "--list-fanout-queues"},
+                           R"(list all fanout destinations in current domain)"};
+
+                     }
+                  } // queues
+
+                  namespace targets
+                  {
+                     namespace detail
+                     {
+                        auto format( const admin::model::Fanout& fanout)
+                        {
+                           // just a holder to flatten the structure a bit
+                           struct Target
+                           {
+                              const admin::model::fanout::Queue* queue;
+                              const admin::model::fanout::Queue::Target* target;
+                           };
+
+                           auto project_queue = []( const Target& target) -> const admin::model::fanout::Queue& { return *target.queue;};
+
+
+                           std::vector< Target> targets;
+                           for( auto& queue : fanout.queues)
+                              for( auto& target : queue.targets)
+                                 targets.push_back( Target{ &queue, &target});
+
+                           auto target_name = []( const Target& target) { return target.target->queue;};
+                           auto target_delay = []( const Target& target) 
+                           { 
+                              return std::chrono::duration_cast< format::duration_type>( target.target->delay).count();
+                           };
+
+                           terminal::format::print( targets,
+                              local::format::column_alias( project_queue),
+                              local::format::column_source( project_queue),
+                              terminal::format::column( "target", target_name, terminal::color::white),
+                              terminal::format::column( "delay", target_delay, common::terminal::color::blue, terminal::format::Align::right)
+                           );
+
+                        }
+                     } // detail
+
+                     auto option()
+                     {
+                        auto invoke = []()
+                        {
+                           auto state = call::state();
+                           detail::format( state.fanout);
+                        };
+
+                        return argument::Option{
+                           std::move( invoke),
+                           { "--list-fanout-targets"},
+                           R"(list all fanout targets in current domain)"
+                        };
+                     }
+                     
+                  } // targets
+                  
+               } // fanout
+
             } // list
 
             namespace pipe
@@ -1845,6 +2023,9 @@ casual queue --metric-reset a b)"
             local::list::forward::services::option(),
             local::list::forward::queues::option(),
             local::list::forward::groups::option(),
+            local::list::fanout::groups::option(),
+            local::list::fanout::queues::option(),
+            local::list::fanout::targets::option(),
             local::restore::option(),
             local::enqueue::option(),
             local::dequeue::option(),

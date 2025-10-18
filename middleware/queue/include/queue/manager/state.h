@@ -75,10 +75,16 @@ namespace casual
             using Group = Entity< configuration::model::queue::forward::Group>;
          }
 
+         namespace fanout
+         {
+            using Group = Entity< configuration::model::queue::fanout::Group>;
+         } // fanout
+
          namespace entity
          {
             inline auto path( const Group&) { return common::process::path().parent_path() / "casual-queue-group";}
             inline auto path( const forward::Group&) { return common::process::path().parent_path() / "casual-queue-forward-group";}
+            inline auto path( const fanout::Group&) { return common::process::path().parent_path() / "casual-queue-fanout-group";}
          } // entity
 
 
@@ -136,7 +142,6 @@ namespace casual
 
          enum struct Runlevel : short
          {
-            configuring,
             running,
             shutdown,
             error,
@@ -176,6 +181,15 @@ namespace casual
             )
          } forward;
 
+         struct
+         {
+            std::vector< state::fanout::Group> groups;
+            
+            CASUAL_LOG_SERIALIZE( 
+               CASUAL_SERIALIZE( groups);
+            )
+         } fanout;
+
 
          std::vector< state::Remote> remotes;
 
@@ -204,13 +218,8 @@ namespace casual
          //! @param pid process id
          void remove( common::strong::process::id pid);
 
-         
-
          //! return true if no forwards and queues are running
          bool done() const;
-
-         //! return true if all forwards and queues are at least in running mode.
-         bool ready() const;
 
          std::string note;
 
@@ -222,6 +231,7 @@ namespace casual
             CASUAL_SERIALIZE( pending);
             CASUAL_SERIALIZE( groups);
             CASUAL_SERIALIZE( forward);
+            CASUAL_SERIALIZE( fanout);
             CASUAL_SERIALIZE( remotes);
             CASUAL_SERIALIZE( task);
             CASUAL_SERIALIZE( note);

@@ -40,11 +40,11 @@ namespace casual
                common::environment::variable::set(
                   common::environment::variable::name::ipc::queue::manager,
                   common::process::handle());
-
+               
                State state;
 
                // We ask the domain manager for configuration, and 'comply' to it...
-               handle::comply::configuration( state, casual::domain::configuration::fetch());
+               handle::initialize( state, casual::domain::configuration::fetch());
 
                return state;
             }
@@ -52,8 +52,7 @@ namespace casual
             auto condition( State& state)
             {
                return message::dispatch::condition::compose(
-                  message::dispatch::condition::done( [ &state]() { return state.done();}),
-                  message::dispatch::condition::idle( [ &state](){ handle::idle( state);})
+                  message::dispatch::condition::done( [ &state]() { return state.done();})
                );
             }
 

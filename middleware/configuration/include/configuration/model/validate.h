@@ -15,7 +15,7 @@ namespace casual
    {
       namespace model
       {
-         void validate( Model& model);
+         void validate( const Model& model);
       } // model
       
    } // configuration

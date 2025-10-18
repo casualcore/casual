@@ -20,6 +20,8 @@ namespace casual
    {
       struct Manager 
       {
+         //! Create and manage a domain manager for unittesting
+         //! @param configuration [0..*] YAML content configuration for the domain manager
          Manager( std::vector< std::string_view> configuration);
          ~Manager();
 

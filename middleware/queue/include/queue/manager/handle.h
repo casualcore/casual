@@ -26,13 +26,11 @@ namespace casual
 
       } // process
 
-      namespace comply
-      {
-         void configuration( State& state, casual::configuration::Model model);
-         
-      } // comply
+ 
+      //! Comply to the given configuration model
+      //! during startup/initialization
+      void initialize( State& state, casual::configuration::Model model);
 
-      void idle( State& state);
 
       //! hard shutdown - best effort shutdown
       void abort( State& state);

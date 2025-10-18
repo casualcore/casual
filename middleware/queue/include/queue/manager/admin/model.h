@@ -193,6 +193,11 @@ namespace casual
                platform::size::type count{};
                common::chronology::time_point last{};
 
+               inline friend Count operator + ( const Count& lhs, const Count& rhs)
+               {
+                  return Count{ .count = lhs.count + rhs.count, .last = std::max( lhs.last, rhs.last)};
+               }
+
                CASUAL_CONST_CORRECT_SERIALIZE(
                   CASUAL_SERIALIZE( count);
                   CASUAL_SERIALIZE( last);
@@ -204,6 +209,11 @@ namespace casual
 
             inline auto transactions() const { return commit.count + rollback.count;}
             inline auto last() const { return std::max( commit.last, rollback.last);}
+
+            inline friend Metric operator + ( const Metric& lhs, const Metric& rhs)
+            {
+               return Metric{ .commit = lhs.commit + rhs.commit, .rollback = lhs.rollback + rhs.rollback};
+            }
 
             CASUAL_CONST_CORRECT_SERIALIZE(
                CASUAL_SERIALIZE( commit);
@@ -317,6 +327,90 @@ namespace casual
          )
       };
 
+      namespace fanout
+      {
+         using Metric = forward::Metric;
+
+         struct Instances
+         {
+            platform::size::type configured{};
+            platform::size::type running{};
+            platform::size::type stopped{};
+
+            CASUAL_CONST_CORRECT_SERIALIZE(
+               CASUAL_SERIALIZE( configured);
+               CASUAL_SERIALIZE( running);
+               CASUAL_SERIALIZE( stopped);
+            )
+         };
+
+         struct Group
+         {
+            std::string alias;
+            common::process::Handle process;
+            std::string note;
+
+            inline friend bool operator == ( const Group& lhs, common::strong::process::id rhs) { return lhs.process.pid == rhs;}
+
+            CASUAL_CONST_CORRECT_SERIALIZE(
+               CASUAL_SERIALIZE( alias);
+               CASUAL_SERIALIZE( process);
+               CASUAL_SERIALIZE( note);
+            )
+         };
+
+         struct Queue
+         {
+            struct Target
+            {
+               std::string queue;
+               common::chronology::duration delay{};
+
+               CASUAL_CONST_CORRECT_SERIALIZE(
+                  CASUAL_SERIALIZE( queue);
+                  CASUAL_SERIALIZE( delay);
+               )
+            };
+
+            //! the group who owns this fanout-queue
+            common::strong::process::id group;
+            std::string alias;
+            std::string source;
+            std::vector< Target> targets;
+            Instances instances;
+            Metric metric;
+            std::string note;
+            bool enabled = true;
+
+            inline friend bool operator == ( const Queue& lhs, common::strong::process::id rhs) { return lhs.group == rhs;}
+            inline friend bool operator == ( const Queue& lhs, std::string_view alias) { return lhs.alias == alias;}
+
+            CASUAL_CONST_CORRECT_SERIALIZE(
+               CASUAL_SERIALIZE( group);
+               CASUAL_SERIALIZE( alias);
+               CASUAL_SERIALIZE( source);
+               CASUAL_SERIALIZE( targets);
+               CASUAL_SERIALIZE( instances);
+               CASUAL_SERIALIZE( metric);
+               CASUAL_SERIALIZE( note);
+               CASUAL_SERIALIZE( enabled);
+            )
+         };
+
+      } // fanout
+
+      struct Fanout
+      {
+         std::vector< fanout::Group> groups;
+         std::vector< fanout::Queue> queues;
+
+         CASUAL_CONST_CORRECT_SERIALIZE(
+            CASUAL_SERIALIZE( groups);
+            CASUAL_SERIALIZE( queues);
+         )
+
+      };
+
       struct Message
       {
          enum class State : int
@@ -361,8 +455,8 @@ namespace casual
          std::vector< Queue> queues;
          std::vector< Queue> zombies;
 
-
          Forward forward;
+         Fanout fanout;
 
          struct Remote
          {
@@ -381,6 +475,7 @@ namespace casual
             CASUAL_SERIALIZE( queues);
             CASUAL_SERIALIZE( zombies);
             CASUAL_SERIALIZE( forward);
+            CASUAL_SERIALIZE( fanout);
             CASUAL_SERIALIZE( remote);
          )
       };

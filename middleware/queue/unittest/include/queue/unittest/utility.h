@@ -19,6 +19,19 @@ namespace casual
       namespace fetch
       {
          constexpr auto until = common::unittest::fetch::until( &unittest::state);
+
+         namespace predicate
+         {
+            inline auto fanout_groups( platform::size::type count)
+            {
+               return [ count]( const queue::manager::admin::model::State& state)
+               {
+                  return std::ssize( state.fanout.groups) == count;
+               };
+            }
+
+         } // predicate
+
       } // fetch
 
       std::vector< manager::admin::model::Message> messages( const std::string& queue);

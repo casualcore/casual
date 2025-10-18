@@ -40,7 +40,6 @@ namespace casual
          {
             switch( value)
             {
-               case Runlevel::configuring: return "configuring";
                case Runlevel::running: return "running";
                case Runlevel::shutdown: return "shutdown";
                case Runlevel::error: return "error";
@@ -182,6 +181,7 @@ namespace casual
          algorithm::container::erase( groups, pid);
          algorithm::container::erase( forward.groups, pid);
          algorithm::container::erase( pending.lookups, pid);
+         algorithm::container::erase( fanout.groups, pid);
          algorithm::container::erase( remotes, pid);
       }
 
@@ -264,18 +264,11 @@ namespace casual
 
       bool State::done() const
       {
-         if( runlevel <= decltype( runlevel())::running)
+         if( runlevel == state::Runlevel::running)
             return false;
 
-         return groups.empty() && forward.groups.empty();
+         return groups.empty() && forward.groups.empty() && fanout.groups.empty();
       }
-
-      bool State::ready() const
-      {
-         auto is_running = []( auto& group){ return group.state >= decltype( group.state())::running;};
-         
-         return algorithm::all_of( groups, is_running) && algorithm::all_of( forward.groups, is_running);
-      }
-
+      
    } // queue::manager
 } // casual

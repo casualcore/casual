@@ -22,7 +22,8 @@ namespace casual
          admin::model::State state(
             const manager::State& state,
             std::vector< ipc::message::group::state::Reply> groups,
-            std::vector< ipc::message::forward::group::state::Reply> forwards);
+            std::vector< ipc::message::forward::group::state::Reply> forwards,
+            std::vector< ipc::message::fanout::group::state::Reply> fanouts);
 
          namespace message
          {

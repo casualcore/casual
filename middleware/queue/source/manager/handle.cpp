@@ -32,6 +32,7 @@
 #include "common/code/casual.h"
 
 #include "casual/assert.h"
+#include "casual/task.h"
 
 
 namespace casual
@@ -44,6 +45,18 @@ namespace casual
       {
          namespace
          {
+            template< typename Message>
+            auto task_forward( State& state)
+            {
+               return [ &state]( Message& message)
+               {
+                  Trace trace{ "queue::manager::handle::local::task_forward"};
+                  log::debug( "message: ", message);
+
+                  state.task.coordinator( message);
+               };
+            }
+      
 
             namespace pending::lookups
             {
@@ -286,29 +299,7 @@ namespace casual
 
             namespace group
             {
-               auto connect( State& state)
-               {
-                  return [&state]( queue::ipc::message::group::Connect& message)
-                  {
-                     Trace trace{ "queue::manager::handle::local::group::connect"};
-                     log::debug( "message: ", message);
-
-                     state.task.coordinator( message);
-
-                     if( auto found = common::algorithm::find( state.groups, message.process.pid))
-                     {
-                        found->state = decltype( found->state())::connected;
-                        found->process = message.process;
-
-                        // send configuration
-                        queue::ipc::message::group::configuration::update::Request request{ common::process::handle()};
-                        request.model = found->configuration;
-                        state.multiplex.send( message.process.ipc, request);
-                     }
-                     else
-                        common::log::line( common::log::category::error, "failed to correlate queue group - ", message.process.pid);
-                  };
-               }
+               auto connect = local::task_forward< queue::ipc::message::group::Connect>;  
 
                namespace configuration::update
                {
@@ -321,8 +312,10 @@ namespace casual
 
                         state.task.coordinator( message);
 
+                        // configuration update reply have the group available queues, we update our state
                         state.update( std::move( message));
 
+                        // we might be able to reply to pending lookups
                         pending::lookups::check( state);
                      };
                   }
@@ -332,53 +325,26 @@ namespace casual
 
             namespace forward
             {
-               auto connect( State& state)
-               {
-                  return [&state]( queue::ipc::message::forward::group::Connect& message)
-                  {
-                     Trace trace{ "queue::manager::handle::local::forward::connect"};
-                     log::debug( "message: ", message);
-
-                     state.task.coordinator( message);
-
-                     if( auto found = common::algorithm::find( state.forward.groups, message.process.pid))
-                     {
-                        log::debug( "found: ", *found);
-
-                        found->state = decltype( found->state())::connected;
-                        found->process = message.process;
-
-                        // send configuration
-                        queue::ipc::message::forward::group::configuration::update::Request request{ common::process::handle()};
-                        request.model = found->configuration;
-                        request.groups = state.group_coordinator.config();
-                        state.multiplex.send( message.process.ipc, request);
-                     }
-                     else
-                        common::log::line( common::log::category::error, "failed to correlate forward group - ", message.process.pid);
-                  };
-               }
+               auto connect = local::task_forward< queue::ipc::message::forward::group::Connect>;
 
                namespace configuration::update
                {
-                  auto reply( State& state)
-                  {
-                     return [&state]( queue::ipc::message::forward::group::configuration::update::Reply&& message)
-                     {
-                        Trace trace{ "queue::manager::handle::local::forward::configuration::update::reply"};
-                        log::debug( "message: ", message);
+                  auto reply = local::task_forward< queue::ipc::message::forward::group::configuration::update::Reply>;
 
-                        state.task.coordinator( message);
-
-                        if( auto found = common::algorithm::find( state.forward.groups, message.process.pid))
-                           found->state = decltype( found->state())::running;
-                        else
-                           common::log::line( common::log::category::error, "failed to correlate forward group - ", message.process.pid);
-                     };
-                  }
                } // configuration::update
                
             } // forward
+
+            namespace fanout
+            {
+               auto connect = local::task_forward< queue::ipc::message::fanout::group::Connect>;
+
+               namespace configuration::update
+               {
+                  auto reply = local::task_forward< queue::ipc::message::fanout::group::configuration::update::Reply>;
+
+               } // configuration::update
+            } // fanout
 
             auto advertise( State& state)
             {
@@ -564,30 +530,31 @@ namespace casual
          }
       } // process
 
-      namespace comply
+      void initialize( State& state, casual::configuration::Model model)
       {
-         void configuration( State& state, casual::configuration::Model model)
+         Trace trace{ "queue::manager::handle::initialize"};
+
+         state.note = model.queue.note;
+         state.group_coordinator = { model.domain.groups};
+
+         configuration::conform( state, {}, std::move( model.queue));
+
+         // add whitelist connect to domain-manager as a task
          {
-            Trace trace{ "queue::manager::handle::comply::configuration"};
-            log::debug( "model: ", model);
+            auto send_connect = [&state]( task::unit::id)
+            {
+               state.runlevel = state::Runlevel::running;
 
-            state.note = model.queue.note;
-            state.group_coordinator = { model.domain.groups};
+               // Connect to domain, and let domain-manager know that we're ready.
+               communication::instance::whitelist::connect( communication::instance::identity::queue::manager);
 
-            configuration::conform( state, {}, std::move( model.queue));
-         }
-      } // comply
+               // the task is done.
+               return task::unit::action::Outcome::abort;
+            };
 
-      void idle( State& state)
-      {
-         Trace trace{ "queue::manager::handle::idle"};
-
-         if( state.runlevel == state::Runlevel::configuring && state.ready())
-         {
-            state.runlevel = state::Runlevel::running;
-            
-            // Connect to domain, and let domain-manager know that we're ready.
-            communication::instance::whitelist::connect( communication::instance::identity::queue::manager);
+            // add the task. Will be invoked when all the configuration tasks are done.
+            state.task.coordinator.then( task::create::unit( 
+               task::create::action( "connect-dm", std::move( send_connect))));
          }
       }
 
@@ -618,6 +585,8 @@ namespace casual
             handle::local::group::configuration::update::reply( state),
             handle::local::forward::connect( state),
             handle::local::forward::configuration::update::reply( state),
+            handle::local::fanout::connect( state),
+            handle::local::fanout::configuration::update::reply( state),
             handle::local::configuration::update::request( state),
             handle::local::configuration::request( state),
             handle::local::lookup::request( state),

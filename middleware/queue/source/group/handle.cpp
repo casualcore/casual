@@ -251,7 +251,7 @@ namespace casual
 
                         if( ! detail::has::sufficient::capacity( state, message))
                         {
-                           log::line( log::category::error, " failed with enqueue request to queue: ", message.name, " - queue-group ", state.alias, " full");
+                           log::error( code::casual::constraint_violation, "failed with enqueue request to queue: ", message.name, " - queue-group ", state.alias, " configured capacity exceeded");
                            auto reply = common::message::reverse::type( message);
                            reply.code = common::code::queue::no_queue;  // bespoke code for 'queuebase_full'?
                            state.multiplex.send( message.process.ipc, reply);

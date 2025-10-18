@@ -1029,12 +1029,10 @@ namespace casual
                using base_request::base_request;
 
                casual::configuration::model::queue::forward::Group model;
-               std::vector< casual::configuration::model::domain::Group> groups;
 
                CASUAL_CONST_CORRECT_SERIALIZE(
                   base_request::serialize( archive);
                   CASUAL_SERIALIZE( model);
-                  CASUAL_SERIALIZE( groups);
                )
             };
 
@@ -1056,45 +1054,45 @@ namespace casual
 
          namespace state
          {
+            struct Instances
+            {
+               platform::size::type configured = 0;
+               platform::size::type running = 0;
+
+               CASUAL_CONST_CORRECT_SERIALIZE(
+                  CASUAL_SERIALIZE( configured);
+                  CASUAL_SERIALIZE( running);
+               )
+            };
+
+            struct Metric
+            {
+               struct Count
+               {
+                  platform::size::type count = 0;
+                  common::chronology::time_point last{};
+
+                  CASUAL_CONST_CORRECT_SERIALIZE(
+                     CASUAL_SERIALIZE( count);
+                     CASUAL_SERIALIZE( last);
+                  )
+               };
+
+               Count commit;
+               Count rollback;
+
+               CASUAL_CONST_CORRECT_SERIALIZE(
+                  CASUAL_SERIALIZE( commit);
+                  CASUAL_SERIALIZE( rollback);
+               )
+            };
+
             using Request = common::message::basic_request< common::message::Type::queue_forward_group_state_request>;
 
             using base_reply = common::message::basic_request< common::message::Type::queue_forward_group_state_reply>;
             struct Reply : base_reply
             {
                using base_reply::base_reply;
-
-               struct Instances
-               {
-                  platform::size::type configured = 0;
-                  platform::size::type running = 0;
-
-                  CASUAL_CONST_CORRECT_SERIALIZE(
-                     CASUAL_SERIALIZE( configured);
-                     CASUAL_SERIALIZE( running);
-                  )
-               };
-
-               struct Metric
-               {
-                  struct Count
-                  {
-                     platform::size::type count = 0;
-                     common::chronology::time_point last{};
-
-                     CASUAL_CONST_CORRECT_SERIALIZE(
-                        CASUAL_SERIALIZE( count);
-                        CASUAL_SERIALIZE( last);
-                     )
-                  };
-
-                  Count commit;
-                  Count rollback;
-
-                  CASUAL_CONST_CORRECT_SERIALIZE(
-                     CASUAL_SERIALIZE( commit);
-                     CASUAL_SERIALIZE( rollback);
-                  )
-               };
 
                struct Queue
                {
@@ -1188,6 +1186,112 @@ namespace casual
 
       } // forward::group
 
+      namespace fanout::group
+      {
+         using Connect = common::message::basic_request< common::message::Type::queue_fanout_group_connect>;
+         
+         namespace configuration::update
+         {
+            using base_request = common::message::basic_request< common::message::Type::queue_fanout_group_configuration_update_request>;
+            struct Request : base_request
+            {
+               using base_request::base_request;
+
+               casual::configuration::model::queue::fanout::Group model;
+
+               CASUAL_CONST_CORRECT_SERIALIZE(
+                  base_request::serialize( archive);
+                  CASUAL_SERIALIZE( model);
+               )
+            };
+
+            using base_reply = common::message::basic_process< common::message::Type::queue_fanout_group_configuration_update_reply>;
+            struct Reply : base_reply
+            {
+               using base_reply::base_reply;
+
+               std::string alias;
+
+               CASUAL_CONST_CORRECT_SERIALIZE(
+                  base_reply::serialize( archive);
+                  CASUAL_SERIALIZE( alias);
+               )
+            };
+            
+         } // configuration::update
+
+         namespace state
+         {
+            using Request = common::message::basic_request< common::message::Type::queue_fanout_group_state_request>;
+
+            using base_reply = common::message::basic_request< common::message::Type::queue_fanout_group_state_reply>;
+            struct Reply : base_reply
+            {
+               using base_reply::base_reply;
+
+               struct Instances
+               {
+                  platform::size::type configured = 0;
+                  platform::size::type running = 0;
+                  platform::size::type stopped = 0;
+
+                  CASUAL_CONST_CORRECT_SERIALIZE(
+                     CASUAL_SERIALIZE( configured);
+                     CASUAL_SERIALIZE( running);
+                     CASUAL_SERIALIZE( stopped);
+                  )
+               };
+
+               using Metric = forward::group::state::Metric;
+
+               struct Target
+               {
+                  std::string queue;
+                  common::chronology::duration delay{};
+
+                  CASUAL_CONST_CORRECT_SERIALIZE(
+                     CASUAL_SERIALIZE( queue);
+                     CASUAL_SERIALIZE( delay);
+                  )
+               };
+
+               struct Queue
+               {
+                  std::string alias;
+                  std::string source;
+                  Instances instances;
+                  std::vector< Target> targets;
+                  Metric metric;
+                  std::string note;
+                  bool enabled = true;
+
+                  CASUAL_CONST_CORRECT_SERIALIZE(
+                     CASUAL_SERIALIZE( alias);
+                     CASUAL_SERIALIZE( source);
+                     CASUAL_SERIALIZE( instances);
+                     CASUAL_SERIALIZE( targets);
+                     CASUAL_SERIALIZE( metric);
+                     CASUAL_SERIALIZE( note);
+                     CASUAL_SERIALIZE( enabled);
+                  )
+               };
+
+               std::string alias;
+               std::vector< Queue> queues;
+               std::string note;
+
+
+               CASUAL_CONST_CORRECT_SERIALIZE(
+                  base_reply::serialize( archive);
+                  CASUAL_SERIALIZE( alias);
+                  CASUAL_SERIALIZE( queues);
+                  CASUAL_SERIALIZE( note);
+               )
+            };
+         } // state
+         
+      } // fanout::group
+
    } // queue::ipc::message
    
    namespace common::message::reverse
@@ -1248,6 +1352,12 @@ namespace casual
 
       template<>
       struct type_traits< casual::queue::ipc::message::forward::group::state::Request> : detail::type< casual::queue::ipc::message::forward::group::state::Reply> {};
+
+      template<>
+      struct type_traits< casual::queue::ipc::message::fanout::group::configuration::update::Request> : detail::type< casual::queue::ipc::message::fanout::group::configuration::update::Reply> {};
+
+      template<>
+      struct type_traits< casual::queue::ipc::message::fanout::group::state::Request> : detail::type< casual::queue::ipc::message::fanout::group::state::Reply> {};
    
    } // common::message::reverse
 } // casual

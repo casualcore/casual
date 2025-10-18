@@ -275,6 +275,12 @@ namespace casual
          queue_forward_group_state_request,
          queue_forward_group_state_reply,
 
+         queue_fanout_group_connect = QUEUE_BASE + 500,
+         queue_fanout_group_configuration_update_request,
+         queue_fanout_group_configuration_update_reply,
+         queue_fanout_group_state_request,
+         queue_fanout_group_state_reply,
+
          
          // gateway
          GATEWAY_BASE = 7000,

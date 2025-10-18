@@ -809,7 +809,6 @@ namespace casual
                   std::optional< std::vector< forward::Queue>> queues;
                   std::optional< std::string> note;
 
-
                   CASUAL_CONST_CORRECT_SERIALIZE(
                      CASUAL_SERIALIZE( alias);
                      CASUAL_SERIALIZE( note);
@@ -832,6 +831,68 @@ namespace casual
                )
             };
 
+            namespace fanout
+            {
+               namespace queue
+               {
+                  struct Target
+                  {
+                     std::string queue;
+                     std::optional< std::string> delay;
+
+                     CASUAL_CONST_CORRECT_SERIALIZE(
+                        CASUAL_SERIALIZE( queue);
+                        CASUAL_SERIALIZE( delay);
+                     )
+                  };
+               } // queue
+
+               struct Queue 
+               {
+                  std::optional< std::string> alias;
+                  std::string source;
+                  std::optional< platform::size::type> instances;
+                  std::optional< std::string> note;
+                  std::optional< std::vector< std::string>> memberships;
+
+                  std::optional< std::vector< queue::Target>> targets;
+
+                  CASUAL_CONST_CORRECT_SERIALIZE(
+                     CASUAL_SERIALIZE( alias);
+                     CASUAL_SERIALIZE( source);
+                     CASUAL_SERIALIZE( instances);
+                     CASUAL_SERIALIZE( note);
+                     CASUAL_SERIALIZE( memberships);
+                     CASUAL_SERIALIZE( targets);
+                  )
+               };
+
+               struct Group
+               {
+                  std::optional< std::string> alias;
+                  std::optional< std::vector< fanout::Queue>> queues;
+                  std::optional< std::string> note;
+
+                  CASUAL_CONST_CORRECT_SERIALIZE(
+                     CASUAL_SERIALIZE( alias);
+                     CASUAL_SERIALIZE( queues);
+                     CASUAL_SERIALIZE( note);
+                  )
+
+               };
+               
+            } // fanout
+
+            struct Fanout
+            {
+               std::optional< std::vector< fanout::Group>> groups;
+
+               CASUAL_CONST_CORRECT_SERIALIZE(
+                  CASUAL_SERIALIZE( groups);
+               )
+            };
+
+
             struct Manager
             {
                struct Default
@@ -848,6 +909,7 @@ namespace casual
                std::optional< Default> defaults;
                std::optional< std::vector< Group>> groups;
                std::optional< Forward> forward;
+               std::optional< Fanout> fanout;
 
                std::optional< std::string> note;
 
@@ -858,6 +920,7 @@ namespace casual
                   CASUAL_SERIALIZE_NAME( defaults, "default");
                   CASUAL_SERIALIZE( groups);
                   CASUAL_SERIALIZE( forward);
+                  CASUAL_SERIALIZE( fanout);
                )
             };
 

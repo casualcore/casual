@@ -100,6 +100,9 @@ namespace casual
             case casual::domain_incomplete_boot: return "domain-incomplete-boot";
             
             case casual::buffer_type_duplicate: return "buffer-type-duplicate";
+
+            case casual::constraint_violation: return "constraint-violation";
+
             case casual::internal_out_of_bounds: return "internal-out-of-bounds";
             case casual::internal_unexpected_value: return "internal-unexpected-value";
             case casual::internal_correlation: return "internal-correlation";

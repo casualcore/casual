@@ -67,9 +67,9 @@ namespace casual::configuration
          {
             std::vector< system::Resource> resources;
 
-            Model set_union( Model lhs, Model rhs);
-            Model set_difference( Model lhs, Model rhs);
-            Model set_intersection( Model lhs, Model rhs);
+            friend Model set_union( Model lhs, Model rhs);
+            friend Model set_difference( Model lhs, Model rhs);
+            friend Model set_intersection( Model lhs, Model rhs);
 
             friend auto operator <=> ( const Model&, const Model&) = default;
 
@@ -88,9 +88,9 @@ namespace casual::configuration
          {
             std::vector< common::environment::Variable> variables;
 
-            Environment set_union( Environment lhs, Environment rhs);
-            Environment set_difference( Environment lhs, Environment rhs);
-            Environment set_intersection( Environment lhs, Environment rhs);
+            friend Environment set_union( Environment lhs, Environment rhs);
+            friend Environment set_difference( Environment lhs, Environment rhs);
+            friend Environment set_intersection( Environment lhs, Environment rhs);
 
             friend auto operator <=> ( const Environment&, const Environment&) = default;
 
@@ -180,9 +180,9 @@ namespace casual::configuration
             std::vector< domain::Server> servers;
             std::vector< domain::Executable> executables;
 
-            Model set_union( Model lhs, Model rhs);
-            Model set_difference( Model lhs, Model rhs);
-            Model set_intersection( Model lhs, Model rhs);
+            friend Model set_union( Model lhs, Model rhs);
+            friend Model set_difference( Model lhs, Model rhs);
+            friend Model set_intersection( Model lhs, Model rhs);
 
             friend auto operator <=> ( const Model&, const Model&) = default;
             
@@ -224,9 +224,9 @@ namespace casual::configuration
          {
             std::vector< restriction::Server> servers;
 
-            Restriction set_union( Restriction lhs, Restriction rhs);
-            Restriction set_difference( Restriction lhs, Restriction rhs);
-            Restriction set_intersection( Restriction lhs, Restriction rhs);
+            friend Restriction set_union( Restriction lhs, Restriction rhs);
+            friend Restriction set_difference( Restriction lhs, Restriction rhs);
+            friend Restriction set_intersection( Restriction lhs, Restriction rhs);
 
             friend auto operator <=> ( const Restriction&, const Restriction&) = default;
 
@@ -279,7 +279,7 @@ namespace casual::configuration
             service::Timeout timeout;
             std::string note;
 
-            Global set_union( Global lhs, Global rhs);
+            friend Global set_union( Global lhs, Global rhs);
 
             friend auto operator <=> ( const Global&, const Global&) = default;
 
@@ -297,9 +297,9 @@ namespace casual::configuration
             std::vector< service::Service> services;
             Restriction restriction;
 
-            Model set_union( Model lhs, Model rhs);
-            Model set_difference( Model lhs, Model rhs);
-            Model set_intersection( Model lhs, Model rhs);
+            friend Model set_union( Model lhs, Model rhs);
+            friend Model set_difference( Model lhs, Model rhs);
+            friend Model set_intersection( Model lhs, Model rhs);
 
             friend auto operator <=> ( const Model&, const Model&) = default;
 
@@ -357,9 +357,9 @@ namespace casual::configuration
             std::vector< transaction::Resource> resources;
             std::vector< Mapping> mappings;
 
-            Model set_union( Model lhs, Model rhs);
-            Model set_difference( Model lhs, Model rhs);
-            Model set_intersection( Model lhs, Model rhs);
+            friend Model set_union( Model lhs, Model rhs);
+            friend Model set_difference( Model lhs, Model rhs);
+            friend Model set_intersection( Model lhs, Model rhs);
 
             friend auto operator <=> ( const Model&, const Model&) = default;
 
@@ -430,7 +430,7 @@ namespace casual::configuration
                std::vector< std::string> memberships;
                bool enabled = true;
 
-               Connection set_union( Connection lhs, Connection rhs);
+               friend Connection set_union( Connection lhs, Connection rhs);
 
                friend auto operator <=> ( const Connection&, const Connection&) = default;
 
@@ -467,9 +467,9 @@ namespace casual::configuration
 
                inline bool empty() const { return connections.empty();}
 
-               Group set_union( Group lhs, Group rhs);
-               Group set_difference( Group lhs, Group rhs);
-               Group set_intersection( Group lhs, Group rhs);
+               friend Group set_union( Group lhs, Group rhs);
+               friend Group set_difference( Group lhs, Group rhs);
+               friend Group set_intersection( Group lhs, Group rhs);
 
                friend auto operator <=> ( const Group&, const Group&) = default;
 
@@ -490,9 +490,9 @@ namespace casual::configuration
 
             inline bool empty() const { return groups.empty();}
 
-            Inbound set_union( Inbound lhs, Inbound rhs);
-            Inbound set_difference( Inbound lhs, Inbound rhs);
-            Inbound set_intersection( Inbound lhs, Inbound rhs);
+            friend Inbound set_union( Inbound lhs, Inbound rhs);
+            friend Inbound set_difference( Inbound lhs, Inbound rhs);
+            friend Inbound set_intersection( Inbound lhs, Inbound rhs);
 
             friend auto operator <=> ( const Inbound&, const Inbound&) = default;
 
@@ -512,9 +512,9 @@ namespace casual::configuration
                std::vector< std::string> memberships;
                bool enabled = true;
 
-               Connection set_union( Connection lhs, Connection rhs);
-               Connection set_difference( Connection lhs, Connection rhs);
-               Connection set_intersection( Connection lhs, Connection rhs);
+               friend Connection set_union( Connection lhs, Connection rhs);
+               friend Connection set_difference( Connection lhs, Connection rhs);
+               friend Connection set_intersection( Connection lhs, Connection rhs);
 
                friend auto operator <=> ( const Connection&, const Connection&) = default;
 
@@ -538,9 +538,9 @@ namespace casual::configuration
                platform::size::type order{};
                std::string note;
 
-               Group set_union( Group lhs, Group rhs);
-               Group set_difference( Group lhs, Group rhs);
-               Group set_intersection( Group lhs, Group rhs);
+               friend Group set_union( Group lhs, Group rhs);
+               friend Group set_difference( Group lhs, Group rhs);
+               friend Group set_intersection( Group lhs, Group rhs);
 
                inline bool empty() const { return connections.empty();}
 
@@ -563,9 +563,9 @@ namespace casual::configuration
 
             inline bool empty() const { return groups.empty();}
 
-            Outbound set_union( Outbound lhs, Outbound rhs);
-            Outbound set_difference( Outbound lhs, Outbound rhs);
-            Outbound set_intersection( Outbound lhs, Outbound rhs);
+            friend Outbound set_union( Outbound lhs, Outbound rhs);
+            friend Outbound set_difference( Outbound lhs, Outbound rhs);
+            friend Outbound set_intersection( Outbound lhs, Outbound rhs);
 
             friend auto operator <=> ( const Outbound&, const Outbound&) = default;
 
@@ -579,9 +579,9 @@ namespace casual::configuration
             Inbound inbound;
             Outbound outbound;
 
-            Model set_union( Model lhs, Model rhs);
-            Model set_difference( Model lhs, Model rhs);
-            Model set_intersection( Model lhs, Model rhs);
+            friend Model set_union( Model lhs, Model rhs);
+            friend Model set_difference( Model lhs, Model rhs);
+            friend Model set_intersection( Model lhs, Model rhs);
 
             friend auto operator <=> ( const Model&, const Model&) = default;
 
@@ -656,9 +656,9 @@ namespace casual::configuration
             friend auto operator <=> ( const Group&, const Group&) = default;
             friend bool operator == ( const Group&, const Group&) = default;
 
-            Group set_union( Group lhs, Group rhs);
-            Group set_difference( Group lhs, Group rhs);
-            Group set_intersection( Group lhs, Group rhs);
+            friend Group set_union( Group lhs, Group rhs);
+            friend Group set_difference( Group lhs, Group rhs);
+            friend Group set_intersection( Group lhs, Group rhs);
 
             CASUAL_CONST_CORRECT_SERIALIZE(
                CASUAL_SERIALIZE( alias);
@@ -753,9 +753,9 @@ namespace casual::configuration
                std::string note;
                std::vector< std::string> memberships;
 
-               Group set_union( Group lhs, Group rhs);
-               Group set_difference( Group lhs, Group rhs);
-               Group set_intersection( Group lhs, Group rhs);
+               friend Group set_union( Group lhs, Group rhs);
+               friend Group set_difference( Group lhs, Group rhs);
+               friend Group set_intersection( Group lhs, Group rhs);
 
                inline friend bool operator == ( const Group& lhs, const std::string& alias) { return lhs.alias == alias;}
                friend auto operator <=> ( const Group&, const Group&) = default;
@@ -775,11 +775,96 @@ namespace casual::configuration
          {
             std::vector< forward::Group> groups;
 
-            Forward set_union( Forward lhs, Forward rhs);
-            Forward set_difference( Forward lhs, Forward rhs);
-            Forward set_intersection( Forward lhs, Forward rhs);
+            friend Forward set_union( Forward lhs, Forward rhs);
+            friend Forward set_difference( Forward lhs, Forward rhs);
+            friend Forward set_intersection( Forward lhs, Forward rhs);
 
             friend auto operator <=> ( const Forward&, const Forward&) = default;
+
+            CASUAL_CONST_CORRECT_SERIALIZE(
+               CASUAL_SERIALIZE( groups);
+            )
+         };
+
+         namespace fanout
+         {
+            struct Queue 
+            {
+               struct Target
+               {
+                  std::string queue;
+                  common::chronology::duration delay{};
+
+                  friend auto operator <=> ( const Target&, const Target&) = default;
+                  friend bool operator == ( const Target& lhs, const Target& rhs) = default;
+                  inline friend bool operator == ( const Target& lhs, std::string_view queue) { return lhs.queue == queue;}
+
+                  CASUAL_CONST_CORRECT_SERIALIZE(
+                     CASUAL_SERIALIZE( queue);
+                     CASUAL_SERIALIZE( delay);
+                  )
+               };
+
+               std::string alias;
+               std::string source;
+               platform::size::type instances = 1;
+               std::vector< std::string> memberships;
+               std::vector< Target> targets;
+               bool enabled = true;
+               std::string note;
+
+               //! @returns the effective number of instances (0 if disabled)
+               inline platform::size::type effective_instances() const noexcept { return enabled ? instances : 0;}
+
+               friend auto operator <=> ( const Queue&, const Queue&) = default;
+
+               CASUAL_CONST_CORRECT_SERIALIZE(
+                  CASUAL_SERIALIZE( alias);
+                  CASUAL_SERIALIZE( source);
+                  CASUAL_SERIALIZE( instances);
+                  CASUAL_SERIALIZE( memberships);
+                  CASUAL_SERIALIZE( targets);
+                  CASUAL_SERIALIZE( enabled);
+                  CASUAL_SERIALIZE( note);
+               )
+            };
+
+            struct Group
+            {
+               std::string alias;
+               std::vector< fanout::Queue> queues;
+               std::string note;
+               std::vector< std::string> memberships;
+
+               inline friend bool operator == ( const Group& lhs, const std::string& alias) { return lhs.alias == alias;}
+               friend auto operator <=> ( const Group&, const Group&) = default;
+               friend bool operator == ( const Group&, const Group&) = default;
+
+               friend Group set_union( Group lhs, Group rhs);
+               friend Group set_difference( Group lhs, Group rhs);
+               friend Group set_intersection( Group lhs, Group rhs);
+
+               CASUAL_CONST_CORRECT_SERIALIZE(
+                  CASUAL_SERIALIZE( alias);
+                  CASUAL_SERIALIZE( note);
+                  CASUAL_SERIALIZE( queues);
+                  CASUAL_SERIALIZE( memberships);
+               )
+
+            };
+            
+         } // fanout
+
+
+         struct Fanout
+         {
+            std::vector< fanout::Group> groups;
+
+            friend Fanout set_union( Fanout lhs, Fanout rhs);
+            friend Fanout set_difference( Fanout lhs, Fanout rhs);
+            friend Fanout set_intersection( Fanout lhs, Fanout rhs);
+
+            friend auto operator <=> ( const Fanout&, const Fanout&) = default;
 
             CASUAL_CONST_CORRECT_SERIALIZE(
                CASUAL_SERIALIZE( groups);
@@ -790,17 +875,19 @@ namespace casual::configuration
          {
             std::vector< queue::Group> groups;
             Forward forward;
+            Fanout fanout;
             std::string note;
 
-            Model set_union( Model lhs, Model rhs);
-            Model set_difference( Model lhs, Model rhs);
-            Model set_intersection( Model lhs, Model rhs);
+            friend Model set_union( Model lhs, Model rhs);
+            friend Model set_difference( Model lhs, Model rhs);
+            friend Model set_intersection( Model lhs, Model rhs);
 
             friend auto operator <=> ( const Model&, const Model&) = default;
 
             CASUAL_CONST_CORRECT_SERIALIZE(
                CASUAL_SERIALIZE( groups);
                CASUAL_SERIALIZE( forward);
+               CASUAL_SERIALIZE( fanout);
                CASUAL_SERIALIZE( note);
             )
          };

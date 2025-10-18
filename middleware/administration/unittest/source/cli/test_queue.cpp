@@ -670,5 +670,222 @@ domain:
          }
       }
 
+      TEST( cli_queue, list_fanout_groups)
+      {
+         common::unittest::Trace trace;
+
+         auto domain = local::domain( R"(
+domain:
+   name: A
+   queue:
+      fanout:
+         groups:
+            -  alias: fanout-1
+               queues:
+                  -  source: a
+                     targets:
+                        -  queue: b
+                        -  queue: c
+                  -  source: d
+                     targets:
+                        -  queue: e
+            -  alias: fanout-2
+               queues:
+                  -  source: f
+                     targets:
+                        -  queue: g
+
+)");
+
+/*
+alias     pid    queues  commits  rollbacks  last
+--------  -----  ------  -------  ---------  ----
+fanout-1  11203       2        0          0  -   
+fanout-2  11204       1        0          0  -   
+*/
+
+
+         auto capture = local::execute( R"(casual --color false --header false queue --list-fanout-groups)");
+
+         auto rows = string::split( capture.standard.out, '\n');
+
+         EXPECT_TRUE( std::regex_match( rows.at( 0), std::regex{ R"(fanout-1[ ]+\d+[ ]+\d+[ ]+\d+[ ]+\d+[ ]+-[ ]*)"})) << rows.at( 0);
+         EXPECT_TRUE( std::regex_match( rows.at( 1), std::regex{ R"(fanout-2[ ]+\d+[ ]+\d+[ ]+\d+[ ]+\d+[ ]+-[ ]*)"})) << rows.at( 1);
+
+      }
+
+      TEST( cli_queue, list_fanout_queues)
+      {
+         common::unittest::Trace trace;
+
+         auto domain = local::domain( R"(
+domain:
+   name: A
+   groups:
+      -  name: g1
+         dependencies: [ queue]
+      -  name: g2
+         dependencies: [ queue]
+         enabled: false
+   queue:
+      groups:
+         -  alias: S
+            queuebase: ":memory:"
+            queues:
+               -  name: s1
+               -  name: s2
+               -  name: s3
+               -  name: s4
+         -  alias: T
+            queuebase: ":memory:"
+            queues:
+               -  name: t1
+               -  name: t2
+               -  name: t3
+               -  name: t4
+               -  name: t5
+               -  name: t6
+                  
+      fanout:
+         groups:
+            -  alias: fanout-1
+               queues:
+                  -  alias: foo
+                     memberships:
+                        -  g1
+                     instances: 3
+                     source: s1
+                     targets:
+                        -  queue: t1
+                        -  queue: t2
+                  -  source: s2
+                     instances: 2
+                     targets:
+                        -  queue: t3
+            -  alias: fanout-2
+               queues:
+                  -  source: s3
+                     targets:
+                        -  queue: t4
+                        -  queue: t5
+                        -  queue: t6
+                  -  alias: bar
+                     instances: 1
+                     memberships:
+                        -  g2
+                     source: s4
+                     targets:
+                        -  queue: t1
+)");  
+
+      
+         
+         // some tests to see how it looks with some activity
+         {
+            //EXPECT_TRUE( local::execute( R"(echo "casual" | casual buffer --compose | casual queue --enqueue s1 | casual pipe --human-sink | wc -l)"));
+            //EXPECT_TRUE( local::execute( R"(echo "casual" | casual buffer --compose | casual queue --enqueue s2 | casual pipe --human-sink | wc -l)"));
+            //EXPECT_TRUE( local::execute( R"(echo "casual" | casual buffer --compose | casual queue --enqueue s3 | casual pipe --human-sink | wc -l)"));
+            //auto capture = local::execute( R"(casual queue --list-fanout-queues)");
+            //EXPECT_TRUE( false) << capture.standard.out;
+/*
+alias  group     source  T#  S  CI  I  commits  rollbacks  last                            
+-----  --------  ------  --  -  --  -  -------  ---------  --------------------------------
+foo    fanout-1  s1      2   E   3  3        1          0  2025-11-07T09:50:43.780974+01:00
+s2     fanout-1  s2      1   E   2  2        1          0  2025-11-07T09:50:43.804810+01:00
+s3     fanout-2  s3      3   E   1  1        1          0  2025-11-07T09:50:43.829186+01:00
+bar    fanout-2  s4      1   D   1  0        0          0  -                               
+*/
+         }
+
+         auto capture = local::execute( R"(casual --color false --header false queue --list-fanout-queues)");
+
+         auto rows = string::split( capture.standard.out, '\n');
+
+         EXPECT_TRUE( std::regex_match( rows.at( 0), std::regex{ R"(foo    fanout-1  s1      2   E   3  3[ ]+\d+[ ]+\d+[ ]+-[ ]*)"})) << rows.at( 0);
+         EXPECT_TRUE( std::regex_match( rows.at( 1), std::regex{ R"(s2     fanout-1  s2      1   E   2  2[ ]+\d+[ ]+\d+[ ]+-[ ]*)"})) << rows.at( 1);
+         EXPECT_TRUE( std::regex_match( rows.at( 2), std::regex{ R"(s3     fanout-2  s3      3   E   1  1[ ]+\d+[ ]+\d+[ ]+-[ ]*)"})) << rows.at( 2);
+         EXPECT_TRUE( std::regex_match( rows.at( 3), std::regex{ R"(bar    fanout-2  s4      1   D   1  0[ ]+\d+[ ]+\d+[ ]+-[ ]*)"})) << rows.at( 3);
+      }
+
+      TEST( cli_queue, list_fanout_targets)
+      {
+         common::unittest::Trace trace;
+
+         auto domain = local::domain( R"(
+domain:
+   name: A
+   queue:
+      groups:
+         -  alias: S
+            queuebase: ":memory:"
+            queues:
+               -  name: s1
+               -  name: s2
+               -  name: s3
+         -  alias: T
+            queuebase: ":memory:"
+            queues:
+               -  name: t1
+               -  name: t2
+               -  name: t3
+               -  name: t4
+               -  name: t5
+               -  name: t6
+                  
+      fanout:
+         groups:
+            -  alias: fanout-1
+               queues:
+                  -  alias: foo
+                     instances: 3
+                     source: s1
+                     targets:
+                        -  queue: t1
+                        -  queue: t2
+                  -  source: s2
+                     instances: 2
+                     targets:
+                        -  queue: t3
+            -  alias: fanout-2
+               queues:
+                  -  source: s3
+                     targets:
+                        -  queue: t4
+                        -  queue: t5
+                        -  queue: t6
+)");  
+
+      
+         
+         // How the output looks
+         {
+            //auto capture = local::execute( R"(casual queue --list-fanout-targets)");
+            //EXPECT_TRUE( false) << capture.standard.out;
+/*
+alias  source  target  delay
+-----  ------  ------  -----
+foo    s1      t1      0.000
+foo    s1      t2      0.000
+s2     s2      t3      0.000
+s3     s3      t4      0.000
+s3     s3      t5      0.000
+s3     s3      t6      0.000
+*/
+         }
+
+         auto capture = local::execute( R"(casual --precision 3 --color false --header false queue --list-fanout-targets)");
+
+         auto rows = string::split( capture.standard.out, '\n');
+
+         EXPECT_TRUE( std::regex_match( rows.at( 0), std::regex{ R"(foo    s1      t1      0.000)"})) << rows.at( 0);
+         EXPECT_TRUE( std::regex_match( rows.at( 1), std::regex{ R"(foo    s1      t2      0.000)"})) << rows.at( 1);
+         EXPECT_TRUE( std::regex_match( rows.at( 2), std::regex{ R"(s2     s2      t3      0.000)"})) << rows.at( 2);
+         EXPECT_TRUE( std::regex_match( rows.at( 3), std::regex{ R"(s3     s3      t4      0.000)"})) << rows.at( 3);
+         EXPECT_TRUE( std::regex_match( rows.at( 4), std::regex{ R"(s3     s3      t5      0.000)"})) << rows.at( 4);
+         EXPECT_TRUE( std::regex_match( rows.at( 5), std::regex{ R"(s3     s3      t6      0.000)"})) << rows.at( 5);
+
+      }
+
+
    } // administration
 } // casual

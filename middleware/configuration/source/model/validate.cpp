@@ -34,7 +34,7 @@ namespace casual
             } // <unnamed>
          } // local
 
-         void validate( Model& model)
+         void validate( const Model& model)
          {
             // domain
             algorithm::for_each( model.domain.servers, local::validate::instances);
@@ -44,10 +44,15 @@ namespace casual
             algorithm::for_each( model.transaction.resources, local::validate::instances);
 
             // queue
-            algorithm::for_each( model.queue.forward.groups, []( auto& group)
+            for( auto& group : model.queue.forward.groups)
             {
                algorithm::for_each( group.services, local::validate::instances);
-            });
+               algorithm::for_each( group.queues, local::validate::instances);
+            }
+
+            for( auto& group : model.queue.fanout.groups)
+               algorithm::for_each( group.queues, local::validate::instances);
+
          }
       } // model
       
