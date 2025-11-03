@@ -38,6 +38,18 @@ namespace casual
 
       namespace state
       {
+         std::string_view description( Runlevel value)
+         {
+            switch( value)
+            {
+               case Runlevel::error: return "error";
+               case Runlevel::running: return "running";
+               case Runlevel::shutdown: return "shutdown";
+               case Runlevel::startup: return "startup";
+            }
+            return "<unknown>";
+         }
+
          namespace instance
          {
             std::string_view description( State value) noexcept
@@ -187,7 +199,7 @@ namespace casual
             local::instance::scale( *this, count);
          }
 
-         void Executable::remove( strong::process::id pid, common::process::lifetime::exit::Reason reason)
+         void Executable::remove( strong::process::id pid, common::process::lifetime::exit::Reason reason, Runlevel runlevel)
          {
             Trace trace{ "domain::manager::state::Executable::remove"};
 
@@ -212,7 +224,8 @@ namespace casual
                   }
                   case instance::Wanted::running:
                   {
-                     if( restart)
+                     // we only restart if we are in running runlevel
+                     if( restart && runlevel == Runlevel::running)
                         initiated_restarts++;
                      else
                         found->wanted = instance::Wanted::lingered;
@@ -234,7 +247,7 @@ namespace casual
             return algorithm::find_if( instances, [pid]( auto& p){ return p.handle.pid == pid;}).data();
          }
 
-         common::process::Handle Server::remove( common::strong::process::id pid, common::process::lifetime::exit::Reason reason)
+         common::process::Handle Server::remove( common::strong::process::id pid, common::process::lifetime::exit::Reason reason, Runlevel runlevel)
          {
             Trace trace{ "domain::manager::state::Server::remove"};
 
@@ -254,7 +267,8 @@ namespace casual
                      return algorithm::container::extract( instances, std::begin( found)).handle;
                   case instance::Wanted::running:
                   {
-                     if( restart)
+                     // we only restart if we are in running runlevel
+                     if( restart && runlevel == Runlevel::running)
                         initiated_restarts++;
                      else
                         found->wanted = instance::Wanted::lingered;
@@ -307,18 +321,6 @@ namespace casual
             return lhs.instance( rhs) != nullptr;
          }
 
-         std::string_view description( Runlevel value)
-         {
-            switch( value)
-            {
-               case Runlevel::error: return "error";
-               case Runlevel::running: return "running";
-               case Runlevel::shutdown: return "shutdown";
-               case Runlevel::startup: return "startup";
-            }
-            return "<unknown>";
-         }
-
       } // state
 
 
@@ -357,7 +359,7 @@ namespace casual
             log::debug( "found: ", *found);
 
             // we know the instance exists...
-            auto process = found->remove( pid, reason);
+            auto process = found->remove( pid, reason, runlevel());
 
             log::debug( "remove server instance: ", process);
 
@@ -373,7 +375,7 @@ namespace casual
          {
             log::debug( "found: ", *found);
 
-            found->remove( pid, reason);
+            found->remove( pid, reason, runlevel());
             log::debug( "remove executable instance: ", pid);
 
             if( found->restart && runlevel == state::Runlevel::running)

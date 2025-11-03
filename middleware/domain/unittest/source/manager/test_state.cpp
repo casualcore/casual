@@ -288,7 +288,7 @@ domain:
          auto pids = common::algorithm::transform( executable.instances, []( auto& instance){ return instance.handle;});
 
          for( auto pid : common::algorithm::random::shuffle( pids))
-            executable.remove( pid, common::process::lifetime::exit::Reason::exited);
+            executable.remove( pid, common::process::lifetime::exit::Reason::exited, state::Runlevel::running);
 
          EXPECT_TRUE( common::algorithm::all_of( executable.instances, has_state( state::instance::State::disabled)));
       }

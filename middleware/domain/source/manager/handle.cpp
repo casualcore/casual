@@ -987,12 +987,12 @@ namespace casual
 
                            if( auto server = state.server( message.information.handle.pid))
                            {
-                              server->remove( message.information.handle.pid, common::process::lifetime::exit::Reason::exited);
+                              server->remove( message.information.handle.pid, common::process::lifetime::exit::Reason::exited, state.runlevel());
                               server->scale( 1);
                            }
                            else if( auto executable = state.executable( message.information.handle.pid))
                            {
-                              executable->remove( message.information.handle.pid, common::process::lifetime::exit::Reason::exited);
+                              executable->remove( message.information.handle.pid, common::process::lifetime::exit::Reason::exited, state.runlevel());
                               executable->scale( 1);
                            }
                            
