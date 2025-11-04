@@ -1,6 +1,12 @@
 # Changelog
 This is the changelog for `casual` and all changes are listed in this document.
 
+## [1.8.4] - 2025-11-04
+
+### Fixes
+- domain: if server exit during boot the task might get stuck ([#624](https://github.com/casualcore/casual/issues/624))
+
+
 ## [1.8.3] - 2025-10-06
 
 ### Fixes
