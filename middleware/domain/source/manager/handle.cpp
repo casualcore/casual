@@ -197,7 +197,7 @@ namespace casual
                {
                   auto manager = state::Server::create();
                   manager.alias = "casual-service-manager";
-                  manager.path = deduce_path( "casual-service-manager");
+                  manager.path = deduce_path( manager.alias);
                   manager.scale( 1);
                   manager.memberships.push_back( state.group_id.master);
                   manager.note = "service lookup and management";
@@ -207,39 +207,51 @@ namespace casual
                }
 
                {
-                  auto tm = state::Server::create();
-                  tm.alias = "casual-transaction-manager";
-                  tm.path = deduce_path( "casual-transaction-manager");
-                  tm.scale( 1);
-                  tm.memberships.push_back( state.group_id.transaction);
-                  tm.note = "manage transaction in this domain";
-                  tm.restart = true;
+                  auto manager = state::Server::create();
+                  manager.alias = "casual-transaction-manager";
+                  manager.path = deduce_path( manager.alias);
+                  manager.scale( 1);
+                  manager.memberships.push_back( state.group_id.transaction);
+                  manager.note = "manage transactions in this domain";
+                  manager.restart = true;
 
-                  state.servers.push_back( std::move( tm));
+                  state.servers.push_back( std::move( manager));
                }
 
                {
-                  auto queue = state::Server::create();
-                  queue.alias = "casual-queue-manager";
-                  queue.path = deduce_path( "casual-queue-manager");
-                  queue.scale( 1);
-                  queue.memberships.push_back( state.group_id.queue);
-                  queue.note = "manage queues in this domain";
-                  queue.restart = true;
+                  auto manager = state::Server::create();
+                  manager.alias = "casual-queue-manager";
+                  manager.path = deduce_path( manager.alias);
+                  manager.scale( 1);
+                  manager.memberships.push_back( state.group_id.queue);
+                  manager.note = "manage queues in this domain";
+                  manager.restart = true;
 
-                  state.servers.push_back( std::move( queue));
+                  state.servers.push_back( std::move( manager));
                }
 
                {
-                  auto gateway = state::Server::create();
-                  gateway.alias = "casual-gateway-manager";
-                  gateway.path = deduce_path( "casual-gateway-manager");
-                  gateway.scale( 1);
-                  gateway.memberships.push_back( state.group_id.gateway);
-                  gateway.note = "manage connections to and from other domains";
-                  gateway.restart = true;
+                  auto manager = state::Server::create();
+                  manager.alias = "casual-file-manager";
+                  manager.path = deduce_path( manager.alias);
+                  manager.scale( 1);
+                  manager.memberships.push_back( state.group_id.queue);
+                  manager.note = "manage files in this domain";
+                  manager.restart = true;
 
-                  state.servers.push_back( std::move( gateway));
+                  state.servers.push_back( std::move( manager));
+               }
+
+               {
+                  auto manager = state::Server::create();
+                  manager.alias = "casual-gateway-manager";
+                  manager.path = deduce_path( manager.alias);
+                  manager.scale( 1);
+                  manager.memberships.push_back( state.group_id.gateway);
+                  manager.note = "manage connections to and from other domains";
+                  manager.restart = true;
+
+                  state.servers.push_back( std::move( manager));
                }
             }
          } // boot
