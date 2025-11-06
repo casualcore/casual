@@ -1354,7 +1354,14 @@ domain:
       {
          common::unittest::Trace trace;
 
-         auto domain = local::domain();
+         auto domain = local::domain( R"(
+domain:
+   services:
+      -  name: a
+         execution:
+            timeout:
+               duration: 500ms
+)");
 
          // a fake process that advertises some arbitrary service
          auto callee_inbound = common::communication::ipc::inbound::Device{};
@@ -1397,6 +1404,12 @@ domain:
             EXPECT_TRUE( metric.process.pid == callee.pid);
             EXPECT_TRUE( metric.code.result == common::code::xatmi::service_error);
             EXPECT_TRUE( metric.trid == casual::transaction::context().current().trid);
+         }
+
+         // expect no deadlines left
+         {
+            auto state = unittest::state();
+            EXPECT_TRUE( state.deadlines.empty()) << CASUAL_NAMED_VALUE( state.deadlines);
          }
       }
 

@@ -32,6 +32,24 @@ namespace casual
                };
             };
 
+            auto deadlines( const manager::State& state)
+            {
+               return [ &state]( const auto& entry)
+               {
+                  auto result = manager::admin::model::pending::Deadline{
+                     .when = entry.when
+                  };
+
+                  if( state.instances.sequential.contains( entry.target))
+                     result.target = state.instances.sequential[ entry.target].process;
+
+                  if( state.services.contains( entry.service))
+                     result.service = state.services[ entry.service].information.name;
+
+                  return result;
+               };
+            }
+
             void services( const manager::State& state, auto& target)
             {
                state.services.for_each( [ &state, &target]( auto id, auto& name, auto& service)
@@ -145,6 +163,8 @@ namespace casual
 
       manager::admin::model::State state( const manager::State& state)
       {
+         Trace trace{ "service::manager::transform::state"};
+
          manager::admin::model::State result;
 
          auto transform_index = []( auto& index, auto& result, auto transformer)
@@ -160,6 +180,7 @@ namespace casual
          local::services( state, result.services);
 
          common::algorithm::transform( state.pending.lookups, result.pending, local::pending());
+         common::algorithm::transform( state.pending.deadline.entries(), result.deadlines, local::deadlines( state));
 
          common::algorithm::for_each( state.routes, [&result]( auto& pair)
          {

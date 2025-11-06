@@ -247,6 +247,22 @@ namespace casual
                   return {};
                }
 
+               std::optional< common::chronology::time_point> Deadline::remove( instance::sequential::id::type instance)
+               {
+                  auto has_instance = [ instance]( auto& entry){ return entry.target == instance;};
+
+                  auto [ keep, remove] = algorithm::stable::partition( m_entries, predicate::negate( has_instance));
+
+                  // has the next deadline been postponed?
+                  if( remove && keep && range::front( remove) < range::front( keep))
+                  {
+                     algorithm::container::trim( m_entries, keep);
+                     return { m_entries.front().when};
+                  }
+                  algorithm::container::trim( m_entries, keep);
+                  return {};
+               }
+
                deadline::Entry* Deadline::find_entry( const common::strong::correlation::id& correlation)
                {
                   return algorithm::find( m_entries, correlation).data();
@@ -412,6 +428,15 @@ namespace casual
          {
             if( sequential.contains( instance_id))
                sequential[ instance_id].remove( service_id);
+         }
+
+         instance::sequential::id::type Instances::find_sequential( common::strong::process::id pid) const
+         {
+            for( auto id : sequential.indexes())
+               if( sequential[ id].process.pid == pid)
+                  return id;
+
+            return {};
          }
 
          std::string_view description( Runlevel value)
@@ -580,7 +605,7 @@ namespace casual
          } // <unnamed>
       } // local
 
-      std::vector< state::instance::Reservation> State::remove( common::strong::process::id pid)
+      state::remove::Result State::remove( common::strong::process::id pid)
       {
          Trace trace{ "service::manager::State::remove"};
          log::debug( "pid: ", pid);
@@ -588,15 +613,30 @@ namespace casual
          if( forward.pid == pid)
             forward.clear();
 
-         return local::remove( *this, pid);
+         state::remove::Result result;
+      
+         if( auto id = instances.find_sequential( pid))
+            result.next_deadline = pending.deadline.remove( id);
+
+         result.reservations = local::remove( *this, pid);
+
+         return result;
       }
 
-      std::vector< state::instance::Reservation> State::remove( common::strong::ipc::id ipc)
+
+      state::remove::Result State::remove( common::strong::ipc::id ipc)
       {
          Trace trace{ "service::manager::State::remove"};
          log::debug( "ipc: ", ipc);
 
-         return local::remove( *this, ipc);
+         state::remove::Result result;
+
+         if( auto index = instances.sequential.lookup( ipc))
+            result.next_deadline = pending.deadline.remove( index);
+
+         result.reservations = local::remove( *this, ipc);
+
+         return result;
       }
 
       state::instance::sequential::id::type State::reserve_sequential( state::instance::Caller caller)
@@ -756,7 +796,16 @@ namespace casual
          if( message.directive == decltype( message.directive)::reset)
          {
             // remove the instance and it's associations
-            remove( message.process.ipc);
+            auto removed = remove( message.process.ipc);
+
+            // When we remove a concurrent instance, we do not expect any reservations
+            // or any timeouts to be affected. Since callers don't ever wait for concurrent
+            // instances, and timeouts are not in play for concurrent instances.
+            if( ! std::empty( removed.reservations))
+               log::error( code::casual::internal_unexpected_value, "concurrent instance ", message.process.ipc, " had reservations - ", removed.reservations);
+
+            if( removed.next_deadline)
+               log::error( code::casual::internal_unexpected_value, "removed concurrent instance ", message.process.ipc, " resulted in a deadline update");
 
             // we're removing stuff, no new services can be available.
             return {};

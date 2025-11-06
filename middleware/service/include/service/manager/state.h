@@ -272,6 +272,7 @@ namespace casual
                   std::optional< common::chronology::time_point> add( deadline::Entry entry);
                   std::optional< common::chronology::time_point> remove( const common::strong::correlation::id& correlation);
                   std::optional< common::chronology::time_point> remove( const std::vector< common::strong::correlation::id>& correlations);
+                  std::optional< common::chronology::time_point> remove( instance::sequential::id::type instance);
 
                   deadline::Entry* find_entry( const common::strong::correlation::id& correlation);
 
@@ -287,6 +288,8 @@ namespace casual
                   };
 
                   Expired expired( common::chronology::time_point now = common::chronology::time_point::clock::now());
+
+                  const auto& entries() const noexcept { return m_entries;}
 
                   CASUAL_LOG_SERIALIZE( 
                      CASUAL_SERIALIZE_NAME( m_entries, "entries");
@@ -501,11 +504,29 @@ namespace casual
             void remove_service( instance::sequential::id::type instance_id, service::id::type service_id);
             inline void remove_service( instance::concurrent::id::type, service::id::type) { /*no op*/}
 
+            //! @returns the sequential id for the given `pid`, or 'nil-id' if not found
+            instance::sequential::id::type find_sequential( common::strong::process::id pid) const;
+
             CASUAL_LOG_SERIALIZE(
                CASUAL_SERIALIZE( sequential);
                CASUAL_SERIALIZE( concurrent);
             )
          };
+
+         namespace remove
+         {
+            struct Result
+            {
+               std::vector< state::instance::Reservation> reservations;
+               //! potentially new deadline to be set.
+               std::optional< common::chronology::time_point> next_deadline;
+
+               CASUAL_LOG_SERIALIZE(
+                  CASUAL_SERIALIZE( reservations);
+                  CASUAL_SERIALIZE( next_deadline);
+               )
+            };
+         } // remove
 
          enum struct Runlevel : short
          {
@@ -604,9 +625,9 @@ namespace casual
          
          //! removes the instance (deduced from `pid`) and remove the instance from all services 
          //! @returns possible reservations of the removed instance (in practice 0..1)
-         [[nodiscard]] std::vector< state::instance::Reservation> remove( common::strong::process::id pid);
+         [[nodiscard]] state::remove::Result remove( common::strong::process::id pid);
          //! @returns possible reservations of the removed instance
-         std::vector< state::instance::Reservation> remove( common::strong::ipc::id ipc);
+         state::remove::Result remove( common::strong::ipc::id ipc);
 
          //! Tries to reserve a sequential instance for the given `service`
          //! @return id of the instance, or 'nil-id' if no idle is found

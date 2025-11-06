@@ -196,6 +196,24 @@ namespace casual
          )
       };
 
+      namespace pending
+      {
+         struct Deadline
+         {
+            common::chronology::time_point when;
+            common::process::Handle target;
+            std::string service;
+
+            CASUAL_CONST_CORRECT_SERIALIZE(
+               CASUAL_SERIALIZE( when);
+               CASUAL_SERIALIZE( target);
+               CASUAL_SERIALIZE( service);
+            )
+         };
+         
+      } // pending
+
+      //! TODO this should be moved to pending::Request
       struct Pending
       {
          std::string requested;
@@ -255,7 +273,11 @@ namespace casual
 
 
          std::vector< Service> services;
+         
+         // TODO should be pending.deadlines and pending.requests
          std::vector< Pending> pending;
+         std::vector< pending::Deadline> deadlines;
+
          std::vector< Route> routes;
          std::vector< Reservation> reservations;
 
@@ -263,6 +285,7 @@ namespace casual
             CASUAL_SERIALIZE( instances);
             CASUAL_SERIALIZE( services);
             CASUAL_SERIALIZE( pending);
+            CASUAL_SERIALIZE( deadlines);
             CASUAL_SERIALIZE( routes);
             CASUAL_SERIALIZE( reservations);
          )

@@ -288,8 +288,13 @@ namespace casual
 
                         state.pending.shutdown.failed( event.state.pid);
 
+                        auto removed = state.remove( event.state.pid);
+
+                        if( removed.next_deadline)
+                           common::signal::timer::set( *removed.next_deadline);
+
                         // we need to check if the dead process has anyone waiting for a reply
-                        for( auto reservation : state.remove( event.state.pid))
+                        for( auto reservation : removed.reservations)
                         {
                            common::log::error( common::code::casual::invalid_semantics, " callee terminated with pending reply to caller - callee: ", 
                                  event.state.pid, " - caller: ", reservation.caller.process.pid);
