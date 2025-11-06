@@ -35,8 +35,10 @@ namespace casual
                {
                   if( auto found = algorithm::find( header, "content-type"))
                       return protocol::convert::to::buffer( found->value());
+                  if( auto found = algorithm::find( header, "accept"))
+                      return protocol::convert::to::buffer( found->value());
 
-                  common::code::raise::error( code::bad_request, "content-type header is mandatory");                 
+                  common::code::raise::error( code::bad_request, "content-type or accept header is mandatory");
                }
             } // buffer
 
