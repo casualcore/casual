@@ -1,6 +1,11 @@
 # Changelog
 This is the changelog for `casual` and all changes are listed in this document.
 
+## [1.8.5] - 2025-11-07
+
+### Fixes
+- service: SM doesn't remove pending deadlines when an instance dies ([#631](https://github.com/casualcore/casual/issues/631))
+
 ## [1.8.4] - 2025-11-04
 
 ### Fixes
