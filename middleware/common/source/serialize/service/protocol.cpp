@@ -51,11 +51,11 @@ namespace casual
 
          Factory::Factory()
          {
-            registration< service::protocol::implementation::Yaml>();
             registration< service::protocol::implementation::Binary>();
             registration< service::protocol::implementation::Json>();
+            registration< service::protocol::implementation::Toml>();
+            registration< service::protocol::implementation::Yaml>();
             registration< service::protocol::implementation::Xml>();
-            registration< service::protocol::implementation::Ini>();
          }
 
          Protocol Factory::create( protocol::payload_type&& payload, const header::Fields& headers)

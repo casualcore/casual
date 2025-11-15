@@ -10,9 +10,9 @@
 
 #include "common/serialize/binary.h"
 #include "common/serialize/json.h"
-#include "common/serialize/xml.h"
+#include "common/serialize/toml.h"
 #include "common/serialize/yaml.h"
-#include "common/serialize/ini.h"
+#include "common/serialize/xml.h"
 #include "common/serialize/log.h"
 #include "common/serialize/create.h"
 
@@ -74,27 +74,6 @@ namespace casual
       }
 
 
-      Yaml::Yaml( protocol::payload_type&& payload)
-         : Base( std::move( payload)),
-            m_reader{ common::serialize::yaml::relaxed::reader( m_payload.data)},
-            m_writer{ common::serialize::yaml::writer()}
-      {
-         Trace trace{ "protocol::Yaml::Yaml"};
-
-         m_input.readers.push_back( &m_reader);
-         m_output.writers.push_back( &m_writer);
-      }
-
-      protocol::payload_type Yaml::finalize()
-      {
-         Trace trace{ "protocol::Yaml::finalize"};
-
-         auto result = Base::reuse_payload();
-         m_writer.consume( result.data);
-         return result;
-      }
-
-
       Json::Json( protocol::payload_type&& payload)
          : Base( std::move( payload)),
             m_reader{ common::serialize::json::relaxed::reader( m_payload.data)},
@@ -116,6 +95,46 @@ namespace casual
       }
 
 
+      Toml::Toml( protocol::payload_type&& payload)
+         : Base( std::move( payload)),
+            m_reader{ common::serialize::toml::relaxed::reader( m_payload.data)},
+            m_writer{ common::serialize::toml::writer()}
+      {
+         Trace trace{ "protocol::Toml::Toml"};
+
+         m_input.readers.push_back( &m_reader);
+         m_output.writers.push_back( &m_writer);
+      }
+
+      protocol::payload_type Toml::finalize()
+      {
+         Trace trace{ "protocol::Toml::finalize"};
+
+         auto result = Base::reuse_payload();
+         m_writer.consume( result.data);
+         return result;
+      }
+
+
+      Yaml::Yaml( protocol::payload_type&& payload)
+         : Base( std::move( payload)),
+            m_reader{ common::serialize::yaml::relaxed::reader( m_payload.data)},
+            m_writer{ common::serialize::yaml::writer()}
+      {
+         Trace trace{ "protocol::Yaml::Yaml"};
+
+         m_input.readers.push_back( &m_reader);
+         m_output.writers.push_back( &m_writer);
+      }
+
+      protocol::payload_type Yaml::finalize()
+      {
+         Trace trace{ "protocol::Yaml::finalize"};
+
+         auto result = Base::reuse_payload();
+         m_writer.consume( result.data);
+         return result;
+      }
 
       Xml::Xml( protocol::payload_type&& payload)
          : Base( std::move( payload)),
@@ -131,27 +150,6 @@ namespace casual
       protocol::payload_type Xml::finalize()
       {
          Trace trace{ "protocol::Xml::finalize"};
-
-         auto result = Base::reuse_payload();
-         m_writer.consume( result.data);
-         return result;
-      }
-
-
-      Ini::Ini( protocol::payload_type&& payload)
-      : Base( std::move( payload)),
-         m_reader( common::serialize::ini::relaxed::reader( m_payload.data)),
-         m_writer( common::serialize::ini::writer())
-      {
-         Trace trace{ "protocol::Ini::Ini"};
-
-         m_input.readers.push_back( &m_reader);
-         m_output.writers.push_back( &m_writer);
-      }
-
-      protocol::payload_type Ini::finalize()
-      {
-         Trace trace{ "protocol::Ini::finalize"};
 
          auto result = Base::reuse_payload();
          m_writer.consume( result.data);

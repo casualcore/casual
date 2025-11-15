@@ -13,16 +13,19 @@
 
 #define CASUAL_BUFFER_BINARY_TYPE ".binary"
 #define CASUAL_BUFFER_BINARY_SUBTYPE ""
-#define CASUAL_BUFFER_INI_TYPE ".ini"
-#define CASUAL_BUFFER_INI_SUBTYPE ""
 #define CASUAL_BUFFER_JSON_TYPE ".json"
 #define CASUAL_BUFFER_JSON_SUBTYPE ""
 #define CASUAL_BUFFER_XML_TYPE ".xml"
 #define CASUAL_BUFFER_XML_SUBTYPE ""
 #define CASUAL_BUFFER_YAML_TYPE ".yaml"
 #define CASUAL_BUFFER_YAML_SUBTYPE ""
+#define CASUAL_BUFFER_TOML_TYPE ".toml"
+#define CASUAL_BUFFER_TOML_SUBTYPE ""
 #define CASUAL_BUFFER_HTTP_TYPE ".http"
 #define CASUAL_BUFFER_HTTP_SUBTYPE "body"
+//! @todo remove in 2.0
+#define CASUAL_BUFFER_INI_TYPE ".ini"
+#define CASUAL_BUFFER_INI_SUBTYPE ""
 
 
 #ifdef __cplusplus

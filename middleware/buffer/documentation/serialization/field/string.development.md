@@ -21,7 +21,7 @@ The following format can be used:
 * yaml
 * json
 * xml
-* ini
+* toml
 
 The file-extension has to correlate with the format.
 

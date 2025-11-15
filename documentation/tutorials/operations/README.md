@@ -56,7 +56,7 @@ Great! You're all set to continue to the next step.
 
 ### 2.3 Configuration
 
-Most of everything you'll want your domain to do is specified through the configuration. This is where you tell casual which servers you want it to start, if you want queues, whether to connect to other domains, and much more. casual accepts configuration files written in YAML, JSON, XML, or INI, although we'll stick to YAML for this tutorial. Configuration files are either passed to the domain on startup, or applied afterwards in order to change an already running domain. You can start a domain without any configuration files, but that wouldn't be very interesting!
+Most of everything you'll want your domain to do is specified through the configuration. This is where you tell casual which servers you want it to start, if you want queues, whether to connect to other domains, and much more. casual accepts configuration files written in YAML, JSON, XML, or TOML, although we'll stick to YAML for this tutorial. Configuration files are either passed to the domain on startup, or applied afterwards in order to change an already running domain. You can start a domain without any configuration files, but that wouldn't be very interesting!
 
 The first thing we're going to do is give our domain a name. This can be whatever suits you, but for the purposes of this tutorial it might be good to pick something unique, like `<your-name>-domain`. Open up `configuration/domain.yaml` and fill in your desired domain name, for example:
 

@@ -20,7 +20,7 @@ namespace casual
    {
       namespace serialize
       {
-         namespace ini
+         namespace toml
          {
             namespace strict
             {
@@ -36,9 +36,16 @@ namespace casual
                serialize::Reader reader( const platform::binary::type& source);
             } // relaxed
 
+            namespace consumed
+            {    
+               serialize::Reader reader( const std::string& source);
+               serialize::Reader reader( std::istream& source);
+               serialize::Reader reader( const platform::binary::type& source);
+            }
+
             serialize::Writer writer();
 
-         } // ini
+         } // toml
       } // serialize
    } // common
 } // casual

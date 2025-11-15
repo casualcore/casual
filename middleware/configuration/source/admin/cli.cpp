@@ -37,7 +37,7 @@ namespace casual
          {
             namespace
             {
-               auto format_list = []( bool, auto){ return std::vector< std::string>{ "json", "yaml", "xml", "ini"};};
+               auto format_list = []( bool, auto){ return std::vector< std::string>{ "json", "toml", "yaml", "xml"};};
 
                namespace event
                {
@@ -139,7 +139,7 @@ The format is default yaml, but could be supplied via the --format option)"
                {
                   auto complete = []( bool help, auto values)
                   {
-                     return std::vector< std::string>{ "yaml", "json", "ini", "xml"};
+                     return std::vector< std::string>{ "json", "toml", "yaml", "xml"};
                   };
 
                   auto invoke = [ shared]( std::string format)

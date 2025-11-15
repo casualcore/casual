@@ -43,6 +43,7 @@ def paths():
             self.serialization = [ 
                thirdparty + '/rapidjson/include',
                thirdparty + '/yaml-cpp/include',
+               thirdparty + '/tomlplusplus',
                thirdparty + '/pugixml/src'
             ]
             self.cppcodec = [ thirdparty + '/cppcodec/include']
