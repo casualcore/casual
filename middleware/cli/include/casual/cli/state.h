@@ -43,7 +43,7 @@ namespace casual
             state::serialize( callback(), format);
          };
 
-         auto formats = []( bool, auto){ return std::vector< std::string>{ "json", "yaml", "xml", "ini", "line"};};
+         auto formats = []( bool, auto){ return std::vector< std::string>{ "json", "toml", "yaml", "xml", "line"};};
 
          return argument::Option{
             std::move( invoke),

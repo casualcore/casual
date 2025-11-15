@@ -85,9 +85,11 @@ namespace casual
          constexpr std::string_view binary = CASUAL_BUFFER_BINARY_TYPE "/" CASUAL_BUFFER_BINARY_SUBTYPE;
          constexpr std::string_view json = CASUAL_BUFFER_JSON_TYPE "/" CASUAL_BUFFER_JSON_SUBTYPE;
          constexpr std::string_view yaml = CASUAL_BUFFER_YAML_TYPE "/" CASUAL_BUFFER_YAML_SUBTYPE;
+         constexpr std::string_view toml = CASUAL_BUFFER_TOML_TYPE "/" CASUAL_BUFFER_TOML_SUBTYPE;
          constexpr std::string_view xml = CASUAL_BUFFER_XML_TYPE "/" CASUAL_BUFFER_XML_SUBTYPE;
-         constexpr std::string_view ini = CASUAL_BUFFER_INI_TYPE "/" CASUAL_BUFFER_INI_SUBTYPE;
          constexpr std::string_view http = CASUAL_BUFFER_HTTP_TYPE "/" CASUAL_BUFFER_HTTP_SUBTYPE;
+         //! @todo remove in 2.0
+         constexpr std::string_view ini = CASUAL_BUFFER_INI_TYPE "/" CASUAL_BUFFER_INI_SUBTYPE;
 
          //! Represent _null_. Not the most elegant solution, but it gives us deterministic deduction
          //! between explicit "NULL" from the "user", and absent buffer.

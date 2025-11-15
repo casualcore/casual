@@ -57,18 +57,6 @@ namespace casual
 
       };
 
-      struct Yaml : public Base
-      {
-         Yaml( protocol::payload_type&& payload);
-
-         protocol::payload_type finalize();
-         static constexpr auto type() { return common::buffer::type::yaml;}
-
-      private:
-         common::serialize::Reader m_reader;
-         common::serialize::Writer m_writer;
-      };
-
       struct Json : public Base
       {
          Json( protocol::payload_type&& payload);
@@ -81,24 +69,36 @@ namespace casual
          common::serialize::Writer m_writer;
       };
 
-      struct Xml : public Base
+      struct Toml : public Base
       {
-         Xml( protocol::payload_type&& payload);
+         Toml( protocol::payload_type&& payload);
 
          protocol::payload_type finalize();
-         static constexpr auto type() { return common::buffer::type::xml;}
+         static constexpr auto type() { return common::buffer::type::toml;}
 
       private:
          common::serialize::Reader m_reader;
          common::serialize::Writer m_writer;
       };
 
-      struct Ini : public Base
+      struct Yaml : public Base
       {
-         Ini( protocol::payload_type&& payload);
+         Yaml( protocol::payload_type&& payload);
 
          protocol::payload_type finalize();
-         static constexpr auto type() { return common::buffer::type::ini;}
+         static constexpr auto type() { return common::buffer::type::yaml;}
+
+      private:
+         common::serialize::Reader m_reader;
+         common::serialize::Writer m_writer;
+      };
+
+      struct Xml : public Base
+      {
+         Xml( protocol::payload_type&& payload);
+
+         protocol::payload_type finalize();
+         static constexpr auto type() { return common::buffer::type::xml;}
 
       private:
          common::serialize::Reader m_reader;
