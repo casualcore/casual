@@ -264,22 +264,33 @@ namespace casual
                         CASUAL_SERIALIZE( service);
                      )
                   };
-                  
+
+   
+                  struct Unset 
+                  {
+                     CASUAL_LOG_SERIALIZE(
+                        CASUAL_SERIALIZE( "Unset");
+                     )
+                  };
+
+                  // Directive for deadline changes, either a new time_point or Unset to 
+                  // unset timer ( i.e. no pending deadlines left)
+                  using Directive = std::variant< common::chronology::time_point, Unset>;
+
                } // deadline
 
                struct Deadline
                {      
                   std::optional< common::chronology::time_point> add( deadline::Entry entry);
-                  std::optional< common::chronology::time_point> remove( const common::strong::correlation::id& correlation);
-                  std::optional< common::chronology::time_point> remove( const std::vector< common::strong::correlation::id>& correlations);
-                  std::optional< common::chronology::time_point> remove( instance::sequential::id::type instance);
+                  std::optional< deadline::Directive> remove( const common::strong::correlation::id& correlation);
+                  std::optional< deadline::Directive> remove( instance::sequential::id::type instance);
 
                   deadline::Entry* find_entry( const common::strong::correlation::id& correlation);
 
                   struct Expired
                   {
                      std::vector< deadline::Entry> entries;
-                     std::optional< common::chronology::time_point> deadline;
+                     std::optional< deadline::Directive> deadline;
 
                      CASUAL_LOG_SERIALIZE(
                         CASUAL_SERIALIZE( entries);
@@ -519,11 +530,11 @@ namespace casual
             {
                std::vector< state::instance::Reservation> reservations;
                //! potentially new deadline to be set.
-               std::optional< common::chronology::time_point> next_deadline;
+               std::optional< service::pending::deadline::Directive> deadline;
 
                CASUAL_LOG_SERIALIZE(
                   CASUAL_SERIALIZE( reservations);
-                  CASUAL_SERIALIZE( next_deadline);
+                  CASUAL_SERIALIZE( deadline);
                )
             };
          } // remove
@@ -627,7 +638,7 @@ namespace casual
          //! @returns possible reservations of the removed instance (in practice 0..1)
          [[nodiscard]] state::remove::Result remove( common::strong::process::id pid);
          //! @returns possible reservations of the removed instance
-         state::remove::Result remove( common::strong::ipc::id ipc);
+         [[nodiscard]] state::remove::Result remove( common::strong::ipc::id ipc);
 
          //! Tries to reserve a sequential instance for the given `service`
          //! @return id of the instance, or 'nil-id' if no idle is found

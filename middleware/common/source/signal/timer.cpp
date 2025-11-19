@@ -65,6 +65,8 @@ namespace casual
 
       unit::type set( unit::type offset)
       {
+         Trace trace{ "common::signal::timer::set"};
+
          if( ! offset)
             return unset();
 
@@ -97,6 +99,8 @@ namespace casual
 
       unit::type unset()
       {
+         Trace trace{ "common::signal::timer::unset"};
+
          itimerval value = {};
 
          return local::set( value);

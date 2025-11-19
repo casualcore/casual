@@ -55,6 +55,36 @@ namespace casual
       {
          namespace
          {
+            auto set_timer( const state::service::pending::deadline::Directive& directive, common::chronology::time_point now = platform::time::clock::type::now())
+            {
+               if( auto time_point = std::get_if< common::chronology::time_point>( &directive))
+               {
+                  common::signal::timer::set( *time_point - now);
+               }
+               else if( std::get_if< state::service::pending::deadline::Unset>( &directive))
+               {
+                  common::signal::timer::unset();
+               }
+            }
+
+            std::string service_name( const State& state, state::service::id::type service_id)
+            {
+               if( state.services.contains( service_id))
+                  return state.services[ service_id].information.logical_name();
+               else
+                  return "<unknown>";
+            }
+
+            std::string instance_alias( const State& state, state::instance::sequential::id::type instance_id)
+            {
+               if( state.instances.sequential.contains( instance_id))
+                  return state.instances.sequential[ instance_id].alias;
+               else
+                  return "<unknown>";
+            }
+            
+
+
             namespace optional
             {
                template< typename D, typename M>
@@ -193,7 +223,8 @@ namespace casual
                }
                else
                {
-                  common::log::error( common::code::casual::invalid_semantics, "failed to consume caller from timeout entry: ", entry);
+                  common::log::error( common::code::casual::invalid_semantics, "failed to consume caller from timeout entry - target.alias: ", 
+                     local::instance_alias( state, entry.target), ", target.service: ", local::service_name( state, entry.service), ", entry: ", entry);
                }
 
             }
@@ -207,7 +238,7 @@ namespace casual
          common::algorithm::for_each( expired.entries, handle_timeout);
 
          if( expired.deadline)
-            common::signal::timer::set( expired.deadline.value() - now);
+            local::set_timer( *expired.deadline, now);
       }
 
       namespace metric
@@ -290,8 +321,8 @@ namespace casual
 
                         auto removed = state.remove( event.state.pid);
 
-                        if( removed.next_deadline)
-                           common::signal::timer::set( *removed.next_deadline);
+                        if( removed.deadline)
+                           local::set_timer( *removed.deadline);
 
                         // we need to check if the dead process has anyone waiting for a reply
                         for( auto reservation : removed.reservations)
@@ -527,7 +558,7 @@ namespace casual
                                  .service = service_id});
 
                               if( next)
-                                 common::signal::timer::set( next.value() - now);
+                                 local::set_timer( *next, now);
                            }
                         }
 
@@ -1050,7 +1081,7 @@ namespace casual
 
                   // we remove possible deadline first.
                   if( auto deadline = state.pending.deadline.remove( message.correlation))
-                     common::signal::timer::set( deadline.value());
+                     local::set_timer( deadline.value());
 
                   
                   detail::check_timeout_and_notify_TM( state, message.metric.process.pid, message.metric.trid.global());
