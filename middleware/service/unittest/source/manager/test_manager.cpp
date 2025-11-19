@@ -1413,6 +1413,56 @@ domain:
          }
       }
 
+      TEST( service_manager, reservation_no_reply__ack_to_SM__expect_no_pending_deadlines)
+      {
+         common::unittest::Trace trace;
+
+         auto domain = local::domain( R"(
+domain:
+   services:
+      -  name: a
+         execution:
+            timeout:
+               duration: 500ms
+)");
+
+         // a fake process that advertises some arbitrary service
+         auto callee_inbound = common::communication::ipc::inbound::Device{};
+         auto callee = common::process::Handle{ common::strong::process::id{ -5}, callee_inbound.connector().handle().ipc()};
+         service::unittest::advertise( { "a"}, callee);
+
+         auto reserve_a = []()
+         {
+            auto context = service::lookup::Context{};
+            context.semantic = decltype( context.semantic)::no_reply;
+            return service::lookup::reply( service::Lookup{ "a", {}, context});
+         };
+
+         auto reservation = reserve_a();
+         {
+            EXPECT_TRUE( reservation.service.name == "a");
+            EXPECT_TRUE( reservation.process == callee);
+            EXPECT_TRUE( reservation.state == decltype( reservation.state)::idle);
+         }
+
+         // send ack to SM
+         {
+            common::message::service::call::ACK message;
+            message.metric.process = callee;
+            message.correlation = reservation.correlation;
+
+            common::communication::device::blocking::send( 
+               common::communication::instance::outbound::service::manager::device(),
+               message);
+         }
+
+         // expect no deadlines left
+         {
+            auto state = unittest::state();
+            EXPECT_TRUE( state.deadlines.empty()) << CASUAL_NAMED_VALUE( state.deadlines);
+         }
+      }   
+
       namespace local
       {
          namespace
