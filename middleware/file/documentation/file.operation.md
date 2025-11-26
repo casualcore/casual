@@ -7,6 +7,6 @@
 
 ## configuration
 
-`casual-file` requires no configuration
+`casual-file` requires no configuration (except for adding it to servers)
 
 

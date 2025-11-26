@@ -82,7 +82,7 @@ namespace casual::file::resource
                if( std::filesystem::exists( rushes))
                   std::filesystem::rename( rushes, request.path);
                else
-                  std::filesystem::remove_all( request.path);
+                  std::filesystem::remove( request.path);
             }
 
             void rollback( const Request& request)
@@ -90,7 +90,7 @@ namespace casual::file::resource
                const auto rushes = local::temporary( request.trid, request.path);
 
                if( std::filesystem::exists( rushes))
-                  std::filesystem::remove_all( rushes);
+                  std::filesystem::remove( rushes);
             }
 
             void mitigate( const Request& request)
@@ -98,7 +98,7 @@ namespace casual::file::resource
                rollback( request);
             }
 
-            auto reserve( State& state, const Request& request) -> std::expected<std::filesystem::path, code>
+            auto reserve( State& state, Request& request) -> std::expected<std::filesystem::path, code>
             {
                if( state.runlevel == State::Runlevel::shutdown)
                {
@@ -106,19 +106,22 @@ namespace casual::file::resource
                   return std::unexpected( code::error);
                }
    
-               if( const auto work = std::ranges::find( state.working, request.path, &Request::path); work != state.working.end())
-               {
-                  //
-                  // requested path is involved
-   
-                  if( work->trid == request.trid)
-                     return temporary( request.trid, request.path);
-                  else
-                     return std::unexpected( code::busy);
-               }
-   
                try
                {
+                  request.time = std::chrono::system_clock::now();
+                  request.path = std::filesystem::weakly_canonical( std::filesystem::absolute( request.path));
+                  
+                  if( const auto work = std::ranges::find( state.working, request.path, &Request::path); work != state.working.end())
+                  {
+                     //
+                     // requested path is involved
+      
+                     if( work->trid == request.trid)
+                        return temporary( request.trid, request.path);
+                     else
+                        return std::unexpected( code::busy);
+                  }
+      
                   auto result = reserve( request);
    
                   if( std::ranges::find( state.working, request.trid, &Request::trid) == state.working.end())
@@ -141,26 +144,28 @@ namespace casual::file::resource
    
          } // detail
 
-         void reserve( State& state, Request request)
+         void reserve( State& state, const Reserve& request)
          {
-            auto reply = common::message::reverse::type( static_cast<const Reserve&>(request));
+            auto reply = common::message::reverse::type( request);
 
-            if(auto result = detail::reserve( state, request))
+            Request query{request};
+
+            if(auto result = detail::reserve( state, query))
                reply.path = std::move( result.value());
             else
                reply.code = std::move( result.error());
-      
+
             switch( reply.code)
             {
             break; case code::ok:
                // push to work load
-               state.working.push_back( std::move( request));
+               state.working.push_back( std::move( query));
                // send the reply
                state.multiplex.send( request.process.ipc, std::move( reply));
             break; case code::busy:
                if( request.wait)
                   // push to wait list
-                  state.pending.push_back( std::move( request));
+                  state.pending.push_back( std::move( query));
                else
                   // send the reply
                   state.multiplex.send( request.process.ipc, std::move( reply));
@@ -211,11 +216,7 @@ namespace casual::file::resource
 
    void reserve( State& state, const Reserve& request)
    {
-      Request work{request};
-      work.path = work.path.lexically_normal();
-      work.time = std::chrono::system_clock::now();
-
-      local::reserve( state, std::move( work));
+      local::reserve( state, request);
    }
 
    void prepare( State& state, const Prepare& request)

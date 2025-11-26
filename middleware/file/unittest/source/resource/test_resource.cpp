@@ -81,6 +81,26 @@ domain:
          EXPECT_EQ( after, result) << result;
       }
 
+      TEST( casual_file_resource, reserve_folder__expecting_error)
+      {
+         common::unittest::Trace trace;
+
+         auto domain = local::domain();
+
+         const auto path = std::filesystem::current_path();
+
+         {
+            EXPECT_EQ( transaction::context().begin(), common::code::tx::ok);
+
+            EXPECT_THROW({
+               const auto work = file::blocking::reserve( path);
+            }, std::system_error);
+
+            EXPECT_EQ( transaction::context().commit(), common::code::tx::ok);
+         }
+
+      }
+
       TEST( casual_file_resource, update_file__rollback__expect_earlier_file)
       {
          common::unittest::Trace trace;
