@@ -1,6 +1,17 @@
 # Changelog
 This is the changelog for `casual` and all changes are listed in this document.
 
+## [1.8.6] - 2025-11-21
+
+### Fixes
+- event: casual-event-service-log should flush every line ([#640](https://github.com/casualcore/casual/issues/640))
+- service: unittest for no-reply reservations and deadlines
+- service: possible UB in remove deadline - deadline improvements
+- tools: call cli now uses the same correlation for call as lookup
+- common: argument doesn't suggest deprecated options during auto-complete
+- file: make sure to expand paths in order to catch some bad input ([#638](https://github.com/casualcore/casual/issues/638))
+- documentation: update build status in readme
+
 ## [1.8.5] - 2025-11-07
 
 ### Fixes
