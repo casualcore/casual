@@ -231,6 +231,11 @@ namespace casual
                   return ! option.exhausted();
                };
 
+               auto not_deprecated = []( const auto& option)
+               {
+                  return ! option.names().is_deprecated();
+               };
+
                auto satisfied = []( const auto& option)
                {
                   return option.satisfied_min();
@@ -315,7 +320,7 @@ namespace casual
                   if( depth)
                      *depth -= 1;
 
-                  if( option.names().active().empty() && ! option.names().deprecated().empty())
+                  if( option.names().is_deprecated())
                      output( indent, "[deprecated] {} [{}]", string::join( option.names().deprecated(), ", "), format_option_cardinality( option.cardinality()));
                   else
                      output( indent, "{} [{}]", string::join( option.names().active(), ", "), format_option_cardinality( option.cardinality()));
@@ -479,8 +484,8 @@ namespace casual
 
                auto print_suggestions = []( auto options)
                {
-                  for( auto& active : options | std::ranges::views::filter( local::filter::not_exhausted))
-                    std::cout << active.names().canonical() << '\n';
+                  for( auto& active : options | std::ranges::views::filter( local::filter::not_exhausted) | std::ranges::views::filter( local::filter::not_deprecated))
+                     std::cout << active.names().canonical() << '\n';
                };
 
                // take care of suboptions
