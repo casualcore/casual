@@ -159,6 +159,9 @@ namespace casual
                               << log.delimiter << metric.parent.span
                               << log.delimiter << metric.code.user
                               << '\n';
+
+                           // we need to flush to mitigate interleaving from other processes
+                           log.file.flush();
                         };
 
                         common::algorithm::for_each( event.metrics, [&]( auto& metric)

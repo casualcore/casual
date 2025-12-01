@@ -378,6 +378,8 @@ namespace casual
                return common::algorithm::find( lhs.m_active, key) || common::algorithm::find( lhs.m_deprecated, key);
             }
 
+            inline bool is_deprecated() const { return m_active.empty();}
+
             inline const auto& active() const { return m_active;}
             inline const auto& deprecated() const { return m_deprecated;}
             

@@ -219,31 +219,48 @@ namespace casual
                   return { inserted->when};
                }
 
-               std::optional< common::chronology::time_point> Deadline::remove( const strong::correlation::id& correlation)
+               std::optional< deadline::Directive> Deadline::remove( const strong::correlation::id& correlation)
                {
+                  Trace trace{ "service::manager::state::pending::Deadline::remove"};
+
                   if( auto found = algorithm::find( m_entries, correlation))
                   {
-                     if( auto next = m_entries.erase( std::begin( found)); next == std::begin( m_entries))
+                     log::debug( "found: ", *found);
+
+                     auto next = m_entries.erase( std::begin( found));
+
+                     // if no entries left, we unset the deadline
+                     if( std::empty( m_entries))
+                        return { deadline::Unset{}};
+
+                     // if we erased the first entry, we need to return the new deadline
+                     if( next == std::begin( m_entries))
                         return { next->when};
                   }
                   return {};
                }
 
-               std::optional< common::chronology::time_point> Deadline::remove( const std::vector< strong::correlation::id>& correlations)
+               std::optional< deadline::Directive> Deadline::remove( instance::sequential::id::type instance)
                {
+                  auto has_instance = [ instance]( auto& entry){ return entry.target == instance;};
 
-                  auto [ keep, remove] = algorithm::stable::partition( m_entries, [&correlations]( auto& entry)
-                  {
-                     return ! predicate::boolean( algorithm::find( correlations, entry.correlation));
-                  });
+                  auto [ keep, remove] = algorithm::stable::partition( m_entries, predicate::negate( has_instance));
 
-                  // has the next deadline been postponed?
-                  if( remove && keep && range::front( remove) < range::front( keep))
-                  {
-                     algorithm::container::trim( m_entries, keep);
-                     return { m_entries.front().when};
-                  }
+                  // if we removed nothing, we don't need to do anything more
+                  if( std::empty( remove))
+                     return {};
+
+                  auto removed_deadline = remove->when;
+
                   algorithm::container::trim( m_entries, keep);
+
+                  if( std::empty( m_entries))
+                     return { deadline::Unset{}};
+
+                  // should we postpone the deadline?
+                  if( removed_deadline < m_entries.front().when)
+                     return { m_entries.front().when};
+
                   return {};
                }
 
@@ -414,6 +431,15 @@ namespace casual
                sequential[ instance_id].remove( service_id);
          }
 
+         instance::sequential::id::type Instances::find_sequential( common::strong::process::id pid) const
+         {
+            for( auto id : sequential.indexes())
+               if( sequential[ id].process.pid == pid)
+                  return id;
+
+            return {};
+         }
+
          std::string_view description( Runlevel value)
          {
             switch( value)
@@ -580,7 +606,7 @@ namespace casual
          } // <unnamed>
       } // local
 
-      std::vector< state::instance::Reservation> State::remove( common::strong::process::id pid)
+      state::remove::Result State::remove( common::strong::process::id pid)
       {
          Trace trace{ "service::manager::State::remove"};
          log::debug( "pid: ", pid);
@@ -588,15 +614,30 @@ namespace casual
          if( forward.pid == pid)
             forward.clear();
 
-         return local::remove( *this, pid);
+         state::remove::Result result;
+      
+         if( auto id = instances.find_sequential( pid))
+            result.deadline = pending.deadline.remove( id);
+
+         result.reservations = local::remove( *this, pid);
+
+         return result;
       }
 
-      std::vector< state::instance::Reservation> State::remove( common::strong::ipc::id ipc)
+
+      state::remove::Result State::remove( common::strong::ipc::id ipc)
       {
          Trace trace{ "service::manager::State::remove"};
          log::debug( "ipc: ", ipc);
 
-         return local::remove( *this, ipc);
+         state::remove::Result result;
+
+         if( auto index = instances.sequential.lookup( ipc))
+            result.deadline = pending.deadline.remove( index);
+
+         result.reservations = local::remove( *this, ipc);
+
+         return result;
       }
 
       state::instance::sequential::id::type State::reserve_sequential( state::instance::Caller caller)
@@ -756,7 +797,16 @@ namespace casual
          if( message.directive == decltype( message.directive)::reset)
          {
             // remove the instance and it's associations
-            remove( message.process.ipc);
+            auto removed = remove( message.process.ipc);
+
+            // When we remove a concurrent instance, we do not expect any reservations
+            // or any timeouts to be affected. Since callers don't ever wait for concurrent
+            // instances, and timeouts are not in play for concurrent instances.
+            if( ! std::empty( removed.reservations))
+               log::error( code::casual::internal_unexpected_value, "concurrent instance ", message.process.ipc, " had reservations - ", removed.reservations);
+
+            if( removed.deadline)
+               log::error( code::casual::internal_unexpected_value, "removed concurrent instance ", message.process.ipc, " resulted in a deadline update");
 
             // we're removing stuff, no new services can be available.
             return {};

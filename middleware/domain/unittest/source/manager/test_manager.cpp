@@ -80,6 +80,7 @@ namespace casual
                };
             } // find
 
+
          } // <unnamed>
       } // local
 
@@ -523,6 +524,35 @@ domain:
          auto server = local::get_global_state( local::find::alias( state.servers, "foo")->instances.at( 0).handle);
          EXPECT_TRUE( server.instance.alias == "foo") << "server.instance.alias: " << server.instance.alias;
          EXPECT_TRUE( server.instance.index == 0) << "server.instance.index: " << server.instance.index;
+
+      }
+
+      TEST( domain_manager, faulty_server___expect_restart_ignored_during_boot)
+      {
+         common::unittest::Trace trace;
+
+         constexpr auto configuration = R"(
+domain:
+   name: A
+   servers:
+      -  alias: faulty
+         path: ./bin/test-simple-server
+         arguments: [ --terminate ]
+         instances: 1
+         restart: true
+
+)";
+
+         
+         auto domain = local::domain( configuration);
+
+         auto state = unittest::state();
+
+         auto server = common::algorithm::find( state.servers, "faulty");
+         ASSERT_TRUE( server) << CASUAL_NAMED_VALUE( state.servers);
+         EXPECT_TRUE( server->instances.size() == 1 ) << CASUAL_NAMED_VALUE( server->instances.size());
+         // expect the instance to be in error state since restart is ignored during boot
+         EXPECT_TRUE( server->instances.at( 0).state == decltype( server->instances.at( 0).state)::error);
 
       }
 

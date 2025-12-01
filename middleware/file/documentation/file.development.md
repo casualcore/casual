@@ -29,7 +29,7 @@ Multiple access to the same (original) path within the same transaction if of co
 ...
 
    const auto path = casual::file::reserve( the_path);
-   std::ofstream{ path} << data;
+   std::ofstream{ path, std::ios::noreplace} << data;
 
 ...
    tx_commit();
@@ -45,7 +45,7 @@ Multiple access to the same (original) path within the same transaction if of co
 ...
 
    const auto path = casual::file::reserve( the_path);
-   std::ofstream{ path} << data;
+   std::ofstream{ path, std::ios::in} << data;
 
 ...
    tx_commit();

@@ -13,6 +13,8 @@
 #include "common/environment.h"
 #include "common/signal.h"
 
+#include "casual/argument.h"
+
 #include "common/signal.h"
 
 namespace casual
@@ -22,9 +24,24 @@ namespace casual
    {
       namespace
       {
-         void main(int argc, char **argv)
+         struct Settings
          {
-            
+            bool terminate = false;
+
+            CASUAL_LOG_SERIALIZE(
+               CASUAL_SERIALIZE( terminate);
+            )
+
+         };
+
+         void run( Settings settings)
+         {
+            if( settings.terminate)
+            {
+               log::information( "terminating as per settings");
+               std::terminate();
+            }
+
             signal::callback::registration< code::signal::hangup>( []()
             {
                log::line( log::category::information, "signal callback - ", code::signal::hangup);
@@ -53,6 +70,18 @@ namespace casual
             );
 
             message::dispatch::pump( handler, ipc);
+         }
+
+         void main(int argc, char **argv)
+         {
+            Settings settings;
+            { 
+               casual::argument::parse( "simple server", {
+                  casual::argument::Option( argument::option::flag( settings.terminate), { "--terminate"}, "if set, the server will terminate directly" ), 
+               }, argc, argv);
+            }
+
+            run( std::move( settings));
          }
 
       } // <unnamed>

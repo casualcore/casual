@@ -174,7 +174,7 @@ namespace casual
                      request.process = process::handle();
                      request.service = lookup.service;
                      request.pending = lookup.pending;
-                     request.correlation = strong::correlation::id::generate();
+                     request.correlation = lookup.correlation;
                      // set trid, if any.
                      request.trid = state.current;
                      

@@ -43,6 +43,15 @@ namespace casual
 
       namespace state
       {
+         enum class Runlevel : short
+         {
+            startup,
+            running,
+            shutdown,
+            error,
+         };
+         std::string_view description( Runlevel value);
+
          struct Group
          {
             strong::group::id id = strong::group::id::generate();
@@ -240,7 +249,7 @@ namespace casual
             const_instances_range shutdownable() const;
 
             void scale( platform::size::type instances);
-            void remove( common::strong::process::id instance, common::process::lifetime::exit::Reason reason);
+            void remove( common::strong::process::id instance, common::process::lifetime::exit::Reason reason, Runlevel runlevel);
 
             friend bool operator == ( const Executable& lhs, common::strong::process::id rhs);
             inline friend bool operator == ( common::strong::process::id lhs, const Executable& rhs) { return rhs == lhs;}
@@ -283,7 +292,7 @@ namespace casual
             const instance_type* instance( common::strong::process::id pid) const;
 
             //! @returns 'null handle' if not found
-            common::process::Handle remove( common::strong::process::id pid, common::process::lifetime::exit::Reason reason);
+            common::process::Handle remove( common::strong::process::id pid, common::process::lifetime::exit::Reason reason, Runlevel runlevel);
 
             bool connect( const common::process::Handle& process);
 
@@ -407,15 +416,6 @@ namespace casual
          {
             bool singleton( common::strong::process::id pid);
          } // is
-
-         enum class Runlevel : short
-         {
-            startup,
-            running,
-            shutdown,
-            error,
-         };
-         std::string_view description( Runlevel value);
 
          using Grandchild = common::message::domain::process::Information;
 
