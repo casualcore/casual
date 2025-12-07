@@ -1083,65 +1083,194 @@ The following options has legend:
                   }
                } // messages
 
-               namespace forward
+            } // list
+
+            namespace forward
+            {
+               namespace list
                {
                   namespace services
                   {
+                     namespace detail
+                     {                     
+                        auto option( argument::option::Names names)
+                        {
+                           auto invoke = []()
+                           {
+                              auto state = call::state();
+                              format::forward::services( state, state.forward.services);
+                           };
+                           
+                           return argument::Option{
+                              std::move( invoke),
+                              std::move( names), 
+                              "list information of all service forwards"
+                           };
+                        }
+                     } // detail
+
                      auto option()
                      {
-                        auto invoke = []()
-                        {
-                           auto state = call::state();
-                           format::forward::services( state, state.forward.services);
-                        };
-                        
-                        return argument::Option{
-                           std::move( invoke),
-                           {  "-lfs", "--list-forward-services"},
-                           "list information of all service forwards"
-                        };
+                        return detail::option( argument::option::Names{{ "-ls", "--list-services"}});
                      }
+
+                     auto deprecated_option()
+                     {
+                        return detail::option( argument::option::Names{ {}, {  "-lfs", "--list-forward-services"}});
+                     }
+
                   } // services
 
                   namespace queues
                   {
+                     namespace detail
+                     {                     
+                        auto option( argument::option::Names names)
+                        {
+                           auto invoke = []()
+                           {
+                              auto state = call::state();
+                              format::forward::queues( state, state.forward.queues);
+                           };
+                           
+                           return argument::Option{
+                              std::move( invoke),
+                              std::move( names), 
+                              "list information of all queue forwards"
+                           };
+                        }
+                     } // detail
+
                      auto option()
                      {
-                        auto invoke = []()
-                        {
-                           auto state = call::state();
-                           format::forward::queues( state, state.forward.queues);
-                        };
-                        
-                        return argument::Option{
-                           std::move( invoke),
-                           { "-lfq", "--list-forward-queues"},
-                           "list information of all queue forwards"
-                        };
+                        return detail::option( argument::option::Names{{ "-lq", "--list-queues"}});
                      }
+
+                     auto deprecated_option()
+                     {
+                        return detail::option( argument::option::Names{ {}, { "-lfq", "--list-forward-queues"}});
+                     }
+
                   } // queues
 
                   namespace groups
                   {
+                     namespace detail
+                     {                     
+                        auto option( argument::option::Names names)
+                        {
+                           auto invoke = []()
+                           {
+                              auto state = call::state();
+                              format::forward::groups( state, state.forward.groups);
+                           };
+                           
+                           return argument::Option{
+                              std::move( invoke),
+                              std::move( names), //{ "-lfg", "--list-forward-groups"},
+                              "list (aggregated) information of forward groups"
+                           };
+                        }
+                     } // detail
+
                      auto option()
                      {
-                        auto invoke = []()
-                        {
-                           auto state = call::state();
-                           format::forward::groups( state, state.forward.groups);
-                        };
-                        
-                        return argument::Option{
-                           std::move( invoke),
-                           { "-lfg", "--list-forward-groups"},
-                           "list (aggregated) information of forward groups"
-                        };
+                        return detail::option( argument::option::Names{{ "-lg", "--list-groups"}});
                      }
-                  } // queues
 
-               } // forward
+                     auto deprecated_option()
+                     {
+                        return detail::option( argument::option::Names{ {}, { "-lfg", "--list-forward-groups"}});
+                     }
 
-            } // list
+                  } // groups
+               } // list
+
+               namespace scale::aliases
+               {
+                  namespace detail
+                  {
+                     auto option( argument::option::Names names, std::string description)
+                     {
+                        auto invoke = []( std::vector< std::tuple< std::string, platform::size::type>> values)
+                        {
+                           auto aliases = algorithm::transform( values, []( auto& value)
+                           {
+                              if( std::get< 1>( value) < 0)
+                                 common::code::raise::error( common::code::casual::invalid_argument, "number of instances cannot be negative");
+                                    
+                              manager::admin::model::scale::Alias result;
+                              result.name = std::move( std::get< 0>( value));
+                              result.instances = std::get< 1>( value);
+                              return result;
+                           });
+
+                           casual::service::protocol::binary::Call call;
+                           call << CASUAL_NAMED_VALUE( aliases);
+                           call( manager::admin::service::name::forward::scale::aliases);
+                        };
+
+                        auto complete = []( bool help, auto values) -> std::vector< std::string>
+                        {
+                           if( help)
+                              return { "<alias>", "<# instances>"};
+
+                           if( range::size( values) % 2 == 1)
+                              return { "<value>"};
+
+                           auto get_alias = []( auto& forward){ return forward.alias;};
+
+                           auto state = call::state();
+
+                           auto result = algorithm::transform( state.forward.services, get_alias);
+                           algorithm::transform( state.forward.services, std::back_inserter( result), get_alias);
+
+                           return result;
+                        };
+
+                        return argument::Option{
+                           argument::option::one::many( std::move( invoke)),
+                           complete,
+                           std::move( names), // { "--forward-scale-aliases"},
+                           std::move( description)
+                        };
+                     };  
+                  } // detail
+
+                  auto option()
+                  {
+                     return detail::option( {{ "--scale-aliases"}}, R"(scales forward aliases to the requested number of instances
+
+   Example:
+   casual queue --scale-aliases a 2 b 0 c 10)");
+                  }
+
+                  auto deprecated_option()
+                  {
+                     return detail::option( {{}, { "--forward-scale-aliases"}}, "deprecated: use`casual queue forward --scale-aliases` instead");
+                  }
+
+               } // scale::aliases
+
+               auto option()
+               {
+                  return argument::Option{
+                     [](){},
+                     { "forward"},
+                     R"(subcommand for forward)"
+                  }(
+                     {
+                        list::services::option(),
+                        list::queues::option(),
+                        list::groups::option(),
+                        scale::aliases::option(),
+                     },
+                     argument::cardinality::one()
+                  );
+               }
+               
+            } // forward
+
 
             namespace fanout
             {
@@ -1834,59 +1963,6 @@ casual queue --clear a b c)"
 
             } // clear
 
-            namespace forward::scale::aliases
-            {
-               auto option()
-               {
-                  auto invoke = []( std::vector< std::tuple< std::string, platform::size::type>> values)
-                  {
-                     auto aliases = algorithm::transform( values, []( auto& value)
-                     {
-                        if( std::get< 1>( value) < 0)
-                           common::code::raise::error( common::code::casual::invalid_argument, "number of instances cannot be negative");
-                              
-                        manager::admin::model::scale::Alias result;
-                        result.name = std::move( std::get< 0>( value));
-                        result.instances = std::get< 1>( value);
-                        return result;
-                     });
-
-                     casual::service::protocol::binary::Call call;
-                     call << CASUAL_NAMED_VALUE( aliases);
-                     call( manager::admin::service::name::forward::scale::aliases);
-                  };
-
-                  auto complete = []( bool help, auto values) -> std::vector< std::string>
-                  {
-                     if( help)
-                        return { "<alias>", "<# instances>"};
-
-                     if( range::size( values) % 2 == 1)
-                        return { "<value>"};
-
-                     auto get_alias = []( auto& forward){ return forward.alias;};
-
-                     auto state = call::state();
-
-                     auto result = algorithm::transform( state.forward.services, get_alias);
-                     algorithm::transform( state.forward.services, std::back_inserter( result), get_alias);
-
-                     return result;
-                  };
-
-                  return argument::Option{
-                     argument::option::one::many( std::move( invoke)),
-                     complete,
-                     {  "--forward-scale-aliases"},
-                     R"(scales forward aliases to the requested number of instances
-
-Example:
-casual queue --forward-scale-aliases a 2 b 0 c 10)"
-                  };
-               };  
-
-            } // forward::scale::aliases
-
             namespace metric::reset
             {
                auto option()
@@ -2040,9 +2116,7 @@ casual queue --metric-reset a b)"
             local::list::queue::instances::option(),
             local::list::groups::option(),
             local::list::messages::option(),
-            local::list::forward::services::option(),
-            local::list::forward::queues::option(),
-            local::list::forward::groups::option(),
+            local::forward::option(),
             local::fanout::option(),
             local::restore::option(),
             local::enqueue::option(),
@@ -2053,14 +2127,18 @@ casual queue --metric-reset a b)"
             local::clear::option(),
             local::messages::remove::option( shared),
             local::messages::recovery::option(),
-            local::forward::scale::aliases::option(),
             local::metric::reset::option(),
             local::legend::option(),
             local::information::option(),
             casual::cli::state::option( &local::call::state),
+
             local::deprecated::list_remote_queues(),
             local::deprecated::recover_transactions_commit(),
-            local::deprecated::recover_transactions_rollback()
+            local::deprecated::recover_transactions_rollback(),
+            local::forward::list::services::deprecated_option(),
+            local::forward::list::queues::deprecated_option(),
+            local::forward::list::groups::deprecated_option(),
+            local::forward::scale::aliases::deprecated_option(),
          });
       }
 

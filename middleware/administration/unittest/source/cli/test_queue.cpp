@@ -262,49 +262,49 @@ domain:
 
          // alias
          {
-            auto capture = local::execute( R"(casual queue --list-forward-queues --porcelain true | awk -F'|' '{printf $1}')");
+            auto capture = local::execute( R"(casual queue forward --list-queues --porcelain true | awk -F'|' '{printf $1}')");
             EXPECT_EQ( capture.standard.out, "disabled-forward-queue") << CASUAL_NAMED_VALUE( capture);
          }
 
          // group
          {
-            auto capture = local::execute( R"(casual queue --list-forward-queues --porcelain true | awk -F'|' '{printf $2}')");
+            auto capture = local::execute( R"(casual queue forward --list-queues --porcelain true | awk -F'|' '{printf $2}')");
             EXPECT_EQ( capture.standard.out, "forward-group") << CASUAL_NAMED_VALUE( capture);
          }
 
          // source
          {
-            auto capture = local::execute( R"(casual queue --list-forward-queues --porcelain true | awk -F'|' '{printf $3}')");
+            auto capture = local::execute( R"(casual queue forward --list-queues --porcelain true | awk -F'|' '{printf $3}')");
             EXPECT_EQ( capture.standard.out, "some-queue") << CASUAL_NAMED_VALUE( capture);
          }
 
          // target
          {
-            auto capture = local::execute( R"(casual queue --list-forward-queues --porcelain true | awk -F'|' '{printf $4}')");
+            auto capture = local::execute( R"(casual queue forward --list-queues --porcelain true | awk -F'|' '{printf $4}')");
             EXPECT_EQ( capture.standard.out, "some-other-queue") << CASUAL_NAMED_VALUE( capture);
          }
 
          // delay
          {
-            auto capture = local::execute( R"(casual queue --list-forward-queues --porcelain true | awk -F'|' '{printf $5}')");
+            auto capture = local::execute( R"(casual queue forward --list-queues --porcelain true | awk -F'|' '{printf $5}')");
             EXPECT_EQ( capture.standard.out, "1.000") << CASUAL_NAMED_VALUE( capture);
          }
 
          // configured instances
          {
-            auto capture = local::execute( R"(casual queue --list-forward-queues --porcelain true | awk -F'|' '{printf $6}')");
+            auto capture = local::execute( R"(casual queue forward --list-queues --porcelain true | awk -F'|' '{printf $6}')");
             EXPECT_EQ( capture.standard.out, "2") << CASUAL_NAMED_VALUE( capture);
          }
 
          // instances
          {
-            auto capture = local::execute( R"(casual queue --list-forward-queues --porcelain true | awk -F'|' '{printf $7}')");
+            auto capture = local::execute( R"(casual queue forward --list-queues --porcelain true | awk -F'|' '{printf $7}')");
             EXPECT_EQ( capture.standard.out, "0") << CASUAL_NAMED_VALUE( capture);
          }
 
          // enabled
          {
-            auto capture = local::execute( R"(casual queue --list-forward-queues --porcelain true | awk -F'|' '{printf $11}')");
+            auto capture = local::execute( R"(casual queue forward --list-queues --porcelain true | awk -F'|' '{printf $11}')");
             EXPECT_EQ( capture.standard.out, "D") << CASUAL_NAMED_VALUE( capture);
          }
       }
@@ -339,31 +339,31 @@ domain:
 
          // alias
          {
-            auto capture = local::execute( R"(casual queue --list-forward-services --porcelain true | awk -F'|' '{printf $1}')");
+            auto capture = local::execute( R"(casual queue forward --list-services --porcelain true | awk -F'|' '{printf $1}')");
             EXPECT_EQ( capture.standard.out, "disabled-forward-service") << CASUAL_NAMED_VALUE( capture);
          }
 
          // group
          {
-            auto capture = local::execute( R"(casual queue --list-forward-services --porcelain true | awk -F'|' '{printf $2}')");
+            auto capture = local::execute( R"(casual queue forward --list-services --porcelain true | awk -F'|' '{printf $2}')");
             EXPECT_EQ( capture.standard.out, "forward-group") << CASUAL_NAMED_VALUE( capture);
          }
 
          // source
          {
-            auto capture = local::execute( R"(casual queue --list-forward-services --porcelain true | awk -F'|' '{printf $3}')");
+            auto capture = local::execute( R"(casual queue forward --list-services --porcelain true | awk -F'|' '{printf $3}')");
             EXPECT_EQ( capture.standard.out, "some-queue") << CASUAL_NAMED_VALUE( capture);
          }
 
          // target
          {
-            auto capture = local::execute( R"(casual queue --list-forward-services --porcelain true | awk -F'|' '{printf $4}')");
+            auto capture = local::execute( R"(casual queue forward --list-services --porcelain true | awk -F'|' '{printf $4}')");
             EXPECT_EQ( capture.standard.out, "some-service") << CASUAL_NAMED_VALUE( capture);
          }
 
          // reply
          {
-            auto capture = local::execute( R"(casual queue --list-forward-services --porcelain true | awk -F'|' '{printf $5}')");
+            auto capture = local::execute( R"(casual queue forward --list-services --porcelain true | awk -F'|' '{printf $5}')");
             EXPECT_EQ( capture.standard.out, "some-other-queue") << CASUAL_NAMED_VALUE( capture);
          }
 
@@ -371,25 +371,25 @@ domain:
          // there is an inconsistency in precision here with forward-queues since the formatter for services returns a string,
          // while the one for queues returns the raw output of std::chrono::duration::count. TODO: which is preferable?
          {
-            auto capture = local::execute( R"(casual queue --list-forward-services --porcelain true | awk -F'|' '{printf $6}')");
+            auto capture = local::execute( R"(casual queue forward --list-services --porcelain true | awk -F'|' '{printf $6}')");
             EXPECT_EQ( capture.standard.out, "1.000000") << CASUAL_NAMED_VALUE( capture);
          }
 
          // configured instances
          {
-            auto capture = local::execute( R"(casual queue --list-forward-services --porcelain true | awk -F'|' '{printf $7}')");
+            auto capture = local::execute( R"(casual queue forward --list-services --porcelain true | awk -F'|' '{printf $7}')");
             EXPECT_EQ( capture.standard.out, "2") << CASUAL_NAMED_VALUE( capture);
          }
 
          // instances
          {
-            auto capture = local::execute( R"(casual queue --list-forward-services --porcelain true | awk -F'|' '{printf $8}')");
+            auto capture = local::execute( R"(casual queue forward --list-services --porcelain true | awk -F'|' '{printf $8}')");
             EXPECT_EQ( capture.standard.out, "0") << CASUAL_NAMED_VALUE( capture);
          }
 
          // enabled
          {
-            auto capture = local::execute( R"(casual queue --list-forward-services --porcelain true | awk -F'|' '{printf $12}')");
+            auto capture = local::execute( R"(casual queue forward --list-services --porcelain true | awk -F'|' '{printf $12}')");
             EXPECT_EQ( capture.standard.out, "D") << CASUAL_NAMED_VALUE( capture);
          }
       }
