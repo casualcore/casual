@@ -1141,7 +1141,11 @@ The following options has legend:
 
                } // forward
 
-               namespace fanout
+            } // list
+
+            namespace fanout
+            {
+               namespace list
                {
                   namespace groups
                   {
@@ -1171,7 +1175,7 @@ The following options has legend:
                         
                         return argument::Option{
                            std::move( invoke),
-                           { "--list-fanout-groups"},
+                           { "--list-groups"},
                            "list information of all fanout groups in current domain"
                         };
                      }
@@ -1212,7 +1216,7 @@ The following options has legend:
                         
                         return argument::Option{
                            std::move( invoke),
-                           { "--list-fanout-queues"},
+                           { "--list-queues"},
                            R"(list all fanout destinations in current domain)"};
 
                      }
@@ -1265,16 +1269,32 @@ The following options has legend:
 
                         return argument::Option{
                            std::move( invoke),
-                           { "--list-fanout-targets"},
+                           { "--list-targets"},
                            R"(list all fanout targets in current domain)"
                         };
                      }
                      
                   } // targets
                   
-               } // fanout
+               } // list
 
-            } // list
+               auto option()
+               {
+                  return argument::Option{
+                     [](){},
+                     { "fanout"},
+                     R"(subcommand for fanout)"
+                  }(
+                     {
+                        list::groups::option(),
+                        list::queues::option(),
+                        list::targets::option(),
+                     },
+                     argument::cardinality::one()
+                  );
+               }
+               
+            } // fanout
 
             namespace pipe
             {
@@ -2023,9 +2043,7 @@ casual queue --metric-reset a b)"
             local::list::forward::services::option(),
             local::list::forward::queues::option(),
             local::list::forward::groups::option(),
-            local::list::fanout::groups::option(),
-            local::list::fanout::queues::option(),
-            local::list::fanout::targets::option(),
+            local::fanout::option(),
             local::restore::option(),
             local::enqueue::option(),
             local::dequeue::option(),

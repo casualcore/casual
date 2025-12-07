@@ -705,7 +705,7 @@ fanout-2  11204       1        0          0  -
 */
 
 
-         auto capture = local::execute( R"(casual --color false --header false queue --list-fanout-groups)");
+         auto capture = local::execute( R"(casual --color false --header false queue fanout --list-groups)");
 
          auto rows = string::split( capture.standard.out, '\n');
 
@@ -797,7 +797,7 @@ bar    fanout-2  s4      1   D   1  0        0          0  -
 */
          }
 
-         auto capture = local::execute( R"(casual --color false --header false queue --list-fanout-queues)");
+         auto capture = local::execute( R"(casual --color false --header false queue fanout --list-queues)");
 
          auto rows = string::split( capture.standard.out, '\n');
 
@@ -873,7 +873,7 @@ s3     s3      t6      0.000
 */
          }
 
-         auto capture = local::execute( R"(casual --precision 3 --color false --header false queue --list-fanout-targets)");
+         auto capture = local::execute( R"(casual --precision 3 --color false --header false queue fanout --list-targets)");
 
          auto rows = string::split( capture.standard.out, '\n');
 
