@@ -32,8 +32,8 @@ namespace casual
       } state;
 
       argument::parse( "", { 
-            argument::Option{ std::tie( state.a), { "-a"}, ""},
-            argument::Option{ std::tie( state.b), { "-b"}, ""},
+            argument::Option{ std::tie( state.a), {{ "-a"}}, ""},
+            argument::Option{ std::tie( state.b), {{ "-b"}}, ""},
          }, 
          { "-b", "2", "-a", "1"});
 
@@ -58,11 +58,11 @@ namespace casual
 
 
       argument::parse( "", { 
-            argument::Option{ callback( "a"), { "-a"}, ""}( {
-               argument::Option{ callback( "a1"), { "-a1"}, ""}
+            argument::Option{ callback( "a"), {{ "-a"}}, ""}( {
+               argument::Option{ callback( "a1"), {{ "-a1"}}, ""}
             }),
-            argument::Option{ callback( "b"), { "-b"}, ""}( {
-               argument::Option{ callback( "b1"), { "-b1"}, ""}
+            argument::Option{ callback( "b"), {{ "-b"}}, ""}( {
+               argument::Option{ callback( "b1"), {{ "-b1"}}, ""}
             }),
          }, 
          { "-b", "-b1", "-a", "-a1"});
@@ -96,9 +96,9 @@ namespace casual
       {
          State state;
          argument::parse( "", { 
-               argument::Option{ callback( state), { "-a"}, ""}( {
-                  argument::Option{ argument::option::flag( state.f1) , { "-f1"}, ""},
-                  argument::Option{ argument::option::flag( state.f2) , { "-f2"}, ""}
+               argument::Option{ callback( state), {{ "-a"}}, ""}( {
+                  argument::Option{ argument::option::flag( state.f1) , {{ "-f1"}}, ""},
+                  argument::Option{ argument::option::flag( state.f2) , {{ "-f2"}}, ""}
                })
             }, 
             { "-a", "-f1", "1", "2", "3", "-f2"});
@@ -113,9 +113,9 @@ namespace casual
       {
          State state;
          argument::parse( "", { 
-               argument::Option{ callback( state), { "-a"}, ""}( {
-                  argument::Option{ argument::option::flag( state.f1) , { "-f1"}, ""},
-                  argument::Option{ argument::option::flag( state.f2) , { "-f2"}, ""}
+               argument::Option{ callback( state), {{ "-a"}}, ""}( {
+                  argument::Option{ argument::option::flag( state.f1) , {{ "-f1"}}, ""},
+                  argument::Option{ argument::option::flag( state.f2) , {{ "-f2"}}, ""}
                }),
             }, 
             { "-a", "-f2", "-f1", "1", "2", "3"});
@@ -131,9 +131,9 @@ namespace casual
       {
          State state;
          argument::parse( "", { 
-               argument::Option{ callback( state), { "-a"}, ""}( {
-                  argument::Option{ argument::option::flag( state.f1) , { "-f1"}, ""},
-                  argument::Option{ argument::option::flag( state.f2) , { "-f2"}, ""}
+               argument::Option{ callback( state), {{ "-a"}}, ""}( {
+                  argument::Option{ argument::option::flag( state.f1) , {{ "-f1"}}, ""},
+                  argument::Option{ argument::option::flag( state.f2) , {{ "-f2"}}, ""}
                }),
             }, 
             { "-a", "1", "2", "3", "-f2", "-f1"});
@@ -157,12 +157,12 @@ namespace casual
       } state;
 
       ASSERT_CODE( argument::parse( "", { 
-            argument::Option{ std::tie( state.a), { "-a"}, ""},
+            argument::Option{ std::tie( state.a), {{ "-a"}}, ""},
          }, 
          { "-a", "2", "3", "4"}), common::code::casual::invalid_argument);
 
       ASSERT_CODE( argument::parse( "", { 
-            argument::Option{ std::tie( state.b), { "-b"}, ""},
+            argument::Option{ std::tie( state.b), {{ "-b"}}, ""},
          }, 
          { "-b"}), common::code::casual::invalid_argument);
    }
@@ -175,17 +175,17 @@ namespace casual
       } state;
 
       ASSERT_CODE( argument::parse( "", { 
-            argument::Option{ std::tie( state.a), { "-a"}, ""}
+            argument::Option{ std::tie( state.a), {{ "-a"}}, ""}
          }, 
          { "-a", "2", "-a", "4"}), common::code::casual::invalid_argument);
 
       ASSERT_CODE( argument::parse( "", { 
-            argument::Option{ std::tie( state.a), { "-a"}, ""}( argument::cardinality::one()),
+            argument::Option{ std::tie( state.a), {{ "-a"}}, ""}( argument::cardinality::one()),
          }, 
          {}), common::code::casual::invalid_argument);
 
       ASSERT_CODE( argument::parse( "", { 
-            argument::Option{ std::tie( state.a), { "-a"}, ""}( argument::cardinality::one()),
+            argument::Option{ std::tie( state.a), {{ "-a"}}, ""}( argument::cardinality::one()),
          }, 
          { "-a", "2", "-a", "3"}), common::code::casual::invalid_argument);
 
@@ -212,12 +212,12 @@ namespace casual
 
 
       auto options = std::vector{
-         argument::Option{ std::tie( state.a), { "-a"}, "description for option\n\nmulti\nline"}( {
-               argument::Option{ std::tie( state.b), complete_b, { "-b"}, "description for option\n\nmulti\nline"}
+         argument::Option{ std::tie( state.a), {{ "-a"}}, "description for option\n\nmulti\nline"}( {
+               argument::Option{ std::tie( state.b), complete_b, {{ "-b"}}, "description for option\n\nmulti\nline"}
             })( argument::cardinality::one()),
-            argument::Option{ std::tie( state.c), { "-c"}, "description for option\n\nmulti\nline"}( {
-               argument::Option{ std::tie( state.d), { "-d"}, "description for option\n\nmulti\nline"}( {
-                  argument::Option{ std::tie( state.e), { "-e"}, "description for -e"}
+            argument::Option{ std::tie( state.c), {{ "-c"}}, "description for option\n\nmulti\nline"}( {
+               argument::Option{ std::tie( state.d), {{ "-d"}}, "description for option\n\nmulti\nline"}( {
+                  argument::Option{ std::tie( state.e), {{ "-e"}}, "description for -e"}
                })
             })
          };
@@ -264,13 +264,13 @@ namespace casual
       State state;
 
       auto options = std::vector{
-         argument::Option{ std::tie( state.a), { "-a"}, ""}( {
-            argument::Option{ std::tie( state.a_1), { "-a1"}, ""},
-            argument::Option{ std::tie( state.a_2), { "-a2"}, ""}
+         argument::Option{ std::tie( state.a), {{ "-a"}}, ""}( {
+            argument::Option{ std::tie( state.a_1), {{ "-a1"}}, ""},
+            argument::Option{ std::tie( state.a_2), {{ "-a2"}}, ""}
          }, argument::cardinality::one()),
-         argument::Option{ std::tie( state.b), { "-b"}, ""}( {
-            argument::Option{ std::tie( state.b_1), { "-b1"}, ""},
-            argument::Option{ std::tie( state.b_2), { "-b2"}, ""}
+         argument::Option{ std::tie( state.b), {{ "-b"}}, ""}( {
+            argument::Option{ std::tie( state.b_1), {{ "-b1"}}, ""},
+            argument::Option{ std::tie( state.b_2), {{ "-b2"}}, ""}
          }, argument::cardinality::fixed( 2)),
       };
 

@@ -34,7 +34,7 @@ int casual_start_resource_proxy( struct casual_resource_proxy_service_argument* 
       using namespace casual::argument;
       
       parse( "resource proxy server", {
-         Option{ std::tie( settings.id), { "--id"}, "resource id "}( cardinality::one())
+         Option{ std::tie( settings.id), {{ "--id"}}, "resource id "}( cardinality::one())
       }, serverArguments->argc, serverArguments->argv);
 
 

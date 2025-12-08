@@ -18,7 +18,7 @@ namespace casual
          {
             setting::Mandatory directive;
 
-            auto add_directive = setting::Mandatory::split( directive.directives);
+            auto add_directive = setting::mandatory::split( directive.directives);
 
             add_directive( "-l a -l b -l c", {});
 

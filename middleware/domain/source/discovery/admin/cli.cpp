@@ -70,7 +70,7 @@ namespace casual
 
                   return argument::Option{
                      std::move( invoke),
-                     { "--rediscover"},
+                     {{ "--rediscover"}},
                      "rediscover all 'discoverable' agents"
                   };
                }
@@ -101,7 +101,7 @@ namespace casual
 
                      return argument::Option{
                         std::move( invoke),
-                        { "--list-providers"},
+                        {{ "--list-providers"}},
                         R"(INCUBATION - list current discovery providers
 
 These are the providers that has registered them self with discovery abilities
@@ -138,7 +138,7 @@ These are the providers that has registered them self with discovery abilities
 
                      return argument::Option{
                         argument::option::one::many( std::move( invoke)),
-                        { "--services"},
+                        {{ "--services"}},
                         R"(force discover of provided services
 
 Will try to find provided services in other domains.
@@ -169,7 +169,7 @@ Will try to find provided services in other domains.
 
                      return argument::Option{
                         argument::option::one::many( std::move( invoke)),
-                        { "--queues"},
+                        {{ "--queues"}},
                         R"(force discover of provided queues
 
 Will try to find provided queues in other domains.
@@ -258,7 +258,7 @@ Will try to find provided queues in other domains.
 
                   return argument::Option{
                      std::move( invoke),
-                     { "--metric"},
+                     {{ "--metric"}},
                      R"(list metrics
 
 List counts of _discovery tasks_ the domain-discovery has in-flight and completed
@@ -300,7 +300,7 @@ List counts of _discovery tasks_ the domain-discovery has in-flight and complete
 
       argument::Option options()
       {
-         return argument::Option{ [](){}, { "discovery"}, "responsible for discovery stuff"}({
+         return argument::Option{ [](){}, {{ "discovery"}}, "responsible for discovery stuff"}({
             local::list::providers::option(),
             local::discover::services::option(),
             local::discover::queues::option(),

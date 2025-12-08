@@ -685,7 +685,7 @@ casual --boot --strict <glob patterns>)";
                            shared->strict = true;
                            return argument::option::invoke::preemptive{};
                         },
-                        { "--strict"},
+                        {{ "--strict"}},
                         strict_description};
 
 
@@ -727,7 +727,7 @@ With supplied configuration files, in the form of glob patterns.
 
                   return argument::Option{
                      std::move( invoke),
-                     { "-s", "--shutdown"},
+                     {{ "-s", "--shutdown"}},
                      description};
 
                } // shutdown
@@ -768,7 +768,7 @@ With supplied configuration files, in the form of glob patterns.
 
                      return argument::Option{
                         std::move( invoke), 
-                        { "-ls", "--list-servers"},
+                        {{ "-ls", "--list-servers"}},
                         R"(list all servers)"};
                   }
 
@@ -785,7 +785,7 @@ With supplied configuration files, in the form of glob patterns.
 
                      return argument::Option{
                         std::move( invoke), 
-                        { "-le", "--list-executables"},
+                        {{ "-le", "--list-executables"}},
                         R"(list all executables)"};
                   }
 
@@ -873,7 +873,7 @@ With supplied configuration files, in the form of glob patterns.
 
                         return argument::Option{ 
                            std::move( invoke), 
-                           { "-lis", "--list-instances-server"}, 
+                           {{ "-lis", "--list-instances-server"}}, 
                            R"(list all running server instances)"};
                      }
 
@@ -937,7 +937,7 @@ With supplied configuration files, in the form of glob patterns.
 
                         return argument::Option{ 
                            std::move( invoke), 
-                           { "-lie", "--list-instances-executable"}, 
+                           {{ "-lie", "--list-instances-executable"}}, 
                            R"(list all running executable instances)"};
 
                      } // executable
@@ -1060,7 +1060,7 @@ note: some aliases are unrestartable
                      return argument::Option{
                         std::move( invoke), 
                         std::move( completion), 
-                        { "-rg", "--restart-groups"},
+                        {{ "-rg", "--restart-groups"}},
                         description};
                   } // restart
                } // restart
@@ -1114,7 +1114,7 @@ note: some aliases are unrestartable
 
                      return argument::Option{
                         std::move( invoke),
-                        { "--log-reopen"},
+                        {{ "--log-reopen"}},
                         "reopen casual.log by sending SIGHUP to all servers, and outputs all running executables"
                      };
                   }
@@ -1232,7 +1232,7 @@ for all servers and executables
                   auto create()
                   {
                      return argument::Option{ [](){}, 
-                        { "--environment"}, 
+                        {{ "--environment"}},
                         R"(alter environment variables for the domain manager
                   
 use sub-options --set and --unset to set/unset environment variables for the domain)"
@@ -1273,7 +1273,7 @@ use sub-options --set and --unset to set/unset environment variables for the dom
                         {
                            std::cout << legend;
                         },
-                        { key},
+                        {{ key}},
                         string::compose( "list legend for ", key)
                      };
                   };
@@ -1281,7 +1281,7 @@ use sub-options --set and --unset to set/unset environment variables for the dom
 
                   return argument::Option{
                      [](){},
-                     { "--legend"},
+                     {{ "--legend"}},
                      R"(the legend for the supplied option
 
 Documentation and description for abbreviations and acronyms used as columns in output
@@ -1303,7 +1303,7 @@ The following options has legend:
       {
          argument::Option options()
          {
-            return argument::Option{ [](){}, { "domain"}, "local casual domain related administration"}({
+            return argument::Option{ [](){}, {{ "domain"}}, "local casual domain related administration"}({
                local::option::list::servers(),
                local::option::list::executables(),
                local::option::scale::aliases(),
@@ -1315,10 +1315,10 @@ The following options has legend:
                local::option::shutdown(),
                local::option::environment::create(),
             
-               argument::Option( argument::option::one::many( &local::action::ping::invoke), local::action::ping::complete(), { "--ping"}, local::action::ping::description),
-               argument::Option( &local::action::global::state::invoke, local::action::global::state::complete(), { "--instance-global-state"}, local::action::global::state::description),
+               argument::Option( argument::option::one::many( &local::action::ping::invoke), local::action::ping::complete(), {{ "--ping"}}, local::action::ping::description),
+               argument::Option( &local::action::global::state::invoke, local::action::global::state::complete(), {{ "--instance-global-state"}}, local::action::global::state::description),
                local::option::legend(),
-               argument::Option( &local::action::information::invoke, { "--information"}, local::action::information::description),
+               argument::Option( &local::action::information::invoke, {{ "--information"}}, local::action::information::description),
                casual::cli::state::option( &local::call::state),
                local::option::log::reopen(),
 

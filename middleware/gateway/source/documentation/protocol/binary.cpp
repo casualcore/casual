@@ -145,8 +145,8 @@ descriptive: [<base-path>/]<message-name>.<protocol-version>.<message-type-id>.<
 
 )",
                      {
-                        argument::Option( std::tie( basename), { "-b", "--base"}, "base path for the generated files"),
-                        argument::Option( std::tie( format), complete, { "--format"}, "format for optional descriptive generated representation")
+                        argument::Option( std::tie( basename), {{ "-b", "--base"}}, "base path for the generated files"),
+                        argument::Option( std::tie( format), complete, {{ "--format"}}, "format for optional descriptive generated representation")
                      }, argc, argv);
                }
 

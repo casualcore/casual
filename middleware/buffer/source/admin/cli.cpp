@@ -32,7 +32,7 @@ namespace casual
                      return argument::Option{
                         &cli::detail::field::to_human,
                         cli::detail::format::completion(),
-                        { "--field-to-human"},
+                        {{ "--field-to-human"}},
                         R"(reads from stdin and assumes a casual-fielded-buffer
 
 and transform this to a human readable structure in the supplied format,
@@ -48,7 +48,7 @@ and prints this to stdout
                      return argument::Option{
                         &cli::detail::field::from_human,
                         cli::detail::format::completion(),
-                        { "--field-from-human"},
+                        {{ "--field-from-human"}},
                         R"(transform human readable fielded buffer to actual buffers
 
 reads from stdin and assumes a human readable structure in the supplied format
@@ -66,7 +66,7 @@ and forward this to stdout for other downstream in the pipeline to consume
                   return argument::Option{
                      &cli::detail::compose,
                      cli::detail::buffer::types::completion(),
-                     { "--compose"},
+                     {{ "--compose"}},
                      R"(reads 'binary' data from stdin and compose one actual buffer
 
 with the supplied type, and forward this to stdout for other downstream 'components'
@@ -82,7 +82,7 @@ if no 'type' is provided, `X_OCTET/` is used
                {
                   return argument::Option{
                      &cli::detail::duplicate,
-                     { "--duplicate"},
+                     {{ "--duplicate"}},
                         R"(duplicates buffers read from stdin and send them downstream via stdout
 
 `count` amount of times.
@@ -95,7 +95,7 @@ if no 'type' is provided, `X_OCTET/` is used
                {
                   return argument::Option{
                      &cli::detail::extract,
-                     { "--extract"},
+                     {{ "--extract"}},
                         R"(read the buffers from stdin and extract the payload and sends it to stdout
 
 if --verbose is provided the type of the buffer will be sent to stderr.
@@ -229,7 +229,7 @@ if --verbose is provided the type of the buffer will be sent to stderr.
 
          argument::Option options()
          {
-            return argument::Option{ [](){}, { "buffer"}, "buffer related 'tools'"}( {
+            return argument::Option{ [](){}, {{ "buffer"}}, "buffer related 'tools'"}( {
                cli::local::field::from_human(),
                cli::local::field::to_human(),
                cli::local::compose(),

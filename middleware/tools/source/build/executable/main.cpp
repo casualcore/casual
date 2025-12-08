@@ -159,7 +159,7 @@ namespace casual
 
                {
                   auto outcome = argument::parse( "builds a casual executable",  common::algorithm::container::compose( 
-                     argument::Option{ std::tie( settings.executable.definition), { "-d", "--definition"}, "path of the definition file"},
+                     argument::Option{ std::tie( settings.executable.definition), {{ "-d", "--definition"}}, "path of the definition file"},
                      build::setting::mandatory::options( settings.directive)
                   ), argc, argv);
 

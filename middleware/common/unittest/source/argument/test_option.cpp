@@ -33,6 +33,27 @@ namespace casual
 
    }
 
+   TEST( argument_option, test_names)
+   {
+      unittest::Trace trace;
+
+      {
+         auto names = argument::option::Names{ { "-f", "--build-directives"}, {"--link-directives"}}; 
+         EXPECT_TRUE( names.active().at( 0) == "-f") << CASUAL_NAMED_VALUE( names.active());
+         EXPECT_TRUE( names.active().at( 1) == "--build-directives");
+         EXPECT_TRUE( names.deprecated().at( 0) == "--link-directives");
+      }
+      
+      {
+         auto names = argument::option::Names{ { "-a", "-b"}, {"-c", "-d"}}; 
+         EXPECT_TRUE( names.active().at( 0) == "-a") << CASUAL_NAMED_VALUE( names.active());
+         EXPECT_TRUE( names.active().at( 1) == "-b");
+         EXPECT_TRUE( names.deprecated().at( 0) == "-c") << CASUAL_NAMED_VALUE( names.deprecated());
+         EXPECT_TRUE( names.deprecated().at( 1) == "-d");
+      }
+
+   }
+
 
    TEST( argument_option, cardinality)
    {
@@ -42,7 +63,7 @@ namespace casual
 
       } state;
 
-      auto option = argument::Option{ std::tie( state.a), {"-a"}, "description"}( argument::cardinality::one());
+      auto option = argument::Option{ std::tie( state.a), {{"-a"}}, "description"}( argument::cardinality::one());
 
       EXPECT_TRUE( option.cardinality() == argument::cardinality::one());
    }
@@ -58,7 +79,7 @@ namespace casual
 
       } state;
 
-      auto option = argument::Option{ std::tie( state.l, state.s), argument::option::Names{ {"-a"}}, "description"};
+      auto option = argument::Option{ std::tie( state.l, state.s), {{ "-a"}}, "description"};
       EXPECT_TRUE( option == "-a");
       EXPECT_TRUE( option != "-b");
 
@@ -89,7 +110,7 @@ namespace casual
       };
 
 
-      auto option = argument::Option{ callback, argument::option::Names{ {"-a"}}, "description"};
+      auto option = argument::Option{ callback, {{ "-a"}}, "description"};
       std::vector< std::string_view> arguments{ "42", "casual"};
       auto assigned = option.assign( "-a", arguments);
       EXPECT_TRUE( option.usage() == 1);
@@ -122,7 +143,7 @@ namespace casual
 
       State state;
       auto options = std::vector{ 
-         argument::Option{ preemptive( state), { "-a"}, "description"},
+         argument::Option{ preemptive( state), {{ "-a"}}, "description"},
       };
 
       std::vector< std::string_view> arguments{ "-a"};
@@ -162,8 +183,8 @@ namespace casual
 
       State state;
       auto options = std::vector{ 
-         argument::Option{ regular( state), { "-a"}, "regular"},
-         argument::Option{ preemptive( state), { "-b"}, "preemptive"},
+         argument::Option{ regular( state), {{ "-a"}}, "regular"},
+         argument::Option{ preemptive( state), {{ "-b"}}, "preemptive"},
       };
 
       std::vector< std::string_view> arguments{ "-a", "-b"};
@@ -181,9 +202,8 @@ namespace casual
 
       constexpr static auto create = []( auto tie, auto name, std::initializer_list< argument::Option> suboptions = {})
       {
-         return argument::Option{ tie, argument::option::Names{ { name}}, ""}( std::move( suboptions));
+         return argument::Option{ tie, {{ name}}, ""}( std::move( suboptions));
       };
-
 
       struct State
       {

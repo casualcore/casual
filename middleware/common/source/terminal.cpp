@@ -71,7 +71,7 @@ namespace casual
                      return argument::Option( 
                         std::tie( value),
                         trinary_completer(), 
-                        { "--header"}, 
+                        {{ "--header"}}, 
                         string::compose( "set/unset header - if auto, headers are used if tty is bound to stdout (default: ", header_default(), ")"));
                   }
 
@@ -80,7 +80,7 @@ namespace casual
                      return argument::Option( 
                         std::tie( value),
                         trinary_completer(), 
-                        { "--color"},
+                        {{ "--color"}},
                         string::compose( "set/unset color - if auto, colors are used if tty is bound to stdout (default: ", value, ")"));
                   }
 
@@ -89,7 +89,7 @@ namespace casual
                      return argument::Option( 
                         std::tie( value),
                         bool_completer(), 
-                        { "--porcelain"}, 
+                        {{ "--porcelain"}}, 
                         string::compose( "backward compatible, easy to parse output format (default: ", std::boolalpha, value, R"()
 
 Format: `<column1>|<column2>|...|<columnN>`, with no `ws`. 
@@ -134,9 +134,9 @@ Hence, column order can differ between `porcelain` and "regular".
             return { 
                local::option::color( m_color),
                local::option::header( m_header),
-               argument::Option( std::tie( m_precision), { "--precision"}, default_description( "set number of decimal points used for output", m_precision)),
-               argument::Option( std::tie( m_block), local::option::bool_completer(), { "--block"}, default_description( "set/unset blocking - if false return control to user as soon as possible", m_block)),
-               argument::Option( std::tie( m_verbose), local::option::bool_completer(), { "--verbose"}, default_description( "verbose output", m_verbose)),
+               argument::Option( std::tie( m_precision), {{ "--precision"}}, default_description( "set number of decimal points used for output", m_precision)),
+               argument::Option( std::tie( m_block), local::option::bool_completer(), {{ "--block"}}, default_description( "set/unset blocking - if false return control to user as soon as possible", m_block)),
+               argument::Option( std::tie( m_verbose), local::option::bool_completer(), {{ "--verbose"}}, default_description( "verbose output", m_verbose)),
                local::option::porcelain( m_porcelain)
             };
          }

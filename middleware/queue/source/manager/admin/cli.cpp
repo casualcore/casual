@@ -956,14 +956,14 @@ namespace casual
                         {
                            std::cout << legend;
                         },
-                        { key},
+                        {{ key}},
                         string::compose( "list legend for ", key)
                      };
                   };
 
                   return argument::Option{
                      [](){},
-                     { "--legend"},
+                     {{ "--legend"}},
                      R"(provide legend for the output for some of the options
 
 to view legend for --list-queues use casual queue --legend --list-queues, and so on.
@@ -1039,7 +1039,7 @@ The following options has legend:
                      
                      return argument::Option{
                         std::move( invoke),
-                        { "-lqi", "--list-queue-instances"},
+                        {{ "-lqi", "--list-queue-instances"}},
                         R"(list instances for all queues, including external instances)"
                      };
                   }
@@ -1058,7 +1058,7 @@ The following options has legend:
                      
                      return argument::Option{
                         std::move( invoke),
-                        argument::option::Names{ { "-lg", "--list-groups"}, { "-g"}},
+                        {{ "-lg", "--list-groups"}, { "-g"}},
                         "list information of all groups in current domain"
                      };
                   }
@@ -1077,7 +1077,7 @@ The following options has legend:
                      return argument::Option{
                         std::move( invoke),
                         complete::queues,
-                        argument::option::Names{ {  "-lm", "--list-messages"}, { "-m"}},
+                        {{  "-lm", "--list-messages"}, { "-m"}},
                         "list information of all messages of the provided queue"
                      };
                   }
@@ -1111,12 +1111,12 @@ The following options has legend:
 
                      auto option()
                      {
-                        return detail::option( argument::option::Names{{ "-ls", "--list-services"}});
+                        return detail::option( {{ "-ls", "--list-services"}});
                      }
 
                      auto deprecated_option()
                      {
-                        return detail::option( argument::option::Names{ {}, {  "-lfs", "--list-forward-services"}});
+                        return detail::option( { {}, {  "-lfs", "--list-forward-services"}});
                      }
 
                   } // services
@@ -1143,12 +1143,12 @@ The following options has legend:
 
                      auto option()
                      {
-                        return detail::option( argument::option::Names{{ "-lq", "--list-queues"}});
+                        return detail::option( {{ "-lq", "--list-queues"}});
                      }
 
                      auto deprecated_option()
                      {
-                        return detail::option( argument::option::Names{ {}, { "-lfq", "--list-forward-queues"}});
+                        return detail::option( {{}, { "-lfq", "--list-forward-queues"}});
                      }
 
                   } // queues
@@ -1175,12 +1175,12 @@ The following options has legend:
 
                      auto option()
                      {
-                        return detail::option( argument::option::Names{{ "-lg", "--list-groups"}});
+                        return detail::option( {{ "-lg", "--list-groups"}});
                      }
 
                      auto deprecated_option()
                      {
-                        return detail::option( argument::option::Names{ {}, { "-lfg", "--list-forward-groups"}});
+                        return detail::option( {{}, { "-lfg", "--list-forward-groups"}});
                      }
 
                   } // groups
@@ -1256,7 +1256,7 @@ The following options has legend:
                {
                   return argument::Option{
                      [](){},
-                     { "forward"},
+                     {{ "forward"}},
                      R"(subcommand for forward)"
                   }(
                      {
@@ -1304,7 +1304,7 @@ The following options has legend:
                         
                         return argument::Option{
                            std::move( invoke),
-                           { "--list-groups"},
+                           {{ "--list-groups"}},
                            "list information of all fanout groups in current domain"
                         };
                      }
@@ -1345,7 +1345,7 @@ The following options has legend:
                         
                         return argument::Option{
                            std::move( invoke),
-                           { "--list-queues"},
+                           {{ "--list-queues"}},
                            R"(list all fanout destinations in current domain)"};
 
                      }
@@ -1398,7 +1398,7 @@ The following options has legend:
 
                         return argument::Option{
                            std::move( invoke),
-                           { "--list-targets"},
+                           {{ "--list-targets"}},
                            R"(list all fanout targets in current domain)"
                         };
                      }
@@ -1411,7 +1411,7 @@ The following options has legend:
                {
                   return argument::Option{
                      [](){},
-                     { "fanout"},
+                     {{ "fanout"}},
                      R"(subcommand for fanout)"
                   }(
                      {
@@ -1499,7 +1499,7 @@ The following options has legend:
                   return argument::Option{
                      std::move( invoke),
                      complete::queues,
-                     { "-e", "--enqueue"},
+                     {{ "-e", "--enqueue"}},
                      R"(enqueue buffer(s) to a queue from stdin
 
 Assumes a conformant buffer(s)
@@ -1601,7 +1601,7 @@ cat somefile.bin | casual queue --enqueue <queue-name>
                   return argument::Option{
                      std::move( invoke),
                      complete(),
-                     { "-d", "--dequeue"},
+                     {{ "-d", "--dequeue"}},
                      R"(dequeue message from a queue to `casual-pipe`
 
 if id is absent the oldest available message is dequeued. 
@@ -1661,7 +1661,7 @@ casual queue --dequeue <queue> <id> <id> <id> <id> | <some other part in casual-
                            return { "<value>"};
 
                      },
-                     { "--consume"},
+                     {{ "--consume"}},
                       R"(consumes up to `count` messages from the provided `queue` and send it downstream
 
 Example:
@@ -1717,7 +1717,7 @@ casual queue --consume <queue-name> [<count>] | <some other part of casual-pipe>
                   return argument::Option{
                      std::move( invoke),
                      std::move( complete),
-                     { "-p", "--peek"},
+                     {{ "-p", "--peek"}},
                      R"(peeks messages from the give queue and streams them to casual-pipe
 
 Example:
@@ -1803,7 +1803,7 @@ casual queue --peek <queue-name> <id1> <id2> | <some other part of casual-pipe> 
                   return argument::Option{
                      argument::option::one::many( std::move( invoke)),
                      std::move( complete),
-                     { "--attributes"},
+                     {{ "--attributes"}},
                      R"(INCUBATION - adds or mutates queue message attributes on piped messages
 
 @attention INCUBATION - might change during. or in between minor version.
@@ -1835,7 +1835,7 @@ Example:
                   return argument::Option{
                      std::move( invoke),
                      complete::queues,
-                     {  "--restore"},
+                     {{  "--restore"}},
                      R"(restores messages to queue
 
 Messages will be restored to the queue they first was enqueued to (within the same queue-group)
@@ -1878,7 +1878,8 @@ casual queue --restore <queue-name>)"
                         {
                            shared->force = true;
                            return argument::option::invoke::preemptive{};
-                        },  { "--force"}, "force removal of message regardless of state"};
+                        }, 
+                        {{ "--force"}}, "force removal of message regardless of state"};
 
                      constexpr auto description = R"(removes specific messages from a given queue
 
@@ -1887,7 +1888,7 @@ if used with `--force true` messages will be removed regardless of state.)";
                      return argument::Option{
                         std::move( invoke),
                         complete,
-                        {  "--remove-messages"},
+                        {{  "--remove-messages"}},
                         description}( { std::move( flag)});
                   }
                } // remove
@@ -1930,7 +1931,7 @@ if used with `--force true` messages will be removed regardless of state.)";
                   {
                      return argument::Option{
                         [](){},
-                        { "--recover-transactions"},
+                        {{ "--recover-transactions"}},
                         "recover global transactions with --commit or --rollback sub option"
                      }({
                         detail::create_option( Directive::commit, { { "--commit"}, {}}, "recover global transactions with commit"),
@@ -1953,7 +1954,7 @@ if used with `--force true` messages will be removed regardless of state.)";
                   return argument::Option{
                      argument::option::one::many( std::move( invoke)),
                      complete::queues,
-                     {  "--clear"},
+                     {{  "--clear"}},
                      R"(clears all messages from provided queues
 
 Example:
@@ -1977,7 +1978,7 @@ casual queue --clear a b c)"
                   return argument::Option{
                      argument::option::one::many( std::move( invoke)),
                      complete::queues,
-                     { "-mr", "--metric-reset"},
+                     {{ "-mr", "--metric-reset"}},
                      R"(resets metrics for the provided queues
 
 if no queues are provided, metrics for all queues are reset.
@@ -2064,7 +2065,7 @@ casual queue --metric-reset a b)"
 
                   return argument::Option{
                      std::move( invoke),
-                     {  "--information"},
+                     {{  "--information"}},
                      "collect aggregated information about queues in this domain"};
                   }
 
@@ -2110,7 +2111,7 @@ casual queue --metric-reset a b)"
       {
          auto shared = std::make_shared< local::State>();
 
-         return argument::Option{ [](){}, { "queue"}, "queue related administration"}( {
+         return argument::Option{ [](){}, {{ "queue"}}, "queue related administration"}( {
             local::list::queues::option(),
             local::list::zombies::option(),
             local::list::queue::instances::option(),

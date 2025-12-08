@@ -363,15 +363,12 @@ namespace casual
       {
          struct Names
          {
-            inline Names( std::vector< std::string> active, std::vector< std::string> deprecated)
+            inline Names( std::vector< std::string> active, std::vector< std::string> deprecated = {})
                : m_active( std::move( active)), m_deprecated( std::move( deprecated)) 
             {
                if( m_active.empty() && m_deprecated.empty())
                   common::code::raise::error( common::code::casual::invalid_argument, "at least one option 'key' has to be provided");
             }
-
-            inline Names( std::vector< std::string> active) : Names{ std::move( active), {}} 
-            {}
 
             inline friend bool operator == ( const Names& lhs, std::string_view key) 
             { 
@@ -393,32 +390,24 @@ namespace casual
          private:
             std::vector< std::string> m_active;
             std::vector< std::string> m_deprecated;
-
          };
       
       } // option 
 
       struct Option
       {
-         template< detail::concepts::invocable I>
-         Option( I invocable, option::Names names, std::string description)
+         Option( detail::concepts::invocable auto invocable, option::Names names, std::string description)
             : m_names{ std::move( names)}, 
                m_invocable{ Option::create( std::move( invocable))},
                m_description{ std::move( description)}
          {};
 
-         template< detail::concepts::invocable I, detail::concepts::completable C>
-         Option( I invocable, C completer, option::Names names, std::string description)
+         Option( detail::concepts::invocable auto invocable, detail::concepts::completable auto completer, option::Names names, std::string description)
             : m_names{ std::move( names)}, 
                m_invocable{ Option::create( std::move( invocable), std::move( completer))},
                m_description{ std::move( description)}
          {};
 
-         Option( detail::concepts::invocable auto invocable, std::vector< std::string> names, std::string description)
-            : Option{ std::move( invocable), option::Names{ std::move( names)}, std::move( description)} {}
-
-         Option( detail::concepts::invocable auto invocable, detail::concepts::completable auto completer, std::vector< std::string> names, std::string description)
-            : Option{ std::move( invocable), std::move( completer), option::Names{ std::move( names)}, std::move( description)} {}
          
          //! 'construction continuation'. 
          //! @returns this object with cardinality set to the provided `cardinality`.

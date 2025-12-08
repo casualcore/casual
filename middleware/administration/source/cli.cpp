@@ -116,7 +116,7 @@ valid directives:
                   return argument::Option{
                      std::move( invoke),
                      complete,
-                     { "--information"},
+                     {{ "--information"}},
                      description};
                }
 
@@ -140,7 +140,7 @@ valid directives:
                   };
                   return argument::Option{
                      std::move( invoke),
-                     { "--version"},
+                     {{ "--version"}},
                      "display version information"};
                }
             } // version
@@ -178,7 +178,7 @@ valid directives:
 
                      return argument::Option{
                         std::move( invoke),
-                        { "--state-dump"},
+                        {{ "--state-dump"}},
                         "dump state to casual.log for the provided pids, if the pid is able"
                      };
                   }
@@ -208,7 +208,7 @@ valid directives:
                      return argument::Option{
                         std::move( invoke),
                         complete,
-                        { "--log-path"},
+                        {{ "--log-path"}},
                         R"(relocate the log-file for provided pids
 
 Note: only works for 'servers' with a message pump)"
@@ -240,7 +240,7 @@ Note: only works for 'servers' with a message pump)"
                      return argument::Option{
                         std::move( invoke),
                         complete,
-                        { "--log-expression-inclusive"},
+                        {{ "--log-expression-inclusive"}},
                         R"(updates the _inclusive category filter_ (regex) for provided pids
 
 Works the same as the `CASUAL_LOG` variable
@@ -268,7 +268,7 @@ Note: only works for 'servers' with a message pump)"
 
                      return argument::Option{
                         std::move( invoke),
-                        { "--message-count"},
+                        {{ "--message-count"}},
                         R"(lists message count metrics for a given pid
 
 The pid needs to be a casual server)"
@@ -282,7 +282,7 @@ The pid needs to be a casual server)"
                auto options()
                {
                   return argument::Option{
-                     [](){}, { "internal"}, "internal casual stuff for troubleshooting etc..."}( {
+                     [](){}, {{ "internal"}}, "internal casual stuff for troubleshooting etc..."}( {
                         option::state_dump(),
                         option::log_path(),
                         option::log_expression_inclusive(),
@@ -319,7 +319,7 @@ The pid needs to be a casual server)"
 
                      return argument::Option{
                         std::move( invoke),
-                        { "--human-sink"},
+                        {{ "--human-sink"}},
                         R"(INCUBATION - serialize casual pipe messages to human readable form, and in practice sink the message 
 
 @attention INCUBATION - might change during, or in between minor version.
@@ -333,9 +333,10 @@ The pid needs to be a casual server)"
                auto option()
                {
                   return argument::Option{
-                     [](){}, { "pipe"}, "pipe related options"}( { 
-                     options::human_sink()
-                  });
+                     [](){}, {{ "pipe"}}, "pipe related options"}( 
+                     { 
+                        options::human_sink()
+                     }, argument::cardinality::one());
                }
                
             } // pipe

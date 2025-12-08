@@ -25,7 +25,7 @@ namespace casual
       constexpr auto information = R"([deprecated] use `casual buffer --field-from-human` instead)";
 
       argument::parse( information, {
-         argument::Option{ std::tie( format), buffer::admin::cli::detail::format::completion(), { "--format"}, "which format to expect on stdin"}
+         argument::Option{ std::tie( format), buffer::admin::cli::detail::format::completion(), {{ "--format"}}, "which format to expect on stdin"}
       }, argc, argv);
 
       std::cerr << information << '\n';

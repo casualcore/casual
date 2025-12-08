@@ -18,7 +18,7 @@ int main( int argc, const char** argv)
    {
       int return_value = 0;
       casual::argument::parse( "",{ 
-         casual::argument::Option( std::tie( return_value), {"-r"}, "bla")
+         casual::argument::Option( std::tie( return_value), {{ "-r"}}, "bla")
       }, argc, argv);
 
       process::sleep( std::chrono::milliseconds( 100));

@@ -186,7 +186,7 @@ namespace casual
 
       argument::Option options()
       {
-         return argument::Option{ &local::print, local::describe_completion, { "describe"}, R"(service describer
+         return argument::Option{ &local::print, local::describe_completion, {{ "describe"}}, R"(service describer
 
    * service   name of the service to to describe
    * [format]  optional format of the output, if absent a _CLI format_ is used.

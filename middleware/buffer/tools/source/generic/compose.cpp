@@ -31,7 +31,7 @@ namespace casual
                      constexpr auto information = R"([deprecated] use `casual buffer --compose` instead)";
 
                      argument::parse( information, {
-                        argument::Option{ std::tie( type), { "--type"}, "type of the composed buffer"}
+                        argument::Option{ std::tie( type), {{ "--type"}}, "type of the composed buffer"}
                      }, argc, argv);
 
                      std::cerr << information << '\n';

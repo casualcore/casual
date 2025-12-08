@@ -169,7 +169,7 @@ namespace casual
                      std::string file;
 
                      argument::parse( "mockup-string", {
-                        argument::Option{ std::tie( file), { "-c", "--configuration"}, "configuration file"}
+                        argument::Option{ std::tie( file), {{ "-c", "--configuration"}}, "configuration file"}
                      }, argc, argv);
 
                      // transform services and start server

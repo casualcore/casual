@@ -202,16 +202,16 @@ int main( int argc, const char** argv)
                            using namespace argument;
 
                            parse( "builds a resource proxy", {
-                              Option( std::tie( settings.output), { "-o", "--output"}, "name of the resulting resource proxy"),
-                              Option( std::tie( settings.key), { "-k", "--resource-key"}, "key of the resource"),
-                              Option( std::tie( settings.compiler), { "-c", "--compiler"}, "compiler to use"),
+                              Option( std::tie( settings.output), {{ "-o", "--output"}}, "name of the resulting resource proxy"),
+                              Option( std::tie( settings.key), {{ "-k", "--resource-key"}}, "key of the resource"),
+                              Option( std::tie( settings.compiler), {{ "-c", "--compiler"}}, "compiler to use"),
 
-                              Option( std::tie( settings.directives.compile), { "-c", "--compile-directives"}, "additional compile directives"),
-                              Option( std::tie( settings.directives.link), { "-l", "--link-directives"}, "additional link directives"),
+                              Option( std::tie( settings.directives.compile), {{ "-c", "--compile-directives"}}, "additional compile directives"),
+                              Option( std::tie( settings.directives.link), {{ "-l", "--link-directives"}}, "additional link directives"),
 
-                              Option( std::tie( settings.files.system), option::Names( { "--system-configuration"}, {"-p", "--properties-file"}), "path to system configuration file"),
-                              Option( std::tie( settings.verbose), { "-v", "--verbose"}, "verbose output"),
-                              Option( std::tie( settings.keep_source), { "-s", "--keep-source"}, "keep the generated source file")
+                              Option( std::tie( settings.files.system), {{ "--system-configuration"}, { "-p", "--properties-file"}}, "path to system configuration file"),
+                              Option( std::tie( settings.verbose), {{ "-v", "--verbose"}}, "verbose output"),
+                              Option( std::tie( settings.keep_source), {{ "-s", "--keep-source"}}, "keep the generated source file")
                            }, argc, argv);
 
                            if( settings.verbose)

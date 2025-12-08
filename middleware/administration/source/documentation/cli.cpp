@@ -116,7 +116,7 @@ namespace casual
                   std::filesystem::path root;
 
                   argument::parse( "generate cli documentation", {
-                     argument::Option{ std::tie( root), { "--root"}, "root for the generated markdown files"}( argument::cardinality::one())
+                     argument::Option{ std::tie( root), {{ "--root"}}, "root for the generated markdown files"}( argument::cardinality::one())
                   }, argc, argv);
 
                   generate( root);

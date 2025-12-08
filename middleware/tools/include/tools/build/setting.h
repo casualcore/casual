@@ -89,7 +89,12 @@ namespace casual
             CASUAL_SERIALIZE( use_defaults);
          )
 
-         static auto split( std::vector< std::string>& target)
+      };
+
+      namespace mandatory
+      {
+         //! splits values on space and appends to target
+         inline auto split( std::vector< std::string>& target)
          {
             return [&target]( const std::string& value, const std::vector< std::string>& values)
             {
@@ -101,10 +106,7 @@ namespace casual
                common::algorithm::for_each( values, split_append);
             };
          }
-      };
 
-      namespace mandatory
-      {
          std::vector< argument::Option> options( Mandatory& mandatory);
       } // mandatory
 

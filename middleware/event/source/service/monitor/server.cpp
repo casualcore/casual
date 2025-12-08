@@ -151,7 +151,7 @@ namespace casual
 
          {
             argument::parse( "service monitor server",{
-               argument::Option( std::tie( state.database), { "-db", "--database"}, "path to monitor database log")
+               argument::Option( std::tie( state.database), {{ "-db", "--database"}}, "path to monitor database log")
             }, argc, argv);
          }
 

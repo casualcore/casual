@@ -152,9 +152,9 @@ namespace casual
                Settings settings;
 
                argument::parse( "responsible for the logical connection phase to another domain", {
-                  argument::Option{ std::tie( settings.descriptor), { "--descriptor"}, "tcp descriptor"}( argument::cardinality::one()),
-                  argument::Option{ std::tie( settings.ipc), { "--ipc"}, "where to send the completed reply"}( argument::cardinality::one()),
-                  argument::Option{ std::tie( settings.bound), { "--bound"}, "[inbound|outbound] outbound instigate the connections phase, inbound the opposite"}( argument::cardinality::one())
+                  argument::Option{ std::tie( settings.descriptor), {{ "--descriptor"}}, "tcp descriptor"}( argument::cardinality::one()),
+                  argument::Option{ std::tie( settings.ipc), {{ "--ipc"}}, "where to send the completed reply"}( argument::cardinality::one()),
+                  argument::Option{ std::tie( settings.bound), {{ "--bound"}}, "[inbound|outbound] outbound instigate the connections phase, inbound the opposite"}( argument::cardinality::one())
                }, argc, argv);
 
                if( settings.bound == "in")

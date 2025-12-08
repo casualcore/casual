@@ -106,7 +106,7 @@ namespace casual
 
             using namespace casual::argument;
             parse( "queue forward to service", {
-               Option( settings.tie(), {"-f", "--forward"}, "--forward  <queue> <service> [<reply>]")
+               Option( settings.tie(), {{ "-f", "--forward"}}, "--forward  <queue> <service> [<reply>]")
             }, argc, argv);
 
             start( std::move( settings));

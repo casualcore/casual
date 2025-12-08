@@ -23,8 +23,8 @@ namespace casual
                auto build_directives( setting::Mandatory& directive)
                {
                   return argument::Option( 
-                     setting::Mandatory::split( directive.directives), 
-                     argument::option::Names{ { "-f", "--build-directives"}, {"--link-directives"}}, 
+                     mandatory::split( directive.directives), 
+                     { { "-f", "--build-directives"}, {"--link-directives"}}, 
                      "additional compile and link directives")( argument::cardinality::any());
                }
 
@@ -32,25 +32,25 @@ namespace casual
                {
                   return argument::Option( 
                      argument::option::flag( directive.use_defaults), 
-                     { "--no-defaults"}, 
+                     {{ "--no-defaults"}}, 
                      "do not add any default compiler/link directives\n\nuse --build-directives to add your own");
                }
 
                auto source_keep( mandatory::Source& source)
                {
-                  return argument::Option( argument::option::flag( source.keep), {"-k", "--keep"}, "keep the intermediate source file");
+                  return argument::Option( argument::option::flag( source.keep), {{ "-k", "--keep"}}, "keep the intermediate source file");
                }
 
                auto source_file( mandatory::Source& source)
                {
-                  return argument::Option( std::tie( source.file), { "--source-file"}, "name of the intermediate source file");
+                  return argument::Option( std::tie( source.file), {{ "--source-file"}}, "name of the intermediate source file");
                }
 
                auto system_configuration( mandatory::System& system)
                {
                   return argument::Option( 
                      std::tie( system.configuration), 
-                     argument::option::Names( { "--system-configuration"}, {"-p", "--properties-file"}), 
+                     { { "--system-configuration"}, {"-p", "--properties-file"}}, 
                      "path to system configuration file");
                }
 
@@ -69,14 +69,14 @@ namespace casual
          std::vector< argument::Option> options( Mandatory& directive)
          {
             return {
-               argument::Option( std::tie( directive.output), { "-o", "--output"}, "name of binary to be built"),
-               argument::Option( std::tie( directive.compiler), {"-c", "--compiler"}, "compiler to use"),
+               argument::Option( std::tie( directive.output), {{ "-o", "--output"}}, "name of binary to be built"),
+               argument::Option( std::tie( directive.compiler), {{ "-c", "--compiler"}}, "compiler to use"),
                local::option::build_directives( directive),
                local::option::system_configuration( directive.system),
                local::option::no_defaults( directive),
                local::option::source_file( directive.source),
                local::option::source_keep( directive.source),
-               argument::Option( argument::option::flag( directive.verbose), {"-v", "--verbose"}, "verbose output")
+               argument::Option( argument::option::flag( directive.verbose), {{ "-v", "--verbose"}}, "verbose output")
             };
          }
 

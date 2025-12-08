@@ -250,7 +250,7 @@ namespace casual
                   return argument::Option( 
                      std::tie( settings.file),
                      completer,
-                     { "-f", "--file"},
+                     {{ "-f", "--file"}},
                      common::string::compose( "where to log (default: ", settings.file, ")")); 
                }
 
@@ -265,7 +265,7 @@ namespace casual
                   return argument::Option( 
                      std::tie( settings.file),
                      completer,
-                     { "-d", "--delimiter"},
+                     {{ "-d", "--delimiter"}},
                      common::string::compose( "delimiter between columns (default: '", settings.delimiter , "')")); 
                }
 

@@ -108,7 +108,7 @@ namespace casual
 
                   return argument::Option{
                      argument::option::one::many( std::move( invoke)),
-                     { "--validate"},
+                     {{ "--validate"}},
                      R"(validates configuration from supplied glob patterns
 
 On success exit with 0, on error not 0, and message printed to stderr)"
@@ -128,7 +128,7 @@ On success exit with 0, on error not 0, and message printed to stderr)"
 
                   return argument::Option{
                      argument::option::one::many( std::move( invoke)),
-                     { "--normalize"},
+                     {{ "--normalize"}},
                      R"(normalizes the supplied configuration glob pattern to stdout
 
 The format is default yaml, but could be supplied via the --format option)"
@@ -152,7 +152,7 @@ The format is default yaml, but could be supplied via the --format option)"
                   return argument::Option{
                      std::move( invoke),
                      std::move( complete),
-                     { "--format"},
+                     {{ "--format"}},
                      R"(defines what format should be used)"
                   };
                }
@@ -194,7 +194,7 @@ The format is default yaml, but could be supplied via the --format option)"
 
                      return argument::Option{
                         std::move( invoke),
-                        { "--union"},
+                        {{ "--union"}},
                         R"(union of configuration from stdin(lhs) and supplied glob pattern(rhs), outputs to stdout
    rhs has precedence over lhs
                         
@@ -214,7 +214,7 @@ The format is default yaml, but could be supplied via the --format option)"
 
                      return argument::Option{
                         std::move( invoke),
-                        { "--difference"},
+                        {{ "--difference"}},
                         R"(difference of configuration from stdin(lhs) and supplied glob pattern(rhs), outputs to stdout
    lhs has precedence over rhs
                         
@@ -234,7 +234,7 @@ The format is default yaml, but could be supplied via the --format option)"
 
                      return argument::Option{
                         std::move( invoke),
-                        { "--intersection"},
+                        {{ "--intersection"}},
                         R"(intersection of configuration from stdin(lhs) and supplied glob pattern(rhs), outputs to stdout
    lhs has precedence over rhs
                         
@@ -459,7 +459,7 @@ The semantics are similar to http PUT:
                         return argument::Option{ 
                            argument::option::one::many( std::move( invoke)), 
                            completer, 
-                           { "--enable-groups"}, 
+                           {{ "--enable-groups"}}, 
                            R"(INCUBATION enables groups
 Enables groups that provided group names matches.
 
@@ -496,7 +496,7 @@ This effects entities that has memberships to enabled groups
                         return argument::Option{ 
                            argument::option::one::many( std::move( invoke)), 
                            completer, 
-                           { "--disable-groups"}, 
+                           {{ "--disable-groups"}}, 
                            R"(INCUBATION disables groups
 Disables groups that provided group names matches.
 
@@ -556,7 +556,7 @@ Also functionality to normalize, validate and format the configuration.
 )";
                auto shared = std::make_shared< local::State>();
 
-               return argument::Option{ [](){}, { "configuration"}, description}({
+               return argument::Option{ [](){}, {{ "configuration"}}, description}({
                   local::runtime::get(),
                   local::runtime::post(),
                   local::runtime::put(),

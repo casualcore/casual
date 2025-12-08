@@ -101,7 +101,7 @@ namespace casual
                std::string root;
 
                argument::parse( R"(Produces configuration documentation)", {
-                  argument::Option( std::tie( root), { "--root"}, "the root of where documentation will be generated"),
+                  argument::Option( std::tie( root), {{ "--root"}}, "the root of where documentation will be generated"),
                }, argc, argv);
 
                if( root.empty())

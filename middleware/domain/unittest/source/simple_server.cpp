@@ -77,7 +77,7 @@ namespace casual
             Settings settings;
             { 
                casual::argument::parse( "simple server", {
-                  casual::argument::Option( argument::option::flag( settings.terminate), { "--terminate"}, "if set, the server will terminate directly" ), 
+                  casual::argument::Option( argument::option::flag( settings.terminate), {{ "--terminate"}}, "if set, the server will terminate directly" ), 
                }, argc, argv);
             }
 

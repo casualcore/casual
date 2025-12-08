@@ -429,7 +429,7 @@ created
 
                         return argument::Option{ 
                            std::move( invoke), 
-                           { "--list-inbound-groups"}, 
+                           {{ "--list-inbound-groups"}}, 
                            "list all inbound groups"};
                      }
 
@@ -442,7 +442,7 @@ created
 
                         return argument::Option{ 
                            std::move( invoke), 
-                           { "--list-outbound-groups"}, 
+                           {{ "--list-outbound-groups"}}, 
                            "list all outbound groups"};
                      }
                   } // groups
@@ -463,14 +463,14 @@ created
                            {
                               std::cout << legend;
                            },
-                           { key},
+                           {{ key}},
                            string::compose( "list legend for ", key)
                         };
                      };
 
                      return argument::Option{ 
                         [](){},
-                        { "--legend"}, 
+                        {{ "--legend"}}, 
                         R"(show legend for the output of the supplied option
 
 Documentation and description for abbreviations and acronyms used as columns in output
@@ -539,7 +539,7 @@ The following options has legend:
 
       argument::Option options()
       {
-         return argument::Option{ [](){}, { "gateway"}, "gateway related administration"}( {
+         return argument::Option{ [](){}, {{ "gateway"}}, "gateway related administration"}( {
             local::option::list::connections::create(),
             local::option::list::listeners(),
             local::option::list::groups::inbound(),

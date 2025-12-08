@@ -109,7 +109,7 @@ namespace casual
                std::string database{"monitor.db"};
                {
                   argument::parse( "service monitor", {
-                     argument::Option( std::tie( database), { "-db", "--database"}, "path to monitor database log")
+                     argument::Option( std::tie( database), {{ "-db", "--database"}}, "path to monitor database log")
                   }, argc, argv);
                }
 

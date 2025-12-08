@@ -109,9 +109,9 @@ namespace casual
 
                         using namespace casual::argument;
                         parse( description, {
-                           Option( std::tie( settings.server.definition), { "-d", "--definition"}, "path to server definition file")( argument::cardinality::one()),
-                           Option( std::tie( settings.server.definition), { "-o", "--output"}, "output file name - if not provided 'stdout' will be used"),
-                           Option( std::tie( settings.files.system), argument::option::Names( { "--system-configuration"}, {"-p", "--properties-file"}), "path to system configuration file"),
+                           Option( std::tie( settings.server.definition), {{ "-d", "--definition"}}, "path to server definition file")( argument::cardinality::one()),
+                           Option( std::tie( settings.server.definition), {{ "-o", "--output"}}, "output file name - if not provided 'stdout' will be used"),
+                           Option( std::tie( settings.files.system), {{ "--system-configuration"}, { "-p", "--properties-file"}}, "path to system configuration file"),
                         }, argc, argv);
 
                         local::generate( std::move( settings));

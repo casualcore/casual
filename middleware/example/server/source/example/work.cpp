@@ -59,10 +59,10 @@ namespace casual
                };
 
                argument::parse( "Shows a few ways services can be develop", {
-                  argument::Option{ time_value( local::global.startup), {"--startup"}, "startup time"},
-                  argument::Option{ time_value( local::global.sleep), {"--sleep"}, "sleep time"},
-                  argument::Option{ time_value( local::global.work), {"--work"}, "work time"},
-                  argument::Option{ std::tie( local::global.forward), {"--forward"}, "service that casual/example/forward should call"},
+                  argument::Option{ time_value( local::global.startup), {{"--startup"}}, "startup time"},
+                  argument::Option{ time_value( local::global.sleep), {{"--sleep"}}, "sleep time"},
+                  argument::Option{ time_value( local::global.work), {{"--work"}}, "work time"},
+                  argument::Option{ std::tie( local::global.forward), {{"--forward"}}, "service that casual/example/forward should call"},
                }, argc, argv);
 
                if( local::global.startup != common::chronology::duration::zero())

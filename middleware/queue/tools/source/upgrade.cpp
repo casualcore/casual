@@ -210,7 +210,7 @@ INSERT INTO queue
                std::vector< std::string> files;
 
                argument::parse( "upgrades queue-base files to latest version", {
-                  argument::Option{ argument::option::one::many( files), { "-f", "--files"}, "queue-base files to upgrade" }( argument::cardinality::one())
+                  argument::Option{ argument::option::one::many( files), {{ "-f", "--files"}}, "queue-base files to upgrade" }( argument::cardinality::one())
                }, argc, argv);
                
                algorithm::for_each( files, &local::file);

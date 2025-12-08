@@ -30,7 +30,7 @@ namespace casual
                   constexpr auto information = R"([deprecated] use `casual buffer --duplicate` instead)";
 
                   argument::parse( information, {
-                     argument::Option{ std::tie( count), { "--count"}, "number of 'duplications', applied for each buffer"}
+                     argument::Option{ std::tie( count), {{ "--count"}}, "number of 'duplications', applied for each buffer"}
                   }, argc, argv);
 
                   std::cerr << information << '\n';

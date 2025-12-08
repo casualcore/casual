@@ -97,7 +97,7 @@ namespace casual
             {
                argument::parse(
                   R"(Example server)", {
-                  argument::Option{ std::tie( settings.queues), {"--queues"}, "queues that casual/example/{enqueue,dequeue} should use"},
+                  argument::Option{ std::tie( settings.queues), {{"--queues"}}, "queues that casual/example/{enqueue,dequeue} should use"},
                }, argc, argv);
 
                common::log::line( common::log::category::information, "queues: ", settings.queues);

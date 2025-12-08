@@ -68,9 +68,9 @@ namespace casual
       } state;
 
       auto options = std::vector< argument::Option>{ 
-         argument::Option{ std::tie( state.a), { "-a"}, ""},
-         argument::Option{ std::tie( state.b), { "-b"}, ""},
-         argument::Option{ std::tie( state.c), { "-c"}, ""},
+         argument::Option{ std::tie( state.a), {{ "-a"}}, ""},
+         argument::Option{ std::tie( state.b), {{ "-b"}}, ""},
+         argument::Option{ std::tie( state.c), {{ "-c"}}, ""},
       };
 
       {
@@ -119,13 +119,13 @@ namespace casual
       } state;
 
       auto options = std::vector< argument::Option>{ 
-         argument::Option{ std::tie( state.a), { "-a"}, ""}( {     
-            argument::Option{ std::tie( state.b), { "-b"}, ""}( {
-               argument::Option{ std::tie( state.c), { "-c"}, ""},
+         argument::Option{ std::tie( state.a), {{ "-a"}}, ""}( {     
+            argument::Option{ std::tie( state.b), {{ "-b"}}, ""}( {
+               argument::Option{ std::tie( state.c), {{ "-c"}}, ""},
             })
          }),
-         argument::Option{ std::tie( state.d), { "-d"}, ""}( {
-            argument::Option{ std::tie( state.e), { "-e"}, ""}
+         argument::Option{ std::tie( state.d), {{ "-d"}}, ""}( {
+            argument::Option{ std::tie( state.e), {{ "-e"}}, ""}
          })
       };
       
@@ -176,15 +176,15 @@ namespace casual
       } state;
 
       auto options = std::vector< argument::Option>{ 
-         argument::Option{ std::tie( state.a), { "-a"}, ""}( {     
-            argument::Option{ std::tie( state.a1), { "-a1"}, ""},
-            argument::Option{ std::tie( state.a2), { "-a2"}, ""},
+         argument::Option{ std::tie( state.a), {{ "-a"}}, ""}( {     
+            argument::Option{ std::tie( state.a1), {{ "-a1"}}, ""},
+            argument::Option{ std::tie( state.a2), {{ "-a2"}}, ""},
          }, argument::cardinality::one()),
-         argument::Option{ std::tie( state.b), { "-b"}, ""}( {
-            argument::Option{ std::tie( state.b1), { "-b1"}, ""},
-            argument::Option{ std::tie( state.b2), { "-b2"}, ""},
-            argument::Option{ std::tie( state.b3), { "-b3"}, ""},
-            argument::Option{ std::tie( state.b4), { "-b4"}, ""}
+         argument::Option{ std::tie( state.b), {{ "-b"}}, ""}( {
+            argument::Option{ std::tie( state.b1), {{ "-b1"}}, ""},
+            argument::Option{ std::tie( state.b2), {{ "-b2"}}, ""},
+            argument::Option{ std::tie( state.b3), {{ "-b3"}}, ""},
+            argument::Option{ std::tie( state.b4), {{ "-b4"}}, ""}
          }, argument::cardinality::range( 2, 3)),
       };
 
@@ -246,14 +246,14 @@ namespace casual
       } state;
 
       auto options = std::vector< argument::Option>{ 
-         argument::Option{ std::tie( state.a), { "-a"}, ""}( {     
-            argument::Option{ std::tie( state.a1), { "-a1"}, ""}( argument::cardinality::fixed( 2)),
-            argument::Option{ std::tie( state.a2), { "-a2"}, ""}( argument::cardinality::zero_one()),
-            argument::Option{ std::tie( state.a3), { "-a3"}, ""}( argument::cardinality::any()),
+         argument::Option{ std::tie( state.a), {{ "-a"}}, ""}( {     
+            argument::Option{ std::tie( state.a1), {{ "-a1"}}, ""}( argument::cardinality::fixed( 2)),
+            argument::Option{ std::tie( state.a2), {{ "-a2"}}, ""}( argument::cardinality::zero_one()),
+            argument::Option{ std::tie( state.a3), {{ "-a3"}}, ""}( argument::cardinality::any()),
          }, argument::cardinality::fixed( 2)),
-         argument::Option{ std::tie( state.b), { "-b"}, ""}( {
-            argument::Option{ std::tie( state.b1), { "-b1"}, ""},
-            argument::Option{ std::tie( state.b2), { "-b2"}, ""},
+         argument::Option{ std::tie( state.b), {{ "-b"}}, ""}( {
+            argument::Option{ std::tie( state.b1), {{ "-b1"}}, ""},
+            argument::Option{ std::tie( state.b2), {{ "-b2"}}, ""},
          }, argument::cardinality::one()),
       };
 
@@ -304,9 +304,9 @@ namespace casual
       auto options = []( State& state)
       {
          return std::vector< argument::Option>{ 
-            argument::Option{ callback( state), { "-a"}, ""}( {     
-               argument::Option{ argument::option::flag( state.f1), { "-f1"}, ""},
-               argument::Option{ argument::option::flag( state.f2), { "-f2"}, ""}
+            argument::Option{ callback( state), {{ "-a"}}, ""}( {     
+               argument::Option{ argument::option::flag( state.f1), {{ "-f1"}}, ""},
+               argument::Option{ argument::option::flag( state.f2), {{ "-f2"}}, ""}
             })};
       };
       
@@ -353,13 +353,13 @@ namespace casual
       };
 
       auto options = std::vector< argument::Option>{ 
-         argument::Option{ flag, { "-a"}, ""}( {     
-            argument::Option{ flag, { "-b"}, ""}( {
-               argument::Option{ flag, { "-c"}, ""},
+         argument::Option{ flag, {{ "-a"}}, ""}( {     
+            argument::Option{ flag, {{ "-b"}}, ""}( {
+               argument::Option{ flag, {{ "-c"}}, ""},
             })
          }),
-         argument::Option{ flag, { "-d"}, ""}( {
-            argument::Option{ flag, { "-e"}, ""}
+         argument::Option{ flag, {{ "-d"}}, ""}( {
+            argument::Option{ flag, {{ "-e"}}, ""}
          })
       };
 
@@ -395,10 +395,10 @@ namespace casual
       auto flag = [](){};
 
       auto options = std::vector< argument::Option>{ 
-         argument::Option{ callback, { "-a"}, ""}( {     
-            argument::Option{ flag, { "-b"}, ""}
+         argument::Option{ callback, {{ "-a"}}, ""}( {     
+            argument::Option{ flag, {{ "-b"}}, ""}
          }),
-         argument::Option{ callback, { "-c"}, ""}
+         argument::Option{ callback, {{ "-c"}}, ""}
       };
 
       {

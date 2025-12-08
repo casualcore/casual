@@ -466,14 +466,14 @@ namespace casual
                            {
                               shared->all = true;
                               return argument::option::invoke::preemptive{};
-                           },  { "-a", "--all"}, "include hidden services"};
+                           }, {{ "-a", "--all"}}, "include hidden services"};
 
 
                         constexpr auto description = R"(list known services)";
 
                         return argument::Option{ 
                            invoke,
-                           { "-ls", "--list-services"}, 
+                           {{ "-ls", "--list-services"}}, 
                            description}( { std::move( flag)});
                      }
                    } // services
@@ -510,11 +510,11 @@ namespace casual
                         {
                            shared->all = true;
                            return argument::option::invoke::preemptive{};
-                        },  { "-a", "--all"}, "include hidden services"};
+                        },  {{ "-a", "--all"}}, "include hidden services"};
                         
                         return argument::Option{ 
                            invoke,
-                           { "-li", "--list-instances"}, 
+                           {{ "-li", "--list-instances"}}, 
                            "list instances"}( { std::move( flag)});
                      }
                    } // instances
@@ -531,7 +531,7 @@ namespace casual
 
                         return argument::Option{ 
                            invoke,
-                           { "-lr", "--list-routes"}, 
+                           {{ "-lr", "--list-routes"}}, 
                            "list service routes"};
                      }
 
@@ -563,7 +563,7 @@ namespace casual
                      return argument::Option{ 
                         invoke,
                         completer,
-                        { "-mr", "--metric-reset"}, 
+                        {{ "-mr", "--metric-reset"}}, 
                         "reset metrics for provided services, if no services provided, all metrics will be reset"};
                   }
                   
@@ -579,14 +579,14 @@ namespace casual
                            {
                               std::cout << legend;
                            },
-                           { key},
+                           {{ key}},
                            string::compose( "list legend for ", key)
                         };
                      };
 
                      return argument::Option{ 
                         [](){},
-                        { "--legend"}, 
+                        {{ "--legend"}}, 
                          R"(the legend for the supplied option
 
 Documentation and description for abbreviations and acronyms used as columns in output
@@ -679,7 +679,7 @@ The following options has legend:
 
                      return argument::Option{ 
                         invoke,
-                        { "--information"}, 
+                        {{ "--information"}},
                         R"(collect aggregated information about known services)"};
 
                   }
@@ -706,7 +706,7 @@ The following options has legend:
 
                         return argument::Option{ 
                            invoke,
-                           argument::option::Names( {},{ "--list-admin-services"}), 
+                           { {}, { "--list-admin-services"}}, 
                            "@deprecated use --list-services --all"};
                      }
 
@@ -723,7 +723,7 @@ The following options has legend:
 
          argument::Option options()
          {  
-            return argument::Option{ [](){}, { "service"}, "service related administration"}( {
+            return argument::Option{ [](){}, {{ "service"}}, "service related administration"}( {
                local::list::services::option(),
                local::list::instances::option(),
                local::list::routes::option(),

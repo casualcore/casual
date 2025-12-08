@@ -641,7 +641,7 @@ description:
                            auto state = call::state();
                            format::transaction( state.transactions);
                         },
-                        { "-lt", "--list-transactions"},
+                        {{ "-lt", "--list-transactions"}},
                         R"(list current transactions)"
                      };
                   }
@@ -660,7 +660,7 @@ description:
 
                            format::resource_proxy( algorithm::sort( state.resources), branch_count);
                         },
-                        { "-lr", "--list-resources" },
+                        {{ "-lr", "--list-resources"}},
                         R"(list all resources)"
                      };
                   }
@@ -804,7 +804,7 @@ description:
 
                            debug.consume( std::cout);
                         },
-                        { "-lp", "--list-pending" },
+                        {{ "-lp", "--list-pending" }},
                         R"(list pending tasks)"};
                   }
                } // pending
@@ -921,7 +921,7 @@ description:
                {
                   return argument::Option{
                      [](){ terminal::format::pair::print( call());},
-                     { "--information"},
+                     {{ "--information"}},
                      R"(collect aggregated information about transactions in this domain)"
                   };
                }
@@ -963,7 +963,7 @@ description:
 
                   return argument::Option{
                      std::move( invoke),
-                     { "--begin"},
+                     {{ "--begin"}},
                      R"(creates a 'single' transaction directive
 
 * creates a new transaction and send it downstream.
@@ -1062,7 +1062,7 @@ description:
 
                   return argument::Option{
                      std::move( invoke),
-                     { "--rollback"},
+                     {{ "--rollback"}},
                      R"(tries to rollback the upstream transaction
 
 * The current transaction will be rolled back.
@@ -1115,7 +1115,7 @@ description:
 
                   return argument::Option{
                      std::move( invoke),
-                     { "--commit"},
+                     {{ "--commit"}},
                         R"(tries to commit the upstream transaction
 
 * The current transaction will be committed (if error from upstream -> rollback)
@@ -1139,14 +1139,14 @@ description:
                         {
                            std::cout << legend;
                         },
-                        { key},
+                        {{ key}},
                         string::compose( "list legend for ", key)
                      };
                   };
 
                   auto list_resource_instances = argument::Option{ 
                         [](){},
-                        { "--list-resource-instances"},
+                        {{ "--list-resource-instances"}},
                         R"(the legends for list resource instances suboptions
 
 The following suboptions has legend:
@@ -1159,7 +1159,7 @@ The following suboptions has legend:
 
                   return argument::Option{
                      [](){},
-                     { "--legend"},
+                     {{ "--legend"}},
                      R"(the legend for the supplied option
 
 Documentation and description for abbreviations and acronyms used as columns in output
@@ -1180,7 +1180,7 @@ The following options has legend:
 
       argument::Option options()
       {
-         return argument::Option{ [](){}, { "transaction"}, "transaction related administration"}( {
+         return argument::Option{ [](){}, {{ "transaction"}}, "transaction related administration"}( {
             local::list::transactions::option(),
             local::list::resources::option(),
             local::list::resource::instances::option(),

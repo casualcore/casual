@@ -30,7 +30,7 @@ namespace casual
 
             {
                argument::parse( information, {
-                  argument::Option( std::tie( format), { "--format"}, "which format to transform to")
+                  argument::Option( std::tie( format), {{ "--format"}}, "which format to transform to")
                }, argc, argv);
             }
 

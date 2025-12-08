@@ -48,7 +48,7 @@ namespace casual
          return argument::Option{
             std::move( invoke),
             std::move( formats),
-            { "--state"},
+            {{ "--state"}},
             "prints state in the provided format to stdout"
          };
       }

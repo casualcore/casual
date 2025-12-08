@@ -47,7 +47,7 @@ namespace casual
                {
                   std::vector< std::string> tables;
                   argument::parse( "generates a field definition header file", {
-                     argument::Option{ std::tie( tables), { "--tables"}, R"(field table paths to generate from
+                     argument::Option{ std::tie( tables), {{ "--tables"}}, R"(field table paths to generate from
 
 if not provided, environment variable CASUAL_FIELD_TABLE will be used.
 )"}

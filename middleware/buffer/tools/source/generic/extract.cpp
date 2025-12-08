@@ -35,7 +35,7 @@ namespace casual
                      constexpr auto information = R"([deprecated] use `casual buffer --extract` instead)";
 
                      argument::parse( information, {
-                        argument::Option{ argument::option::flag( print_type), { "--print-type"}, "prints the type of the buffer(s) to stderr"}
+                        argument::Option{ argument::option::flag( print_type), {{ "--print-type"}}, "prints the type of the buffer(s) to stderr"}
                      }, argc, argv);
 
                      terminal::output::directive().verbose( print_type);

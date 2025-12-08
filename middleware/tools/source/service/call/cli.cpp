@@ -487,7 +487,7 @@ from a dequeue
             return [message]( bool) { std::cerr << message << '\n';};
          };
 
-         return argument::Option{ invoked, { "call"}, R"(generic service call
+         return argument::Option{ invoked, {{ "call"}}, R"(generic service call
 
 Reads buffer(s) from stdin and call the provided service, prints the reply buffer(s) to stdout.
 Assumes that the input buffer to be in a conformant format, ie, created by casual.
@@ -496,13 +496,13 @@ Errors will be printed to stderr
 @note: part of casual-pipe
 )"
             }( {
-               argument::Option( std::tie( shared->service), local::complete::service, { "-s", "--service"}, "service to call"),
-               argument::Option( std::tie( shared->iterations), { "--iterations"}, "number of iterations (default: 1) - this could be helpful for testing load"),
-               argument::Option{ std::move( example), { "--examples"}, "prints several examples of how casual call can be used"},
+               argument::Option( std::tie( shared->service), local::complete::service, {{ "-s", "--service"}}, "service to call"),
+               argument::Option( std::tie( shared->iterations), {{ "--iterations"}}, "number of iterations (default: 1) - this could be helpful for testing load"),
+               argument::Option{ std::move( example), {{ "--examples"}}, "prints several examples of how casual call can be used"},
 
                // deprecated
-               argument::Option( deprecated( asynchronous_information), argument::option::Names( {}, { "--asynchronous"}), asynchronous_information),
-               argument::Option( deprecated( transaction_information), argument::option::Names( {}, { "--transaction"}), transaction_information),
+               argument::Option( deprecated( asynchronous_information), {{}, { "--asynchronous"}}, asynchronous_information),
+               argument::Option( deprecated( transaction_information), {{}, { "--transaction"}}, transaction_information),
          });
 
       }

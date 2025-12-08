@@ -189,16 +189,16 @@ namespace casual
             };
 
             argument::parse( "mockup rm", {
-               argument::Option( parse_result( state.result.open), { "--open"}, ""),
-               argument::Option( parse_result( state.result.close), { "--close"}, ""),
-               argument::Option( parse_result( state.result.start), { "--start"}, ""),
-               argument::Option( parse_result( state.result.end), { "--end"}, ""),
-               argument::Option( parse_result( state.result.prepare), { "--prepare"}, ""),
-               argument::Option( parse_result( state.result.commit), { "--commit"}, ""),
-               argument::Option( parse_result( state.result.rollback), { "--rollback"}, ""),
-               argument::Option( sleep_option( state.sleep_prepare), { "--sleep-prepare"}, ""),
-               argument::Option( sleep_option( state.sleep_commit), { "--sleep-commit"}, ""),
-               argument::Option( sleep_option( state.sleep_rollback), { "--sleep-rollback"}, "")
+               argument::Option( parse_result( state.result.open), {{ "--open"}}, ""),
+               argument::Option( parse_result( state.result.close), {{ "--close"}}, ""),
+               argument::Option( parse_result( state.result.start), {{ "--start"}}, ""),
+               argument::Option( parse_result( state.result.end), {{ "--end"}}, ""),
+               argument::Option( parse_result( state.result.prepare), {{ "--prepare"}}, ""),
+               argument::Option( parse_result( state.result.commit), {{ "--commit"}}, ""),
+               argument::Option( parse_result( state.result.rollback), {{ "--rollback"}}, ""),
+               argument::Option( sleep_option( state.sleep_prepare), {{ "--sleep-prepare"}}, ""),
+               argument::Option( sleep_option( state.sleep_commit), {{ "--sleep-commit"}}, ""),
+               argument::Option( sleep_option( state.sleep_rollback), {{ "--sleep-rollback"}}, "")
             }, common::string::split( openinfo));
          }
          catch( ...)

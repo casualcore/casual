@@ -81,7 +81,7 @@ namespace casual
 
                      return argument::Option{
                         std::move( invoke),
-                        { "-lr", "--list-reservations"},
+                        {{ "-lr", "--list-reservations"}},
                         "list information of files currently reserved"
                      };
                   }
@@ -136,7 +136,7 @@ namespace casual
                         return argument::Option{
                            detail::invoke( manager::admin::model::recovery::Directive::commit),
                            detail::complete(),
-                           { "--commit"},
+                           {{ "--commit"}},
                            "recover global transactions with commit"
                         };
                      }
@@ -149,7 +149,7 @@ namespace casual
                         return argument::Option{
                            detail::invoke( manager::admin::model::recovery::Directive::rollback),
                            detail::complete(),
-                           { "--rollback"},
+                           {{ "--rollback"}},
                            "recover global transactions with rollback"
                         };
                      }
@@ -159,7 +159,7 @@ namespace casual
                   {
                      return argument::Option{
                         [](){},
-                        { "--recover-transactions"},
+                        {{ "--recover-transactions"}},
                         "recover global transactions with --commit or --rollback sub option"
                      }({
                         commit::option(),
@@ -177,7 +177,7 @@ namespace casual
       argument::Option options()
       {
          return argument::Option
-         { [](){}, { "file"}, "file related administration"}
+         { [](){}, {{ "file"}}, "file related administration"}
          ({
             local::list::reservations::option(),
             local::assets::recovery::option(),
