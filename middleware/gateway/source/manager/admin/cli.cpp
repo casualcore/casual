@@ -418,36 +418,97 @@ created
                         "list all listeners"};
                   }
 
-                  namespace groups
-                  {
-                     auto inbound()
-                     {
-                        auto invoke = []()
-                        {
-                           format::groups::inbound( call::state().inbound.groups);
-                        };
-
-                        return argument::Option{ 
-                           std::move( invoke), 
-                           {{ "--list-inbound-groups"}}, 
-                           "list all inbound groups"};
-                     }
-
-                     auto outbound()
-                     {
-                        auto invoke = []()
-                        {
-                           format::groups::outbound( call::state().outbound.groups);
-                        };
-
-                        return argument::Option{ 
-                           std::move( invoke), 
-                           {{ "--list-outbound-groups"}}, 
-                           "list all outbound groups"};
-                     }
-                  } // groups
-
                } // list
+
+               namespace outbound
+               {
+                  namespace list::groups
+                  {
+                     namespace detail
+                     {
+                        auto option( argument::option::Names names)
+                        {
+                           auto invoke = []()
+                           {
+                              format::groups::outbound( call::state().outbound.groups);
+                           };
+
+                           return argument::Option{ 
+                              std::move( invoke), 
+                              std::move( names), 
+                              "list all outbound groups"};
+                        }
+                     } // detail
+
+                     auto option()
+                     {
+                        return detail::option( {{ "-lg", "--list-groups"}});
+                     }
+                     
+                  } // list::groups
+                  
+                  auto option()
+                  {
+                     return argument::Option{ 
+                        [](){}, 
+                        {{ "outbound"}}, 
+                        "outbound gateway related options"}
+                        ({
+                           list::groups::option()
+                        }, argument::cardinality::one());
+                  }
+
+                  auto deprecated_list_groups()
+                  {
+                     return list::groups::detail::option( { {}, { "--list-outbound-groups"}});
+                  }
+
+               } // outbound
+
+               namespace inbound
+               {
+                  namespace list::groups
+                  {
+                     namespace detail
+                     {
+                        auto option( argument::option::Names names)
+                        {
+                           auto invoke = []()
+                           {
+                              format::groups::inbound( call::state().inbound.groups);
+                           };
+
+                           return argument::Option{ 
+                              std::move( invoke), 
+                              std::move( names), 
+                              "list all inbound groups"};
+                        }
+                     } // detail
+
+                     auto option()
+                     {
+                        return detail::option( {{ "-lg", "--list-groups"}});
+                     }
+                     
+                  } // list::groups
+
+                  auto option()
+                  {
+                     return argument::Option{ 
+                        [](){}, 
+                        {{ "inbound"}}, 
+                        "inbound gateway related options"}
+                        ({
+                           list::groups::option()
+                        }, argument::cardinality::one());
+                  }
+
+                  auto deprecated_list_groups()
+                  {
+                     return list::groups::detail::option( { {}, { "--list-inbound-groups"}});
+                  }
+                  
+               } // inbound
 
                namespace legend
                {
@@ -542,15 +603,17 @@ The following options has legend:
          return argument::Option{ [](){}, {{ "gateway"}}, "gateway related administration"}( {
             local::option::list::connections::create(),
             local::option::list::listeners(),
-            local::option::list::groups::inbound(),
-            local::option::list::groups::outbound(),
+            local::option::inbound::option(),
+            local::option::outbound::option(),
             local::option::legend::create(),
             casual::cli::state::option( &local::call::state),
             
             // removed... TODO: remove in 2.0
             local::option::removed::list::resource::services(),
             local::option::removed::list::resource::queues(),
-            local::option::removed::rediscover() 
+            local::option::removed::rediscover(),
+            local::option::outbound::deprecated_list_groups(),
+            local::option::inbound::deprecated_list_groups()
          });
 
       }
