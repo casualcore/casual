@@ -46,7 +46,6 @@ namespace casual
                {
                   common::message::service::lookup::discard::Request discard{ common::process::handle()};
                   discard.correlation = reply.correlation;
-                  discard.requested = service;
                   discard.reply = false;
                   common::communication::device::blocking::send( local::ipc::manager(), discard);
                }

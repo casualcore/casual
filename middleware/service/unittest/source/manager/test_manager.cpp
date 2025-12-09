@@ -1175,7 +1175,6 @@ domain:
          {
             common::message::service::lookup::discard::Request message{ common::process::handle()};
             message.reply = true;
-            message.requested = "a";
             message.correlation = correlation;
             return message;
          };
@@ -1211,7 +1210,6 @@ domain:
          {
             common::message::service::lookup::discard::Request message{ common::process::handle()};
             message.reply = true;
-            message.requested = "a";
             message.correlation = correlation;
             return message;
          };

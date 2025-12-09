@@ -318,7 +318,6 @@ namespace casual
                         request.correlation = message.correlation;
                         request.execution = message.execution;
                         request.reply = false;
-                        request.requested = shared->message.service.name;
 
                         state.multiplex.send( ipc::manager::service(), request);
                      }
@@ -439,7 +438,6 @@ namespace casual
                         request.correlation = message.correlation;
                         request.execution = message.execution;
                         request.reply = false;
-                        request.requested = shared->message.service.name;
 
                         state.multiplex.send( ipc::manager::service(), request);
                      }
