@@ -1,6 +1,12 @@
 # Changelog
 This is the changelog for `casual` and all changes are listed in this document.
 
+## [1.8.7] - 2025-12-09
+
+### Fixes
+- http: inbound discards service lookup on all error paths ([#647](https://github.com/casualcore/casual/issues/647))
+
+
 ## [1.8.6] - 2025-11-21
 
 ### Fixes
