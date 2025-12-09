@@ -115,6 +115,45 @@ domain:
 
       }
 
+      TEST( http_inbound_call, call_echo__missing_content_type___expect_exception__reservation_not_done)
+      {
+         unittest::Trace trace;
+
+         auto domain = local::domain();
+
+         constexpr std::string_view json = R"(
+{
+   "a" : 42  
+}
+)";
+         // request with no content-type header
+         auto request = [&json]()
+         {
+            call::Request result;
+            result.service = "casual/example/echo";
+            algorithm::copy( binary::span::make( json), result.payload.body);
+            return result; 
+         };
+
+         EXPECT_CODE( local::wait( call::Context{ call::Directive::service, request()}), http::code::bad_request);
+
+         // expect no reservation to be done
+         {
+            // we will get a reservation for the .casual/service/state service, but this is done with our
+            // normal inbound-device. call::Context uses its own inbound-device -> Hence we can filter out state reservation
+            auto normal_inbound = []( auto& reservation)
+            {
+               return reservation.caller.ipc == communication::ipc::inbound::ipc();
+            };
+
+            auto state = casual::service::unittest::state();
+
+            EXPECT_TRUE( std::ranges::all_of( state.reservations, normal_inbound)) << CASUAL_NAMED_VALUE( state.reservations);
+
+         }
+          
+      }
+
       TEST( http_inbound_call, call_non_exixting_service)
       {
          unittest::Trace trace;

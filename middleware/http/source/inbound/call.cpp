@@ -84,6 +84,14 @@ namespace casual
                   return communication::device::blocking::send( communication::instance::outbound::service::manager::device(), lookup);
                }
 
+               auto lookup_discard( const communication::ipc::inbound::Device& ipc, const strong::correlation::id& correlation)
+               {
+                  message::service::lookup::discard::Request request{ local::handle( ipc)};
+                  request.correlation = correlation;
+                  request.reply = false;
+                  communication::device::blocking::send( communication::instance::outbound::service::manager::device(), request);
+               }
+
                void request( const communication::ipc::inbound::Device& ipc, message::service::lookup::Reply lookup, message::service::call::callee::Request request)
                {
                   switch( lookup.state)
@@ -111,13 +119,32 @@ namespace casual
             struct basic_caller
             {
                basic_caller( communication::ipc::inbound::Device ipc, Request request)
-                  : correlation{ send::lookup( ipc, request.service)}, ipc{ std::move( ipc)}, request{ Policy::transform( std::move( request))}
+                  :  m_ipc{ std::move( ipc)}, 
+                     m_request{ Policy::transform( std::move( request))}, 
+                     m_correlation{ send::lookup( m_ipc, m_request->service.name)}
                {}
 
-               ~basic_caller() = default;
+               ~basic_caller()
+               {
+                  // if we still got request, the lookup request is still in flight -> discard it
+                  if( m_request)
+                     send::lookup_discard( m_ipc, m_correlation);
+               }
 
-               basic_caller( basic_caller&&) noexcept = default;
-               basic_caller& operator = ( basic_caller&&) noexcept = default;
+               basic_caller( basic_caller&& other) noexcept
+                  : m_ipc{ std::move( other.m_ipc)},
+                     m_request{ std::exchange( other.m_request, {})},
+                     m_correlation{ other.m_correlation}
+                  {}
+
+               basic_caller& operator = ( basic_caller&& other) noexcept
+               {
+                  m_ipc = std::move( other.m_ipc);
+                  m_request = std::exchange( other.m_request, std::move( m_request));
+                  m_correlation = other.m_correlation;
+                  return *this;
+               }
+
 
                std::optional< Reply> operator() ()
                {
@@ -126,16 +153,16 @@ namespace casual
                   try
                   {
 
-                     if( request)
+                     if( m_request)
                      {
-                        // lookup request is in flight
-                        if( auto reply = communication::device::non::blocking::receive< message::service::lookup::Reply>( ipc, correlation))
-                           local::send::request( ipc, std::move( *reply), std::exchange( request, {}).value());
+                        // lookup request is in flight, if we get a reply, we can send the service call request
+                        if( auto reply = communication::device::non::blocking::receive< message::service::lookup::Reply>( m_ipc, m_correlation))
+                           local::send::request( m_ipc, std::move( *reply), std::exchange( m_request, {}).value());
                      }
                      else 
                      {
                         // service call is in flight
-                        if( auto reply = communication::device::non::blocking::receive< message::service::call::Reply>( ipc, correlation))
+                        if( auto reply = communication::device::non::blocking::receive< message::service::call::Reply>( m_ipc, m_correlation))
                            return Policy::transform( std::move( *reply));
                      }
 
@@ -148,9 +175,10 @@ namespace casual
                   }
                }
 
-               strong::correlation::id correlation;
-               communication::ipc::inbound::Device ipc;
-               std::optional< message::service::call::callee::Request> request;
+            private:
+               communication::ipc::inbound::Device m_ipc;
+               std::optional< message::service::call::callee::Request> m_request;
+               strong::correlation::id m_correlation;
             };
 
             namespace policy
@@ -161,7 +189,8 @@ namespace casual
                   {
                      message::service::call::callee::Request result;
                      result.parent.service = request.url;
-                     
+                     result.service.name = request.service;
+
                      // extract execution and span from the traceparent header
                      std::tie( result.execution, result.parent.span) = extract::header::trace( request.payload.header);
 
@@ -223,6 +252,7 @@ namespace casual
 
                      // we parent service to propagate the request line
                      result.parent.service = request.request_line;
+                     result.service.name = request.service;
 
                      // this is forward semantics, so we always set buffer type to http/body
                      result.buffer.type = common::buffer::type::http;
