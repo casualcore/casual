@@ -265,22 +265,7 @@ namespace casual
                   }
                }
 
-               constexpr std::string_view transactions_legend = R"(
-global:
-   global transaction id
-#branches:
-   number of branches in the transaction
-owner:
-   owner of the transaction, if any
-stage:
-   current stage of the transaction
-known:
-   the time point this TM knows about the transaction
-deadline:
-   the deadline of the transaction, if any
-resources:
-   the resources involved in the transaction, as a comma separated list of resource ids
-)";
+
 
                auto resource_proxy( auto&& resources, const std::map< common::strong::resource::id, platform::size::type>& branch_count)
                {
@@ -389,37 +374,6 @@ resources:
                   }
                }
 
-               constexpr auto resource_proxy_legend = R"(
-name:
-   name of the resource-proxy
-id: 
-   id of the resource proxy. `L-XX` if local and `E-XX` if _external_
-key:
-   the configured `key` of the resource
-openinfo:
-   configured openinfo for the resource
-closeinfo:
-   configured closeinfo for the resource
-#B:
-   number of branches currently associated with the resource-proxy
-invoked:
-   number of invocations to the resource-proxy
-min:
-   minimum-time - the minimum roundtrip time to the resource-proxy (in seconds)
-max:
-   maximum-time - the maximum roundtrip time to the resource-proxy (in seconds)
-avg:
-   average-time - the average roundtrip time to the resource-proxy (in seconds)
-P:
-   Pending - total number of pending request, over time.
-PAT:
-   Pending-Average-Time - the average time request has waited for a resource-proxy (in seconds)
-   This only includes pending requests.
-#:
-   number of instances
-)";
-
-
                auto internal_instances( auto&& instances)
                {
                   auto format_pid = []( const admin::model::resource::Instance& value) 
@@ -489,31 +443,6 @@ PAT:
                   );
                }
 
-               constexpr std::string_view internal_instances_legend = R"(
-id:
-   id of the instance
-pid:
-   process id of the instance
-ipc:
-   ipc of the instance
-invoked:
-   number of invocations to the instance
-min:
-   minimum-time - the minimum roundtrip time to the instance (in seconds)
-max:
-   maximum-time - the maximum roundtrip time to the instance (in seconds)
-avg:
-   average-time - the average roundtrip time to the instance (in seconds)
-rm-invoked:
-   number of invocations to the resource
-rm-min:
-   minimum-time - the minimum roundtrip time to the resource (in seconds)
-rm-max:
-   maximum-time - the maximum roundtrip time to the resource (in seconds)
-rm-avg:
-   average-time - the average roundtrip time to the resource (in seconds)
-)";
-
 
                auto external_instances( auto&& instances)
                {
@@ -540,20 +469,6 @@ rm-avg:
                         common::terminal::format::column( "ipc", format_ipc)
                      );
                }
-
-               constexpr std::string_view external_instances_legend = R"(
-id:
-   id of the instance
-alias:
-   alias of the instance
-pid:
-   process id of the instance
-ipc:
-   ipc of the instance
-description:
-   description of the instance, if any. If the instance is a gateway outbound
-   this will hold the name of the other domain.
-)";
 
                auto instances( auto&& instances)
                {
@@ -611,21 +526,7 @@ description:
                   }
                }
 
-               constexpr std::string_view instances_legend = R"(
-id:
-   id of the instance
-alias:
-   alias of the instance
-state:
-   state of the instance, one of: unknown, spawned, idle, busy, shutdown, external
-pid:
-   process id of the instance
-ipc:
-   ipc of the instance
-description:
-   description of the instance, if any. If the instance is a gateway outbound
-   this will hold the name of the other domain.
-)";
+
 
             } // format
 
@@ -633,6 +534,24 @@ description:
             {
                namespace transactions
                {
+                  constexpr std::string_view legend = R"(
+output columns:
+   global:
+      global transaction id
+   #branches:
+      number of branches in the transaction
+   owner:
+      owner of the transaction, if any
+   stage:
+      current stage of the transaction
+   known:
+      the time point this TM knows about the transaction
+   deadline:
+      the deadline of the transaction, if any
+   resources:
+      the resources involved in the transaction, as a comma separated list of resource ids
+)";
+
                   auto option()
                   {
                      return argument::Option{
@@ -642,13 +561,45 @@ description:
                            format::transaction( state.transactions);
                         },
                         {{ "-lt", "--list-transactions"}},
-                        R"(list current transactions)"
+                        { "list current transactions", legend}
                      };
                   }
                } // transactions
 
                namespace resources
                {
+                  constexpr auto legend = R"(
+output columns:
+   name:
+      name of the resource-proxy
+   id: 
+      id of the resource proxy. `L-XX` if local and `E-XX` if _external_
+   key:
+      the configured `key` of the resource
+   openinfo:
+      configured openinfo for the resource
+   closeinfo:
+      configured closeinfo for the resource
+   #B:
+      number of branches currently associated with the resource-proxy
+   invoked:
+      number of invocations to the resource-proxy
+   min:
+      minimum-time - the minimum roundtrip time to the resource-proxy (in seconds)
+   max:
+      maximum-time - the maximum roundtrip time to the resource-proxy (in seconds)
+   avg:
+      average-time - the average roundtrip time to the resource-proxy (in seconds)
+   P:
+      Pending - total number of pending request, over time.
+   PAT:
+      Pending-Average-Time - the average time request has waited for a resource-proxy (in seconds)
+      This only includes pending requests.
+   #:
+      number of instances
+)";
+
+
                   auto option()
                   {
                      return argument::Option{
@@ -661,7 +612,7 @@ description:
                            format::resource_proxy( algorithm::sort( state.resources), branch_count);
                         },
                         {{ "-lr", "--list-resources"}},
-                        R"(list all resources)"
+                        { "list all resources", legend}
                      };
                   }
                   
@@ -708,6 +659,65 @@ description:
 
                   auto option()
                   {
+
+                     constexpr std::string_view instances_legend = R"(
+output columns:
+   id:
+      id of the instance
+   alias:
+      alias of the instance
+   state:
+      state of the instance, one of: unknown, spawned, idle, busy, shutdown, external
+   pid:
+      process id of the instance
+   ipc:
+      ipc of the instance
+   description:
+      description of the instance, if any. If the instance is a gateway outbound
+      this will hold the name of the other domain.
+)";
+
+                     constexpr std::string_view internal_instances_legend = R"(
+output columns:
+   id:
+      id of the instance
+   pid:
+      process id of the instance
+   ipc:
+      ipc of the instance
+   invoked:
+      number of invocations to the instance
+   min:
+      minimum-time - the minimum roundtrip time to the instance (in seconds)
+   max:
+      maximum-time - the maximum roundtrip time to the instance (in seconds)
+   avg:
+      average-time - the average roundtrip time to the instance (in seconds)
+   rm-invoked:
+      number of invocations to the resource
+   rm-min:
+      minimum-time - the minimum roundtrip time to the resource (in seconds)
+   rm-max:
+      maximum-time - the maximum roundtrip time to the resource (in seconds)
+   rm-avg:
+      average-time - the average roundtrip time to the resource (in seconds)
+)";
+
+                     constexpr std::string_view external_instances_legend = R"(
+output columns:
+   id:
+      id of the instance
+   alias:
+      alias of the instance
+   pid:
+      process id of the instance
+   ipc:
+      ipc of the instance
+   description:
+      description of the instance, if any. If the instance is a gateway outbound
+      this will hold the name of the other domain.
+)";
+
                      struct Shared
                      {
                         Flag flag = Flag::none;
@@ -734,7 +744,7 @@ description:
                         }
                      };
 
-                     auto create_suboption = [ shared]( Flag flag, std::vector< std::string> names, std::string description)
+                     auto create_suboption = [ shared]( Flag flag, std::vector< std::string> names, std::string description, std::string_view legend)
                      {  
                         return argument::Option{
                            [ flag, shared]() 
@@ -744,7 +754,7 @@ description:
                               return argument::option::invoke::preemptive{};
                            },
                            std::move( names),
-                           std::move( description)
+                           { std::move( description), legend}
                         };
                      };
 
@@ -753,9 +763,9 @@ description:
                         argument::option::Names{ { "-lri", "--list-resource-instances"}, { "-li", "--list-instances"}},
                         R"(list resource instances)"
                      }({
-                        create_suboption( Flag::all, { "-a", "--all"}, "list both internal and external resource instances (default)"),
-                        create_suboption( Flag::internal, { "-i", "--internal"}, "list internal resource instances"),
-                        create_suboption( Flag::external, { "-e", "--external"}, "list external resource instances")
+                        create_suboption( Flag::all, { "-a", "--all"}, "list both internal and external resource instances (default)", instances_legend),
+                        create_suboption( Flag::internal, { "-i", "--internal"}, "list internal resource instances", internal_instances_legend),
+                        create_suboption( Flag::external, { "-e", "--external"}, "list external resource instances", external_instances_legend)
                      });
                   }
 
@@ -812,6 +822,7 @@ description:
 
             namespace scale::resource::proxies
             {
+               
                auto option()
                {
                   auto invoke = []( std::vector< std::tuple< std::string, int>> values)
@@ -1127,54 +1138,6 @@ description:
                }
 
             } // commit
-
-            namespace legend
-            {
-               auto option()
-               {
-
-                  static constexpr auto legend_option = [](  std::string key, std::string_view legend)
-                  {
-                     return argument::Option{ [ key, legend]()
-                        {
-                           std::cout << legend;
-                        },
-                        {{ key}},
-                        string::compose( "list legend for ", key)
-                     };
-                  };
-
-                  auto list_resource_instances = argument::Option{ 
-                        [](){},
-                        {{ "--list-resource-instances"}},
-                        R"(the legends for list resource instances suboptions
-
-The following suboptions has legend:
-)"
-                     }({
-                        legend_option( "--all", local::format::instances_legend),
-                        legend_option( "--internal", local::format::internal_instances_legend),
-                        legend_option( "--external", local::format::external_instances_legend)
-                     });
-
-                  return argument::Option{
-                     [](){},
-                     {{ "--legend"}},
-                     R"(the legend for the supplied option
-
-Documentation and description for abbreviations and acronyms used as columns in output
-
-The following options has legend:
-)"
-                  }({
-                     legend_option( "--list-resources", local::format::resource_proxy_legend),
-                     legend_option( "--list-transactions", local::format::transactions_legend),
-                     std::move( list_resource_instances),
-                  });
-               }
-
-            } // legend
-
          } // <unnamed>
       } // local
 
@@ -1189,7 +1152,6 @@ The following options has legend:
             local::rollback::option(),
             local::scale::resource::proxies::option(),
             local::list::pending::option(),
-            local::legend::option(),
             local::information::option(),
             casual::cli::state::option( &local::call::state),
             local::list::deprecated::internal::instances::option(),

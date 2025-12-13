@@ -87,7 +87,9 @@ namespace casual
                { completer( test, argument)} -> casual::concepts::any_of< std::string, std::vector< std::string>>;
             };
 
-            
+            template< typename T>
+            concept description_like = casual::concepts::string::like< T> || std::is_convertible_v< T, std::string> || std::is_same_v< T, std::string_view>;
+
          } // concepts
 
          namespace value
@@ -355,6 +357,7 @@ namespace casual
             static std::vector< std::string> help_names();
 
             static Option help_option( std::vector< std::string> names);
+
          };
 
       } // detail
@@ -391,18 +394,33 @@ namespace casual
             std::vector< std::string> m_active;
             std::vector< std::string> m_deprecated;
          };
+
+         struct Description
+         {
+            Description( detail::concepts::description_like auto brief, detail::concepts::description_like auto extended)
+               : brief{ std::move( brief)}, extended{ std::move( extended)}
+            {}
+
+            Description( detail::concepts::description_like auto brief)
+               : brief{ std::move( brief)}
+            {}
+
+            std::string brief;
+            std::string extended;
+         };
+
       
       } // option 
 
       struct Option
       {
-         Option( detail::concepts::invocable auto invocable, option::Names names, std::string description)
+         Option( detail::concepts::invocable auto invocable, option::Names names, option::Description description)
             : m_names{ std::move( names)}, 
                m_invocable{ Option::create( std::move( invocable))},
                m_description{ std::move( description)}
          {};
 
-         Option( detail::concepts::invocable auto invocable, detail::concepts::completable auto completer, option::Names names, std::string description)
+         Option( detail::concepts::invocable auto invocable, detail::concepts::completable auto completer, option::Names names, option::Description description)
             : m_names{ std::move( names)}, 
                m_invocable{ Option::create( std::move( invocable), std::move( completer))},
                m_description{ std::move( description)}
@@ -475,6 +493,8 @@ namespace casual
          {
             std::vector< Option> options;
             Cardinality cardinality = cardinality::any();
+
+            explicit inline operator bool () const { return ! options.empty(); }
          };
 
          struct Interface
@@ -534,16 +554,13 @@ namespace casual
             return std::make_shared< model_type>( std::move( invocable), std::move( completer));
          }
 
-
-
          option::Names m_names;
          std::shared_ptr< Interface> m_invocable;
          // the option cardinality
          Cardinality m_cardinality = cardinality::zero_one();
          Suboptions m_suboptions;
          platform::size::type m_usage{};
-         std::string m_description;
-
+         option::Description m_description;
       };
 
       enum struct Outcome : short
@@ -552,6 +569,7 @@ namespace casual
          completion,
          help,
       };
+
 
       template< typename P>
       struct basic_parse
@@ -586,19 +604,22 @@ namespace casual
             if( auto found = common::algorithm::find( arguments, reserved::name::completion))
             {
                // rotate away the <completion> token
-               common::algorithm::rotate( arguments, found);
-               detail::complete( options, range_type{ arguments}.subspan( 1));
+               auto end = std::shift_left( std::begin( found), std::end( found), 1);
+               
+               detail::complete( options, { std::begin( arguments), end});
                return Outcome::completion;
             }
-
+            // always add help option
             options.push_back( policy_type::help_option( policy_type::help_names()));
             auto& help = options.back();
 
             // special treatment for _help_
             if( auto found = common::algorithm::find( arguments, help))
             {
-               common::algorithm::rotate( arguments, found);
-               policy_type::help( description, options, range_type{ arguments}.subspan( 1));
+               // rotate away the found help token
+               auto end = std::shift_left( std::begin( found), std::end( found), 1);
+
+               policy_type::help( description, options, { std::begin( arguments), end});
                return Outcome::help;
             }
 

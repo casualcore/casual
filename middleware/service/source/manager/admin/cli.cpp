@@ -402,6 +402,7 @@ namespace casual
                   namespace services
                   {
                      constexpr auto legend = R"(
+output columns:
    name:
       the name of the service
    category:
@@ -474,7 +475,7 @@ namespace casual
                         return argument::Option{ 
                            invoke,
                            {{ "-ls", "--list-services"}}, 
-                           description}( { std::move( flag)});
+                           { description, legend}}( { std::move( flag)});
                      }
                    } // services
 
@@ -569,34 +570,6 @@ namespace casual
                   
                } // metric::reset
 
-               namespace legend
-               {
-                  auto option()
-                  {
-                     auto legend_option = [](  std::string key, std::string_view legend)
-                     {
-                        return argument::Option{ [ key, legend]()
-                           {
-                              std::cout << legend;
-                           },
-                           {{ key}},
-                           string::compose( "list legend for ", key)
-                        };
-                     };
-
-                     return argument::Option{ 
-                        [](){},
-                        {{ "--legend"}}, 
-                         R"(the legend for the supplied option
-
-Documentation and description for abbreviations and acronyms used as columns in output
-
-The following options has legend:
-)"
-                     }( { legend_option( "--list-services", list::services::legend)});
-                  }
-                  
-               } // legend
 
                namespace information
                {
@@ -728,7 +701,6 @@ The following options has legend:
                local::list::instances::option(),
                local::list::routes::option(),
                local::metric::reset::option(),
-               local::legend::option(),
                local::information::option(),
                casual::cli::state::option( &api::state),
                local::deprecated::admin_services::option(),

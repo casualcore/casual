@@ -61,12 +61,11 @@ domain:
 
       } // local
 
-      TEST( cli_gateway, list_connections_legend)
+      TEST( cli_gateway, extended_help_list_connections)
       {
          common::unittest::Trace trace;
          
-         auto capture = administration::unittest::cli::command::execute( "casual gateway --legend --list-connections");
-
+         auto capture = administration::unittest::cli::command::execute( "casual --help gateway --list-connections");
          EXPECT_TRUE( capture.standard.out.size() > 30) << CASUAL_NAMED_VALUE( capture);
       }
 

@@ -402,60 +402,7 @@ namespace casual
                } // list
 
                
-               namespace ping
-               {
-                  void invoke( std::vector< std::string> aliases)
-                  {
-                     // make sure we set precision and such for cout.
-                     terminal::format::ostream::scope scope{ std::cout};
 
-                     auto state = local::call::state();
-
-                     auto servers = std::get< 0>( algorithm::intersection( state.servers, aliases, []( auto& l, auto& r){ return l.alias == r;}));
-                     
-                     auto ping_server = []( auto& server)
-                     {
-                        auto ping_instance = [&server]( auto& instance)
-                        {
-                           std::cout << terminal::color::yellow << server.alias;
-                           std::cout << " " << instance.handle.ipc  << " ";
-
-                           auto start = platform::time::clock::type::now();
-                           auto pid = communication::instance::ping( instance.handle.ipc).pid;
-                           auto end = platform::time::clock::type::now();
-
-                           using second = std::chrono::duration< double>;
-                           std::cout << terminal::color::yellow << pid << " ";
-                           std::cout << terminal::color::blue << std::chrono::duration_cast< second>( end - start).count() << '\n';
-                        };
-
-                        algorithm::for_each( server.instances, ping_instance);
-                     };
-                     algorithm::for_each( servers, ping_server);
-                  }
-
-                  auto complete() 
-                  {
-                     return []( bool help, auto values) -> std::vector< std::string>
-                     {
-                        if( help)
-                           return { "<alias>"};
-
-                        auto state = local::call::state();
-
-                        return algorithm::transform( 
-                           algorithm::filter( state.servers, []( auto& server){ return ! server.instances.empty();}), 
-                           []( auto& server){ return server.alias;});
-                     };
-                  }
-
-                  constexpr auto description = R"(ping all instances of the provided server alias
-)";
-
-                  constexpr auto legend = R"(
-<alias> <ipc> <pid> <time>
-)"; 
-               } // ping
 
                namespace global
                {
@@ -737,6 +684,7 @@ With supplied configuration files, in the form of glob patterns.
                   namespace process
                   {
                      constexpr std::string_view legend = R"(
+output columns:
    alias:
       the configured alias, or the binary name (potentially with postfix to make it unique)
    CI:
@@ -769,10 +717,8 @@ With supplied configuration files, in the form of glob patterns.
                      return argument::Option{
                         std::move( invoke), 
                         {{ "-ls", "--list-servers"}},
-                        R"(list all servers)"};
+                        { "list all servers", process::legend}};
                   }
-
-                  constexpr auto servers_legend = process::legend;
 
                   auto executables()
                   {
@@ -786,10 +732,8 @@ With supplied configuration files, in the form of glob patterns.
                      return argument::Option{
                         std::move( invoke), 
                         {{ "-le", "--list-executables"}},
-                        R"(list all executables)"};
+                        { "list all executables", process::legend}};
                   }
-
-                  constexpr auto executables_legend = process::legend;
 
 
                   namespace instances 
@@ -1065,6 +1009,67 @@ note: some aliases are unrestartable
                   } // restart
                } // restart
 
+               namespace ping
+               {
+
+                  constexpr std::string_view legend = R"(
+output columns:
+   <alias> <ipc> <pid> <time>
+)"; 
+
+                  auto option()
+                  {
+                     auto invoke = []( std::vector< std::string> aliases)
+                     {
+                        // make sure we set precision and such for cout.
+                        terminal::format::ostream::scope scope{ std::cout};
+
+                        auto state = local::call::state();
+
+                        auto servers = std::get< 0>( algorithm::intersection( state.servers, aliases, []( auto& l, auto& r){ return l.alias == r;}));
+                        
+                        auto ping_server = []( auto& server)
+                        {
+                           auto ping_instance = [&server]( auto& instance)
+                           {
+                              std::cout << terminal::color::yellow << server.alias;
+                              std::cout << " " << instance.handle.ipc  << " ";
+
+                              auto start = platform::time::clock::type::now();
+                              auto pid = communication::instance::ping( instance.handle.ipc).pid;
+                              auto end = platform::time::clock::type::now();
+
+                              using second = std::chrono::duration< double>;
+                              std::cout << terminal::color::yellow << pid << " ";
+                              std::cout << terminal::color::blue << std::chrono::duration_cast< second>( end - start).count() << '\n';
+                           };
+
+                           algorithm::for_each( server.instances, ping_instance);
+                        };
+                        algorithm::for_each( servers, ping_server);
+                     };
+
+                     auto complete = []( bool help, auto values) -> std::vector< std::string>
+                     {
+                        if( help)
+                           return { "<alias>"};
+
+                        auto state = local::call::state();
+
+                        return algorithm::transform( 
+                           algorithm::filter( state.servers, []( auto& server){ return ! server.instances.empty();}), 
+                           []( auto& server){ return server.alias;});
+                     };
+
+                     return argument::Option{
+                        argument::option::one::many( std::move( invoke)),
+                        std::move( complete),
+                        {{ "--ping"}},
+                        { "ping all instances of the provided server alias", legend}};
+                  }
+
+               } // ping
+
                namespace log
                {
                   struct Type 
@@ -1263,38 +1268,6 @@ use sub-options --set and --unset to set/unset environment variables for the dom
 
                } // environment 
 
-
-               auto legend()
-               {
-
-                  auto legend_option = []( std::string key, std::string_view legend)
-                  {
-                     return argument::Option{ [ key, legend]()
-                        {
-                           std::cout << legend;
-                        },
-                        {{ key}},
-                        string::compose( "list legend for ", key)
-                     };
-                  };
-                                    
-
-                  return argument::Option{
-                     [](){},
-                     {{ "--legend"}},
-                     R"(the legend for the supplied option
-
-Documentation and description for abbreviations and acronyms used as columns in output
-
-The following options has legend:
-)"
-                  }({
-                     legend_option( "--list-servers", option::list::servers_legend),
-                     legend_option( "--list-executables", option::list::executables_legend),
-                     legend_option( "--ping", action::ping::legend),
-                  });
-               }
-
             } // option
          } // <unnamed>
       } // local
@@ -1314,10 +1287,9 @@ The following options has legend:
                local::option::boot::create(),
                local::option::shutdown(),
                local::option::environment::create(),
-            
-               argument::Option( argument::option::one::many( &local::action::ping::invoke), local::action::ping::complete(), {{ "--ping"}}, local::action::ping::description),
+         
+               local::option::ping::option(),
                argument::Option( &local::action::global::state::invoke, local::action::global::state::complete(), {{ "--instance-global-state"}}, local::action::global::state::description),
-               local::option::legend(),
                argument::Option( &local::action::information::invoke, {{ "--information"}}, local::action::information::description),
                casual::cli::state::option( &local::call::state),
                local::option::log::reopen(),

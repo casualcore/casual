@@ -246,6 +246,64 @@ namespace casual
 
    }
    
+   TEST( argument_parse, help_extended)
+   {
+      unittest::Trace trace;
+
+      constexpr std::string_view extended = R"(
+foo:
+   This is foo's extended description
+bar:
+   This is bar's extended description
+   on multiple lines
+)";
+
+      auto options = std::vector{
+         argument::Option{ [](){}, {{ "-a"}}, ""}( {
+            argument::Option{ [](){}, {{ "-b"}}, ""}( {
+               argument::Option{ [](){}, {{ "-c"}}, { "description for -c", extended}}
+            })
+         })
+      };
+
+      {
+         std::ostringstream out;
+         auto guard = common::unittest::capture::standard::out( out);
+         EXPECT_TRUE( argument::parse( "", options, { "--help", "-a", "-b"}) == argument::Outcome::help);
+
+         constexpr std::string_view expected = R"(-b [0..1]
+
+   SUB OPTIONS:
+
+      -c [0..1]
+           description for -c
+
+)";
+         EXPECT_TRUE( out.str() == expected) << out.str() << "\n-----\n" << expected;
+      }
+
+      {
+         std::ostringstream out;
+         auto guard = common::unittest::capture::standard::out( out);
+         EXPECT_TRUE( argument::parse( "", options, { "--help", "-a", "-b", "-c"}) == argument::Outcome::help);
+
+         constexpr std::string_view expected = R"(-c [0..1]
+     description for -c
+
+     foo:
+        This is foo's extended description
+     bar:
+        This is bar's extended description
+        on multiple lines
+
+)";
+
+         EXPECT_TRUE( out.str() == expected) << out.str() << "\n-----\n" << expected;
+      }
+
+
+   }
+
    
    TEST( argument_parse, suboption_cardinality)
    {
@@ -304,5 +362,7 @@ namespace casual
          EXPECT_TRUE( argument::parse( "", options, arguments) == argument::Outcome::parsed);
       }
    }
+
+
 
 } // casual

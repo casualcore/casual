@@ -217,12 +217,12 @@ d34f921bcf8f43c486284bcc15d66439  3              -  involved  2025-08-12T12:47:2
          ASSERT_TRUE( tx_commit() == TX_OK);
       }
 
-      TEST( cli_transaction, legend)
+      TEST( cli_transaction, extended_help)
       {
          auto a = local::cli::domain();
 
          {
-            const auto capture = administration::unittest::cli::command::execute( R"(casual transaction --legend --list-resources)");
+            const auto capture = administration::unittest::cli::command::execute( R"(casual transaction --help --list-resources)");
 
             using namespace std::literals;
 
@@ -234,7 +234,7 @@ d34f921bcf8f43c486284bcc15d66439  3              -  involved  2025-08-12T12:47:2
          }
 
          {
-            const auto capture = administration::unittest::cli::command::execute( R"(casual transaction --legend --list-transactions)");
+            const auto capture = administration::unittest::cli::command::execute( R"(casual transaction --list-transactions --help)");
             using namespace std::literals;
             // check some legend specific strings
             EXPECT_TRUE( algorithm::search( capture.standard.out, "global:"sv));

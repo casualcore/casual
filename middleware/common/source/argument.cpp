@@ -15,6 +15,7 @@
 namespace casual
 {
    using namespace common;
+   using namespace std::literals;
 
    namespace argument
    {
@@ -241,6 +242,11 @@ namespace casual
                   return option.satisfied_min();
                };
 
+               auto is_pure_flag = []( const auto& option)
+               {
+                  return option.pure_flag();
+               };
+
             } // filter
 
             namespace validate
@@ -292,10 +298,7 @@ namespace casual
                template< typename... Ts>
                constexpr void output( platform::size::type indent, std::format_string< Ts...> format, Ts&&... ts)
                {
-                  // std::string space( indent, ' ');
-                  // std::print( "{}", space);
-                  // we can't capture stdout right now. We need to use ostream to be able to unittest
-                  //std::print( format, std::forward< Ts>( ts)...);
+                  // we don't have access to std::print( ... ) on some platforms yet...
                   std::string out( indent, ' ');
                   std::format_to( std::back_inserter( out), format, std::forward< Ts>( ts)...);
                   std::cout << out;
@@ -309,13 +312,21 @@ namespace casual
 
                void description( std::string_view description, platform::size::type indent)
                {
-                  for( auto line : string::split( description, '\n'))
-                     output( indent, "{}\n", line);
+                  // remove trailing newlines, to normalize output (same distance between options)
+                  while( ! description.empty() && description.back() == '\n')
+                     description.remove_suffix( 1);
+
+                  // remove leading newlines, to normalize output (same distance between options)
+                  while( ! description.empty() && description.front() == '\n')
+                     description.remove_prefix( 1);
+
+                  for( auto line : std::views::split( description, "\n"sv))
+                     output( indent, "{}\n", std::string_view{line});
                }
 
-               void print( std::span< const Option> options, platform::size::type indent, std::optional< int> depth);
+               void print( std::span< const Option> options, platform::size::type indent, std::optional< int> depth, const Option* parent = nullptr);
                
-               void print( const Option& option, platform::size::type indent, std::optional< int> depth)
+               void print( const Option& option, platform::size::type indent, std::optional< int> depth, const Option* parent = nullptr)
                {
                   if( depth)
                      *depth -= 1;
@@ -331,10 +342,22 @@ namespace casual
                      output( "  ({}) [{}]", string::join( information, ", "), format_value_cardinality( option.value_cardinality()));
 
                   output( "\n");
-                  description( option.description(), indent + 5);
+                  description( option.description().brief, indent + 5);
                   output( "\n");
 
-                  if( ! option.suboptions().options.empty())
+                  // should we print extended help information?
+                  if( std::ranges::all_of( option.suboptions().options, filter::is_pure_flag))
+                  {
+                     // fi we have extended information, and we got no parent (traversed parent)
+                     // we know that the user asked for help on this specific option.
+                     if( ! std::empty( option.description().extended)  && ! parent)
+                     {
+                        description( option.description().extended, indent + 5);
+                        output( "\n");
+                     }
+                  }
+                  
+                  if( option.suboptions())
                   {
                      if( depth && *depth <= 0)
                         return;
@@ -346,14 +369,15 @@ namespace casual
                      else
                         output( indent + indent_increment, "SUB OPTIONS:\n\n");
 
-                     help::print( option.suboptions().options, indent + ( indent_increment * 2), depth);
+                     help::print( option.suboptions().options, indent + ( indent_increment * 2), depth, &option);
                   }
+     
                }
 
-               void print( std::span< const Option> options, platform::size::type indent, std::optional< int> depth)
+               void print( std::span< const Option> options, platform::size::type indent, std::optional< int> depth, const Option* parent)
                {
                   for( auto& option : options)
-                     print( option, indent, depth);
+                     print( option, indent, depth, parent);
                }
 
 
@@ -546,6 +570,9 @@ namespace casual
 
          void Policy::help( std::string_view description, std::span< const Option> options, range_type arguments)
          {
+            Trace trace{ "argument::detail::Policy::help"};
+            log::debug( "arguments: ", arguments);
+
             local::help::print( description, options, arguments);
          }
 
@@ -560,15 +587,16 @@ namespace casual
 
             auto key = names.back();
 
-            return Option{
-               std::move( invoke),
-               std::move( names),
-               string::compose( R"(shows this help information
+            auto description = string::compose( R"(shows this help information
                
 Use )", key , R"( <option> to see selected details on <option>
 You can also use more precise help for deeply nested options
-`)", key, R"( -a -b -c -d -e`
-)")
+`)", key, " -a -b -c -d -e`");
+
+            return Option{
+               std::move( invoke),
+               std::move( names),
+               std::move( description)
             };
 
          }
@@ -577,11 +605,9 @@ You can also use more precise help for deeply nested options
          {
             return { std::string{ reserved::name::help}};
          }
-         
+    
 
       } // detail
-
       
-   } // argument
-   
+   } // argument   
 } // casual

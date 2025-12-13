@@ -762,11 +762,12 @@ namespace casual
 
             } // transform
 
-            namespace legend
+            namespace list
             {
-               namespace list
+               namespace queues
                {
-                  constexpr auto queues = R"(legend: list queues 
+                  constexpr auto legend = R"(
+output columns:
    name:
       name of the queue
    group:
@@ -795,199 +796,6 @@ namespace casual
       the timestamp of the newest message on the queue, or has been on the queue if the queue is empty.
 )";
 
-               constexpr auto messages =  R"(legend: list messages 
-   id:
-      the id of the message
-   S:
-      the state of the message
-         E: enqueued - not visible until commit
-         C: committed - visible
-         D: dequeued - not visible, removed on commit, back to state 'committed' if rolled back
-   size:
-      the size of the message
-   trid:
-      transaction trid
-   rd:
-      number of 'redeliver' (dequeues that has been rollbacked)
-   type:
-      type of the payload
-   reply:
-      the reply queue
-   available:
-      when the message is available for dequeue
-   timestamp:
-      when the message was enqueued
-      
-)";
-                  namespace forward
-                  {
-
-                     constexpr auto groups = R"(legend: list-forward-groups
-   alias:
-      alias of the group
-   pid:
-      the pid of the process that is running the group
-   S:
-      the state of the group
-         E: enabled
-         D: disabled
-   services:
-      number of forward-services running within the group
-   queues:
-      number of forward-queues running within the group
-   commits:
-      accumulated number of commits for all forwards within the group
-   rollbacks:
-      accumulated number of rollbacks for all forwards within the group
-   last:
-      the last time one of the forwards did something
-)";
-
-                     constexpr auto services = R"(legend: list-forward-services
-   alias:
-      alias of the forward
-   group:
-      which group the forward is hosted on
-   source:
-      the queue to dequeue from
-   target:
-      the service to call
-   reply:
-      the queue to put the reply to, if any
-   delay:
-      delay of the reply message, duration until the message will be available for others to consume
-   S:
-      the state of the forward
-         E: enabled
-         D: disabled
-   CI:
-      configured 'instances'
-   I:
-      running 'instances'
-   commits:
-      number of commits the forward has performed
-   rollbacks:
-      number of rollbacks the forward has performed
-   last:
-      the last time the forward did something
-)";
-
-                     constexpr auto queues = R"(legend: list-forward-queues
-   alias:
-      alias of the forward
-   group:
-      which group the forward is hosted on
-   source:
-      the queue to dequeue from
-   target:
-      the queue to enqueue to
-   delay:
-      delay of the enqueued message, duration until the message will be available for others to consume
-   S:
-      the state of the forward
-         E: enabled
-         D: disabled
-   CI:
-      configured 'instances'
-   I:
-      running 'instances'
-   commits:
-      number of commits the forward has performed
-   rollbacks:
-      number of rollbacks the forward has performed
-   last:
-      the last time the forward did something
-)";
-
-                  } // forward
-
-                  namespace fanout
-                  {
-                     constexpr auto groups = R"(legend: list-fanout-groups
-   alias:
-      alias of the fanout group
-   pid:
-      the pid of the process that is running the fanout group
-   queues:
-      number of queue fanouts attached to the fanout group
-   commits:
-      accumulated number of commits for all queues within the fanout group
-   rollbacks:
-      accumulated number of rollbacks for all queues within the fanout group
-   last:
-      the last time one of the group queues committed or rollbacked a message
-)";
-
-
-                     constexpr auto queues = R"(legend: list-fanout-queues
-   alias:
-      alias of the fanout queue
-   group:
-      which fanout group the queue is attached to
-   source:
-      the queue to dequeue from
-   T#:
-      number of target queues attached to the fanout queue
-   S:
-      the state of the fanout queue
-         E: enabled
-         D: disabled
-   CI:
-      configured 'instances'
-   I:
-      running 'instances'
-   commits:
-      number of commits the fanout queue has performed
-   rollbacks:
-      number of rollbacks the fanout queue has performed
-   last:
-      the last time the fanout queue did something
-)";
-
-                  } // fanout
-
-               } // list 
-
-               auto option()
-               {
-                  auto legend_option = [](  std::string key, std::string_view legend)
-                  {
-                     return argument::Option{ [ key, legend]()
-                        {
-                           std::cout << legend;
-                        },
-                        {{ key}},
-                        string::compose( "list legend for ", key)
-                     };
-                  };
-
-                  return argument::Option{
-                     [](){},
-                     {{ "--legend"}},
-                     R"(provide legend for the output for some of the options
-
-to view legend for --list-queues use casual queue --legend --list-queues, and so on.
-
-The following options has legend:
-)"
-                  }({
-                     legend_option( "--list-queues", legend::list::queues),
-                     legend_option( "--list-messages", legend::list::messages),
-                     legend_option( "--list-forward-groups", legend::list::forward::groups),
-                     legend_option( "--list-forward-services", legend::list::forward::services),
-                     legend_option( "--list-forward-queues", legend::list::forward::queues),
-                     legend_option( "--list-fanout-groups", legend::list::fanout::groups),
-                     legend_option( "--list-fanout-queues", legend::list::fanout::queues)
-                  });
-               }
-
-            } // legend 
-
-
-            namespace list
-            {
-               namespace queues
-               {
                   auto option()
                   {
                      auto invoke = []()
@@ -1000,7 +808,7 @@ The following options has legend:
                      return argument::Option{
                         std::move( invoke),
                         argument::option::Names{ { "-lq", "--list-queues"}, { "-q"}},
-                        R"(list information of all queues in current domain)"
+                        { "list information of all queues in current domain", legend}
                      };
                   }
                   
@@ -1066,6 +874,31 @@ The following options has legend:
 
                namespace messages
                {
+                  constexpr auto legend =  R"(
+output columns:
+   id:
+      the id of the message
+   S:
+      the state of the message
+         E: enqueued - not visible until commit
+         C: committed - visible
+         D: dequeued - not visible, removed on commit, back to state 'committed' if rolled back
+   size:
+      the size of the message
+   trid:
+      transaction trid
+   rd:
+      number of 'redeliver' (dequeues that has been rollbacked)
+   type:
+      type of the payload
+   reply:
+      the reply queue
+   available:
+      when the message is available for dequeue
+   timestamp:
+      when the message was enqueued
+      
+)";
                   auto option()
                   {
                      auto invoke = []( const std::string& queue)
@@ -1078,7 +911,7 @@ The following options has legend:
                         std::move( invoke),
                         complete::queues,
                         {{  "-lm", "--list-messages"}, { "-m"}},
-                        "list information of all messages of the provided queue"
+                        { "list information of all messages of the provided queue", legend}
                      };
                   }
                } // messages
@@ -1093,7 +926,7 @@ The following options has legend:
                   {
                      namespace detail
                      {                     
-                        auto option( argument::option::Names names)
+                        auto option( argument::option::Names names, argument::option::Description description)
                         {
                            auto invoke = []()
                            {
@@ -1104,19 +937,51 @@ The following options has legend:
                            return argument::Option{
                               std::move( invoke),
                               std::move( names), 
-                              "list information of all service forwards"
+                              std::move( description)
                            };
                         }
                      } // detail
 
+                     // "list information of all service forwards"
+
+                    constexpr auto legend = R"(
+output columns:
+   alias:
+      alias of the forward
+   group:
+      which group the forward is hosted on
+   source:
+      the queue to dequeue from
+   target:
+      the service to call
+   reply:
+      the queue to put the reply to, if any
+   delay:
+      delay of the reply message, duration until the message will be available for others to consume
+   S:
+      the state of the forward
+         E: enabled
+         D: disabled
+   CI:
+      configured 'instances'
+   I:
+      running 'instances'
+   commits:
+      number of commits the forward has performed
+   rollbacks:
+      number of rollbacks the forward has performed
+   last:
+      the last time the forward did something
+)";
+
                      auto option()
                      {
-                        return detail::option( {{ "-ls", "--list-services"}});
+                        return detail::option( {{ "-ls", "--list-services"}}, { "list information of all service forwards", legend});
                      }
 
                      auto deprecated_option()
                      {
-                        return detail::option( { {}, {  "-lfs", "--list-forward-services"}});
+                        return detail::option( { {}, {  "-lfs", "--list-forward-services"}}, { "@deprecated: use `casual queue forward --list-services` instead"});
                      }
 
                   } // services
@@ -1125,7 +990,7 @@ The following options has legend:
                   {
                      namespace detail
                      {                     
-                        auto option( argument::option::Names names)
+                        auto option( argument::option::Names names, argument::option::Description description)
                         {
                            auto invoke = []()
                            {
@@ -1135,20 +1000,49 @@ The following options has legend:
                            
                            return argument::Option{
                               std::move( invoke),
-                              std::move( names), 
-                              "list information of all queue forwards"
+                              std::move( names),
+                              std::move( description)
                            };
                         }
                      } // detail
 
+
+                     constexpr auto legend = R"(
+output columns:
+   alias:
+      alias of the forward
+   group:
+      which group the forward is hosted on
+   source:
+      the queue to dequeue from
+   target:
+      the queue to enqueue to
+   delay:
+      delay of the enqueued message, duration until the message will be available for others to consume
+   S:
+      the state of the forward
+         E: enabled
+         D: disabled
+   CI:
+      configured 'instances'
+   I:
+      running 'instances'
+   commits:
+      number of commits the forward has performed
+   rollbacks:
+      number of rollbacks the forward has performed
+   last:
+      the last time the forward did something
+)";
+
                      auto option()
                      {
-                        return detail::option( {{ "-lq", "--list-queues"}});
+                        return detail::option( {{ "-lq", "--list-queues"}}, { "list information of all queue forwards", legend});
                      }
 
                      auto deprecated_option()
                      {
-                        return detail::option( {{}, { "-lfq", "--list-forward-queues"}});
+                        return detail::option( {{}, { "-lfq", "--list-forward-queues"}}, { "@deprecated: use `casual queue forward --list-queues` instead"});
                      }
 
                   } // queues
@@ -1157,7 +1051,7 @@ The following options has legend:
                   {
                      namespace detail
                      {                     
-                        auto option( argument::option::Names names)
+                        auto option( argument::option::Names names, argument::option::Description description)
                         {
                            auto invoke = []()
                            {
@@ -1168,19 +1062,41 @@ The following options has legend:
                            return argument::Option{
                               std::move( invoke),
                               std::move( names), //{ "-lfg", "--list-forward-groups"},
-                              "list (aggregated) information of forward groups"
+                              std::move( description)
                            };
                         }
                      } // detail
 
+                     constexpr auto legend = R"(
+output columns:
+   alias:
+      alias of the group
+   pid:
+      the pid of the process that is running the group
+   S:
+      the state of the group
+         E: enabled
+         D: disabled
+   services:
+      number of forward-services running within the group
+   queues:
+      number of forward-queues running within the group
+   commits:
+      accumulated number of commits for all forwards within the group
+   rollbacks:
+      accumulated number of rollbacks for all forwards within the group
+   last:
+      the last time one of the forwards did something
+)";
+
                      auto option()
                      {
-                        return detail::option( {{ "-lg", "--list-groups"}});
+                        return detail::option( {{ "-lg", "--list-groups"}}, { "list (aggregated) information of forward groups", legend });
                      }
 
                      auto deprecated_option()
                      {
-                        return detail::option( {{}, { "-lfg", "--list-forward-groups"}});
+                        return detail::option( {{}, { "-lfg", "--list-forward-groups"}}, { "@deprecated: use `casual queue forward --list-groups` instead"});
                      }
 
                   } // groups
@@ -1294,6 +1210,22 @@ The following options has legend:
                         
                      } // detail
 
+                     constexpr auto legend = R"(
+output columns:
+   alias:
+      alias of the fanout group
+   pid:
+      the pid of the process that is running the fanout group
+   queues:
+      number of queue fanouts attached to the fanout group
+   commits:
+      accumulated number of commits for all queues within the fanout group
+   rollbacks:
+      accumulated number of rollbacks for all queues within the fanout group
+   last:
+      the last time one of the group queues committed or rollbacked a message
+)";
+
                      auto option()
                      {
                         auto invoke = []()
@@ -1305,7 +1237,7 @@ The following options has legend:
                         return argument::Option{
                            std::move( invoke),
                            {{ "--list-groups"}},
-                           "list information of all fanout groups in current domain"
+                           { "list information of all fanout groups in current domain", legend}
                         };
                      }
                      
@@ -1335,6 +1267,32 @@ The following options has legend:
                         }
                      } // detail
 
+                     constexpr auto legend = R"(
+output columns:
+   alias:
+      alias of the fanout queue
+   group:
+      which fanout group the queue is attached to
+   source:
+      the queue to dequeue from
+   T#:
+      number of target queues attached to the fanout queue
+   S:
+      the state of the fanout queue
+         E: enabled
+         D: disabled
+   CI:
+      configured 'instances'
+   I:
+      running 'instances'
+   commits:
+      number of commits the fanout queue has performed
+   rollbacks:
+      number of rollbacks the fanout queue has performed
+   last:
+      the last time the fanout queue did something
+)";
+
                      auto option()
                      {
                         auto invoke = []()
@@ -1346,7 +1304,8 @@ The following options has legend:
                         return argument::Option{
                            std::move( invoke),
                            {{ "--list-queues"}},
-                           R"(list all fanout destinations in current domain)"};
+                           { "list all fanout destinations in current domain", legend}
+                        };
 
                      }
                   } // queues
@@ -2129,7 +2088,6 @@ casual queue --metric-reset a b)"
             local::messages::remove::option( shared),
             local::messages::recovery::option(),
             local::metric::reset::option(),
-            local::legend::option(),
             local::information::option(),
             casual::cli::state::option( &local::call::state),
 

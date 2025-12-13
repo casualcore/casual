@@ -361,6 +361,35 @@ namespace casual
                {
                   namespace connections
                   {
+                     constexpr std::string_view legend = R"(
+output columns:
+   name:
+      Name of the connected domain
+   id
+      ID of the connected domain
+   group
+      Alias of the group that hosts the connection
+   bound
+      Direction of the connection.
+      - out: from this domain to remote
+      - in: from remote to this domain
+      - in*: same as in, and discoveries are forwarded   
+   runlevel
+      The runlevel the connection is in:
+      - connecting
+      - pending
+      - connected
+      - failed
+   P
+      The protocol version that is used for the connection
+   local
+      The local address for the connection
+   peer
+      The peer address for the connection
+   created
+      When the connection was established
+)";
+
                      auto create()
                      {
                         auto invoke = []()
@@ -371,36 +400,11 @@ namespace casual
                         return argument::Option{ 
                            std::move( invoke),
                            argument::option::Names( { "-lc", "--list-connections"}, { "-c"}),
-                           "list all connections"};
+                           { "list all connections", legend}
+                        };
                      }
 
-                     constexpr std::string_view legend = R"(
-name:
-   Name of the connected domain
-id
-   ID of the connected domain
-group
-   Alias of the group that hosts the connection
-bound
-   Direction of the connection.
-     - out: from this domain to remote
-     - in: from remote to this domain
-     - in*: same as in, and discoveries are forwarded   
-runlevel
-   The runlevel the connection is in:
-     - connecting
-     - pending
-     - connected
-     - failed
-P
-   The protocol version that is used for the connection
-local
-   The local address for the connection
-peer
-   The peer address for the connection
-created
-   When the connection was established
-)";
+
 
                   } // connections
 
@@ -510,40 +514,6 @@ created
                   
                } // inbound
 
-               namespace legend
-               {
-                  const std::map< std::string_view, std::string_view> legends{
-                     { "list-connections", option::list::connections::legend}
-                  };
-
-                  auto create()
-                  {
-                     auto legend_option = [](  std::string key, std::string_view legend)
-                     {
-                        return argument::Option{ [ key, legend]()
-                           {
-                              std::cout << legend;
-                           },
-                           {{ key}},
-                           string::compose( "list legend for ", key)
-                        };
-                     };
-
-                     return argument::Option{ 
-                        [](){},
-                        {{ "--legend"}}, 
-                        R"(show legend for the output of the supplied option
-
-Documentation and description for abbreviations and acronyms used as columns in output
-
-The following options has legend:                       
-)"
-                        }({
-                           legend_option( "--list-connections", option::list::connections::legend)
-                        });
-                  }
-
-               } // legend
 
                namespace removed
                {
@@ -605,7 +575,6 @@ The following options has legend:
             local::option::list::listeners(),
             local::option::inbound::option(),
             local::option::outbound::option(),
-            local::option::legend::create(),
             casual::cli::state::option( &local::call::state),
             
             // removed... TODO: remove in 2.0
