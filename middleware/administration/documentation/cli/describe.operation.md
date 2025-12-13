@@ -5,7 +5,7 @@
 ```console
 host# casual --help describe
 
-describe [0..1]  (<service> [json, yaml, xml, ini]) [1..2]
+describe [0..1]  (<service> [json, toml, yaml, xml]) [1..2]
      service describer
      
         * service   name of the service to to describe

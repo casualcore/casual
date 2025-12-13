@@ -15,23 +15,23 @@ configuration [0..1]
 
    SUB OPTIONS:
 
-      --get [0..1]  (json, yaml, xml, ini) [0..1]
+      --get [0..1]  (json, toml, yaml, xml) [0..1]
            get current configuration
 
-      --post [0..1]  (json, yaml, xml, ini) [1]
+      --post [0..1]  (json, toml, yaml, xml) [1]
            reads configuration from stdin and replaces the domain configuration
            
            casual will try to conform to the new configuration as smooth as possible. Although, there could be some "noise"
            depending on what parts are updated.
 
-      --put [0..1]  (json, yaml, xml, ini) [1]
+      --put [0..1]  (json, toml, yaml, xml) [1]
            reads configuration from stdin and adds or updates parts
            
            The semantics are similar to http PUT:
            * every key that is found is treated as an update of that _entity_
            * every key that is NOT found is treated as a new _entity_ and added to the current state 
 
-      --edit [0..1]  (json, yaml, xml, ini) [0..1]
+      --edit [0..1]  (json, toml, yaml, xml) [0..1]
            get current configuration, starts an editor, on quit the edited configuration is posted.
            
            The editor is deduced from the following environment variables, in this order:
@@ -71,7 +71,7 @@ configuration [0..1]
            
            On success exit with 0, on error not 0, and message printed to stderr
 
-      --format [0..1]  (yaml, json, ini, xml) [1]
+      --format [0..1]  (json, toml, yaml, xml) [1]
            defines what format should be used
 
       --union [0..1]  (<value>) [0..*]

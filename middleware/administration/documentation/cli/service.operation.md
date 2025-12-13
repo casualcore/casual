@@ -47,7 +47,7 @@ service [0..1]
       --information [0..1]
            collect aggregated information about known services
 
-      --state [0..1]  (json, yaml, xml, ini, line) [0..1]
+      --state [0..1]  (json, toml, yaml, xml, line) [0..1]
            prints state in the provided format to stdout
 
       [deprecated] --list-admin-services [0..1]

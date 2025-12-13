@@ -1,0 +1,159 @@
+[domain.queue]
+note = '''retry.count - if number of rollbacks is greater, message is moved to error-queue  retry.delay - the amount of time before the message is available for consumption, after rollback
+'''
+
+    [domain.queue.default]
+    directory = '${CASUAL_DOMAIN_HOME}/queue/groups'
+
+        [domain.queue.default.queue.retry]
+        count = 3
+        delay = '20s'
+
+    [[domain.queue.fanout.groups]]
+    alias = 'fanout-group-1'
+    note = "forwards dequeues from 'a1' and enqueues to several target queues"
+
+        [[domain.queue.fanout.groups.queues]]
+        alias = 'fa1'
+        instances = 2
+        memberships = [ 'A' ]
+        source = 'a1'
+
+            [[domain.queue.fanout.groups.queues.targets]]
+            delay = '1s'
+            queue = 'b1'
+
+            [[domain.queue.fanout.groups.queues.targets]]
+            queue = 'c1'
+
+            [[domain.queue.fanout.groups.queues.targets]]
+            queue = 'd1'
+
+    [[domain.queue.fanout.groups]]
+    alias = 'fanout-group-2'
+
+        [[domain.queue.fanout.groups.queues]]
+        source = 'a2'
+
+            [[domain.queue.fanout.groups.queues.targets]]
+            queue = 'b2'
+
+            [[domain.queue.fanout.groups.queues.targets]]
+            queue = 'c2'
+
+    [domain.queue.forward.default.queue]
+    instances = 1
+
+        [domain.queue.forward.default.queue.target]
+        delay = '500ms'
+
+    [domain.queue.forward.default.service]
+    instances = 3
+
+        [domain.queue.forward.default.service.reply]
+        delay = '2s'
+
+    [[domain.queue.forward.groups]]
+    alias = 'forward-group-1'
+
+        [[domain.queue.forward.groups.queues]]
+        alias = 'fwd-c1'
+        note = "gets the alias 'c1'"
+        source = 'c1'
+
+            [domain.queue.forward.groups.queues.target]
+            queue = 'a4'
+
+        [[domain.queue.forward.groups.services]]
+        alias = 'fwd-b1'
+        instances = 4
+        source = 'b1'
+
+            [domain.queue.forward.groups.services.reply]
+            delay = '10ms'
+            queue = 'a3'
+
+            [domain.queue.forward.groups.services.target]
+            service = 'casual/example/echo'
+
+    [[domain.queue.forward.groups]]
+    alias = 'forward-group-2'
+
+        [[domain.queue.forward.groups.services]]
+        alias = 'bar'
+        note = 'will get alias b2'
+        source = 'b2'
+
+            [domain.queue.forward.groups.services.target]
+            service = 'casual/example/echo'
+
+        [[domain.queue.forward.groups.services]]
+        note = 'will get alias b2.2'
+        source = 'b2'
+
+            [domain.queue.forward.groups.services.target]
+            service = 'casual/example/sink'
+
+    [[domain.queue.groups]]
+    alias = 'A'
+    note = 'will get default queuebase: ${CASUAL_DOMAIN_HOME}/queue/groups/A.qb'
+
+        [[domain.queue.groups.queues]]
+        name = 'a1'
+        note = 'dequeue is disabled -> dequeue will give no_queue error (unless the queue is found elsewhere)'
+
+            [domain.queue.groups.queues.enable]
+            dequeue = false
+            enqueue = true
+
+        [[domain.queue.groups.queues]]
+        name = 'a2'
+        note = 'after 10 rollbacked dequeues, message is moved to a2.error'
+
+            [domain.queue.groups.queues.retry]
+            count = 10
+            delay = '100ms'
+
+        [[domain.queue.groups.queues]]
+        name = 'a3'
+
+        [[domain.queue.groups.queues]]
+        name = 'a4'
+
+    [[domain.queue.groups]]
+    alias = 'B'
+    queuebase = '/some/fast/disk/queue/groupB.qb'
+
+        [[domain.queue.groups.queues]]
+        name = 'b1'
+
+        [[domain.queue.groups.queues]]
+        name = 'b2'
+        note = "after 20 rollbacked dequeues, message is moved to b2.error. retry.delay is 'inherited' from default, if any"
+
+            [domain.queue.groups.queues.retry]
+            count = 20
+
+    [[domain.queue.groups]]
+    alias = 'C'
+    note = 'group is an in-memory queue, hence no persistence'
+    queuebase = ':memory:'
+
+        [[domain.queue.groups.queues]]
+        name = 'c1'
+
+        [[domain.queue.groups.queues]]
+        name = 'c2'
+
+    [[domain.queue.groups]]
+    alias = 'D'
+    note = 'group limited to a total message size of 10KiB, after which further enqueues will give no_queue error'
+
+        [domain.queue.groups.capacity]
+        size = '10KiB'
+
+        [[domain.queue.groups.queues]]
+        name = 'd1'
+
+        [[domain.queue.groups.queues]]
+        name = 'd2'

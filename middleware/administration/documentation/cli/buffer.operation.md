@@ -10,7 +10,7 @@ buffer [0..1]
 
    SUB OPTIONS:
 
-      --field-from-human [0..1]  (json, yaml, xml, ini) [0..1]
+      --field-from-human [0..1]  (json, toml, yaml, xml) [0..1]
            transform human readable fielded buffer to actual buffers
            
            reads from stdin and assumes a human readable structure in the supplied format
@@ -19,7 +19,7 @@ buffer [0..1]
            
            @note: part of casual-pipe
 
-      --field-to-human [0..1]  (json, yaml, xml, ini) [0..1]
+      --field-to-human [0..1]  (json, toml, yaml, xml) [0..1]
            reads from stdin and assumes a casual-fielded-buffer
            
            and transform this to a human readable structure in the supplied format,

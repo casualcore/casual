@@ -25,14 +25,39 @@ queue [0..1]
       -lm, --list-messages [0..1]  (<queue>) [1]
            list information of all messages of the provided queue
 
-      -lfs, --list-forward-services [0..1]
-           list information of all service forwards
+      forward [0..1]
+           subcommand for forward
 
-      -lfq, --list-forward-queues [0..1]
-           list information of all queue forwards
+         SUB OPTIONS [1]:
 
-      -lfg, --list-forward-groups [0..1]
-           list (aggregated) information of forward groups
+            -ls, --list-services [0..1]
+                 list information of all service forwards
+
+            -lq, --list-queues [0..1]
+                 list information of all queue forwards
+
+            -lg, --list-groups [0..1]
+                 list (aggregated) information of forward groups
+
+            --scale-aliases [0..1]  (<alias>, <# instances>) [2..*]
+                 scales forward aliases to the requested number of instances
+                 
+                    Example:
+                    casual queue --forward-scale-aliases a 2 b 0 c 10
+
+      fanout [0..1]
+           subcommand for fanout
+
+         SUB OPTIONS [1]:
+
+            --list-groups [0..1]
+                 list information of all fanout groups in current domain
+
+            --list-queues [0..1]
+                 list all fanout destinations in current domain
+
+            --list-targets [0..1]
+                 list all fanout targets in current domain
 
       --restore [0..1]  (<queue>) [0..*]
            restores messages to queue
@@ -124,12 +149,6 @@ queue [0..1]
             --rollback [0..1]  (<gtrid>) [1..*]
                  recover global transactions with rollback
 
-      --forward-scale-aliases [0..1]  (<alias>, <# instances>) [2..*]
-           scales forward aliases to the requested number of instances
-           
-           Example:
-           casual queue --forward-scale-aliases a 2 b 0 c 10
-
       -mr, --metric-reset [0..1]  (<queue>) [1..*]
            resets metrics for the provided queues
            
@@ -162,10 +181,16 @@ queue [0..1]
             --list-forward-queues [0..1]
                  list legend for --list-forward-queues
 
+            --list-fanout-groups [0..1]
+                 list legend for --list-fanout-groups
+
+            --list-fanout-queues [0..1]
+                 list legend for --list-fanout-queues
+
       --information [0..1]
            collect aggregated information about queues in this domain
 
-      --state [0..1]  (json, yaml, xml, ini, line) [0..1]
+      --state [0..1]  (json, toml, yaml, xml, line) [0..1]
            prints state in the provided format to stdout
 
       [deprecated] -r, --list-remote [0..1]
@@ -176,5 +201,20 @@ queue [0..1]
 
       [deprecated] --recover-transactions-rollback [0..1]  (<gtrid>) [1..*]
            use --recover-transactions --rollback instead
+
+      [deprecated] -lfs, --list-forward-services [0..1]
+           list information of all service forwards
+
+      [deprecated] -lfq, --list-forward-queues [0..1]
+           list information of all queue forwards
+
+      [deprecated] -lfg, --list-forward-groups [0..1]
+           list (aggregated) information of forward groups
+
+      [deprecated] --forward-scale-aliases [0..1]  (<alias>, <# instances>) [2..*]
+           scales forward aliases to the requested number of instances
+           
+              Example:
+              casual queue --forward-scale-aliases a 2 b 0 c 10
 
 ```

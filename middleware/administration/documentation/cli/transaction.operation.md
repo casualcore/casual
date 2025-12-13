@@ -96,7 +96,7 @@ transaction [0..1]
       --information [0..1]
            collect aggregated information about transactions in this domain
 
-      --state [0..1]  (json, yaml, xml, ini, line) [0..1]
+      --state [0..1]  (json, toml, yaml, xml, line) [0..1]
            prints state in the provided format to stdout
 
       [deprecated] --list-internal-instances [0..1]

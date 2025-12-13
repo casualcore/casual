@@ -151,5 +151,51 @@
     </element>
    </groups>
   </forward>
+  <fanout>
+   <groups>
+    <element>
+     <alias>fanout-group-1</alias>
+     <queues>
+      <element>
+       <alias>fa1</alias>
+       <source>a1</source>
+       <instances>2</instances>
+       <memberships>
+        <element>A</element>
+       </memberships>
+       <targets>
+        <element>
+         <queue>b1</queue>
+         <delay>1s</delay>
+        </element>
+        <element>
+         <queue>c1</queue>
+        </element>
+        <element>
+         <queue>d1</queue>
+        </element>
+       </targets>
+      </element>
+     </queues>
+     <note>forwards dequeues from 'a1' and enqueues to several target queues</note>
+    </element>
+    <element>
+     <alias>fanout-group-2</alias>
+     <queues>
+      <element>
+       <source>a2</source>
+       <targets>
+        <element>
+         <queue>b2</queue>
+        </element>
+        <element>
+         <queue>c2</queue>
+        </element>
+       </targets>
+      </element>
+     </queues>
+    </element>
+   </groups>
+  </fanout>
  </queue>
 </domain>

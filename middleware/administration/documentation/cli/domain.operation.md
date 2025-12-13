@@ -104,22 +104,22 @@ domain [0..1]
       --information [0..1]
            collect aggregated general information about this domain
 
-      --state [0..1]  (json, yaml, xml, ini, line) [0..1]
+      --state [0..1]  (json, toml, yaml, xml, line) [0..1]
            prints state in the provided format to stdout
 
       --log-reopen [0..1]
            reopen casual.log by sending SIGHUP to all servers, and outputs all running executables
 
-      [deprecated] --configuration-get [0..1]  (json, yaml, xml, ini) [0..1]
+      [deprecated] --configuration-get [0..1]  (json, toml, yaml, xml) [0..1]
            @deprecated: use `casual configuration --get`
 
-      [deprecated] --configuration-post [0..1]  (json, yaml, xml, ini) [1]
+      [deprecated] --configuration-post [0..1]  (json, toml, yaml, xml) [1]
            @deprecated: use `casual configuration --post`
 
-      [deprecated] --configuration-edit [0..1]  (json, yaml, xml, ini) [0..1]
+      [deprecated] --configuration-edit [0..1]  (json, toml, yaml, xml) [0..1]
            @deprecated: use `casual configuration --edit`
 
-      [deprecated] --configuration-put [0..1]  (json, yaml, xml, ini) [1]
+      [deprecated] --configuration-put [0..1]  (json, toml, yaml, xml) [1]
            @deprecated: use `casual configuration --put`
 
       [deprecated] --set-environment [0..1]  (<variable>, <value>, [<alias>*]) [2..*]

@@ -16,11 +16,21 @@ gateway [0..1]
       -ll, --list-listeners [0..1]
            list all listeners
 
-      --list-inbound-groups [0..1]
-           list all inbound groups
+      inbound [0..1]
+           inbound gateway related options
 
-      --list-outbound-groups [0..1]
-           list all outbound groups
+         SUB OPTIONS [1]:
+
+            -lg, --list-groups [0..1]
+                 list all inbound groups
+
+      outbound [0..1]
+           outbound gateway related options
+
+         SUB OPTIONS [1]:
+
+            -lg, --list-groups [0..1]
+                 list all outbound groups
 
       --legend [0..1]
            show legend for the output of the supplied option
@@ -34,7 +44,7 @@ gateway [0..1]
             --list-connections [0..1]
                  list legend for --list-connections
 
-      --state [0..1]  (json, yaml, xml, ini, line) [0..1]
+      --state [0..1]  (json, toml, yaml, xml, line) [0..1]
            prints state in the provided format to stdout
 
       [deprecated] -ls, --list-services [0..1]
@@ -45,5 +55,11 @@ gateway [0..1]
 
       [deprecated] --rediscover [0..1]
            @removed - moved to casual discover --rediscover
+
+      [deprecated] --list-outbound-groups [0..1]
+           list all outbound groups
+
+      [deprecated] --list-inbound-groups [0..1]
+           list all inbound groups
 
 ```

@@ -24,7 +24,7 @@ file [0..1]
             --rollback [0..1]  (<gtrid>) [1..*]
                  recover global transactions with rollback
 
-      --state [0..1]  (json, yaml, xml, ini, line) [0..1]
+      --state [0..1]  (json, toml, yaml, xml, line) [0..1]
            prints state in the provided format to stdout
 
 ```

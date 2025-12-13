@@ -49,7 +49,7 @@ discovery [0..1]
       [deprecated] --metric-message-count [0..1]
            @removed use `casual internal --message-count <pid>` instead
 
-      --state [0..1]  (json, yaml, xml, ini, line) [0..1]
+      --state [0..1]  (json, toml, yaml, xml, line) [0..1]
            prints state in the provided format to stdout
 
 ```
