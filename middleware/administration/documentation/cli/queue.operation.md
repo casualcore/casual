@@ -43,7 +43,7 @@ queue [0..1]
                  scales forward aliases to the requested number of instances
                  
                     Example:
-                    casual queue --forward-scale-aliases a 2 b 0 c 10
+                    casual queue --scale-aliases a 2 b 0 c 10
 
       fanout [0..1]
            subcommand for fanout
@@ -157,36 +157,6 @@ queue [0..1]
            Example:
            casual queue --metric-reset a b
 
-      --legend [0..1]
-           provide legend for the output for some of the options
-           
-           to view legend for --list-queues use casual queue --legend --list-queues, and so on.
-           
-           The following options has legend:
-
-         SUB OPTIONS:
-
-            --list-queues [0..1]
-                 list legend for --list-queues
-
-            --list-messages [0..1]
-                 list legend for --list-messages
-
-            --list-forward-groups [0..1]
-                 list legend for --list-forward-groups
-
-            --list-forward-services [0..1]
-                 list legend for --list-forward-services
-
-            --list-forward-queues [0..1]
-                 list legend for --list-forward-queues
-
-            --list-fanout-groups [0..1]
-                 list legend for --list-fanout-groups
-
-            --list-fanout-queues [0..1]
-                 list legend for --list-fanout-queues
-
       --information [0..1]
            collect aggregated information about queues in this domain
 
@@ -203,18 +173,15 @@ queue [0..1]
            use --recover-transactions --rollback instead
 
       [deprecated] -lfs, --list-forward-services [0..1]
-           list information of all service forwards
+           @deprecated: use `casual queue forward --list-services` instead
 
       [deprecated] -lfq, --list-forward-queues [0..1]
-           list information of all queue forwards
+           @deprecated: use `casual queue forward --list-queues` instead
 
       [deprecated] -lfg, --list-forward-groups [0..1]
-           list (aggregated) information of forward groups
+           @deprecated: use `casual queue forward --list-groups` instead
 
       [deprecated] --forward-scale-aliases [0..1]  (<alias>, <# instances>) [2..*]
-           scales forward aliases to the requested number of instances
-           
-              Example:
-              casual queue --forward-scale-aliases a 2 b 0 c 10
+           deprecated: use`casual queue forward --scale-aliases` instead
 
 ```

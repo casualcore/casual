@@ -32,18 +32,6 @@ gateway [0..1]
             -lg, --list-groups [0..1]
                  list all outbound groups
 
-      --legend [0..1]
-           show legend for the output of the supplied option
-           
-           Documentation and description for abbreviations and acronyms used as columns in output
-           
-           The following options has legend:                       
-
-         SUB OPTIONS:
-
-            --list-connections [0..1]
-                 list legend for --list-connections
-
       --state [0..1]  (json, toml, yaml, xml, line) [0..1]
            prints state in the provided format to stdout
 

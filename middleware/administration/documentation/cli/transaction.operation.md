@@ -62,37 +62,6 @@ transaction [0..1]
       -lp, --list-pending [0..1]
            list pending tasks
 
-      --legend [0..1]
-           the legend for the supplied option
-           
-           Documentation and description for abbreviations and acronyms used as columns in output
-           
-           The following options has legend:
-
-         SUB OPTIONS:
-
-            --list-resources [0..1]
-                 list legend for --list-resources
-
-            --list-transactions [0..1]
-                 list legend for --list-transactions
-
-            --list-resource-instances [0..1]
-                 the legends for list resource instances suboptions
-                 
-                 The following suboptions has legend:
-
-               SUB OPTIONS:
-
-                  --all [0..1]
-                       list legend for --all
-
-                  --internal [0..1]
-                       list legend for --internal
-
-                  --external [0..1]
-                       list legend for --external
-
       --information [0..1]
            collect aggregated information about transactions in this domain
 

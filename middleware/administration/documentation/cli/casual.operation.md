@@ -8,7 +8,6 @@ NAME
 
 DESCRIPTION
 
-   
    casual administration CLI
    
    To get more detailed help, use any of:
