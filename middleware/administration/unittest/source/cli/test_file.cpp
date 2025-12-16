@@ -17,6 +17,9 @@
 
 #include "gateway/unittest/utility.h"
 
+#include "queue/unittest/utility.h"
+#include "queue/api/queue.h"
+
 #include "common/string.h"
 #include "common/sink.h"
 
@@ -131,6 +134,76 @@ path                                                  pid     gtrid             
          }
 
          ASSERT_EQ( casual::transaction::context().commit(), common::code::tx::ok);
+      }
+
+      TEST( cli_file, produce_consume)
+      {
+         common::unittest::Trace trace;
+
+         auto domain = local::domain( R"(
+domain:
+   name: A
+   servers:
+      - path: "${CASUAL_MAKE_SOURCE_ROOT}/middleware/queue/bin/casual-queue-manager"
+        memberships: [ base]
+   queue:
+      groups:
+         -  alias: Q
+            queues:
+               - name: a
+               - name: b
+            
+)");
+         // add som messages to queue 'a'
+         {
+            auto capture = local::execute( R"(echo -n "casual-message-1" | casual buffer --compose '.string/' | casual buffer --duplicate 5 | casual queue --enqueue a | casual pipe --human-sink)");
+            EXPECT_TRUE( capture) << CASUAL_NAMED_VALUE( capture); // just to have the output if something fails
+
+            auto messages = queue::unittest::messages( "a");
+            EXPECT_TRUE( messages.size() == 5) << CASUAL_NAMED_VALUE( messages);
+         }
+
+         common::unittest::directory::temporary::Scoped directory;
+
+         // produce files from queue 'a'
+         {
+            auto capture = local::execute( "casual transaction --begin | casual queue --consume a | casual file --produce " + directory.path().string() + " | casual transaction --commit ");
+            EXPECT_TRUE( capture) << CASUAL_NAMED_VALUE( capture); // just to have the output if something fails
+         }
+
+         // check that we have files in the directory
+         {
+            auto files = common::unittest::directory::list( directory.path());
+            EXPECT_TRUE( files.size() == 5) << CASUAL_NAMED_VALUE( files);
+         }
+         
+         // consume files into queue 'b'
+         {
+            auto capture = local::execute( "casual transaction --begin | casual file --consume " + (directory.path() / "*").string() + " | casual queue --enqueue b | casual transaction --commit | casual pipe --human-sink ");
+            EXPECT_TRUE( capture) << CASUAL_NAMED_VALUE( capture); // just to have the output if something fails
+         }
+
+         // expect the directory to be empty
+         {
+            auto files = common::unittest::directory::list( directory.path());
+            EXPECT_TRUE( files.empty()) << CASUAL_NAMED_VALUE( files);
+         }
+
+         // check that the files has been enqueued into 'b'
+         {
+            auto messages = queue::unittest::messages( "b");
+            EXPECT_TRUE( messages.size() == 5) << CASUAL_NAMED_VALUE( messages);
+
+            // browse messages in 'b' to check content
+            queue::browse::peek( "b", []( queue::Message&& message)
+            {
+               auto string_content = std::string_view{ common::binary::span::to_string_like( message.payload.data)};
+               EXPECT_TRUE( string_content == "casual-message-1") << "content: '" << string_content << "'";
+
+               return true;
+            });
+         }
+
       }
 
    } // administration

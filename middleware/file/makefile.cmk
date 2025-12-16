@@ -43,6 +43,12 @@ install_bin = []
 # So we get the local build-rm
 make.Environment( 'PATH', '../tools/bin' + os.pathsep + os.getenv('PATH'))
 
+common_archive = make.LinkArchive( 'bin/casual-file-common', 
+   [
+      make.Compile( 'source/instance.cpp'),
+   ]
+)
+
 
 file_manager = make.LinkExecutable( 'bin/casual-file-manager', 
    [
@@ -53,6 +59,7 @@ file_manager = make.LinkExecutable( 'bin/casual-file-manager',
       make.Compile( 'source/manager/admin/server.cpp'),
    ], 
    [ 
+      common_archive,
       'casual-common',
       'casual-manager',
    ]
@@ -67,6 +74,7 @@ file_api = make.LinkLibrary( 'bin/casual-file-api',
       make.Compile( 'source/api/file.cpp'),
    ],
    [
+      common_archive,
       'casual-common',
       'casual-transaction',
    ])
@@ -89,7 +97,12 @@ file_cli = make.LinkLibrary( 'bin/casual-file-admin-cli',
    [
       make.Compile( 'source/manager/admin/cli.cpp'),
    ], 
-   [file_api, 'casual-cli', 'casual-common', 'casual-service'])
+   [
+      common_archive,
+      file_api, 
+      'casual-cli', 
+      'casual-common', 
+      'casual-service'])
  
 install_lib.append( file_cli)
 

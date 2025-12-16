@@ -221,7 +221,11 @@ namespace casual::file::resource
 
    void prepare( State& state, const Prepare& request)
    {
-      state.multiplex.send( request.process.ipc, common::message::reverse::type( request));
+      auto reply = common::message::reverse::type( request, common::process::handle());
+      reply.resource = request.resource;
+      reply.trid = request.trid;
+
+      state.multiplex.send( request.process.ipc, std::move( reply));
    }
 
    void commit( State& state, const Commit& request)

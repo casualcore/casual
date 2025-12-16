@@ -114,9 +114,24 @@ namespace casual
 
       namespace directory
       {
+         auto list( const std::filesystem::path& path) -> std::vector< std::filesystem::path>
+         {
+            // return std::filesystem::directory_iterator{ path}
+            //    | std::views::filter( []( const auto& entry){ return entry.is_regular_file();})
+            //    | std::views::transform( []( const auto& entry){ return entry.path();})
+            //    | std::ranges::to< std::vector< std::filesystem::path>>(); 
+
+            std::vector< std::filesystem::path> result;
+
+            for( auto file : std::filesystem::directory_iterator{ path})
+               if( file.is_regular_file())
+                  result.push_back( file.path());
+
+            return result;
+         }
+
          namespace temporary
          {
-
             Scoped::Scoped()
                : m_path{ common::file::name::unique( local::prefix().string()) }
             {
@@ -137,6 +152,11 @@ namespace casual
             {
                std::swap( m_path, rhs.m_path);
                return *this;
+            }
+
+            std::filesystem::path Scoped::release()
+            {
+               return std::exchange( m_path, {});
             }
 
             std::ostream& operator << ( std::ostream& out, const Scoped& value)

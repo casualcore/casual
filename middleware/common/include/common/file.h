@@ -101,6 +101,9 @@ namespace casual
          //! Moves/renames a file from @p source to @p target
          void rename( const std::filesystem::path& source, const std::filesystem::path& target);
 
+         //! @return the content of the file as binary data
+         platform::binary::type read( const std::filesystem::path& path);
+
          namespace scoped
          {
             struct Path : std::filesystem::path

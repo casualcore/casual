@@ -59,6 +59,9 @@ namespace casual
 
       namespace directory
       {
+         //! @returns a list of files (not directories) in the provided path
+         auto list( const std::filesystem::path& path) -> std::vector< std::filesystem::path>;
+
          namespace temporary
          {
             //! creates an unique directory
@@ -77,6 +80,9 @@ namespace casual
                inline auto& path() const & { return m_path;}
                inline auto string() const { return m_path.string();}
                inline operator const std::filesystem::path&() const & { return m_path;}
+
+               //! releases ownership of the path
+               std::filesystem::path release();
 
                //! @return true if the path is not empty -> not moved from
                inline explicit operator bool() const { return ! m_path.empty();}

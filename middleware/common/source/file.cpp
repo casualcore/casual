@@ -128,6 +128,24 @@ namespace casual
             log::debug( "moved file source: ", source, " -> target: ", target);
          }
 
+         platform::binary::type read( const std::filesystem::path& path)
+         {
+            std::ifstream file{ path, std::ios::binary};
+
+            if( ! file.is_open())
+               code::raise::error( code::casual::invalid_path, "failed to open file for reading: ", path);
+
+            auto size = std::filesystem::file_size( path);
+
+            platform::binary::type buffer{ size};
+            auto span = common::binary::span::to_string_like( buffer);
+
+            if( ! file.read( span.data(), span.size()))
+               code::raise::error( code::casual::invalid_path, "failed to read file: ", path);
+
+            return buffer;
+         }
+
          namespace scoped
          {
             Path::~Path()

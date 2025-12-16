@@ -16,6 +16,9 @@ namespace casual
    {
       inline const common::communication::instance::Identity identity{ 0x9abad8379c1341c7b4db4ef2f5d9a0e9_uuid, "CASUAL_FILE_MANAGER_PROCESS"};
 
+      //! @return device to file-manager
+      common::communication::instance::outbound::detail::optional::Device& device();
+
    } // file::instance
 } // casual
 

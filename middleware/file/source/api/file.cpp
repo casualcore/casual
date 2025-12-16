@@ -27,8 +27,7 @@ namespace casual
             {
                auto& device()
                {
-                  static common::communication::instance::outbound::detail::optional::Device device{ instance::identity};
-                  return device;
+                  return instance::device();
                }
                
             } //
