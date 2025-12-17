@@ -13,6 +13,7 @@
 #include "transaction/context.h"
 
 #include "file/api/file.h"
+#include "queue/api/queue.h"
 
 #include "file/resource/unittest/utility.h"
 
@@ -30,11 +31,9 @@ namespace casual
       {
          namespace
          {
-            auto domain()
-            {
-               constexpr auto servers = R"(
+            constexpr auto file = R"(
 domain: 
-   name: file-domain
+   name: test-domain
 
    groups: 
       - name: base
@@ -50,17 +49,40 @@ domain:
         memberships: [ file]
 )";
 
-               return domain::unittest::manager( servers);
+            auto file_domain()
+            {
+               return domain::unittest::manager( file);
+            }
+
+         constexpr auto queue = R"(
+domain: 
+   groups: 
+      - name: queuee
+        dependencies: [ base]
+
+   servers:
+      - path: ${CASUAL_MAKE_SOURCE_ROOT}/middleware/queue/bin/casual-queue-manager
+        memberships: [ queuee]
+   queue:
+      groups:
+         -  alias: Q
+            queues:
+               - name: a
+)";
+
+            auto file_queue_domain()
+            {
+               return domain::unittest::manager( file, queue);
             }
          } // 
       } // local
 
 
-      TEST( casual_file_resource, update_file__commit__expect_updated_file)
+      TEST( casual_file_resource, update_file_and_write_message__commit__expect_updated_file)
       {
          common::unittest::Trace trace;
 
-         auto domain = local::domain();
+         auto domain = local::file_queue_domain();
 
          const auto path = common::unittest::file::temporary::name( ".txt");
 
@@ -69,10 +91,23 @@ domain:
 
          std::ofstream{ path} << afore;
 
+         //
+         // make some work in multiple resources
          {
             EXPECT_EQ( transaction::context().begin(), common::code::tx::ok);
-            const auto reserved = file::blocking::reserve( path);
-            std::ofstream{ reserved} << after;
+
+            {
+               const auto reserved = file::blocking::reserve( path);
+               std::ofstream{ reserved} << after;
+            }
+
+            {
+               queue::Message message;
+               message.payload.type = "X_OCTET/";
+               common::algorithm::copy( std::as_bytes( std::span{ std::string_view{ "Hello"}}), message.payload.data);
+               queue::enqueue( "a", message);
+            }
+
             EXPECT_EQ( transaction::context().commit(), common::code::tx::ok);
          }
 
@@ -85,7 +120,7 @@ domain:
       {
          common::unittest::Trace trace;
 
-         auto domain = local::domain();
+         auto domain = local::file_domain();
 
          const auto path = std::filesystem::current_path();
 
@@ -105,7 +140,7 @@ domain:
       {
          common::unittest::Trace trace;
 
-         auto domain = local::domain();
+         auto domain = local::file_domain();
 
          const auto path = common::unittest::file::temporary::name( ".txt");
 
@@ -130,7 +165,7 @@ domain:
       {
          common::unittest::Trace trace;
 
-         auto domain = local::domain();
+         auto domain = local::file_domain();
 
          const auto path = common::unittest::file::temporary::content( ".txt", "aaa");
 
@@ -148,7 +183,7 @@ domain:
       {
          common::unittest::Trace trace;
 
-         auto domain = local::domain();
+         auto domain = local::file_domain();
 
          const auto path = common::unittest::file::temporary::content( ".txt", "aaa");
 
@@ -166,7 +201,7 @@ domain:
       {
          common::unittest::Trace trace;
 
-         auto domain = local::domain();
+         auto domain = local::file_domain();
 
          const auto source = common::unittest::file::temporary::name( ".txt");
          const auto target = common::unittest::file::temporary::name( ".txt");
@@ -189,7 +224,7 @@ domain:
       {
          common::unittest::Trace trace;
 
-         auto domain = local::domain();
+         auto domain = local::file_domain();
 
          const auto source = common::unittest::file::temporary::name( ".txt");
          const auto target = common::unittest::file::temporary::name( ".txt");
@@ -212,7 +247,7 @@ domain:
       {
          common::unittest::Trace trace;
 
-         auto domain = local::domain();
+         auto domain = local::file_domain();
 
          const auto original = common::unittest::file::temporary::content( ".txt", "abc");
 
@@ -228,7 +263,7 @@ domain:
       {
          common::unittest::Trace trace;
 
-         auto domain = local::domain();
+         auto domain = local::file_domain();
 
          const auto original = common::unittest::file::temporary::content( ".txt", "abc");
 
@@ -244,7 +279,7 @@ domain:
       {
          common::unittest::Trace trace;
 
-         auto domain = local::domain();
+         auto domain = local::file_domain();
 
          const auto path = common::unittest::file::temporary::name( ".txt");
 
@@ -261,7 +296,7 @@ domain:
       {
          common::unittest::Trace trace;
 
-         auto domain = local::domain();
+         auto domain = local::file_domain();
 
          const auto path = common::unittest::file::temporary::name( ".txt");
 
@@ -279,7 +314,7 @@ domain:
       {
          common::unittest::Trace trace;
 
-         auto domain = local::domain();
+         auto domain = local::file_domain();
 
          const auto path = common::unittest::file::temporary::name( ".txt");
 
@@ -297,7 +332,7 @@ domain:
       {
          common::unittest::Trace trace;
 
-         auto domain = local::domain();
+         auto domain = local::file_domain();
 
          const auto path = common::unittest::file::temporary::name( ".txt");
 
@@ -326,7 +361,7 @@ domain:
       {
          common::unittest::Trace trace;
 
-         auto domain = local::domain();
+         auto domain = local::file_domain();
 
          const auto path = common::unittest::file::temporary::name( ".txt");
 
