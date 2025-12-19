@@ -64,7 +64,7 @@ namespace casual
          {
             using argument_type = R;
 
-            void operator () ( const R& argument)
+            void operator () ( argument_type&& argument)
             {
                invoke::Result result;
 

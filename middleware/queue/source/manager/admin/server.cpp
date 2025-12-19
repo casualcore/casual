@@ -7,6 +7,7 @@
 
 #include "queue/manager/admin/server.h"
 #include "queue/manager/admin/services.h"
+#include "queue/manager/state.h"
 #include "queue/manager/transform.h"
 #include "queue/manager/handle.h"
 
@@ -26,34 +27,135 @@ namespace casual
          {
             auto future_get = []( auto& future){ return future.get( ipc::device());};
 
-
-            admin::model::State state( manager::State& state)
+            namespace detail
             {
-               auto filter_running = []( auto& entities)
+               namespace state
                {
-                  return algorithm::filter( entities, []( auto& entity)
+                  template< typename Message>
+                  auto send_request( State& state) 
                   {
-                     return entity.state == decltype( entity.state())::running;
-                  });
+                     return [ &state]( auto& group)
+                     {
+                        // If we fail to send, we just push an empty reply to our inbound device.
+                        // This could happen later, if the group is busy and then shuts down (seems unlikely,
+                        // but possible)
+                        auto error_callback = []( auto&, auto& complete)
+                        {
+                           auto reply = common::message::reverse::type_t< Message>{};
+                           reply.correlation = complete.correlation();
+                           ipc::device().push( std::move( reply));
+                        };
+
+                        return state.multiplex.send( group.process.ipc, Message{ process::handle()}, std::move( error_callback));
+                     };
+                  }
+
+                  using finalize_type = casual::manager::service::protocol::concurrent::Finalize< admin::model::State>;
+
+                  struct Shared
+                  {
+                     Shared( manager::State& state, finalize_type finalize)
+                        : state{ &state}, finalize{ std::move( finalize)}
+                     {}
+
+                     State* state;
+                     finalize_type finalize;
+
+                     std::vector< strong::correlation::id> correlations;
+
+                     struct
+                     {
+                        std::vector< ipc::message::group::state::Reply> groups;
+                        std::vector< ipc::message::forward::group::state::Reply> forwards;
+                     } reply;
+
+                     template< typename Message>
+                     casual::task::unit::Dispatch try_finalize( Message&& message)
+                     {
+                        if( auto found = common::algorithm::find( correlations, message.correlation))
+                        {
+                           correlations.erase( std::begin( found));
+
+                           if constexpr( std::is_same_v< std::decay_t< Message>, ipc::message::group::state::Reply>)
+                              reply.groups.push_back( std::forward< Message>( message));
+                           else
+                              reply.forwards.push_back( std::forward< Message>( message));
+                        }
+
+                        if( correlations.empty())
+                        {
+                           finalize( transform::model::state( 
+                              *state,
+                              std::move( reply.groups),
+                              std::move( reply.forwards)));
+
+                           return casual::task::unit::Dispatch::done;
+                        }
+
+                        return casual::task::unit::Dispatch::pending;
+                     }
+                     
+                  };
+                  
+               } // state
+            } // detail
+
+            void state( casual::manager::service::protocol::concurrent::Finalize< admin::model::State> finalize, manager::State& state)
+            {
+               Trace trace{ "queue::manager::admin::local::state"};
+
+               // create the task unit that will handle the state request
+
+               // shared state for the action and handlers
+               auto shared = std::make_shared< detail::state::Shared>( state, std::move( finalize));
+
+               // action that sends requests to all running groups
+               auto action = casual::task::create::action( [ shared]( casual::task::unit::id)
+               {
+                  Trace trace{ "queue::manager::admin::local::state::action"};
+
+                  auto is_running = []( auto& group)
+                  {
+                     return group.state == decltype( group.state())::running;
+                  };
+
+                  std::ranges::transform( std::views::filter( shared->state->groups, is_running),
+                     std::back_inserter( shared->correlations),
+                     detail::state::send_request< ipc::message::group::state::Request>( *shared->state));
+
+                  std::ranges::transform( std::views::filter( shared->state->forward.groups, is_running),
+                     std::back_inserter( shared->correlations),
+                     detail::state::send_request< ipc::message::forward::group::state::Request>( *shared->state));
+                  
+                  // remove all 'invalid' correlations (ones that failed to send)
+                  std::erase( shared->correlations, strong::correlation::id{});
+
+                  if( shared->correlations.empty())
+                     return casual::task::unit::action::Outcome::abort;
+
+                  return casual::task::unit::action::Outcome::success;
+               });
+
+               auto handle_group_state = [ shared]( casual::task::unit::id, const ipc::message::group::state::Reply& message)
+               {
+                  Trace trace{ "queue::manager::admin::local::state::handle_group_state"};
+
+                  return shared->try_finalize( message);
                };
 
-               auto group_states = algorithm::transform( filter_running( state.groups), [&]( auto& group)
+               auto handle_forward_state = [ shared]( casual::task::unit::id, const ipc::message::forward::group::state::Reply& message)
                {
-                  return communication::device::async::call( group.process.ipc, 
-                     ipc::message::group::state::Request{ process::handle()});
-               });
+                  Trace trace{ "queue::manager::admin::local::state::handle_forward_state"};
 
-               auto forward_state = algorithm::transform( filter_running( state.forward.groups), [&]( auto& forward)
-               {
-                  return communication::device::async::call( forward.process.ipc, 
-                     ipc::message::forward::group::state::Request{ process::handle()});
-               });
+                  return shared->try_finalize( message);
+               };
 
-               return transform::model::state( 
-                  state,
-                  algorithm::transform( group_states, future_get),
-                  algorithm::transform( forward_state, future_get));
+               state.task.coordinator.then( casual::task::create::unit(
+                  std::move( action),
+                  std::move( handle_group_state),
+                  std::move( handle_forward_state)));
             }
+
 
             namespace messages
             {
@@ -275,11 +377,14 @@ namespace casual
             {
                auto state( manager::State& state)
                {
-                  return [&state]( casual::manager::service::invoke::Parameter&& parameter)
+                  return [&state]( casual::manager::service::invoke::concurrent::Parameter&& parameter)
                   {
-                     return casual::manager::service::protocol::dispatch( 
-                        std::move( parameter), 
-                        &local::state, state);
+                     auto concurrent = casual::manager::service::protocol::deduce( std::move( parameter));
+
+                     return casual::manager::service::protocol::concurrent::dispatch( 
+                        std::move( concurrent), 
+                        &local::state, 
+                        state);
                   };
                };
 
@@ -403,7 +508,7 @@ namespace casual
       std::vector< casual::manager::Service> services( manager::State& state)
       {
          return { 
-            casual::manager::sequential::Service{ .name = std::string{ service::name::state},
+            casual::manager::concurrent::Service{ .name = std::string{ service::name::state},
                .function =local::service::state( state),
                .visibility = common::service::visibility::Type::undiscoverable,
                .category = std::string{ common::service::category::admin}

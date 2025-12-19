@@ -161,6 +161,7 @@ namespace casual
          Unit( Unit&&) = default;
          Unit& operator = ( Unit&&) = default;
 
+         // TODO: user should be able to move the message 'in' to avoid copies
          template< typename M>
          unit::Dispatch operator() ( const M& message)
          {
