@@ -24,6 +24,29 @@ file [0..1]
             --rollback [0..1]  (<gtrid>) [1..*]
                  recover global transactions with rollback
 
+      --produce [0..1]  (<value>) [1]
+           produces files into the provided directory from the pipe
+                                
+           Messages supported are queue messages and payload messages
+           
+           Has to be used inside a pipe transaction.
+           
+           @note: part of casual-pipe
+
+         SUB OPTIONS [0..1]:
+
+            --format [0..1]  (json, toml, yaml, xml) [1]
+                 specifies the format of the files - yaml is default
+
+      --consume [0..1]  (<value>) [1..*]
+           consumes provided glob(s) and sends them downpipe
+                                
+           The files that glob(s) resolves to has to be produced by `casual file --produce`
+           
+           Has to be used inside a pipe transaction.
+           
+           @note: part of casual-pipe
+
       --state [0..1]  (json, toml, yaml, xml, line) [0..1]
            prints state in the provided format to stdout
 

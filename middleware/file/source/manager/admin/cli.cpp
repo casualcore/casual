@@ -308,7 +308,10 @@ namespace casual
                      
 Messages supported are queue messages and payload messages
 
-Has to be used inside a pipe transaction.)";
+Has to be used inside a pipe transaction.
+
+@note: part of casual-pipe)";
+
 
                      constexpr std::string_view extended = R"(
  Examples:
@@ -516,7 +519,9 @@ Has to be used inside a pipe transaction.)";
                      
 The files that glob(s) resolves to has to be produced by `casual file --produce`
 
-Has to be used inside a pipe transaction.)";
+Has to be used inside a pipe transaction.
+
+@note: part of casual-pipe)";
 
                      constexpr std::string_view extended = R"(
 Examples:
