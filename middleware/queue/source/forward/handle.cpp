@@ -291,7 +291,6 @@ namespace casual
                {
                   message::service::lookup::discard::Request request{ process::handle()};
                   request.correlation = pending.correlation;
-                  request.requested = forward.target.service;
 
                   state.multiplex.send( ipc::service::manager(), request);
                }

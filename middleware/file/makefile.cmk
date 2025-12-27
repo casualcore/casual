@@ -15,6 +15,7 @@ make.IncludePaths( [
    '../transaction/include',
    '../xatmi/include',
    '../domain/unittest/include',
+   '../queue/include',
    ]
    + dsl.paths().include.gtest
 )
@@ -31,6 +32,8 @@ make.LibraryPaths(
       '../service/bin',
       '../transaction/bin',
       '../xatmi/bin',
+      '../server/bin',
+      '../queue/bin',
    ]
    + make.optional_library_paths()
    + dsl.paths().library.gtest
@@ -121,6 +124,7 @@ test_casual_file = make.LinkUnittest( 'unittest/bin/test-casual-file',
       'casual-service',
       'casual-service-unittest',
       'casual-transaction',
+      'casual-queue-api',
    ]  
 )
 

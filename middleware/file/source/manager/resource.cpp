@@ -211,6 +211,17 @@ namespace casual::file::resource
 
             return result;
          }
+
+         namespace xa::reverse
+         {
+            auto type( const auto& request)
+            {
+               auto reply = common::message::reverse::type( request);
+               reply.resource = request.resource;
+               reply.trid = request.trid;
+               return reply;
+            }
+         } // xa::reverse
       } // 
    } // local
 
@@ -221,18 +232,12 @@ namespace casual::file::resource
 
    void prepare( State& state, const Prepare& request)
    {
-      auto reply = common::message::reverse::type( request, common::process::handle());
-      reply.resource = request.resource;
-      reply.trid = request.trid;
-
-      state.multiplex.send( request.process.ipc, std::move( reply));
+      state.multiplex.send( request.process.ipc, local::xa::reverse::type( request));
    }
 
    void commit( State& state, const Commit& request)
    {
-      auto reply = common::message::reverse::type( request);
-      reply.resource = request.resource;
-      reply.trid = request.trid;
+      auto reply = local::xa::reverse::type( request);
 
       //
       // pick the requests involved and finalize them
@@ -245,9 +250,7 @@ namespace casual::file::resource
 
    void rollback( State& state, const Rollback& request)
    {
-      auto reply = common::message::reverse::type( request);
-      reply.resource = request.resource;
-      reply.trid = request.trid;
+      auto reply = local::xa::reverse::type( request);
 
       //
       // pick the requests involved and finalize them
