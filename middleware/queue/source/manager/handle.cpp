@@ -323,16 +323,7 @@ namespace casual
 
                namespace state
                {
-                  auto reply( State& state)
-                  {
-                     return [&state]( queue::ipc::message::group::state::Reply&& message)
-                     {
-                        Trace trace{ "queue::manager::handle::local::group::state::reply"};
-                        log::debug( "message: ", message);
-
-                        state.task.coordinator( message);
-                     };
-                  }
+                  auto reply = local::task_forward< queue::ipc::message::group::state::Reply>;
                   
                } // state
 
@@ -350,16 +341,7 @@ namespace casual
 
                namespace state
                {
-                  auto reply( State& state)
-                  {
-                     return [&state]( queue::ipc::message::forward::group::state::Reply&& message)
-                     {
-                        Trace trace{ "queue::manager::handle::local::forward::state::reply"};
-                        log::debug( "message: ", message);
-
-                        state.task.coordinator( message);
-                     };
-                  }
+                  auto reply = local::task_forward< queue::ipc::message::forward::group::state::Reply>;
 
                } // state
                
@@ -374,6 +356,12 @@ namespace casual
                   auto reply = local::task_forward< queue::ipc::message::fanout::group::configuration::update::Reply>;
 
                } // configuration::update
+
+               namespace state
+               {
+                  auto reply = local::task_forward< queue::ipc::message::fanout::group::state::Reply>;
+               } // state
+
             } // fanout
 
             auto advertise( State& state)
@@ -616,9 +604,10 @@ namespace casual
             handle::local::group::state::reply( state),
             handle::local::forward::connect( state),
             handle::local::forward::configuration::update::reply( state),
+            handle::local::forward::state::reply( state),
             handle::local::fanout::connect( state),
             handle::local::fanout::configuration::update::reply( state),
-            handle::local::forward::state::reply( state),
+            handle::local::fanout::state::reply( state),
             handle::local::configuration::update::request( state),
             handle::local::configuration::request( state),
             handle::local::lookup::request( state),

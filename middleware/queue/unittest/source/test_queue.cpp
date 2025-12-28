@@ -186,7 +186,7 @@ domain:
                -  name: a1
          -  queues:
                -  name: b1
-         -  alias: C
+         -  alias: x
             queues:
                -  name: c1
 )");
@@ -197,7 +197,7 @@ domain:
          ASSERT_TRUE( state.groups.size() == 3) << CASUAL_NAMED_VALUE( state.groups);
          EXPECT_TRUE( state.groups.at( 0).alias == "group") << CASUAL_NAMED_VALUE( state.groups);
          EXPECT_TRUE( state.groups.at( 1).alias == "group.2") << CASUAL_NAMED_VALUE( state.groups);
-         EXPECT_TRUE( state.groups.at( 2).alias == "C") << CASUAL_NAMED_VALUE( state.groups);
+         EXPECT_TRUE( state.groups.at( 2).alias == "x") << CASUAL_NAMED_VALUE( state.groups);
       }
 
       TEST( casual_queue, enqueue_to_persistent_group__shutdown__boot_same_persistent_group__expect_metrics_reset)
@@ -233,9 +233,9 @@ domain:
 
             // expect 2 queues, a and a.error
             ASSERT_TRUE( state.queues.size() == 2) << CASUAL_NAMED_VALUE( state.queues);
-            EXPECT_TRUE( state.queues.at( 1).name == "a");
-            EXPECT_TRUE( state.queues.at( 1).metric.enqueued == 5) << CASUAL_NAMED_VALUE( state.queues);
-            EXPECT_TRUE( state.queues.at( 1).metric.dequeued == 5) << CASUAL_NAMED_VALUE( state.queues);
+            EXPECT_TRUE( state.queues.at( 0).name == "a");
+            EXPECT_TRUE( state.queues.at( 0).metric.enqueued == 5) << CASUAL_NAMED_VALUE( state.queues);
+            EXPECT_TRUE( state.queues.at( 0).metric.dequeued == 5) << CASUAL_NAMED_VALUE( state.queues);
          }
 
          {
@@ -245,10 +245,10 @@ domain:
 
             // expect 2 queues, a and a.error
             ASSERT_TRUE( state.queues.size() == 2) << CASUAL_NAMED_VALUE( state.queues);
-            EXPECT_TRUE( state.queues.at( 1).name == "a");
+            EXPECT_TRUE( state.queues.at( 0).name == "a");
             // expect metrics to be reset
-            EXPECT_TRUE( state.queues.at( 1).metric.enqueued == 0) << CASUAL_NAMED_VALUE( state.queues);
-            EXPECT_TRUE( state.queues.at( 1).metric.dequeued == 0) << CASUAL_NAMED_VALUE( state.queues);
+            EXPECT_TRUE( state.queues.at( 0).metric.enqueued == 0) << CASUAL_NAMED_VALUE( state.queues);
+            EXPECT_TRUE( state.queues.at( 0).metric.dequeued == 0) << CASUAL_NAMED_VALUE( state.queues);
          }
       }
 

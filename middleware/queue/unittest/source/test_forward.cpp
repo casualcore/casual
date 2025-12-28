@@ -280,9 +280,10 @@ domain:
          auto state = unittest::state();
 
          ASSERT_TRUE( state.forward.groups.size() == 3) << CASUAL_NAMED_VALUE( state.forward.groups);
-         EXPECT_TRUE( state.forward.groups.at( 0).alias == "forward") << CASUAL_NAMED_VALUE( state.forward.groups);
-         EXPECT_TRUE( state.forward.groups.at( 1).alias == "forward.2") << CASUAL_NAMED_VALUE( state.forward.groups);
-         EXPECT_TRUE( state.forward.groups.at( 2).alias == "C") << CASUAL_NAMED_VALUE( state.forward.groups);
+         EXPECT_TRUE( state.forward.groups.at( 0).alias == "C") << CASUAL_NAMED_VALUE( state.forward.groups);
+         EXPECT_TRUE( state.forward.groups.at( 1).alias == "forward") << CASUAL_NAMED_VALUE( state.forward.groups);
+         EXPECT_TRUE( state.forward.groups.at( 2).alias == "forward.2") << CASUAL_NAMED_VALUE( state.forward.groups);
+         
       }
       
 

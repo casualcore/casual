@@ -785,26 +785,26 @@ domain:
             //EXPECT_TRUE( local::execute( R"(echo "casual" | casual buffer --compose | casual queue --enqueue s1 | casual pipe --human-sink | wc -l)"));
             //EXPECT_TRUE( local::execute( R"(echo "casual" | casual buffer --compose | casual queue --enqueue s2 | casual pipe --human-sink | wc -l)"));
             //EXPECT_TRUE( local::execute( R"(echo "casual" | casual buffer --compose | casual queue --enqueue s3 | casual pipe --human-sink | wc -l)"));
-            //auto capture = local::execute( R"(casual queue --list-fanout-queues)");
+            //auto capture = local::execute( R"(casual queue fanout --list-queues)");
             //EXPECT_TRUE( false) << capture.standard.out;
 /*
 alias  group     source  T#  S  CI  I  commits  rollbacks  last                            
 -----  --------  ------  --  -  --  -  -------  ---------  --------------------------------
-foo    fanout-1  s1      2   E   3  3        1          0  2025-11-07T09:50:43.780974+01:00
-s2     fanout-1  s2      1   E   2  2        1          0  2025-11-07T09:50:43.804810+01:00
-s3     fanout-2  s3      3   E   1  1        1          0  2025-11-07T09:50:43.829186+01:00
 bar    fanout-2  s4      1   D   1  0        0          0  -                               
+foo    fanout-1  s1      2   E   3  3        1          0  2025-12-27T13:59:55.720895+01:00
+s2     fanout-1  s2      1   E   2  2        1          0  2025-12-27T13:59:55.742502+01:00
+s3     fanout-2  s3      3   E   1  1        1          0  2025-12-27T13:59:55.764445+01:00                            
 */
          }
 
          auto capture = local::execute( R"(casual --color false --header false queue fanout --list-queues)");
-
          auto rows = string::split( capture.standard.out, '\n');
 
-         EXPECT_TRUE( std::regex_match( rows.at( 0), std::regex{ R"(foo    fanout-1  s1      2   E   3  3[ ]+\d+[ ]+\d+[ ]+-[ ]*)"})) << rows.at( 0);
-         EXPECT_TRUE( std::regex_match( rows.at( 1), std::regex{ R"(s2     fanout-1  s2      1   E   2  2[ ]+\d+[ ]+\d+[ ]+-[ ]*)"})) << rows.at( 1);
-         EXPECT_TRUE( std::regex_match( rows.at( 2), std::regex{ R"(s3     fanout-2  s3      3   E   1  1[ ]+\d+[ ]+\d+[ ]+-[ ]*)"})) << rows.at( 2);
-         EXPECT_TRUE( std::regex_match( rows.at( 3), std::regex{ R"(bar    fanout-2  s4      1   D   1  0[ ]+\d+[ ]+\d+[ ]+-[ ]*)"})) << rows.at( 3);
+         EXPECT_TRUE( std::regex_match( rows.at( 0), std::regex{ R"(bar    fanout-2  s4      1   D   1  0[ ]+\d+[ ]+\d+[ ]+-[ ]*)"})) << rows.at( 0);
+         EXPECT_TRUE( std::regex_match( rows.at( 1), std::regex{ R"(foo    fanout-1  s1      2   E   3  3[ ]+\d+[ ]+\d+[ ]+-[ ]*)"})) << rows.at( 1);
+         EXPECT_TRUE( std::regex_match( rows.at( 2), std::regex{ R"(s2     fanout-1  s2      1   E   2  2[ ]+\d+[ ]+\d+[ ]+-[ ]*)"})) << rows.at( 2);
+         EXPECT_TRUE( std::regex_match( rows.at( 3), std::regex{ R"(s3     fanout-2  s3      3   E   1  1[ ]+\d+[ ]+\d+[ ]+-[ ]*)"})) << rows.at( 3);
+         
       }
 
       TEST( cli_queue, list_fanout_targets)

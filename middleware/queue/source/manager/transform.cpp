@@ -152,8 +152,6 @@ namespace casual
                      .note = std::move( fanout.note)
                   });
 
-
-                   
                auto transform_queue = [ &fanout]( auto& queue)
                {
                   auto transform_target = []( auto& target)
@@ -209,6 +207,20 @@ namespace casual
             };
 
             algorithm::transform( state.remotes, std::back_inserter( result.remote.domains), transform_remote_domains);
+
+            // sort for deterministic output
+            {
+               std::ranges::sort( result.groups, {}, &admin::model::Group::alias);
+               std::ranges::sort( result.queues, {}, &admin::model::Queue::name);
+               std::ranges::sort( result.zombies, {}, &admin::model::Queue::name);
+               std::ranges::sort( result.forward.groups, {}, &admin::model::forward::Group::alias);
+               std::ranges::sort( result.forward.services, {}, &admin::model::forward::Service::alias);
+               std::ranges::sort( result.forward.queues, {}, &admin::model::forward::Queue::alias);
+               std::ranges::sort( result.fanout.groups, {}, &admin::model::fanout::Group::alias);
+               std::ranges::sort( result.fanout.queues, {}, &admin::model::fanout::Queue::alias);
+               std::ranges::sort( result.remote.domains, {}, &admin::model::remote::Domain::alias);
+               std::ranges::sort( result.remote.queues, {}, &admin::model::remote::Queue::name);
+            }
         
             return result;
          }

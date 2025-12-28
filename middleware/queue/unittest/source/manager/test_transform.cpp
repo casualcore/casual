@@ -142,9 +142,6 @@ groups:
       queuebase: ':memory:'
       note: note-A
 queues:
-   -  id: 10
-      group: 42
-      name: a.error
 
    -  id: 11
       group: 42
@@ -162,9 +159,9 @@ queues:
          enqueued: 21
       created: 3000000000
 
-   -  id: 12
+   -  id: 10
       group: 42
-      name: b.error
+      name: a.error
 
    -  id: 13
       group: 42
@@ -181,6 +178,11 @@ queues:
          dequeued: 10
          enqueued: 11
       created: 6000000000
+
+   -  id: 12
+      group: 42
+      name: b.error
+      
 forward:
    groups:
       -  alias: F1
