@@ -31,7 +31,7 @@ namespace casual
 {
    namespace queue
    {
-      inline namespace v1
+      inline namespace v2
       {
          namespace local
          {
@@ -59,14 +59,13 @@ namespace casual
                      transaction.external();
                   }
 
-                  ipc::message::group::enqueue::Request request;
+                  ipc::message::group::enqueue::Request request{ common::process::handle()};
                   request.trid = transaction.trid;
-
-                  request.process = common::process::handle();
 
                   request.message.payload.data = message.payload.data;
                   request.message.payload.type = message.payload.type;
                   request.message.attributes.properties = message.attributes.properties;
+                  request.message.attributes.header = message.attributes.header;
                   request.message.attributes.reply = message.attributes.reply;
                   request.message.attributes.available = message.attributes.available;
                   request.name = lookup.name();
@@ -117,6 +116,7 @@ namespace casual
                            result.id = value.id;
                            result.attributes.available = value.attributes.available;
                            result.attributes.properties = std::move( value.attributes.properties);
+                           result.attributes.header = std::move( value.attributes.header);
                            result.attributes.reply = std::move( value.attributes.reply);
                            result.payload.type = std::move( value.payload.type);
                            result.payload.data = std::move( value.payload.data);
@@ -678,6 +678,6 @@ namespace casual
                return result;
             }
          } // messages
-      } // v1
+      } // v2
    } // queue
 } // casual

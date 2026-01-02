@@ -7,7 +7,6 @@
 #pragma once
 
 #include "casual/argument.h"
-#include "common/pimpl.h"
 
 namespace casual
 {

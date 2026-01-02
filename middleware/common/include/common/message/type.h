@@ -234,12 +234,15 @@ namespace casual
          queue_manager_queue_lookup_discard_reply,
 
          // pinned messages
-         queue_group_enqueue_request  = 6100,
-         queue_group_enqueue_reply_v1_2 = 6101,
-         queue_group_enqueue_reply      = 6102,
-         queue_group_dequeue_request  = 6200,
+         queue_group_enqueue_request_v1_5  = 6100,
+         queue_group_enqueue_reply_v1_2    = 6101,
+         queue_group_enqueue_reply       = 6102,
+         queue_group_enqueue_request     = 6110,
+         
+         queue_group_dequeue_request     = 6200,
          queue_group_dequeue_reply_v1_2  = 6201,
-         queue_group_dequeue_reply       = 6202,
+         queue_group_dequeue_reply_v1_5  = 6202,
+         queue_group_dequeue_reply       = 6210,
          queue_group_dequeue_forget_request, // might be part of interdomian protocol?
          queue_group_dequeue_forget_reply, // might be part of interdomian protocol?
 

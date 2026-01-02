@@ -34,7 +34,7 @@ namespace casual
                error_queue = 2,
             };
 
-            std::string_view description( Type value) noexcept;
+            std::string_view description( Type value);
 
             struct Retry 
             {
@@ -82,7 +82,7 @@ namespace casual
                dequeued = 4
             };
 
-            std::string_view description( State value) noexcept;
+            std::string_view description( State value);
 
             struct Available
             {

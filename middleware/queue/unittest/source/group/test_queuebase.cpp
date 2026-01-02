@@ -879,7 +879,7 @@ PRAGMA journal_mode;
       }
       
 
-      TEST( casual_queue_group, expect_version_3_0)
+      TEST( casual_queue_group, expect_version_4_0)
       {
          common::unittest::Trace trace;
 
@@ -888,7 +888,7 @@ PRAGMA journal_mode;
 
          auto version = database.version();
 
-         EXPECT_TRUE( version.major == 3);
+         EXPECT_TRUE( version.major == 4);
          EXPECT_TRUE( version.minor == 0);
       }
 

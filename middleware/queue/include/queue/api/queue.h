@@ -21,7 +21,7 @@ namespace casual
 {
    namespace queue
    {
-      inline namespace v1  {
+      inline namespace v2  {
 
       common::Uuid enqueue( const std::string& queue, const Message& message);
 
@@ -96,7 +96,7 @@ namespace casual
          std::vector< common::Uuid> remove( const std::string& queue, const std::vector< common::Uuid>& messages, bool force = false);
       } // messages
 
-      } // v1
+      } // v2
    } // queue
 } // casual
 

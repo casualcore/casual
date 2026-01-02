@@ -7,9 +7,10 @@
 
 #pragma once
 
+#include "casual/platform.h"
+#include "casual/header.h"
 
 #include "common/serialize/macro.h"
-#include "casual/platform.h"
 #include "common/uuid.h"
 #include "common/chronology.h"
 
@@ -19,7 +20,7 @@ namespace casual
 {
    namespace queue
    {
-      inline namespace v1  {
+      inline namespace v2  {
 
       using size_type = platform::size::type;
 
@@ -49,6 +50,9 @@ namespace casual
          //! Correlation information.
          std::string properties;
 
+         //! Additional header fields.
+         header::Fields header;
+
          //! reply queue.
          std::string reply;
 
@@ -57,6 +61,7 @@ namespace casual
 
          CASUAL_CONST_CORRECT_SERIALIZE(
             CASUAL_SERIALIZE( properties);
+            CASUAL_SERIALIZE( header);
             CASUAL_SERIALIZE( reply);
             CASUAL_SERIALIZE( available);
          )
@@ -95,14 +100,6 @@ namespace casual
       {
          using payload_type = P;
          using id_type = common::Uuid;
-
-         basic_message( id_type id, Attributes attributes, payload_type payload)
-            : id( std::move( id)), attributes( std::move( attributes)), payload( std::move( payload)) {}
-
-         basic_message( payload_type payload)
-            : payload( std::move( payload)) {}
-
-         basic_message() = default;
 
          id_type id;
          Attributes attributes;
@@ -188,7 +185,7 @@ namespace casual
 
       } // xatmi
 
-      } // v1
+      } // v2
    } // queue
 
 } // casual

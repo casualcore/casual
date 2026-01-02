@@ -597,6 +597,8 @@ domain:
             {
                message.attributes.properties = "poop";
                message.attributes.reply = "a2";
+               message.attributes.header.add( header::Field{ "a", "1"});
+               message.attributes.header.add( header::Field{ "b", "2"});
                message.payload.type = common::buffer::type::binary;
                message.payload.data.assign( std::begin( payload), std::end( payload));
             }
@@ -610,6 +612,13 @@ domain:
 
          ASSERT_TRUE( message.size() == 1);
          EXPECT_TRUE( common::algorithm::equal( message.at( 0).payload.data, payload));
+
+         EXPECT_TRUE( message.at( 0).attributes.properties == "poop");
+         EXPECT_TRUE( message.at( 0).attributes.reply == "a2");
+         EXPECT_TRUE( message.at( 0).attributes.header.size() == 2) << CASUAL_NAMED_VALUE( message.at( 0).attributes.header);
+         EXPECT_TRUE( message.at( 0).attributes.header.at( "a").value() == "1");
+         EXPECT_TRUE( message.at( 0).attributes.header.at( "b").value() == "2");
+
       }
 
       TEST( casual_queue, enqueue_1_message_delay_100ms__blocking_dequeue__expect_1_message_after_100ms)

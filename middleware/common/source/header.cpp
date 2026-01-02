@@ -35,12 +35,12 @@ namespace casual
             : Field{ string::compose( name, ':', value)}
          {}
 
-         std::string_view Field::name() const
+         std::string_view Field::name() const &
          { 
             return { std::begin( m_data), std::find( std::begin( m_data), std::end( m_data), ':')};
          }
 
-         std::string_view Field::value() const
+         std::string_view Field::value() const &
          {  
             if( auto found = algorithm::find( m_data, ':'))
                return { std::begin( found) + 1, std::end( found)};
@@ -56,11 +56,6 @@ namespace casual
             };
 
             return algorithm::equal( lhs.name(), rhs, case_insensitive_equal);
-         }
-
-         bool operator == ( const Field& lhs, const Field& rhs)
-         {
-            return lhs == rhs.name();
          }
 
          Fields::Fields( std::vector< header::Field> fields)
@@ -109,6 +104,27 @@ namespace casual
             return lhs;
          }
  
+         
+         std::string flatten( const Fields& fields)
+         {
+            if( fields.empty())
+               return {};
+
+            // TODO: optimize, we could pre-calculate the size
+
+            return common::string::join( fields, '\n');
+         }
+
+         
+         Fields parse( std::string_view flattened)
+         {
+            Fields result;
+
+            for( auto&& line : flattened | std::views::split( '\n'))
+               result.add( Field{ std::string{ std::begin( line), std::end( line)}});
+               
+            return result;
+         }
 
       } // v1
    } // header

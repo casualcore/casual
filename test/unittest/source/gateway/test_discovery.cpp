@@ -764,7 +764,7 @@ domain:
 
 )");
       
-         queue::enqueue( "a1", { { ".binary", common::unittest::random::binary( 512)}});
+         queue::enqueue( "a1", { .payload = { .type = ".binary", .data = common::unittest::random::binary( 512)}});
 
          // boot C - topology update should propagate to A, and the queue forward kicks in
          auto c = local::manager( local::configuration::base, C);
