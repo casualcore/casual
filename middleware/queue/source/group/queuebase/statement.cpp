@@ -36,8 +36,9 @@ namespace casual
                available     INTEGER,
                timestamp     INTEGER,
                payload       BLOB,
+               header        TEXT
             */
-            result.enqueue = connection.precompile( "INSERT INTO message VALUES (?,?,?,?,?,?,?,?,?,?,?,?);");
+            result.enqueue = connection.precompile( "INSERT INTO message VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?);");
 
          }
 
@@ -46,7 +47,7 @@ namespace casual
 
             result.dequeue.first = connection.precompile( R"(
 SELECT
-   ROWID, id, properties, reply, redelivered, type, available, timestamp, payload
+   ROWID, id, properties, reply, redelivered, type, available, timestamp, payload, header
 FROM
    message
 WHERE queue = :queue AND state = 2 AND available < :available ORDER BY timestamp ASC, available ASC LIMIT 1; )");
@@ -54,14 +55,14 @@ WHERE queue = :queue AND state = 2 AND available < :available ORDER BY timestamp
             // for dequeue with an explicit id we ignore _available_
             result.dequeue.first_id = connection.precompile( R"(
 SELECT
-   ROWID, id, properties, reply, redelivered, type, available, timestamp, payload
+   ROWID, id, properties, reply, redelivered, type, available, timestamp, payload, header
 FROM 
    message
 WHERE id = :id AND queue = :queue AND state = 2; )");
 
             result.dequeue.first_match = connection.precompile( R"(
 SELECT
-   ROWID, id, properties, reply, redelivered, type, available, MIN( timestamp), payload
+   ROWID, id, properties, reply, redelivered, type, available, MIN( timestamp), payload, header
 FROM
    message
 WHERE queue = :queue AND state = 2 AND properties = :properties AND available < :available; )");
@@ -241,7 +242,8 @@ SELECT
    type, 
    available, 
    timestamp, 
-   payload
+   payload,
+   header
 FROM 
    message 
 WHERE id = :id; )");
@@ -255,7 +257,7 @@ WHERE id = :id; )");
 
             result.browse.first = connection.precompile( R"(
 SELECT
-   ROWID, id, properties, reply, redelivered, type, available, timestamp, payload
+   ROWID, id, properties, reply, redelivered, type, available, timestamp, payload, header
 FROM
    message
 WHERE queue = :queue AND state = 2 AND timestamp > :timestamp AND available < :available ORDER BY timestamp ASC, available ASC LIMIT 1; )");

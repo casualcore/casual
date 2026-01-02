@@ -30,17 +30,19 @@ namespace casual
             Field( std::string_view name, std::string_view value);
 
             //! @returns the name part of the field
-            std::string_view name() const;
+            std::string_view name() const &;
             //! @returns the value part of the field
-            std::string_view value() const;
+            std::string_view value() const &;
 
             //! @returns true of the name of the field is case-insensitive equal to @p rhs
             friend bool operator == ( const Field& lhs, std::string_view rhs);
-
-            //! @returns true of the lhs.name() is case-insensitive equal to rhs.name()
-            friend bool operator == ( const Field& lhs, const Field& rhs);
+         
+            inline friend bool operator == ( const Field& lhs, const Field& rhs) = default;
+            inline friend auto operator <=> ( const Field& lhs, const Field& rhs) = default;
 
             inline const std::string& string() const & { return m_data;}
+
+            inline friend std::ostream& operator << ( std::ostream& out, const Field& field) { return out << field.m_data;}
 
             CASUAL_FORWARD_SERIALIZE( m_data);
 
@@ -78,7 +80,8 @@ namespace casual
             inline auto begin() const noexcept { return std::begin( m_fields);}
             inline auto end() const noexcept { return std::end( m_fields);}
 
-            inline friend bool operator == ( const Fields& lhs, const Fields& rhs) = default;
+            inline friend bool operator == ( const Fields&, const Fields&) = default;
+            inline friend auto operator <=> ( const Fields&, const Fields&) = default;
 
             CASUAL_FORWARD_SERIALIZE( m_fields);
 
@@ -89,6 +92,10 @@ namespace casual
             std::vector< header::Field> m_fields;
          };
          
+         //! @returns a flattened representation of the fields, separated by '\n'
+         std::string flatten( const Fields& fields);
+         //! @returns parsed fields from the flattened representation
+         Fields parse( std::string_view flattened);
 
       } // v1
    } // header

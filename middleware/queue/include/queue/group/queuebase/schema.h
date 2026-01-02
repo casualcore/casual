@@ -10,7 +10,7 @@ namespace casual
    {
       namespace table
       {
-         inline namespace v3_0
+         inline namespace v4_0
          {
             constexpr auto queue = R"( CREATE TABLE IF NOT EXISTS queue 
 (
@@ -42,6 +42,7 @@ namespace casual
    available     INTEGER  NOT NULL,
    timestamp     INTEGER  NOT NULL,
    payload       BLOB,
+   header        TEXT,
    FOREIGN KEY (queue) REFERENCES queue( id)
 ); )";
             namespace index
@@ -61,10 +62,10 @@ CREATE INDEX IF NOT EXISTS i_message_available ON message ( available ASC);
 CREATE INDEX IF NOT EXISTS i_gtrid_message  ON message ( gtrid, state);
 )";
             } // index
-         } // inline v3_0
+         } // inline v4_0
       } // table
 
-      inline namespace v3_0
+      inline namespace v4_0
       {
          constexpr auto triggers = R"(
 CREATE TRIGGER IF NOT EXISTS insert_message INSERT ON message 
@@ -139,7 +140,49 @@ DROP TRIGGER IF EXISTS delete_message;
 )";
          } // drop
          
-      } // inline v3_0
+      } // inline v4_0
+
+
+      // old versions below, helps us test migrations
+
+      namespace table
+      {
+         namespace v3_0
+         {
+            constexpr auto queue = R"( CREATE TABLE IF NOT EXISTS queue 
+(
+   id                INTEGER  PRIMARY KEY,
+   name              TEXT     UNIQUE,
+   retry_count       INTEGER  NOT NULL,
+   retry_delay       INTEGER  NOT NULL,
+   error             INTEGER  NOT NULL,
+   count             INTEGER  NOT NULL, -- number of (committed) messages
+   size              INTEGER  NOT NULL, -- total size of all (committed) messages
+   uncommitted_count INTEGER  NOT NULL, -- uncommitted messages
+   metric_dequeued   INTEGER  NOT NULL,
+   metric_enqueued   INTEGER  NOT NULL,
+   last              INTEGER NOT NULL, -- last update to the queue
+   created           INTEGER NOT NULL -- when the queue was created
+); )";
+
+            constexpr auto message = R"( CREATE TABLE IF NOT EXISTS message 
+(  id            BLOB PRIMARY KEY,
+   queue         INTEGER  NOT NULL,
+   origin        NUMBER   NOT NULL, -- the first queue a message is enqueued to
+   gtrid         BLOB,
+   properties    TEXT,
+   state         INTEGER  NOT NULL, -- (1: enqueued, 2: committed, 3: dequeued)
+   reply         TEXT,
+   redelivered   INTEGER  NOT NULL,
+   type          TEXT,
+   available     INTEGER  NOT NULL,
+   timestamp     INTEGER  NOT NULL,
+   payload       BLOB,
+   FOREIGN KEY (queue) REFERENCES queue( id)
+); )";
+
+         } // v3_0
+      } // table
 
    } // queue::group::queuebase::schema
 } // casual

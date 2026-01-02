@@ -207,6 +207,13 @@ domain:
 
          auto buffer = local::buffer::allocate();
 
+         std::array< const char*, 3> origin_headers = { "a:1", "b:2", "c:3"};
+
+         // associate some header fields with the buffer
+         {
+            ::casual_header_associate( buffer.get(), origin_headers.data(), origin_headers.size());
+         }
+
          auto message  = casual_queue_message_create( { buffer.get(), buffer.size()});
          
          EXPECT_TRUE( casual_queue_enqueue( "A1", message) != -1) << "casual_qerrno: " << casual_qerrno;
@@ -222,6 +229,21 @@ domain:
          
          casual_buffer_t result_buffer{};
          ASSERT_TRUE( casual_queue_message_get_buffer( message, &result_buffer) != -1);
+
+         // check associated header fields
+         {
+            std::vector< std::string> headers;
+
+            auto add_header = []( const char* header, void* result)
+            {
+               static_cast< std::vector< std::string>*>( result)->push_back( header);
+               return 0;
+            };
+
+            ::casual_header_browse( result_buffer.data, add_header, &headers);
+
+            EXPECT_TRUE( std::ranges::equal( headers, origin_headers)) << CASUAL_NAMED_VALUE( headers);            
+         }
 
          // so we delete the allocated buffer
          auto deleter = local::buffer::Type{ result_buffer.data};

@@ -70,8 +70,9 @@ namespace casual
 
             void registration( Entry entry)
             {
-               assertion( ! algorithm::find( local::lookup::state().entries, entry.id), "error code is already registered - entry: ", entry);
-               local::lookup::state().entries.push_back( std::move( entry));
+               // only add if not already registered (could be multiple translation units registering the same category)
+               if( ! algorithm::find( local::lookup::state().entries, entry.id))
+                  local::lookup::state().entries.push_back( std::move( entry));               
             }
 
             const std::vector< Entry>& state() noexcept

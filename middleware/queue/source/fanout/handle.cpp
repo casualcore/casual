@@ -320,7 +320,10 @@ namespace casual
                      auto create_request = []( auto& lookup)
                      {
                         ipc::message::group::enqueue::Request request{ common::process::handle()};
-                        request.message = std::move( lookup.message.message.value());
+                        request.message = ipc::message::group::enqueue::Message{
+                           .attributes = std::move( lookup.message.message->attributes),
+                           .payload = std::move( lookup.message.message->payload)
+                        };
                         request.trid = lookup.trid;
                         return request;
                      };

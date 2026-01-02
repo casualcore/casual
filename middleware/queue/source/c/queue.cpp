@@ -24,6 +24,8 @@
 #include "common/code/queue.h"
 #include "common/code/signal.h"
 
+#include "casual/xatmi/internal/context.h"
+
 namespace casual
 {
    namespace queue
@@ -140,7 +142,7 @@ namespace casual
 
                auto create( casual_buffer_t buffer)
                {
-                  return global::cache.add( casual::queue::xatmi::Message{ casual::queue::xatmi::Payload{ buffer.data, buffer.size}}).id.value();
+                  return global::cache.add( casual::queue::xatmi::Message{ .payload = casual::queue::xatmi::Payload{ buffer.data, buffer.size}}).id.value();
                }
                
                auto clean( descriptor::id descriptor)
@@ -295,6 +297,12 @@ namespace casual
                Trace trace{ "queue::local::enqueue"};
 
                auto& message = message::global::cache.get( descriptor);
+
+               if( auto header = casual::xatmi::internal::context().header.find( common::buffer::handle::type{ message.value.payload.buffer}))
+                  message.value.attributes.header = *header;
+               else
+                  message.value.attributes.header.clear();
+               
                message.value.id = queue::xatmi::enqueue( queue, message.value);
                return 0;
             }
@@ -313,6 +321,12 @@ namespace casual
 
                if( message.empty())
                   common::code::raise::error( common::code::queue::no_message);
+
+               // if there are header fields associated with the message, we try to associate them with the buffer handle
+               if( ! message[ 0].attributes.header.empty())
+                  casual::xatmi::internal::context().header.associate(
+                     common::buffer::handle::type{ message[ 0].payload.buffer},
+                     std::move( message[ 0].attributes.header));
 
                return local::message::global::cache.add( std::move( message.front())).id.value();
             }

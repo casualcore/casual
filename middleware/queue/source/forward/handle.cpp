@@ -547,6 +547,7 @@ namespace casual
                            state.multiplex.send( ipc::service::manager(), request);
 
                            forward::state::pending::service::Lookup lookup{ std::move( *pending)};
+                           lookup.header = std::move( message.message->attributes.header);
                            lookup.buffer.type = std::move( message.message->payload.type);
                            lookup.buffer.data = std::move( message.message->payload.data);
 
@@ -561,8 +562,11 @@ namespace casual
                            request.trid = pending->trid;
                            request.queue = forward->target.id;
                            request.name = forward->target.queue;
-                           request.message = std::move( *message.message);
-
+                           request.message = ipc::message::group::enqueue::Message{
+                              .attributes = std::move( message.message->attributes),
+                              .payload = std::move( message.message->payload)
+                           };
+                           
                            // make sure we've got a new message-id
                            request.message.id = uuid::make();
 

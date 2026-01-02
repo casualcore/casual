@@ -69,6 +69,8 @@ namespace casual
                   // SELECT ROWID, id, properties, reply, redelivered, type, available, timestamp, payload
                   void fetch( sql::database::Row& row, Result& result)
                   {
+                     std::string header;
+
                      sql::database::row::get( row,
                         result.rowid,
                         result.message.id.get(),
@@ -78,8 +80,12 @@ namespace casual
                         result.message.payload.type,
                         result.message.attributes.available,
                         result.message.timestamp,
-                        result.message.payload.data
+                        result.message.payload.data,
+                        header
                      );
+
+                     if( ! header.empty())
+                        result.message.attributes.header = header::parse( header);
                   }
 
                   auto fetch( sql::database::Row& row)
@@ -146,7 +152,7 @@ namespace casual
             {
                Trace trace{ "queue::group::database::local::check_version"};
 
-               auto required = sql::database::Version{ 3, 0};
+               auto required = sql::database::Version{ 4, 0};
 
                auto version = sql::database::version::get( connection);
 
@@ -171,7 +177,7 @@ namespace casual
       {
          namespace queue
          {
-            std::string_view description( Type value) noexcept
+            std::string_view description( Type value)
             {
                switch( value)
                {
@@ -180,11 +186,12 @@ namespace casual
                }
                return "<unknown>";
             }
+
          } // queue
 
          namespace message
          {
-            std::string_view description( State value) noexcept
+            std::string_view description( State value)
             {
                switch( value)
                {
@@ -195,6 +202,7 @@ namespace casual
                }
                return "<unknown>";
             }
+
          } // message
       } // queuebase
 
@@ -385,8 +393,8 @@ namespace casual
          reply.id = message.message.id ? message.message.id : common::uuid::make();
 
          auto gtrid = message.trid.global();
-
          auto state = message.trid ? queuebase::message::State::added : queuebase::message::State::enqueued;
+
 
          m_statement.enqueue.execute(
                reply.id.range(),
@@ -400,7 +408,8 @@ namespace casual
                message.message.payload.type,
                message.message.attributes.available,
                platform::time::clock::type::now(),
-               message.message.payload.data);
+               message.message.payload.data,
+               header::flatten( message.message.attributes.header));
 
          common::log::debug( "reply: ", reply);
          return reply;

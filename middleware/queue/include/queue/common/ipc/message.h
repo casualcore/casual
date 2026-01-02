@@ -15,6 +15,8 @@
 
 #include "configuration/model.h"
 
+#include "casual/header.h"
+
 #include <optional>
 
 namespace casual
@@ -274,6 +276,7 @@ namespace casual
       struct Attributes 
       {
          std::string properties;
+         header::Fields header;
          std::string reply;
          common::chronology::time_point available;
 
@@ -281,6 +284,7 @@ namespace casual
          
          CASUAL_CONST_CORRECT_SERIALIZE(
             CASUAL_SERIALIZE( properties);
+            CASUAL_SERIALIZE( header);
             CASUAL_SERIALIZE( reply);
             CASUAL_SERIALIZE( available);
          ) 
@@ -467,6 +471,58 @@ namespace casual
                )
             };
 
+            namespace v1_5
+            {
+               struct Attributes 
+               {
+                  std::string properties;
+                  std::string reply;
+                  common::chronology::time_point available;
+                  
+                  CASUAL_CONST_CORRECT_SERIALIZE(
+                     CASUAL_SERIALIZE( properties);
+                     CASUAL_SERIALIZE( reply);
+                     CASUAL_SERIALIZE( available);
+                  ) 
+               };
+
+               struct Message
+               {
+                  common::Uuid id;
+                  Attributes attributes;
+                  ipc::message::Payload payload;
+                  platform::size::type redelivered{};
+                  common::chronology::time_point timestamp;
+
+                  CASUAL_CONST_CORRECT_SERIALIZE(
+                     CASUAL_SERIALIZE( id);
+                     CASUAL_SERIALIZE( attributes);
+                     CASUAL_SERIALIZE( payload);
+                     CASUAL_SERIALIZE( redelivered);
+                     CASUAL_SERIALIZE( timestamp);
+                  )
+               };
+
+               using base_reply = common::message::basic_message< common::message::Type::queue_group_dequeue_reply_v1_5>;
+               struct Reply : base_reply
+               {
+                  using base_reply::base_reply;
+
+                  // we use the old message, without header.
+                  std::optional< dequeue::v1_5::Message> message;
+                  common::code::queue code{};
+
+                  inline explicit operator bool () const noexcept { return message.has_value();}
+
+                  CASUAL_CONST_CORRECT_SERIALIZE(
+                     base_reply::serialize( archive);
+                     CASUAL_SERIALIZE( message);
+                     CASUAL_SERIALIZE( code);
+                  )
+               };
+               
+            } // v1_5
+
             namespace v1_2
             {
                using base_reply = common::message::basic_message< common::message::Type::queue_group_dequeue_reply_v1_2>;
@@ -474,7 +530,8 @@ namespace casual
                {
                   using base_reply::base_reply;
 
-                  std::vector< dequeue::Message> message;
+                  // we use the old message, without header.
+                  std::vector< dequeue::v1_5::Message> message;
 
                   inline explicit operator bool () const noexcept { return ! message.empty();}
 
@@ -524,20 +581,15 @@ namespace casual
          {
             struct Message
             {
-               Message() = default;
-               Message( dequeue::Message other)
-                  : id{ other.id}, attributes{ std::move( other.attributes)},
-                     payload{ std::move( other.payload)}
-               {}
-
                common::Uuid id;
                ipc::message::Attributes attributes;
                ipc::message::Payload payload;
-
+               
                CASUAL_CONST_CORRECT_SERIALIZE(
                   CASUAL_SERIALIZE( id);
                   CASUAL_SERIALIZE( attributes);
                   CASUAL_SERIALIZE( payload);
+                  
                )
             };
 
@@ -574,6 +626,55 @@ namespace casual
                   CASUAL_SERIALIZE( code);
                )
             };
+
+            namespace v1_5
+            {
+               struct Attributes 
+               {
+                  std::string properties;
+                  std::string reply;
+                  common::chronology::time_point available;
+                  
+                  CASUAL_CONST_CORRECT_SERIALIZE(
+                     CASUAL_SERIALIZE( properties);
+                     CASUAL_SERIALIZE( reply);
+                     CASUAL_SERIALIZE( available);
+                  ) 
+               };
+
+               struct Message
+               {
+                  common::Uuid id;
+                  enqueue::v1_5::Attributes attributes;
+                  ipc::message::Payload payload;
+
+                  CASUAL_CONST_CORRECT_SERIALIZE(
+                     CASUAL_SERIALIZE( id);
+                     CASUAL_SERIALIZE( attributes);
+                     CASUAL_SERIALIZE( payload);
+                  )
+               };
+
+               using base_request = common::message::basic_request< common::message::Type::queue_group_enqueue_request_v1_5>;
+               struct Request : base_request
+               {
+                  using base_request::base_request;
+
+                  common::transaction::ID trid;
+                  common::strong::queue::id queue;
+                  std::string name;
+                  enqueue::v1_5::Message message;
+
+                  CASUAL_CONST_CORRECT_SERIALIZE(
+                     base_request::serialize( archive);
+                     CASUAL_SERIALIZE( trid);
+                     CASUAL_SERIALIZE( queue);
+                     CASUAL_SERIALIZE( name);
+                     CASUAL_SERIALIZE( message);
+                  )
+               };
+               
+            } // v1_5
 
             namespace v1_2
             {
@@ -1358,6 +1459,11 @@ namespace casual
 
       template<>
       struct type_traits< casual::queue::ipc::message::fanout::group::state::Request> : detail::type< casual::queue::ipc::message::fanout::group::state::Reply> {};
+
+      // some protocol versions reverse mappings, to make it easier to write generic code
+
+      template<>
+      struct type_traits< casual::queue::ipc::message::group::enqueue::v1_5::Request> : detail::type< casual::queue::ipc::message::group::enqueue::Reply> {};
    
    } // common::message::reverse
 } // casual

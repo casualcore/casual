@@ -73,7 +73,7 @@ domain:
 
             auto message()
             {
-               queue::Message result{ queue::Payload{ "payload", unittest::random::binary( 1024) }};
+               queue::Message result{ .payload = { .type = "payload", .data = unittest::random::binary( 1024)}};
                return result;
             }
 

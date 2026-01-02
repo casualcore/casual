@@ -294,10 +294,12 @@ namespace casual
                   Lookup() = default;
                   Lookup( const transaction_base& other) : transaction_base{ other} {}
 
+                  header::Fields header;
                   common::buffer::Payload buffer;
 
                   CASUAL_LOG_SERIALIZE(
                      transaction_base::serialize( archive);
+                     CASUAL_SERIALIZE( header);
                      CASUAL_SERIALIZE( buffer);
                   )
                };
