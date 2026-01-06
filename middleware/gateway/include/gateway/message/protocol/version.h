@@ -26,7 +26,8 @@ namespace casual
          v1_3 = 1003,
          v1_4 = 1004,
          v1_5 = 1005,
-         current = v1_5,
+         v1_6 = 1006,
+         current = v1_6,
       };
 
       constexpr std::string_view description( Version value) noexcept
@@ -40,12 +41,13 @@ namespace casual
             case Version::v1_3: return "1.3";
             case Version::v1_4: return "1.4";
             case Version::v1_5: return "1.5";
+            case Version::v1_6: return "1.6";
          };
          return "<unknown>";
       }
 
       //! an array with all versions ordered by highest to lowest
-      constexpr auto versions = common::array::make( Version::v1_5, Version::v1_4, Version::v1_3, Version::v1_2, Version::v1_1, Version::v1_0);
+      constexpr auto versions = common::array::make( Version::v1_6, Version::v1_5, Version::v1_4, Version::v1_3, Version::v1_2, Version::v1_1, Version::v1_0);
 
       //! @returns the version we're using. Version::current, unless it's overridden
       Version version();

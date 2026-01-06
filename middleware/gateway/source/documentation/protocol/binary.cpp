@@ -112,10 +112,12 @@ namespace casual
                generator( example::message< common::message::conversation::callee::Send>(), basename);
                generator( example::message< common::message::conversation::Disconnect>(), basename);
                generator( example::message< queue::ipc::message::group::enqueue::Request>(), basename);
+               generator( example::message< queue::ipc::message::group::enqueue::v1_5::Request>(), basename);
                generator( example::message< queue::ipc::message::group::enqueue::Reply>(), basename);
                generator( example::message< queue::ipc::message::group::enqueue::v1_2::Reply>(), basename);
                generator( example::message< queue::ipc::message::group::dequeue::Request>(), basename);
                generator( example::message< queue::ipc::message::group::dequeue::Reply>(), basename);
+               generator( example::message< queue::ipc::message::group::dequeue::v1_5::Reply>(), basename);
                generator( example::message< queue::ipc::message::group::dequeue::v1_2::Reply>(), basename);
                generator( example::message< common::message::transaction::resource::prepare::Request>(), basename);
                generator( example::message< common::message::transaction::resource::prepare::Reply>(), basename);

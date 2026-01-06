@@ -130,8 +130,11 @@ namespace casual
                            auto connection = state.connections.find_external( descriptor);
                            CASUAL_ASSERT( connection);
 
+                           // send correct reply message based on protocol
                            if( message::protocol::compatible< casual::queue::ipc::message::group::dequeue::Reply>( connection->protocol()))
                               inbound::tcp::send( state, connection->descriptor(), message);
+                           else if( message::protocol::compatible< casual::queue::ipc::message::group::dequeue::v1_5::Reply>( connection->protocol()))
+                              inbound::tcp::send( state, connection->descriptor(), message::protocol::transform::to< casual::queue::ipc::message::group::dequeue::v1_5::Reply>( std::move( message)));
                            else
                               inbound::tcp::send( state, connection->descriptor(), message::protocol::transform::to< casual::queue::ipc::message::group::dequeue::v1_2::Reply>( std::move( message)));
                         };
@@ -402,6 +405,23 @@ namespace casual
                            state.tasks.add( task::create::queue::enqueue( state, descriptor, std::move( message)));
                         };
                      }
+
+                     namespace v1_5
+                     {
+                        auto request( State& state)
+                        {
+                           return [&state]( casual::queue::ipc::message::group::enqueue::v1_5::Request& message, strong::socket::id descriptor)
+                           {
+                              Trace trace{ "gateway::group::inbound::handle::local::external::queue::enqueue::v1_5::Request"};
+                              common::log::debug( "message: ", message);
+
+                              // transform the 1.5 request to the 'current' request
+                              state.tasks.add( task::create::queue::enqueue( state, descriptor, message::protocol::transform::from( std::move( message))));
+                           };
+                        }
+                        
+                     } // v1_5
+                     
                   } // enqueue
 
                   namespace dequeue
@@ -604,6 +624,7 @@ namespace casual
 
             // queue
             local::external::queue::enqueue::request( state),
+            local::external::queue::enqueue::v1_5::request( state),
             local::external::queue::dequeue::request( state),
 
             // discover

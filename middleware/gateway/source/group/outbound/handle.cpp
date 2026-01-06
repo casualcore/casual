@@ -550,36 +550,59 @@ namespace casual
                         }
                         
                      } // create
-                  } // detail
-
-                  namespace basic
-                  {
-                     template< typename Message>
-                     auto request( State& state)
+  
+                     auto send( State& state, auto&& message, strong::socket::id tcp)
                      {
-                        return [&state]( Message& message, strong::ipc::descriptor::id descriptor)
-                        {
-                           Trace trace{ "gateway::outbound::local::handle::internal::queue::basic::request"};
-                           log::debug( "message: ", message);
+                        Trace trace{ "gateway::group::outbound::handle::local::internal::queue::detail::send"};
+                        log::debug( "message: ", message);
 
-                           auto tcp = state.connections.partner( descriptor);
+                        tcp::send( state, tcp, message);
+                        state.tasks.add( detail::create::task( state, message, tcp));
 
-                           tcp::send( state, tcp, message);
-                           state.tasks.add( detail::create::task( state, message, tcp));
-
-                           transaction::associate_and_involve( state, message, tcp);
-                        };
-                     }  
-                  } // basic
+                        transaction::associate_and_involve( state, message, tcp);
+                     }
+                     
+                  } // detail
 
                   namespace enqueue
                   {
-                     auto request = basic::request< casual::queue::ipc::message::group::enqueue::Request>;
+                     auto request( State& state)
+                     {
+                        return [ &state]( casual::queue::ipc::message::group::enqueue::Request& message, strong::ipc::descriptor::id descriptor)
+                        {
+                           auto connection = state.connections.find_external( descriptor);
+                           CASUAL_ASSERT( connection);
+
+                           if( message::protocol::compatible< casual::queue::ipc::message::group::enqueue::Request>( connection->protocol()))
+                           {
+                              detail::send( state, message, connection->descriptor());
+                              
+                           }
+                           else if( message::protocol::compatible< casual::queue::ipc::message::group::enqueue::v1_5::Request>( connection->protocol()))
+                           {
+                              // this works because v1_5 has reverse type to the regular Reply.
+                              detail::send( state, 
+                                 message::protocol::transform::to< casual::queue::ipc::message::group::enqueue::v1_5::Request>( std::move( message)), 
+                                 connection->descriptor());
+                           }
+                        };
+                     }
+
                   } // enqueue
 
                   namespace dequeue
-                  {
-                     auto request = basic::request< casual::queue::ipc::message::group::dequeue::Request>;
+                  {                                          
+                     auto request( State& state)
+                     {
+                        return [&state]( casual::queue::ipc::message::group::dequeue::Request& message, strong::ipc::descriptor::id descriptor)
+                        {
+                           Trace trace{ "gateway::group::outbound::handle::local::internal::queue::dequeue::request"};
+                           log::debug( "message: ", message);
+
+                           detail::send( state, message, state.connections.partner( descriptor));
+                        };
+                     } 
+
                   } // dequeue
                } // queue
                
@@ -706,6 +729,20 @@ namespace casual
                            };
                         }   
                      } // v1_2
+
+                     namespace v1_5
+                     {
+                        auto reply( State& state)
+                        {
+                           return [ &state]( casual::queue::ipc::message::group::dequeue::v1_5::Reply& message, strong::socket::id descriptor)
+                           {
+                              Trace trace{ "gateway::group::outbound::handle::local::external::queue::dequeue::v1_5::reply"};
+                              log::debug( "message: ", message);
+
+                              state.tasks( message::protocol::transform::from( std::move( message)));
+                           };
+                        }
+                     } // v1_5
 
                   } // dequeue
                } // queue
@@ -973,6 +1010,7 @@ namespace casual
             local::external::queue::enqueue::reply( state),
             local::external::queue::enqueue::v1_2::reply( state),
             local::external::queue::dequeue::reply( state),
+            local::external::queue::dequeue::v1_5::reply( state),
             local::external::queue::dequeue::v1_2::reply( state),
 
             // transaction

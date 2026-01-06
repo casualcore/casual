@@ -67,9 +67,11 @@ namespace casual
          common::message::transaction::resource::rollback::Request,
          common::message::transaction::resource::rollback::Reply,
          queue::ipc::message::group::enqueue::Request,
+         queue::ipc::message::group::enqueue::v1_5::Request,
          queue::ipc::message::group::enqueue::v1_2::Reply,
          queue::ipc::message::group::enqueue::Reply,
          queue::ipc::message::group::dequeue::Request,
+         queue::ipc::message::group::dequeue::v1_5::Reply,
          queue::ipc::message::group::dequeue::v1_2::Reply,
          queue::ipc::message::group::dequeue::Reply,
          gateway::message::domain::disconnect::Request,
@@ -101,7 +103,8 @@ namespace casual
       static_assert( gateway::message::protocol::version< queue::ipc::message::group::enqueue::Reply>().min == gateway::message::protocol::Version::v1_3);
       static_assert( gateway::message::protocol::version< queue::ipc::message::group::dequeue::v1_2::Reply>().min == gateway::message::protocol::Version::v1_0);
       static_assert( gateway::message::protocol::version< queue::ipc::message::group::dequeue::v1_2::Reply>().max == gateway::message::protocol::Version::v1_2);
-      static_assert( gateway::message::protocol::version< queue::ipc::message::group::dequeue::Reply>().min == gateway::message::protocol::Version::v1_3);
+      static_assert( gateway::message::protocol::version< queue::ipc::message::group::dequeue::v1_5::Reply>().min == gateway::message::protocol::Version::v1_3);
+      static_assert( gateway::message::protocol::version< queue::ipc::message::group::dequeue::Reply>().min == gateway::message::protocol::Version::v1_6);
       static_assert( gateway::message::protocol::version< gateway::message::domain::disconnect::Request>().min == gateway::message::protocol::Version::v1_1);
       static_assert( gateway::message::protocol::version< gateway::message::domain::disconnect::Reply>().min == gateway::message::protocol::Version::v1_1);
 

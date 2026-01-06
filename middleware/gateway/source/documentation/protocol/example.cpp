@@ -340,6 +340,22 @@ namespace casual
             message.name = "queueA";
             message.trid = local::trid();
 
+            message.message.id = 0x6ccc80fe613c4aa0b74cc7461d318422_uuid;
+            message.message.attributes.properties = "property 1:property 2";
+            message.message.attributes.header = header::Fields{ { { "a", "b"}, { "c", "d"} } };
+            message.message.attributes.reply = "queueB";
+            message.message.attributes.available = local::time::point();
+            message.message.payload.type = ".binary/";
+            message.message.payload.data = local::binary::value( 128);
+         }
+
+         void fill( casual::queue::ipc::message::group::enqueue::v1_5::Request& message)
+         {
+            local::set_general( message);
+
+            message.name = "queueA";
+            message.trid = local::trid();
+
             message.message.id = 0xe6fd9fcf86ac47f4a5252f597e25fc6a_uuid;
             message.message.attributes.properties = "property 1:property 2";
             message.message.attributes.reply = "queueB";
@@ -376,13 +392,37 @@ namespace casual
             message.block = false;
          }
 
+
+
+
+         void fill( casual::queue::ipc::message::group::dequeue::Reply& message)
+         {
+            local::set_general( message);
+
+            message.message.emplace();
+            {
+               message.message->id =  0x6ccc80fe613c4aa0b74cc7461d318422_uuid;
+               message.message->attributes.properties = "property 1:property 2";
+               message.message->attributes.reply = "queueB";
+               message.message->attributes.available = local::time::point();
+               message.message->attributes.header.add( { "a", "b"});
+               message.message->attributes.header.add( { "c", "d"});
+               message.message->payload.type = ".json/";
+               message.message->payload.data = { std::byte{ '{'}, std::byte{ '}'}};
+               message.message->redelivered = 1;
+               message.message->timestamp = local::time::point();
+            }
+
+            message.code = decltype( message.code)::argument;
+         }
+
          namespace local
          {
             namespace
             {
-               auto queue_message()
+               auto v1_5_queue_message()
                {
-                  casual::queue::ipc::message::group::dequeue::Message message;
+                  casual::queue::ipc::message::group::dequeue::v1_5::Message message;
                   message.id =  0x532f8b6c15764dca9fe82a3002de579e_uuid;
                   message.attributes.properties = "property 1:property 2";
                   message.attributes.reply = "queueB";
@@ -397,19 +437,18 @@ namespace casual
             } // <unnamed>
          } // local
 
-
-         void fill( casual::queue::ipc::message::group::dequeue::Reply& message)
+         void fill( casual::queue::ipc::message::group::dequeue::v1_5::Reply& message)
          {
             local::set_general( message);
 
-            message.message = local::queue_message();
+            message.message = local::v1_5_queue_message();
             message.code = decltype( message.code)::argument;
          }
 
          void fill( casual::queue::ipc::message::group::dequeue::v1_2::Reply& message)
          {
             local::set_general( message);
-            message.message.push_back( local::queue_message());
+            message.message.push_back( local::v1_5_queue_message());
          }
 
          namespace local

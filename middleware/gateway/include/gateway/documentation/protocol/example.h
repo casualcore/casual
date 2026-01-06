@@ -40,11 +40,13 @@ namespace casual
          void fill( common::message::conversation::Disconnect& message);
 
          void fill( casual::queue::ipc::message::group::enqueue::Request& message);
+         void fill( casual::queue::ipc::message::group::enqueue::v1_5::Request& message);
          void fill( casual::queue::ipc::message::group::enqueue::Reply& message);
          void fill( casual::queue::ipc::message::group::enqueue::v1_2::Reply& message);
 
          void fill( casual::queue::ipc::message::group::dequeue::Request& message);
          void fill( casual::queue::ipc::message::group::dequeue::Reply& message);
+         void fill( casual::queue::ipc::message::group::dequeue::v1_5::Reply& message);
          void fill( casual::queue::ipc::message::group::dequeue::v1_2::Reply& message);
 
          void fill( common::message::transaction::resource::prepare::Request& message);
@@ -71,7 +73,7 @@ namespace casual
          namespace detail
          {
             constexpr std::string_view base64( gateway::message::domain::connect::Request&&){
-               return R"(cHPL9BRESkGHswCG8UP8YDFdrMYYLkwSv5h376kky4YAAAAAAAAACGRvbWFpbiBBAAAAAAAAAAYAAAAAAAAD7QAAAAAAAAPsAAAAAAAAA+sAAAAAAAAD6gAAAAAAAAPpAAAAAAAAA+g=)";
+               return R"(cHPL9BRESkGHswCG8UP8YDFdrMYYLkwSv5h376kky4YAAAAAAAAACGRvbWFpbiBBAAAAAAAAAAcAAAAAAAAD7gAAAAAAAAPtAAAAAAAAA+wAAAAAAAAD6wAAAAAAAAPqAAAAAAAAA+kAAAAAAAAD6A==)";
             }
             constexpr std::string_view base64( gateway::message::domain::connect::Reply&&){
                return R"(cHPL9BRESkGHswCG8UP8YDFdrMYYLkwSv5h376kky4YAAAAAAAAACGRvbWFpbiBBAAAAAAAAA+g=)";
@@ -140,6 +142,9 @@ namespace casual
                return R"(cHPL9BRESkGHswCG8UP8YAAAAAAAAAAqAAAAAAAAABAAAAAAAAAAEFtsG/byS0gNvbze9Uw6CFFbbBv28ktIDb283vVMOghSAAAAKgAAAAA=)";
             }
             constexpr std::string_view base64( queue::ipc::message::group::enqueue::Request&&){
+               return R"(cHPL9BRESkGHswCG8UP8YAAAAAAAAAAGcXVldWVBAAAAAAAAACoAAAAAAAAAEAAAAAAAAAAQW2wb9vJLSA29vN71TDoIUVtsG/byS0gNvbze9Uw6CFJszID+YTxKoLdMx0YdMYQiAAAAAAAAABVwcm9wZXJ0eSAxOnByb3BlcnR5IDIAAAAAAAAAAgAAAAAAAAADYTpiAAAAAAAAAANjOmQAAAAAAAAABnF1ZXVlQhWlY3jTqfCgAAAAAAAAAAguYmluYXJ5LwAAAAAAAACAgIGCg4SFhoeIiYqLjI2Oj5CRkpOUlZaXmJmam5ydnp+goaKjpKWmp6ipqqusra6vsLGys7S1tre4ubq7vL2+v8DBwsPExcbHyMnKy8zNzs/Q0dLT1NXW19jZ2tvc3d7f4OHi4+Tl5ufo6err7O3u7/Dx8vP09fb3+Pn6+/z9/v8=)";
+            }
+            constexpr std::string_view base64( queue::ipc::message::group::enqueue::v1_5::Request&&){
                return R"(cHPL9BRESkGHswCG8UP8YAAAAAAAAAAGcXVldWVBAAAAAAAAACoAAAAAAAAAEAAAAAAAAAAQW2wb9vJLSA29vN71TDoIUVtsG/byS0gNvbze9Uw6CFLm/Z/PhqxH9KUlL1l+JfxqAAAAAAAAABVwcm9wZXJ0eSAxOnByb3BlcnR5IDIAAAAAAAAABnF1ZXVlQhWlY3jTqfCgAAAAAAAAAAguYmluYXJ5LwAAAAAAAACAgIGCg4SFhoeIiYqLjI2Oj5CRkpOUlZaXmJmam5ydnp+goaKjpKWmp6ipqqusra6vsLGys7S1tre4ubq7vL2+v8DBwsPExcbHyMnKy8zNzs/Q0dLT1NXW19jZ2tvc3d7f4OHi4+Tl5ufo6err7O3u7/Dx8vP09fb3+Pn6+/z9/v8=)";
             }
             constexpr std::string_view base64( queue::ipc::message::group::enqueue::v1_2::Reply&&){
@@ -151,11 +156,14 @@ namespace casual
             constexpr std::string_view base64( queue::ipc::message::group::dequeue::Request&&){
                return R"(cHPL9BRESkGHswCG8UP8YAAAAAAAAAAGcXVldWVBAAAAAAAAACoAAAAAAAAAEAAAAAAAAAAQW2wb9vJLSA29vN71TDoIUVtsG/byS0gNvbze9Uw6CFIAAAAAAAAAFXByb3BlcnR5IDE6cHJvcGVydHkgMjFdrMYYLkwSv5h376kky4cA)";
             }
+            constexpr std::string_view base64( queue::ipc::message::group::dequeue::Reply&&){
+               return R"(cHPL9BRESkGHswCG8UP8YAFszID+YTxKoLdMx0YdMYQiAAAAAAAAABVwcm9wZXJ0eSAxOnByb3BlcnR5IDIAAAAAAAAAAgAAAAAAAAADYTpiAAAAAAAAAANjOmQAAAAAAAAABnF1ZXVlQhWlY3jTqfCgAAAAAAAAAAYuanNvbi8AAAAAAAAAAnt9AAAAAAAAAAEVpWN406nwoAAAABQ=)";
+            }
+            constexpr std::string_view base64( queue::ipc::message::group::dequeue::v1_5::Reply&&){
+               return R"(cHPL9BRESkGHswCG8UP8YAFTL4tsFXZNyp/oKjAC3leeAAAAAAAAABVwcm9wZXJ0eSAxOnByb3BlcnR5IDIAAAAAAAAABnF1ZXVlQhWlY3jTqfCgAAAAAAAAAAYuanNvbi8AAAAAAAAAAnt9AAAAAAAAAAEVpWN406nwoAAAABQ=)";
+            }
             constexpr std::string_view base64( queue::ipc::message::group::dequeue::v1_2::Reply&&){
                return R"(cHPL9BRESkGHswCG8UP8YAAAAAAAAAABUy+LbBV2Tcqf6CowAt5XngAAAAAAAAAVcHJvcGVydHkgMTpwcm9wZXJ0eSAyAAAAAAAAAAZxdWV1ZUIVpWN406nwoAAAAAAAAAAGLmpzb24vAAAAAAAAAAJ7fQAAAAAAAAABFaVjeNOp8KA=)";
-            }
-            constexpr std::string_view base64( queue::ipc::message::group::dequeue::Reply&&){
-               return R"(cHPL9BRESkGHswCG8UP8YAFTL4tsFXZNyp/oKjAC3leeAAAAAAAAABVwcm9wZXJ0eSAxOnByb3BlcnR5IDIAAAAAAAAABnF1ZXVlQhWlY3jTqfCgAAAAAAAAAAYuanNvbi8AAAAAAAAAAnt9AAAAAAAAAAEVpWN406nwoAAAABQ=)";
             }
             constexpr std::string_view base64( gateway::message::domain::disconnect::Request&&){
                return  R"(cHPL9BRESkGHswCG8UP8YA==)";

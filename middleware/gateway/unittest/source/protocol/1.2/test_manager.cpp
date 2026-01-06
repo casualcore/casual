@@ -156,7 +156,7 @@ domain:
 
          const auto payload = unittest::random::binary( 1000);
          
-         EXPECT_TRUE( queue::enqueue( "b", { { "binary", payload}}));
+         EXPECT_TRUE( queue::enqueue( "b", { .payload = { .type = "binary", .data = payload}}));
 
          {
             auto message = queue::dequeue( "b");
@@ -216,7 +216,7 @@ domain:
 
          const auto payload = unittest::random::binary( 1000);
          
-         EXPECT_TRUE( queue::enqueue( "b", { { "binary", payload}}));
+         EXPECT_TRUE( queue::enqueue( "b", { .payload = { .type = "binary", .data = payload}}));
 
          {
             auto message = queue::dequeue( "b");
