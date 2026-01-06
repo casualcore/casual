@@ -143,6 +143,7 @@ casual_common_objectfiles = [
     make.Compile( 'source/serialize/log.cpp'),
     make.Compile( 'source/serialize/json.cpp'),
     make.Compile( 'source/serialize/toml.cpp'),
+    make.Compile( 'source/serialize/ini.cpp'),
     make.Compile( 'source/serialize/xml.cpp'),
     make.Compile( 'source/serialize/yaml.cpp'),
     make.Compile( 'source/serialize/binary.cpp'),
@@ -274,6 +275,7 @@ unittest_objectfiles = [
     make.Compile( 'unittest/source/serialize/test_json.cpp'),
     make.Compile( 'unittest/source/serialize/test_log.cpp'),
     make.Compile( 'unittest/source/serialize/test_toml.cpp'),
+    make.Compile( 'unittest/source/serialize/test_ini.cpp'),
     make.Compile( 'unittest/source/serialize/test_xml.cpp'),
     make.Compile( 'unittest/source/serialize/test_yaml.cpp'),
     make.Compile( 'unittest/source/serialize/test_relaxed_write_read.cpp'),
@@ -299,8 +301,3 @@ make.Dependencies( target_test_common, [ target_simple_process ])
 # Install 
 make.Install( install_libs,  dsl.paths().install + '/lib')
 make.Install( install_headers,  dsl.paths().install + '/include')
-
-
-
-
-
