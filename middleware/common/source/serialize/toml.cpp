@@ -31,7 +31,7 @@ namespace casual
                constexpr auto keys() 
                {
                   using namespace std::string_view_literals; 
-                  return array::make( "toml"sv, ".toml"sv, "ini"sv, ".ini"sv, buffer::type::toml);
+                  return array::make( "toml"sv, ".toml"sv, buffer::type::toml);
                };
 
                namespace reader
