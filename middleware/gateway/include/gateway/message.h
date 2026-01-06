@@ -866,6 +866,15 @@ struct Value< type, A>  \
             CASUAL_CUSTOMIZATION_POINT_SERIALIZE( message);
          })
 
+         // without message.header
+         CASUAL_CUSTOMIZATION_POINT_NETWORK( queue::ipc::message::group::enqueue::v1_5::Request,
+         {
+            CASUAL_CUSTOMIZATION_POINT_SERIALIZE( execution);
+            CASUAL_CUSTOMIZATION_POINT_SERIALIZE( name);
+            CASUAL_SERIALIZE_NAME( value.trid, "xid");
+            CASUAL_CUSTOMIZATION_POINT_SERIALIZE( message);
+         })
+
          CASUAL_CUSTOMIZATION_POINT_NETWORK( queue::ipc::message::group::enqueue::Reply,
          {
             CASUAL_CUSTOMIZATION_POINT_SERIALIZE( execution);
@@ -889,8 +898,15 @@ struct Value< type, A>  \
             CASUAL_CUSTOMIZATION_POINT_SERIALIZE( block);
          })
 
-
          CASUAL_CUSTOMIZATION_POINT_NETWORK( queue::ipc::message::group::dequeue::Reply,
+         {
+            CASUAL_CUSTOMIZATION_POINT_SERIALIZE( execution);
+            CASUAL_CUSTOMIZATION_POINT_SERIALIZE( message);
+            CASUAL_CUSTOMIZATION_POINT_SERIALIZE( code);
+         })
+
+         // without message.header
+         CASUAL_CUSTOMIZATION_POINT_NETWORK( queue::ipc::message::group::dequeue::v1_5::Reply,
          {
             CASUAL_CUSTOMIZATION_POINT_SERIALIZE( execution);
             CASUAL_CUSTOMIZATION_POINT_SERIALIZE( message);

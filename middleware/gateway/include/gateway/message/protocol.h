@@ -72,13 +72,22 @@ namespace casual
       struct version_traits< casual::domain::message::discovery::Reply> : version_helper< Version::v1_4> {};
 
       template<>
+      struct version_traits< casual::queue::ipc::message::group::enqueue::Request> : version_helper< Version::v1_6> {};
+
+      template<>
+      struct version_traits< casual::queue::ipc::message::group::enqueue::v1_5::Request> : version_helper< Version::v1_0, Version::v1_5> {};
+
+      template<>
       struct version_traits< casual::queue::ipc::message::group::enqueue::Reply> : version_helper< Version::v1_3> {};
 
       template<>
       struct version_traits< casual::queue::ipc::message::group::enqueue::v1_2::Reply> : version_helper< Version::v1_0, Version::v1_2> {};
 
       template<>
-      struct version_traits< casual::queue::ipc::message::group::dequeue::Reply> : version_helper< Version::v1_3> {};
+      struct version_traits< casual::queue::ipc::message::group::dequeue::Reply> : version_helper< Version::v1_6> {};
+
+      template<>
+      struct version_traits< casual::queue::ipc::message::group::dequeue::v1_5::Reply> : version_helper< Version::v1_3, Version::v1_5> {};
 
       template<>
       struct version_traits< casual::queue::ipc::message::group::dequeue::v1_2::Reply> : version_helper< Version::v1_0, Version::v1_2> {};

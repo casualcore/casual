@@ -714,11 +714,25 @@ domain:
          unittest::fetch::until( unittest::fetch::predicate::outbound::connected());
 
          const auto payload = unittest::random::binary( 1000);
+         // we store available in microseconds precision
+         const auto available = std::chrono::time_point_cast< std::chrono::microseconds>( common::chronology::time_point::clock::now());
 
          // enqueue
          {
+            auto attributes = queue::Attributes{
+               .properties = "foo",
+               .header = header::Fields{ { header::Field{ "bar", "baz"}}},
+               .reply = "b",
+               .available = available
+            };
+
+            queue::Message message{
+               .attributes = attributes,
+               .payload = { .type = "json", .data = payload}
+            };
+
             EXPECT_NO_THROW({
-               queue::enqueue( "a", { { "json", payload}});
+               queue::enqueue( "a", message);
             });
          }
 
@@ -730,6 +744,10 @@ domain:
             
             EXPECT_TRUE( message.front().payload.data == payload);
             EXPECT_TRUE( message.front().payload.type == "json");
+            EXPECT_TRUE( message.front().attributes.properties == "foo");
+            EXPECT_TRUE( message.front().attributes.header.at( "bar").value() == "baz");
+            EXPECT_TRUE( message.front().attributes.reply == "b");
+            EXPECT_TRUE( message.front().attributes.available == available);
          }
       }
 
@@ -766,7 +784,7 @@ domain:
          // enqueue
          {
             EXPECT_NO_THROW({
-               queue::enqueue( "a", { { "json", payload}});
+               queue::enqueue( "a", { .payload = { .type = "json", .data = payload}});
             });
          }
 
@@ -808,7 +826,7 @@ domain:
          // enqueue
          {
             EXPECT_NO_THROW({
-               queue::enqueue( "a", { { "json", payload}});
+               queue::enqueue( "a", { .payload = { .type = "json", .data = payload}});
             });
          }
 

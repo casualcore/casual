@@ -16,6 +16,8 @@
 
 #include "service/unittest/utility.h"
 
+#include "queue/common/ipc/message.h"
+
 
 namespace casual
 {
@@ -44,6 +46,8 @@ domain:
       - path: ${CMAKE_BINARY_DIR}/middleware/service/bin/casual-service-manager
         memberships: [ base]
       - path: ${CMAKE_BINARY_DIR}/middleware/transaction/bin/casual-transaction-manager
+        memberships: [ base]
+      - path: ${CASUAL_MAKE_SOURCE_ROOT}/middleware/queue/bin/casual-queue-manager
         memberships: [ base]
 )";
      
@@ -124,15 +128,16 @@ domain:
       TEST( gateway_protocol_1_5_manager, conversation__tpreturn_send_message_duplex__not_value_terminate)
       {
          common::unittest::Trace trace;
-
+         
          auto a = local::domain( R"(
 domain:
    name: A
    servers:
-      - path: bin/casual-gateway-manager
-        memberships: [ gateway]
       - path: ${CMAKE_BINARY_DIR}/middleware/example/server/bin/casual-example-server
         memberships: [ user]
+      - path: ${CMAKE_BINARY_DIR}/middleware/gateway/bin/casual-gateway-manager
+        memberships: [ gateway]
+
    gateway:
       inbound:
          groups:
@@ -175,5 +180,72 @@ domain:
 
       }
 
+      TEST( gateway_protocol_1_5_manager, enqueue_dequeue__no_headers)
+      {
+         common::unittest::Trace trace;
+         
+         auto a = local::domain( R"(
+domain:
+   name: A
+   servers:
+      - path: ${CMAKE_BINARY_DIR}/middleware/gateway/bin/casual-gateway-manager
+        memberships: [ gateway]
+      - path: ${CMAKE_BINARY_DIR}/middleware/example/server/bin/casual-example-server
+        memberships: [ user]
+      - path: ${CMAKE_BINARY_DIR}/middleware/queue/bin/casual-queue-manager
+        memberships: [ base]  
+   
+   queue:
+      groups:
+         -  queuebase: ':memory:'
+            queues:
+               - name: a
+   gateway:
+      inbound:
+         groups:
+            -  connections: 
+                  -  address: 127.0.0.1:7010
+         )");
+
+
+         auto device = unittest::tcp::connect::out( "127.0.0.1:7010", message::protocol::Version::v1_5);
+         EXPECT_TRUE( device.connector().socket());
+
+         const auto payload = common::unittest::random::binary( 128);
+         auto available = std::chrono::time_point_cast< std::chrono::microseconds>( common::chronology::time_point::clock::now());
+
+         // enqueue
+         {
+            queue::ipc::message::group::enqueue::v1_5::Request request;
+            request.name = "a";
+            request.message.attributes.properties = "foo";
+            request.message.attributes.available = available;
+            
+            request.message.payload.type = "X_OCTET/";
+            request.message.payload.data = payload;
+            
+
+            auto correlation = common::communication::device::blocking::send( device, request);
+
+            auto reply = common::communication::device::receive< queue::ipc::message::group::enqueue::Reply>( device, correlation);
+            EXPECT_TRUE( reply.code == common::code::queue::ok) << CASUAL_NAMED_VALUE( reply.code);
+         }
+
+         // dequeue
+         {
+            queue::ipc::message::group::dequeue::Request request;
+            request.name = "a";
+
+            auto correlation = common::communication::device::blocking::send( device, request);
+
+            auto reply = common::communication::device::receive< queue::ipc::message::group::dequeue::v1_5::Reply>( device, correlation);
+            EXPECT_TRUE( reply.code == common::code::queue::ok) << CASUAL_NAMED_VALUE( reply.code);
+            ASSERT_TRUE( reply.message);
+            EXPECT_TRUE( reply.message->payload.data == payload) << CASUAL_NAMED_VALUE( reply.message->payload.data.size());
+            EXPECT_TRUE( reply.message->attributes.properties == "foo") << CASUAL_NAMED_VALUE( reply.message->attributes.properties);
+            EXPECT_TRUE( reply.message->attributes.available == available) << CASUAL_NAMED_VALUE( reply.message->attributes.available) << " vs " << CASUAL_NAMED_VALUE( available);
+
+         }
+      }
    } // gateway  
 } // casual

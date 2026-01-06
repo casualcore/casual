@@ -153,7 +153,7 @@ namespace casual
 
       inline auto from( common::message::conversation::connect::v1_2::callee::Request&& message)
       {
-         common::message::conversation::connect::callee::Request result;
+         common::message::conversation::connect::callee::Request result{ message.process};
          result.correlation = message.correlation;
          result.execution = message.execution;
          result.buffer = std::move( message.buffer);
@@ -166,6 +166,41 @@ namespace casual
             result.deadline.remaining = message.service.timeout.duration;
          
          result.trid = std::move( message.trid);
+         return result;
+      }
+
+      template<>
+      inline casual::queue::ipc::message::group::enqueue::v1_5::Request to( casual::queue::ipc::message::group::enqueue::Request&& message)
+      {
+         casual::queue::ipc::message::group::enqueue::v1_5::Request result{ message.process};
+         result.correlation = message.correlation;
+         result.execution = message.execution;
+         result.name = std::move( message.name);
+         result.trid = std::move( message.trid);
+         result.message.attributes = casual::queue::ipc::message::group::enqueue::v1_5::Attributes{
+            .properties = std::move( message.message.attributes.properties),
+            .reply = std::move( message.message.attributes.reply),
+            .available = message.message.attributes.available
+         };
+         result.message.payload = std::move( message.message.payload);
+         result.message.id = message.message.id;
+         return result;
+      }
+
+      inline auto from( casual::queue::ipc::message::group::enqueue::v1_5::Request&& message)
+      {
+         casual::queue::ipc::message::group::enqueue::Request result{ message.process};
+         result.correlation = message.correlation;
+         result.execution = message.execution;
+         result.name = std::move( message.name);
+         result.trid = std::move( message.trid);
+         result.message.attributes = casual::queue::ipc::message::Attributes{
+            .properties =  std::move( message.message.attributes.properties),
+            .reply = std::move( message.message.attributes.reply),
+            .available = message.message.attributes.available
+         };
+         result.message.payload = std::move( message.message.payload);
+         result.message.id = message.message.id;
          return result;
       }
 
@@ -189,6 +224,35 @@ namespace casual
          return result;
       }
 
+      namespace detail
+      {
+         inline auto to_dequeue_1_5_message( casual::queue::ipc::message::group::dequeue::Message message)
+         {
+            casual::queue::ipc::message::group::dequeue::v1_5::Message result;
+            result.id = message.id;
+            result.attributes =  casual::queue::ipc::message::group::dequeue::v1_5::Attributes{
+               .properties = std::move( message.attributes.properties),
+               .reply = std::move( message.attributes.reply),
+               .available = message.attributes.available
+            };
+            result.payload = std::move( message.payload);
+            result.redelivered = message.redelivered;
+            result.timestamp = message.timestamp;
+            return result;
+         }
+      } // detail
+
+      template<>
+      inline casual::queue::ipc::message::group::dequeue::v1_5::Reply to( casual::queue::ipc::message::group::dequeue::Reply&& message)
+      {
+         casual::queue::ipc::message::group::dequeue::v1_5::Reply result;
+         result.correlation = message.correlation;
+         result.execution = message.execution;
+
+         if( message.message)
+            result.message = detail::to_dequeue_1_5_message( std::move( *message.message));
+         return result;
+      }
 
       template<>
       inline casual::queue::ipc::message::group::dequeue::v1_2::Reply to( casual::queue::ipc::message::group::dequeue::Reply&& message)
@@ -198,7 +262,38 @@ namespace casual
          result.execution = message.execution;
 
          if( message.message)
-            result.message.push_back( std::move( *message.message));
+            result.message.push_back( detail::to_dequeue_1_5_message( std::move( *message.message)));
+         return result;
+      }
+
+      namespace detail
+      {
+         inline auto to_dequeue_message( auto&& message)
+         {
+            casual::queue::ipc::message::group::dequeue::Message result;
+            result.id = message.id;
+            result.attributes = casual::queue::ipc::message::Attributes{
+               .properties = std::move( message.attributes.properties),
+               .reply = std::move( message.attributes.reply),
+               .available = message.attributes.available
+            };
+            result.payload = std::move( message.payload);
+            result.redelivered = message.redelivered;
+            result.timestamp = message.timestamp;
+            return result;
+         }
+      } // detail
+
+      inline auto from( casual::queue::ipc::message::group::dequeue::v1_5::Reply&& message)
+      {
+         casual::queue::ipc::message::group::dequeue::Reply result;
+         result.correlation = message.correlation;
+         result.execution = message.execution;
+         result.code = message.code;
+
+         if( message.message)
+            result.message = detail::to_dequeue_message( std::move( *message.message));
+         
          return result;
       }
 
@@ -208,12 +303,13 @@ namespace casual
          result.correlation = message.correlation;
          result.execution = message.execution;
          if( ! message.message.empty())
-            result.message = std::move( message.message.front());
+            result.message = detail::to_dequeue_message( std::move( message.message.front()));
          else
             result.code = decltype( result.code)::no_message;
 
          return result;
       }
+
 
       inline auto from( casual::domain::message::discovery::v1_3::Reply&& message)
       {

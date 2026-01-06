@@ -1133,6 +1133,51 @@ Represent enqueue request.
 
                message.trid = common::transaction::id::create();
 
+               message.name = local::string::value( 32);
+               message.message.attributes.properties = local::string::value( 32);
+               message.message.attributes.header = casual::header::Fields{ { { "a", "b"}}};
+               message.message.attributes.reply = local::string::value( 32);
+               message.message.payload.data = local::binary::value( 1024);
+
+               local::format::type( out, message, {
+                        { "execution", "uuid of the current execution context (breadcrumb)"},
+                        { "name.size", "size of queue name"},
+                        { "name.data", "data of queue name"},
+                        { "xid.formatID", "xid format type. if 0 no more information of the xid is transported"},
+                        { "xid.gtrid_length", "length of the transaction gtrid part"},
+                        { "xid.bqual_length", "length of the transaction branch part"},
+                        { "xid.data", "byte array with the size of gtrid_length + bqual_length (max 128)"},
+                        { "message.id", "id of the message"},
+                        { "message.attributes.properties.size", "length of message properties"},
+                        { "message.attributes.properties.data", "data of message properties"},
+                        { "message.attributes.header.size", "number of header field entries"},
+                        { "message.attributes.header.element.size", "length of header field string"},
+                        { "message.attributes.header.element.data", "data of the header field string"},
+                        { "message.attributes.reply.size", "length of the reply queue"},
+                        { "message.attributes.reply.data", "data of reply queue"},
+                        { "message.attributes.available", "when the message is available for dequeue (us since epoch)"},
+                        { "message.payload.type.size", "length of the type string"},
+                        { "message.payload.type.data", "data of the type string"},
+                        { "message.payload.data.size", "size of the payload"},
+                        { "message.payload.data.data", "data of the payload"},
+                     });
+
+               local::example_and_base64< message_type>( out);   
+            }
+
+            // v1.5
+            {
+               using message_type = queue::ipc::message::group::enqueue::v1_5::Request;
+
+               local::message::section< message_type>( out, "##") << R"(
+
+Represent enqueue request.
+
+)";
+               message_type message;
+
+               message.trid = common::transaction::id::create();
+
                message.name = local::string::value( 128);
                message.message.payload.data = local::binary::value( 1024);
 
@@ -1157,7 +1202,8 @@ Represent enqueue request.
                         { "message.payload.data.data", "data of the payload"},
                      });
 
-               local::example_and_base64< message_type>( out);   
+               local::example_and_base64< message_type>( out);
+
             }
 
 
@@ -1236,6 +1282,49 @@ Represent dequeue request.
 
             {
                using message_type = queue::ipc::message::group::dequeue::Reply;
+
+               local::message::section< message_type>( out, "##") << R"(
+
+Represent dequeue reply.
+
+)";
+               message_type message;
+
+               message.message.emplace();
+               message.message->attributes.properties = local::string::value( 128);
+               message.message->attributes.header = casual::header::Fields{ { { "a", "b"}}};
+               message.message->attributes.reply = local::string::value( 128);
+               message.message->payload.type = local::string::value( 128);
+               message.message->payload.data = local::binary::value( 1024); 
+               message.code = decltype( message.code)::system;
+
+               local::format::type( out, message, {
+                  { "execution", "uuid of the current execution context (breadcrumb)"},
+                  { "has_value", "if 1 message has content, if 0 no more information of the message is transported"},
+                  { "message.id", "id of the message"},
+                  { "message.attributes.properties.size", "length of message properties"},
+                  { "message.attributes.properties.data", "data of message properties"},
+                  { "message.attributes.header.size", "number of header field entries"},
+                  { "message.attributes.header.element.size", "length of header field string"},
+                  { "message.attributes.header.element.data", "data of the header field string"},
+                  { "message.attributes.reply.size", "length of the reply queue"},
+                  { "message.attributes.reply.data", "data of reply queue"},
+                  { "message.attributes.available", "when the message was available for dequeue (us since epoch)"},
+                  { "message.payload.type.size", "length of the type string"},
+                  { "message.payload.type.data", "data of the type string"},
+                  { "message.payload.data.size", "size of the payload"},
+                  { "message.payload.data.data", "data of the payload"},
+                  { "message.redelivered", "how many times the message has been redelivered"},
+                  { "message.timestamp", "when the message was enqueued (us since epoch)"},
+                  { "code", "result/error code"},
+               });
+
+               local::example_and_base64< message_type>( out);
+            }
+
+            // v1.3 - v1.5
+            {
+               using message_type = queue::ipc::message::group::dequeue::v1_5::Reply;
 
                local::message::section< message_type>( out, "##") << R"(
 
