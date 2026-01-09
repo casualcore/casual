@@ -54,15 +54,6 @@ namespace casual
 
             } // global
 
-            struct State
-            {
-               bool force = false;
-
-               CASUAL_LOG_SERIALIZE(
-                  CASUAL_SERIALIZE( force);
-               )
-            };
-
             namespace normalize
             {
                std::string timestamp( const common::chronology::time_point& time)
@@ -1455,18 +1446,29 @@ output columns:
 
                   };
 
+                  constexpr auto description = R"(enqueue buffer(s) to a queue from stdin
+
+Assumes conformant buffer(s)
+
+@note: part of casual-pipe
+)";
+                  constexpr auto extended = R"(
+Examples:
+
+   cat somefile.bin | casual queue --enqueue a
+
+   casual transaction --begin \
+      | casual queue --dequeue a \
+      | casual queue --enqueue b \
+      | casual transaction --commit
+
+)";
+
                   return argument::Option{
                      std::move( invoke),
                      complete::queues,
                      {{ "-e", "--enqueue"}},
-                     R"(enqueue buffer(s) to a queue from stdin
-
-Assumes a conformant buffer(s)
-
-Example:
-cat somefile.bin | casual queue --enqueue <queue-name>
-
-@note: part of casual-pipe)"
+                     { description, extended}
                   };
 
                }
@@ -1557,23 +1559,32 @@ cat somefile.bin | casual queue --enqueue <queue-name>
                      };
                   };
 
+                  constexpr auto description = R"(dequeue message from a queue to `casual-pipe`
+
+if id is absent the oldest available message is dequeued.
+
+@note: part of casual-pipe
+)";
+
+                  constexpr auto extended = R"(
+Examples:
+
+   casual queue --dequeue a > somefile.bin
+
+   casual queue --dequeue a 123e4567e89b12d3a456426614174000 \
+      | casual queue --enqueue b
+
+   casual transaction --begin \
+      | casual queue --dequeue a \
+      | casual queue --enqueue b \
+      | casual transaction --commit                  
+)";
+
                   return argument::Option{
                      std::move( invoke),
                      complete(),
                      {{ "-d", "--dequeue"}},
-                     R"(dequeue message from a queue to `casual-pipe`
-
-if id is absent the oldest available message is dequeued. 
-
-Example:
-casual queue --dequeue <queue> | <some other part in casual-pipe> | ... | <casual-pipe termination>
-casual queue --dequeue <queue> <id> | <some other part in casual-pipe> | ... | <casual-pipe termination>
-casual queue --dequeue <queue> <id> <id> <id> <id> | <some other part in casual-pipe> | ... | <casual-pipe termination>
-
-
-@note: part of casual-pipe
-)"
-
+                     { description, extended}
                   };
                }
             } // dequeue
@@ -1607,28 +1618,40 @@ casual queue --dequeue <queue> <id> <id> <id> <id> | <some other part in casual-
                      // state.done dtor will send Done downstream
                   };
 
-                  return argument::Option{
-                     std::move( invoke),
-                     []( bool help, auto values) -> std::vector< std::string>
-                     {
-                        if( help)
-                           return { "<queue>", "<count>"};
-                        
-                        if( values.empty())
-                           return local::queues();
-                        else 
-                           return { "<value>"};
+                  auto complete = []( bool help, auto values) -> std::vector< std::string>
+                  {
+                     if( help)
+                        return { "<queue>", "<count>"};
 
-                     },
-                     {{ "--consume"}},
-                      R"(consumes up to `count` messages from the provided `queue` and send it downstream
+                     if( values.empty())
+                        return local::queues();
+                     else 
+                        return { "<value>"};
+                  };
 
-Example:
-casual queue --consume <queue-name> [<count>] | <some other part of casual-pipe> | ... | <casual-pipe-termination>
+                  constexpr auto description = R"(consumes messages from the provided `queue` and send it downstream
 
 @note: part of casual-pipe
-)"
+)";
 
+                  constexpr auto extended = R"(
+Example:
+
+   casual queue --consume a > /dev/null
+
+   casual queue --consume a 10 | casual queue --enqueue b
+
+   casual transaction --begin \
+      | casual queue --consume a \
+      | casual queue --enqueue b \
+      | casual transaction --commit
+)";
+
+                  return argument::Option{
+                     std::move( invoke),
+                     std::move( complete),
+                     {{ "--consume"}},
+                     { description, extended}
                   };
                }
                
@@ -1673,16 +1696,24 @@ casual queue --consume <queue-name> [<count>] | <some other part of casual-pipe>
                         []( auto& message){ return uuid::string( message.id);});
                   };
 
+                  constexpr auto description = R"(peeks messages from the given queue and send it downstream
+                  
+@note: part of casual-pipe
+)";
+                  constexpr auto extended = R"(
+Example:
+
+   casual queue --peek a 123e4567e89b12d3a456426614174000
+
+   casual queue --peek a | casual queue --enqueue b
+
+)";
+
                   return argument::Option{
                      std::move( invoke),
                      std::move( complete),
                      {{ "-p", "--peek"}},
-                     R"(peeks messages from the give queue and streams them to casual-pipe
-
-Example:
-casual queue --peek <queue-name> <id1> <id2> | <some other part of casual-pipe> | ... | <casual-pipe-termination>
-
-@note: part of casual-pipe)"
+                     { description, extended}
                   };
                }
                
@@ -1690,27 +1721,185 @@ casual queue --peek <queue-name> <id1> <id2> | <some other part of casual-pipe> 
 
             namespace attributes
             {
-               using namespace std::string_view_literals;
-               constexpr auto names() noexcept { return array::make( "properties"sv, "reply"sv, "available"sv);}
+               namespace deprecated
+               {
+                  using namespace std::string_view_literals;
+                  constexpr auto names() noexcept { return array::make( "properties"sv, "reply"sv, "available"sv);}
+
+                  auto option()
+                  {
+                     auto invoke = []( const std::vector< std::tuple< std::string, std::string>>& attributes)
+                     {
+                        auto handle_queue_message = [ &attributes]( casual::cli::message::queue::Message& message)
+                        {
+                           for( auto& [ name, value] : attributes)
+                           {
+                              if( name == "properties")
+                                 message.attributes.properties = value;
+                              else if( name == "reply")
+                                 message.attributes.reply = value;
+                              else if( name == "available")
+                                 message.attributes.available = common::chronology::time_point{ common::chronology::from::string( value)};
+                              else
+                                 common::code::raise::error( common::code::casual::invalid_argument, "'", name, "' is not part of the valid set: ", deprecated::names());
+                           }
+
+                           casual::cli::pipe::forward::message( message);
+                        };
+
+                        auto handle_payload_message = [ handle_queue_message]( casual::cli::message::payload::Message& message)
+                        {
+                           casual::cli::message::queue::Message result;
+                           result.correlation = message.correlation;
+                           result.execution = message.execution;
+                           result.payload = std::move( message.payload);
+
+                           handle_queue_message( result);
+                        };
+                        
+                     casual::cli::pipe::done::Scope done;
+
+                        auto handler = casual::cli::message::dispatch::create(
+                           casual::cli::pipe::forward::handle::defaults(),
+                           std::move( handle_queue_message),
+                           std::move( handle_payload_message),
+                           std::ref( done)
+                        );
+
+                        // consume from casual-pipe
+                        communication::stream::inbound::Device in{ std::cin};
+                        common::message::dispatch::pump( 
+                           casual::cli::pipe::condition::done( done), 
+                           handler, in);
+
+                        // done dtor will send Done downstream.
+                     };
+
+                     auto complete = []( bool help, auto values) -> std::vector< std::string>
+                     { 
+                        if( help) 
+                           return { "<attribute-name>", "<value>"};
+
+                        if( values.size() % 2 == 0)
+                           return algorithm::container::create< std::vector< std::string>>( deprecated::names());   //{ "properties", "reply", "available"};
+                        
+                        if( ! values.empty() && range::back( values) == "available")
+                           return { common::chronology::to::string( std::chrono::duration_cast< std::chrono::seconds>( platform::time::clock::type::now().time_since_epoch()))};
+
+                        if( ! values.empty() && range::back( values) == "reply")
+                           return local::queues();
+
+                        return { "<value>"};
+                     };
+
+                     return argument::Option{
+                        argument::option::one::many( std::move( invoke)),
+                        std::move( complete),
+                        { {}, { "--attributes"}},
+                        R"(@deprecated use `attributes --properties/reply/available`)"
+                     };
+
+                  }
+
+               } // deprecated
 
                auto option()
                {
-                  auto invoke = []( const std::vector< std::tuple< std::string, std::string>>& attributes)
+                  struct Shared
                   {
-                     auto handle_queue_message = [ &attributes]( casual::cli::message::queue::Message& message)
-                     {
-                        for( auto& [ name, value] : attributes)
-                        {
-                           if( name == "properties")
-                              message.attributes.properties = value;
-                           else if( name == "reply")
-                              message.attributes.reply = value;
-                           else if( name == "available")
-                              message.attributes.available = common::chronology::time_point{ common::chronology::from::string( value)};
-                           else
-                              common::code::raise::error( common::code::casual::invalid_argument, "'", name, "' is not part of the valid set: ", attributes::names());
-                        }
+                     std::optional< std::string> properties;
+                     std::optional< std::vector< std::string>> header;
+                     std::optional< std::string> reply;
+                     std::optional< common::chronology::time_point> available;
+                  };
 
+                  auto shared = std::make_shared< Shared>();
+
+                  auto properties = [ shared]()
+                  {
+                     auto invoke = [ shared]( std::string value)
+                     {
+                        shared->properties = std::move( value);
+                        return argument::option::invoke::preemptive{};
+                     };
+
+                     return argument::Option{
+                        std::move( invoke),
+                        {{ "--properties"}},
+                        "sets the 'properties' attribute on piped queue messages"
+                     }( argument::cardinality::zero_one());
+                  };
+
+
+                  auto header = [ shared]()
+                  {
+                     auto invoke = [ shared]( std::vector< std::string> values)
+                     {
+                        shared->header = std::move( values);
+                        return argument::option::invoke::preemptive{};
+                     };
+
+                     constexpr auto description = R"(sets the 'header' attribute on piped queue messages
+
+values is a list of 'key:value' strings
+)";
+
+                     return argument::Option{
+                        std::move( invoke),
+                        {{ "--header"}},
+                        description
+                     }( argument::cardinality::zero_one());
+                  };
+
+                  auto reply = [ shared]()
+                  {
+                     auto invoke = [ shared]( std::string value)
+                     {
+                        shared->reply = std::move( value);
+                        return argument::option::invoke::preemptive{};
+                     };
+
+                     return argument::Option{
+                        std::move( invoke),
+                        complete::queues,
+                        {{ "--reply"}},
+                        "sets the 'reply' attribute on piped queue messages"
+                     }( argument::cardinality::zero_one());
+                  };
+
+                  auto available = [ shared]()
+                  {
+                     auto invoke = [ shared]( std::string value)
+                     {
+                        shared->available = common::chronology::time_point{ common::chronology::from::string( value)};
+                        return argument::option::invoke::preemptive{};
+                     };
+
+                     constexpr auto description = R"(sets the 'available' attribute on piped queue messages
+
+value is absolute time since epoch ([+]?<value>[h|min|s|ms|us|ns])+
+)";
+
+                     return argument::Option{
+                        std::move( invoke),
+                        {{ "--available"}},
+                        description
+                     }( argument::cardinality::zero_one());
+                  };
+
+                  auto invoke = [ shared]()
+                  {
+                     auto handle_queue_message = [ &shared]( casual::cli::message::queue::Message& message)
+                     {
+                        if( shared->properties)
+                           message.attributes.properties = *shared->properties;
+                        if( shared->header)
+                           message.attributes.header = *shared->header;
+                        if( shared->reply)
+                           message.attributes.reply = *shared->reply;
+                        if( shared->available)
+                           message.attributes.available = *shared->available;
+                        
                         casual::cli::pipe::forward::message( message);
                      };
 
@@ -1724,7 +1913,7 @@ casual queue --peek <queue-name> <id1> <id2> | <some other part of casual-pipe> 
                         handle_queue_message( result);
                      };
                      
-                    casual::cli::pipe::done::Scope done;
+                     casual::cli::pipe::done::Scope done;
 
                      auto handler = casual::cli::message::dispatch::create(
                         casual::cli::pipe::forward::handle::defaults(),
@@ -1742,44 +1931,44 @@ casual queue --peek <queue-name> <id1> <id2> | <some other part of casual-pipe> 
                      // done dtor will send Done downstream.
                   };
 
-                  auto complete = []( bool help, auto values) -> std::vector< std::string>
-                  { 
-                     if( help) 
-                        return { "<attribute-name>", "<value>"};
+                  constexpr std::string_view description = R"(adds or mutates queue message attributes on piped messages
 
-                     if( values.size() % 2 == 0)
-                        return algorithm::container::create< std::vector< std::string>>( attributes::names());   //{ "properties", "reply", "available"};
-                     
-                     if( ! values.empty() && range::back( values) == "available")
-                        return { common::chronology::to::string( std::chrono::duration_cast< std::chrono::seconds>( platform::time::clock::type::now().time_since_epoch()))};
+@note: part of casual-pipe)";
 
-                     if( ! values.empty() && range::back( values) == "reply")
-                        return local::queues();
+                  constexpr std::string_view extended = R"(
+Examples:
+   
+   casual queue --dequeue a \
+      | casual queue attributes --header a:1 b:2 c:3 \
+      | casual queue --enqueue a
 
-                      return { "<value>"};
-                  };
+   casual transaction --begin \
+      | casual queue --dequeue a \
+      | casual queue attributes \
+         --reply a.reply \
+         --properties foo \
+         --header a:1 b:2 c:3 \
+         --available 1625077800s \
+      | casual queue --enqueue a \
+      | casual transaction --commit
+)";
 
                   return argument::Option{
-                     argument::option::one::many( std::move( invoke)),
-                     std::move( complete),
-                     {{ "--attributes"}},
-                     R"(INCUBATION - adds or mutates queue message attributes on piped messages
-
-@attention INCUBATION - might change during. or in between minor version.
-
-Valid attributes:
-* properties  | user defined string
-* reply       | queue name
-* available   | absolute time since epoch ([+]?<value>[h|min|s|ms|us|ns])+
-
-Example:
-`$ casual queue --dequeue a | casual queue --attributes reply a.reply properties foo | casual queue --enqueue a`
-
-@note: Can be used to add queue attributes to a service reply_
-@note: part of casual-pipe)"
-                  };
-
+                     std::move( invoke),
+                     {{ "attributes"}},
+                     { description, extended}
+                  }(
+                     {
+                        properties(),
+                        header(),
+                        reply(),
+                        available()
+                     },
+                     argument::cardinality::range( 1, 4)
+                  );
+                 
                }
+
             } // attributes
 
             namespace restore
@@ -1791,16 +1980,25 @@ Example:
                      format::affected( queue::restore::queue( queues));
                   };
 
+                  constexpr auto description = R"(restores messages to queue from error queue)";
+
+                  constexpr auto extended = R"(
+Messages will be restored to the provided queues, from their corresponding 
+error queues.
+
+Example:
+   casual queue --restore a b c
+
+   Will restore messages from 'a.error', 'b.error' and 'c.error' to
+   'a', 'b' and 'c' respectively.
+
+)";
+
                   return argument::Option{
                      std::move( invoke),
                      complete::queues,
                      {{  "--restore"}},
-                     R"(restores messages to queue
-
-Messages will be restored to the queue they first was enqueued to (within the same queue-group)
-
-Example:
-casual queue --restore <queue-name>)"
+                     { description, extended}
                   };
                }
             } // restore
@@ -1809,8 +2007,15 @@ casual queue --restore <queue-name>)"
             {
                namespace remove
                {
-                  auto option( auto shared)
+                  auto option()
                   {
+                     struct Shared
+                     {
+                        bool force = false;
+                     };
+
+                     auto shared = std::make_shared< Shared>();
+
                      auto invoke = [ shared]( const std::string& queue, Uuid id, std::vector< Uuid> ids)
                      {
                         ids.insert( std::begin( ids), std::move( id));
@@ -1840,9 +2045,7 @@ casual queue --restore <queue-name>)"
                         }, 
                         {{ "--force"}}, "force removal of message regardless of state"};
 
-                     constexpr auto description = R"(removes specific messages from a given queue
-
-if used with `--force true` messages will be removed regardless of state.)";
+                     constexpr auto description = R"(removes specific messages from a given queue)";
 
                      return argument::Option{
                         std::move( invoke),
@@ -1910,14 +2113,18 @@ if used with `--force true` messages will be removed regardless of state.)";
                      format::affected( queue::clear::queue( queues));
                   };
 
+                  constexpr auto description = R"(clears all messages from provided queues)";
+
+                  constexpr auto extended = R"(
+Example:
+   casual queue --clear a b c
+)";
+
                   return argument::Option{
                      argument::option::one::many( std::move( invoke)),
                      complete::queues,
                      {{  "--clear"}},
-                     R"(clears all messages from provided queues
-
-Example:
-casual queue --clear a b c)"
+                     { description, extended}
                   };
                }
 
@@ -1934,16 +2141,21 @@ casual queue --clear a b c)"
                      auto reply = call( manager::admin::service::name::metric::reset);
                   };
 
+                  constexpr auto description = R"(resets metrics for the provided queues)";
+
+                  constexpr auto extended = R"(
+if no queues are provided, metrics for all queues are reset.
+
+Example:
+
+   casual queue --metric-reset a b
+)";
+
                   return argument::Option{
                      argument::option::one::many( std::move( invoke)),
                      complete::queues,
                      {{ "-mr", "--metric-reset"}},
-                     R"(resets metrics for the provided queues
-
-if no queues are provided, metrics for all queues are reset.
-
-Example:
-casual queue --metric-reset a b)"
+                     { description, extended}
                   };
                }
                   
@@ -2068,8 +2280,6 @@ casual queue --metric-reset a b)"
 
       argument::Option options()
       {
-         auto shared = std::make_shared< local::State>();
-
          return argument::Option{ [](){}, {{ "queue"}}, "queue related administration"}( {
             local::list::queues::option(),
             local::list::zombies::option(),
@@ -2085,12 +2295,13 @@ casual queue --metric-reset a b)"
             local::consume::option(),
             local::attributes::option(),
             local::clear::option(),
-            local::messages::remove::option( shared),
+            local::messages::remove::option(),
             local::messages::recovery::option(),
             local::metric::reset::option(),
             local::information::option(),
             casual::cli::state::option( &local::call::state),
 
+            local::attributes::deprecated::option(),
             local::deprecated::list_remote_queues(),
             local::deprecated::recover_transactions_commit(),
             local::deprecated::recover_transactions_rollback(),

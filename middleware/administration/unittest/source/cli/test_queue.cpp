@@ -73,19 +73,25 @@ domain:
 
          // reply
          {
-            auto capture = local::execute( R"(echo "casual" | casual buffer --compose | casual queue --attributes reply b.error | casual pipe --human-sink)");
-            EXPECT_TRUE( std::regex_match( capture.standard.out, std::regex{ R"(.*reply: b.error.*\n)"})) << CASUAL_NAMED_VALUE( capture); 
+            auto capture = local::execute( R"(echo "casual" | casual buffer --compose | casual queue attributes --reply b.error | casual pipe --human-sink)");
+            EXPECT_TRUE( capture.standard.out.contains( "reply: b.error")) << CASUAL_NAMED_VALUE( capture); 
          }
 
          // properties
          {
-            auto capture = local::execute( R"(echo "casual" | casual buffer --compose | casual queue --attributes properties foo | casual pipe --human-sink)");
-            EXPECT_TRUE( std::regex_match( capture.standard.out, std::regex{ R"(.*properties: foo,.*\n)"})) << CASUAL_NAMED_VALUE( capture); 
+            auto capture = local::execute( R"(echo "casual" | casual buffer --compose | casual queue attributes --properties foo | casual pipe --human-sink)");
+            EXPECT_TRUE( capture.standard.out.contains( "properties: foo,")) << CASUAL_NAMED_VALUE( capture); 
+         }
+
+         // header
+         {
+            auto capture = local::execute( R"(echo "casual" | casual buffer --compose | casual queue attributes --header a:1 b:2 c:3 | casual pipe --human-sink)");
+            EXPECT_TRUE( capture.standard.out.contains( "header: [a:1, b:2, c:3]")) << CASUAL_NAMED_VALUE( capture); 
          }
 
          // available
          {
-            auto capture = local::execute( R"(echo "casual" | casual buffer --compose | casual queue --attributes available 42s | casual pipe --human-sink)");
+            auto capture = local::execute( R"(echo "casual" | casual buffer --compose | casual queue attributes --available 42s | casual pipe --human-sink)");
             // 42s after unix epoch. Since we're using local + utc-offset, the date could be before 1970-01-01
             EXPECT_TRUE( std::regex_match( capture.standard.out, std::regex{ R"(.*available: .*T.*42[.]000000.*\n)"})) << CASUAL_NAMED_VALUE( capture); 
          }

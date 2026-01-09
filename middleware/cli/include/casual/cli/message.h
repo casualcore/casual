@@ -86,11 +86,13 @@ namespace casual
             struct Attributes
             {
                std::string properties;
+               std::vector< std::string> header;
                std::string reply;
                common::chronology::time_point available;
                
                CASUAL_CONST_CORRECT_SERIALIZE(
                   CASUAL_SERIALIZE( properties);
+                  CASUAL_SERIALIZE( header);
                   CASUAL_SERIALIZE( reply);
                   CASUAL_SERIALIZE( available);
                ) 
