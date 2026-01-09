@@ -80,7 +80,7 @@ INSERT INTO queue
 
                         // alter message.avalible to message.available
                         {
-                           // not brand new versions of sqlite does not support renaming columns so 
+                           // not even brand new versions of sqlite does not support renaming columns so 
                            // we ned to do the v1 dance for this also.
                            
                            // first we rename the current to queue_v1
