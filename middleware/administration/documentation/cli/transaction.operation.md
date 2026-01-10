@@ -68,10 +68,4 @@ transaction [0..1]
       --state [0..1]  (json, toml, yaml, xml, line) [0..1]
            prints state in the provided format to stdout
 
-      [deprecated] --list-internal-instances [0..1]
-           @deprecated: use --list-resource-instances --internal
-
-      [deprecated] --list-external-instances, --list-external-resources [0..1]
-           @deprecated: use --list-resource-instances --external
-
 ```

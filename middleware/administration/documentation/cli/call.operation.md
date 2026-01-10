@@ -25,10 +25,4 @@ call [0..1]
       --examples [0..1]
            prints several examples of how casual call can be used
 
-      [deprecated] --asynchronous [0..1]  (<value>) [1]
-           [removed] use `casual --block true|false call ...` instead
-
-      [deprecated] --transaction [0..1]  (<value>) [1]
-           [removed] use `casual transaction --begin` instead
-
 ```
