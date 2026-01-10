@@ -35,19 +35,4 @@ gateway [0..1]
       --state [0..1]  (json, toml, yaml, xml, line) [0..1]
            prints state in the provided format to stdout
 
-      [deprecated] -ls, --list-services [0..1]
-           @removed - use casual service --list-instances
-
-      [deprecated] -lq, --list-queues [0..1]
-           @removed - use casual queue --list-queue-instances
-
-      [deprecated] --rediscover [0..1]
-           @removed - moved to casual discover --rediscover
-
-      [deprecated] --list-outbound-groups [0..1]
-           list all outbound groups
-
-      [deprecated] --list-inbound-groups [0..1]
-           list all inbound groups
-
 ```

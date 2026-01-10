@@ -14,6 +14,19 @@ host# casual --help file --produce
      
      @note: part of casual-pipe
 
+      Examples:
+     
+         `casual transaction --begin \
+           | casual queue --consume my-queue \
+           | casual file --produce /path/to/directory --format json \
+           | casual transaction --commit`
+     
+        `casual transaction --begin \
+           | casual queue --consume my-queue \
+           | casual call --service my-service \
+           | casual file --produce /path/to/directory \
+           | casual transaction --commit`
+
    SUB OPTIONS [0..1]:
 
       --format [0..1]  (json, toml, yaml, xml) [1]

@@ -92,25 +92,4 @@ domain [0..1]
       --log-reopen [0..1]
            reopen casual.log by sending SIGHUP to all servers, and outputs all running executables
 
-      [deprecated] --configuration-get [0..1]  (json, toml, yaml, xml) [0..1]
-           @deprecated: use `casual configuration --get`
-
-      [deprecated] --configuration-post [0..1]  (json, toml, yaml, xml) [1]
-           @deprecated: use `casual configuration --post`
-
-      [deprecated] --configuration-edit [0..1]  (json, toml, yaml, xml) [0..1]
-           @deprecated: use `casual configuration --edit`
-
-      [deprecated] --configuration-put [0..1]  (json, toml, yaml, xml) [1]
-           @deprecated: use `casual configuration --put`
-
-      [deprecated] --set-environment [0..1]  (<variable>, <value>, [<alias>*]) [2..*]
-           @deprecated - use --environment --set instead
-
-      [deprecated] --unset-environment [0..1]  (<variable>, [<alias>*]) [1..*]
-           @deprecated - use --environment --unset instead
-
-      [deprecated] --boot-strict [0..1]  (<glob patterns>) [0..*]
-           @deprecated - use --boot --strict <glob patterns>
-
 ```

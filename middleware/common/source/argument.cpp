@@ -242,11 +242,6 @@ namespace casual
                   return option.satisfied_min();
                };
 
-               auto is_pure_flag = []( const auto& option)
-               {
-                  return option.pure_flag();
-               };
-
             } // filter
 
             namespace validate
@@ -324,17 +319,18 @@ namespace casual
                      output( indent, "{}\n", std::string_view{line});
                }
 
-               void print( std::span< const Option> options, platform::size::type indent, std::optional< int> depth, const Option* parent = nullptr);
+               void print( std::span< const Option> options, std::string_view key, platform::size::type indent, std::optional< int> depth);
                
-               void print( const Option& option, platform::size::type indent, std::optional< int> depth, const Option* parent = nullptr)
+               void print( const Option& option, std::string_view key, platform::size::type indent, std::optional< int> depth)
                {
+                  // we don't print options that are totally deprecated.
+                  if( option.names().is_deprecated())
+                     return;
+
                   if( depth)
                      *depth -= 1;
 
-                  if( option.names().is_deprecated())
-                     output( indent, "[deprecated] {} [{}]", string::join( option.names().deprecated(), ", "), format_option_cardinality( option.cardinality()));
-                  else
-                     output( indent, "{} [{}]", string::join( option.names().active(), ", "), format_option_cardinality( option.cardinality()));
+                  output( indent, "{} [{}]", string::join( option.names().active(), ", "), format_option_cardinality( option.cardinality()));
 
                   auto information = option.complete( true, {});
 
@@ -345,16 +341,11 @@ namespace casual
                   description( option.description().brief, indent + 5);
                   output( "\n");
 
-                  // should we print extended help information?
-                  if( std::ranges::all_of( option.suboptions().options, filter::is_pure_flag))
+                  // if the option is the key option, we print extended description, if any.
+                  if( ! std::empty( option.description().extended) && option == key)
                   {
-                     // fi we have extended information, and we got no parent (traversed parent)
-                     // we know that the user asked for help on this specific option.
-                     if( ! std::empty( option.description().extended)  && ! parent)
-                     {
-                        description( option.description().extended, indent + 5);
-                        output( "\n");
-                     }
+                     description( option.description().extended, indent + 5);
+                     output( "\n");
                   }
                   
                   if( option.suboptions())
@@ -369,15 +360,15 @@ namespace casual
                      else
                         output( indent + indent_increment, "SUB OPTIONS:\n\n");
 
-                     help::print( option.suboptions().options, indent + ( indent_increment * 2), depth, &option);
+                     help::print( option.suboptions().options, key, indent + ( indent_increment * 2), depth);
                   }
      
                }
 
-               void print( std::span< const Option> options, platform::size::type indent, std::optional< int> depth, const Option* parent)
+               void print( std::span< const Option> options,  std::string_view key, platform::size::type indent, std::optional< int> depth)
                {
                   for( auto& option : options)
-                     print( option, indent, depth, parent);
+                     print( option, key, indent, depth);
                }
 
 
@@ -390,7 +381,7 @@ namespace casual
 
                   output( "\nOPTIONS\n\n");
 
-                  print( options, indent_increment, 1);
+                  print( options, "", indent_increment, 1);
                }
 
                void print( std::string_view description, std::span< const Option> options, range_type arguments)
@@ -405,7 +396,7 @@ namespace casual
 
                   auto print_option = []( auto& option, auto key, auto arguments, auto& state, auto&& sibling_cardinality)
                   {
-                     print( option, 0, std::nullopt);
+                     print( option, key, 0, std::nullopt);
                   };
 
                   //! if the assign algorithm didn't consume all of the arguments, we didn't find anything.

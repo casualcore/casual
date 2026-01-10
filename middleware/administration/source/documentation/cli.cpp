@@ -100,6 +100,14 @@ namespace casual
                   generate_option( "queue");
                   generate_option( "queue --list-queues");
                   generate_option( "queue --list-messages");
+                  generate_option( "queue --enqueue");
+                  generate_option( "queue --dequeue");
+                  generate_option( "queue --consume");
+                  generate_option( "queue --peek");
+                  generate_option( "queue --restore");
+                  generate_option( "queue attributes");
+                  generate_option( "queue --clear");
+                  generate_option( "queue --metric-reset");
                   generate_option( "queue forward --list-services");
                   generate_option( "queue forward --list-queues");
                   generate_option( "queue fanout --list-groups");
