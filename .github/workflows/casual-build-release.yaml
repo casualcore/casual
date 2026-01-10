@@ -172,8 +172,8 @@ jobs:
           path: /var/www/release/
       - name: Move rpm to right location
         run: |
-          mv /var/www/release/casual/*.rpm /var/www/release/
-          rmdir /var/www/release/casual
+          mv /var/www/release/casual/results/*.rpm /var/www/release/
+          rm -rf /var/www/release/casual
 
   build-casual-image:
     runs-on: [self-hosted, builder]
