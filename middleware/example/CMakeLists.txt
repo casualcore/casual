@@ -169,7 +169,7 @@ target_link_libraries(test-casual-example PRIVATE
 
 enable_testing()
 include(GoogleTest)
-gtest_add_tests(test-casual-example "" AUTO)
+gtest_discover_tests(test-casual-example "" AUTO)
 
 install(
     TARGETS

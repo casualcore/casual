@@ -159,7 +159,7 @@ target_link_libraries(test-casual-transaction PRIVATE
 
 enable_testing()
 include(GoogleTest)
-gtest_add_tests(test-casual-transaction "" AUTO)
+gtest_discover_tests(test-casual-transaction "" AUTO)
 
 add_library(casual-transaction-admin-cli SHARED)
 

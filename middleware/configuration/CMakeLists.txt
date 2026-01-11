@@ -75,7 +75,7 @@ target_link_libraries(test-casual-configuration PRIVATE
 
 enable_testing()
 include(GoogleTest)
-gtest_add_tests(test-casual-configuration "" AUTO)
+gtest_discover_tests(test-casual-configuration "" AUTO)
 
 add_executable(casual-configuration-samples)
 

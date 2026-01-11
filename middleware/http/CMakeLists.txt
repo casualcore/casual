@@ -107,7 +107,7 @@ target_link_libraries(test-http PRIVATE
 
 enable_testing()
 include(GoogleTest)
-gtest_add_tests(test-http "" AUTO)
+gtest_discover_tests(test-http "" AUTO)
 
 install(
     TARGETS

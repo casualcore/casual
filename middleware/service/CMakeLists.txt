@@ -171,7 +171,7 @@ target_link_libraries(test-casual-service PRIVATE
 
 enable_testing()
 include(GoogleTest)
-gtest_add_tests(test-casual-service "" AUTO)
+gtest_discover_tests(test-casual-service "" AUTO)
 
 install(
     TARGETS

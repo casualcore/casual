@@ -91,7 +91,7 @@ target_link_libraries(casual-server-test PRIVATE
 
 enable_testing()
 include(GoogleTest)
-gtest_add_tests(casual-server-test "" AUTO)
+gtest_discover_tests(casual-server-test "" AUTO)
 
 install(
     TARGETS

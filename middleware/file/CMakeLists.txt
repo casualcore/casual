@@ -123,7 +123,7 @@ target_link_libraries(test-casual-file PRIVATE
 
 enable_testing()
 include(GoogleTest)
-gtest_add_tests(test-casual-file "" AUTO)
+gtest_discover_tests(test-casual-file "" AUTO)
 
 install(
     TARGETS

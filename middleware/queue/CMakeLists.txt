@@ -240,6 +240,7 @@ target_sources(test-casual-queue
     unittest/source/test_queue.cpp
     unittest/source/api/test_c.cpp
     unittest/source/test_forward.cpp
+    unittest/source/test_fanout.cpp
     unittest/source/test_example.cpp
 )
 
@@ -268,7 +269,7 @@ target_link_libraries(test-casual-queue PRIVATE
 
 enable_testing()
 include(GoogleTest)
-gtest_add_tests(test-casual-queue "" AUTO)
+gtest_discover_tests(test-casual-queue "" AUTO)
 
 add_library(casual-queue-forward-common STATIC)
 

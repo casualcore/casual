@@ -89,7 +89,7 @@ target_link_libraries(test-buffer PRIVATE
 
 enable_testing()
 include(GoogleTest)
-gtest_add_tests(test-buffer "" AUTO)
+gtest_discover_tests(test-buffer "" AUTO)
 
 add_executable(casual-buffer-protocol-sample)
 

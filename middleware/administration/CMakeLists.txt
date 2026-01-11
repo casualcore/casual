@@ -154,7 +154,7 @@ target_link_libraries(test-casual-administration PRIVATE
 
 enable_testing()
 include(GoogleTest)
-gtest_add_tests(test-casual-administration "" AUTO)
+gtest_discover_tests(test-casual-administration "" AUTO)
 
 install(
     TARGETS

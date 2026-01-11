@@ -87,7 +87,7 @@ target_link_libraries(test-casual-xatmi PRIVATE
 
 enable_testing()
 include(GoogleTest)
-gtest_add_tests(test-casual-xatmi "" AUTO)
+gtest_discover_tests(test-casual-xatmi "" AUTO)
 
 install(
     TARGETS
