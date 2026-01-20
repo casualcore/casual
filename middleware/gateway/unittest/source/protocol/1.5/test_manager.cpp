@@ -47,7 +47,7 @@ domain:
         memberships: [ base]
       - path: ${CMAKE_BINARY_DIR}/middleware/transaction/bin/casual-transaction-manager
         memberships: [ base]
-      - path: ${CASUAL_MAKE_SOURCE_ROOT}/middleware/queue/bin/casual-queue-manager
+      - path: ${CMAKE_BINARY_DIR}/middleware/queue/bin/casual-queue-manager
         memberships: [ base]
 )";
      

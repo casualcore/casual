@@ -126,7 +126,7 @@ domain:
          // dequeue 1 message
          {
             auto messages = queue::dequeue( "example.q1");
-            EXPECT_EQ( messages.size(), 1UL);
+            ASSERT_EQ( messages.size(), 1UL);
 
             EXPECT_EQ( messages.front().payload.type, "X_OCTET/");
             EXPECT_TRUE( common::algorithm::equal(messages.front().payload.data, contents));

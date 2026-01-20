@@ -130,6 +130,7 @@ target_link_libraries(casual-queue-c-api PRIVATE
   casual-queue-api
   casual-queue-common
   casual-common
+  casual-xatmi-explicit
 )
 
 
@@ -199,8 +200,14 @@ target_link_libraries(casual-queue-admin-cli PRIVATE
   casual-common
 )
 
+add_library( casual-queue-upgrade-archive STATIC)
 
-add_executable(casual-queue-upgrade)
+target_sources( casual-queue-upgrade-archive
+  PRIVATE
+    source/group/queuebase/upgrade.cpp
+)
+
+add_executable( casual-queue-upgrade)
 
 target_sources(casual-queue-upgrade
   PRIVATE
@@ -208,6 +215,7 @@ target_sources(casual-queue-upgrade
 )
 
 target_link_libraries(casual-queue-upgrade PRIVATE
+  casual-queue-upgrade-archive
   casual-queue-common
   casual-common
   sqlite3
@@ -250,6 +258,7 @@ target_link_libraries(test-casual-queue PRIVATE
   casual-queue-common
   casual-queue-api
   casual-queue-c-api
+  casual-queue-upgrade-archive
   casual-queue-unittest
   casual-common
   casual-configuration
