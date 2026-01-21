@@ -236,12 +236,10 @@ unittest_objectfiles = [
     make.Compile( 'unittest/source/communication/test_tcp.cpp'),
     make.Compile( 'unittest/source/communication/test_ipc.cpp'),
     make.Compile( 'unittest/source/communication/test_stream.cpp'),
+    make.Compile( 'unittest/source/communication/test_select.cpp'),
 
     make.Compile( 'unittest/source/message/test_dispatch.cpp'),
     make.Compile( 'unittest/source/message/test_coordinate.cpp'),
-    
-#    make.Compile( 'unittest/source/server/test_service.cpp'),
-#    make.Compile( 'unittest/source/server/test_arguments.cpp'),
     
     make.Compile( 'unittest/source/service/test_header.cpp'),
     

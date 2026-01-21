@@ -143,28 +143,36 @@ namespace casual
          } // <unnamed>
       } // local
 
-      namespace directive::detail
+      namespace directive
       {
-         std::string_view description( Flags flag)
+         namespace detail
          {
-            switch( flag)
+            std::string_view description( Flags flag)
             {
-               case Flags::none: return "none";
-               case Flags::in: return "in";
-               case Flags::out: return "out";
-               case Flags::rd_hup: return "rd_hup";
-               case Flags::prio: return "prio";
-               case Flags::error: return "error";
-               case Flags::hup: return "hup";
-               case Flags::edge: return "edge";
-               case Flags::oneshot: return "oneshot";
-               case Flags::wakeup: return "wakeup";
-               case Flags::exclusive: return "exclusive";
+               switch( flag)
+               {
+                  case Flags::none: return "none";
+                  case Flags::in: return "in";
+                  case Flags::out: return "out";
+                  case Flags::rd_hup: return "rd_hup";
+                  case Flags::prio: return "prio";
+                  case Flags::error: return "error";
+                  case Flags::hup: return "hup";
+                  case Flags::edge: return "edge";
+                  case Flags::oneshot: return "oneshot";
+                  case Flags::wakeup: return "wakeup";
+                  case Flags::exclusive: return "exclusive";
+               }
+               return "<unknown>";
             }
-            return "<unknown>";
+         } // detail
+
+         strong::file::descriptor::id descriptor( const ::epoll_event& event) noexcept
+         {
+            return strong::file::descriptor::id{ event.data.fd};
          }
          
-      } // derective::detail
+      } // directive
       
       
       Directive::Directive()
@@ -250,7 +258,13 @@ namespace casual
          {
             found->event -= flag; // remove the flag
 
-            if( flag::empty( found->event))
+            if( ! flag::empty( found->event))
+            {
+               // update the epoll
+               auto event = local::crate_event( descriptor, found->event);
+               local::update( m_epoll, local::update_op::modify, descriptor, &event);
+            }
+            else
             {
                // if we have no flags left, remove the entry
                local::update( m_epoll, local::update_op::remove, descriptor);

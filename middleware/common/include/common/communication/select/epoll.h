@@ -87,6 +87,9 @@ namespace casual
             
          } // detail
 
+         //! @returns the descriptor from the event
+         strong::file::descriptor::id descriptor( const ::epoll_event& event) noexcept;
+
       } // directive
 
 
@@ -128,6 +131,8 @@ namespace casual
 
          inline auto descriptor() const { return m_epoll;}
          inline auto& events() { return m_events; }
+
+         const auto& entries() const { return m_entries;}
 
          CASUAL_LOG_SERIALIZE(
             CASUAL_SERIALIZE( m_epoll);
