@@ -97,6 +97,31 @@ domain:
          }
       }
 
+      TEST( cli_queue, header_propagation)
+      {
+         common::unittest::Trace trace;
+
+         auto domain = local::domain( R"(
+domain:
+   name: A
+   queue:
+      groups:
+         -  alias: Q
+            queues:
+               -  name: a
+)");
+
+            auto capture = local::execute( R"(echo "casual" \
+                | casual buffer --compose \
+                | casual queue attributes --header a:1 b:2 c:3 \
+                | casual queue --enqueue a \
+                | casual queue --dequeue a \
+                | casual pipe --human-sink)");
+
+            EXPECT_TRUE( capture.standard.out.contains( "header: [a:1, b:2, c:3]")) << CASUAL_NAMED_VALUE( capture);
+
+      }
+
       TEST( cli_queue, enqueue_dequeue)
       {
          common::unittest::Trace trace;

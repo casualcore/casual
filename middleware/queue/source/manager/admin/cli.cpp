@@ -722,6 +722,12 @@ namespace casual
                   result.id = message.id;
                   result.attributes = transform_attributes( std::move( message.attributes));
 
+                  // header fields are strings in cli representation
+                  result.header = algorithm::transform( message.attributes.header, []( auto& field)
+                  {
+                     return field.string();
+                  });
+
                   result.payload.type = std::move( message.payload.type);
                   result.payload.data = std::move( message.payload.data);
 
@@ -731,6 +737,11 @@ namespace casual
                auto enqueue( casual::cli::message::payload::Message&& value)
                {
                   ipc::message::group::enqueue::Request result{ process::handle()};
+
+                  result.message.attributes.header = algorithm::transform( value.header, []( auto& field)
+                  {
+                     return header::Field{ field};
+                  });
 
                   result.message.payload.data = std::move( value.payload.data);
                   result.message.payload.type = std::move( value.payload.type);
@@ -745,6 +756,10 @@ namespace casual
                   result.message.attributes.properties = std::move( message.attributes.properties);
                   result.message.attributes.reply = std::move( message.attributes.reply);
                   result.message.attributes.available = message.attributes.available;
+                  result.message.attributes.header = algorithm::transform( message.header, []( auto& field)
+                  {
+                     return header::Field{ field};
+                  });
                   result.message.payload.data = std::move( message.payload.data);
                   result.message.payload.type = std::move( message.payload.type);
 
@@ -1893,12 +1908,12 @@ value is absolute time since epoch ([+]?<value>[h|min|s|ms|us|ns])+
                      {
                         if( shared->properties)
                            message.attributes.properties = *shared->properties;
-                        if( shared->header)
-                           message.attributes.header = *shared->header;
                         if( shared->reply)
                            message.attributes.reply = *shared->reply;
                         if( shared->available)
                            message.attributes.available = *shared->available;
+                        if( shared->header)
+                           message.header = *shared->header;
                         
                         casual::cli::pipe::forward::message( message);
                      };

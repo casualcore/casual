@@ -86,13 +86,11 @@ namespace casual
             struct Attributes
             {
                std::string properties;
-               std::vector< std::string> header;
                std::string reply;
                common::chronology::time_point available;
                
                CASUAL_CONST_CORRECT_SERIALIZE(
                   CASUAL_SERIALIZE( properties);
-                  CASUAL_SERIALIZE( header);
                   CASUAL_SERIALIZE( reply);
                   CASUAL_SERIALIZE( available);
                ) 
@@ -107,12 +105,14 @@ namespace casual
 
             common::Uuid id;
             message::Attributes attributes;
+            std::vector< std::string> header;
             common::buffer::Payload payload;
 
             CASUAL_CONST_CORRECT_SERIALIZE(
                message_base::serialize( archive);
                CASUAL_SERIALIZE( id);
                CASUAL_SERIALIZE( attributes);
+               CASUAL_SERIALIZE( header);
                CASUAL_SERIALIZE( payload);
             ) 
          };
@@ -127,11 +127,13 @@ namespace casual
             using message_base::message_base;
 
             common::service::Code code;
+            std::vector< std::string> header;
             common::buffer::Payload payload;
 
             CASUAL_CONST_CORRECT_SERIALIZE(
                message_base::serialize( archive);
                CASUAL_SERIALIZE( code);
+               CASUAL_SERIALIZE( header);
                CASUAL_SERIALIZE( payload);
             )  
          };
