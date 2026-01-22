@@ -1,6 +1,12 @@
 # Changelog
 This is the changelog for `casual` and all changes are listed in this document.
 
+## [1.8.9] - 2026-01-15
+
+### Fixes
+- common: epoll now updates epoll state during flag remove ([#663](https://github.com/casualcore/casual/issues/663))
+    This fixes a potential busy-loop in select dispatch when removing write flags from a descriptor -> 100% cpu. 
+
 ## [1.8.8] - 2025-12-24
 
 ### Fixes
