@@ -83,8 +83,8 @@ endif()
 
 include(casual.cmake)
 
-if(EXISTS "$ENV{CMAKE_SOURCE_DIR}/version.cmake")
-    include(version.cmake)
+if(EXISTS "$ENV{CMAKE_BINARY_DIR}/version.cmake")
+    include($ENV{CMAKE_BINARY_DIR}/version.cmake)
 endif()
 
 # Information for Packing
@@ -105,12 +105,12 @@ list(APPEND CPACK_RPM_EXCLUDE_FROM_AUTO_FILELIST_ADDITION "/opt")
 
 set(CPACK_RPM_SPEC_MORE_DEFINE "%define _build_id_links none")
 
-file(WRITE ${CMAKE_SOURCE_DIR}/changelog.txt
+file(WRITE ${CMAKE_BINARY_DIR}/changelog.txt
 "* Tue Sep  22 2015  Fredrik Eriksson <lazan@laz.se> 
 - Some insightful comment about first version of casuals
 ")
 
-set(CPACK_RPM_CHANGELOG_FILE "${CMAKE_SOURCE_DIR}/changelog.txt")
+set(CPACK_RPM_CHANGELOG_FILE "${CMAKE_BINARY_DIR}/changelog.txt")
 
 set(CPACK_RPM_FILE_NAME "RPM-DEFAULT")
 
@@ -119,7 +119,6 @@ set(CPACK_PACKAGE_FILE_NAME ${CPACK_PACKAGE_NAME}-${CPACK_RPM_PACKAGE_VERSION}-$
 include(CPack)
 
 enable_testing()
-
 
 # Build subdirectories
 add_subdirectory(middleware)

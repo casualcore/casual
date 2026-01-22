@@ -102,16 +102,17 @@ jobs:
           touch /git/casual/casual.log
           chmod 777 /git/casual/casual.log
 
-          echo "set(CPACK_RPM_PACKAGE_VERSION ${{ needs.calculate-version.outputs.casual_version }})" > /git/casual/casual/version.cmake
-          echo "set(CPACK_RPM_PACKAGE_RELEASE ${{ needs.calculate-version.outputs.casual_release }})" >> /git/casual/casual/version.cmake
+          mkdir -p \${CMAKE_BINARY_DIR}
+          echo "set(CPACK_RPM_PACKAGE_VERSION ${{ needs.calculate-version.outputs.casual_version }})" > \${CMAKE_BINARY_DIR}/version.cmake
+          echo "set(CPACK_RPM_PACKAGE_RELEASE ${{ needs.calculate-version.outputs.casual_release }})" >> \${CMAKE_BINARY_DIR}/version.cmake
 
-          cat /git/casual/casual/version.cmake
+          cat \${CMAKE_BINARY_DIR}/version.cmake
 
           bash /git/casual/casual/pipeline/script/backend/$DISTRIBUTION/build ${{ needs.calculate-version.outputs.build_version }}
           CODE=$?
 
-          find /tmp/build/casual -name 'casual-middleware-*.rpm' -exec cp "{}" /git/casual/casual/results  \;
-          find /tmp/build/casual -name 'report.xml' -exec cp "{}" /git/casual/casual/results  \;
+          find \${CMAKE_BINARY_DIR} -name 'casual-middleware-*.rpm' -exec cp "{}" /git/casual/casual/results  \;
+          find \${CMAKE_BINARY_DIR} -name 'report.xml' -exec cp "{}" /git/casual/casual/results  \;
           chmod 777 /git/casual/casual/results/*
 
           bash /git/casual/casual/pipeline/script/post/cleanup

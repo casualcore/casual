@@ -3,7 +3,7 @@
 set -e
 
 cd ${CMAKE_SOURCE_DIR} && \
-    conan profile detect && conan install conanfile.txt --output-folder ${CMAKE_BUILD_HOME} --build=missing && \
+    conan profile detect && conan install conanfile.txt --output-folder ${CMAKE_BUILD_HOME}/.. --build=missing && \
     cd ${CMAKE_SOURCE_DIR} && cmake --preset conan-release && \
     cmake --build . --preset conan-release && \
     ctest --output-junit report.xml --preset conan-release --output-on-failure && \
