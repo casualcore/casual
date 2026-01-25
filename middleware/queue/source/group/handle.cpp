@@ -28,6 +28,7 @@
 
 #include "domain/discovery/api.h"
 
+#include "configuration/model/change.h"
 
 namespace casual
 {
@@ -631,34 +632,6 @@ namespace casual
                {
                   namespace detail
                   {
-                     auto update( State& state, std::vector< queuebase::Queue> wanted, 
-                        const std::vector<casual::common::strong::queue::id>& remove = {}, 
-                        const std::vector<casual::common::strong::queue::id>& zombies = {})
-                     {
-                        Trace trace{ "queue::handle::local::local::configuration::update::request::detail::update"};
-                        log::debug( "wanted: ", wanted);                     
-                        log::debug( "remove: ", remove);
-                        log::debug( "zombies: ", zombies);
-
-                        // if the update created new queues, we need notify discovery since there could be some
-                        // other domain that needs to know about the new queues.
-                        if( ! state.queuebase.update( wanted, remove).empty())
-                           casual::domain::discovery::discoverable::advertised( state.multiplex);
-
-                        // ok, wanted queues are added, if any. Take care of reply.
-                        // TODO remove queues, if any, if possible.
-                        auto queues = state.queuebase.queues();
-
-                        return algorithm::transform_if( queues, 
-                        []( auto& queue){
-                           return queue::ipc::message::group::configuration::update::Queue{ queue.id, queue.name};
-                        },
-                        [&zombies]( auto& queue){
-                           return ! algorithm::find( zombies, queue.id);
-                        }
-                        );
-                     }
-
                      auto queuebase( const queue::ipc::message::group::configuration::update::Request& message)
                      {
                         if( ! message.model.queuebase.empty())
@@ -693,6 +666,250 @@ namespace casual
                         return group::Queuebase{ std::move( file)};
                      }
 
+                     // normalizing structure for easier handling
+                     struct Queue
+                     {
+                        common::strong::queue::id id;
+                        std::string name;
+                        common::strong::queue::id error;
+                        queuebase::queue::Retry retry;
+                        bool empty = true;
+
+                        inline queuebase::queue::Type type() const { return error ? queuebase::queue::Type::queue : queuebase::queue::Type::error_queue;}
+
+                        inline friend bool operator == ( const Queue& lhs, std::string_view rhs) { return lhs.name == rhs;}
+                        inline friend bool operator == ( const Queue& lhs, const Queue& rhs) 
+                        { 
+                           return lhs.name == rhs.name && lhs.retry == rhs.retry; 
+                        }
+
+
+                        CASUAL_CONST_CORRECT_SERIALIZE(
+                           CASUAL_SERIALIZE( id);
+                           CASUAL_SERIALIZE( name);
+                           CASUAL_SERIALIZE( error);
+                           CASUAL_SERIALIZE( retry);
+                           CASUAL_SERIALIZE( empty);
+                        )
+
+                     };
+
+                     auto transform_normalized()
+                     {
+                        return casual::overload::compose(
+                           []( const casual::configuration::model::queue::Queue& queue)
+                           {
+                              return detail::Queue{ 
+                                 .name = queue.name, 
+                                 .retry = { 
+                                    .count = queue.retry.count, 
+                                    .delay = queue.retry.delay}
+                              };
+                           },
+                           []( const queue::ipc::message::group::state::Queue& queue)
+                           {
+                              return detail::Queue{ 
+                                 .id = queue.id,
+                                 .name = queue.name,
+                                 .error = queue.error,
+                                 .retry = { 
+                                    .count = queue.retry.count, 
+                                    .delay = queue.retry.delay},
+                                 .empty = queue.metric.count == 0
+                              
+                              };
+                           }
+                        );
+                     }
+
+                     auto transform_queuebase()
+                     {
+                        return []( const detail::Queue& queue)
+                        {
+                           return queuebase::Queue{ 
+                              .id = queue.id,
+                              .name = queue.name,
+                              .retry = queuebase::queue::Retry{ 
+                                 .count = queue.retry.count, 
+                                 .delay = queue.retry.delay},
+                              .error = queue.error
+                           };
+                        };
+                     }
+
+                     constexpr auto transform_id = []( const auto& queue)
+                     {
+                        return queue.id;
+                     };
+
+                     constexpr auto transform_error = []( const auto& queue)
+                     {
+                        return queue.error;
+                     };
+
+                     namespace predicate
+                     {
+                        constexpr auto is_queue = []( const detail::Queue& queue)
+                        {
+                           return queue.type() == decltype( queue.type())::queue;
+                        };
+
+                        constexpr auto is_empty = []( const detail::Queue& queue)
+                        {
+                           return queue.empty;
+                        };
+
+
+                        auto is_id( const std::vector< common::strong::queue::id>& ids)
+                        {
+                           return [ &ids]( const auto& queue) -> bool
+                           {
+                              return algorithm::contains( ids, queue.id);
+                           };
+                        }
+
+                        constexpr auto equal_name = []( const detail::Queue& lhs, const detail::Queue& rhs)
+                        {
+                           return lhs.name == rhs.name;
+                        };
+
+                        
+                     } // predicate
+
+                     // update empty state of queues based on their error queue
+                     auto update_empty( auto error_queues)
+                     {
+                        return [ error_queues]( detail::Queue& queue)
+                        {
+                           // already known to be non-empty
+                           if( ! queue.empty)
+                              return;
+
+                           auto is_error = [ error_id = queue.error]( const detail::Queue& queue)
+                           {
+                              return error_id == queue.id;
+                           };
+
+                           if( auto found = algorithm::find_if( error_queues, is_error))
+                           {
+                              queue.empty = found->empty;
+                           }
+                        };
+                     }
+
+                     auto update_ids( std::span< const detail::Queue> current)
+                     {
+                        return [ current]( detail::Queue& queue)
+                        {
+                           if( queue.id)
+                              return;
+
+                           if( auto found = algorithm::find( current, queue.name))
+                           {
+                              queue.id = found->id;
+                              queue.error = found->error;
+                           }
+                        };
+                     }
+
+                     auto update( State& state, std::vector< queuebase::Queue> wanted, 
+                        const std::vector<casual::common::strong::queue::id>& remove_ids = {}, 
+                        const std::vector<casual::common::strong::queue::id>& zombie_ids = {})
+                     {
+                        Trace trace{ "queue::handle::local::local::configuration::update::request::detail::update"};
+                        log::debug( "wanted: ", wanted);                     
+                        log::debug( "remove: ", remove_ids);
+                        log::debug( "zombies: ", zombie_ids);
+
+                        // if the update created new queues, we need notify discovery since there could be some
+                        // other domain that needs to know about the new queues.
+                        if( ! state.queuebase.update( std::move( wanted), remove_ids).empty())
+                           casual::domain::discovery::discoverable::advertised( state.multiplex);
+
+                        // ok, wanted queues are added, if any. Take care of reply. We need to reply with all 
+                        // our non-zombie queues
+                        auto existing = state.queuebase.queues();
+
+                        // partition out main queue zombies (zombie_ids are main queues)
+                        auto [ zombies, queues] = algorithm::partition( existing, detail::predicate::is_id( zombie_ids));
+
+                        // we need to remove all zombies error queues as well, extract all error ids
+                        auto zombie_error_ids = algorithm::transform( zombies, detail::transform_error);
+
+                        // partition out error queues that have zombies as main queues, which leaves us with valid queues
+                        auto [ zombie_error_queues, valid_queues] = algorithm::partition( queues, detail::predicate::is_id( zombie_error_ids));
+
+                        // update/replace zombie state
+                        {
+                           state.zombies = algorithm::transform( zombie_error_queues, detail::transform_id);
+                           // g++13 does not have append_range
+                           // state.zombies.append_range( zombie_ids);
+                           state.zombies.insert( std::end( state.zombies), std::begin( zombie_ids), std::end( zombie_ids));
+                           // keep it sorted for easier reading of state-dump, and such
+                           std::ranges::sort( state.zombies);
+                        }
+                        
+                        return algorithm::transform( valid_queues, []( auto& queue)
+                        {
+                           return queue::ipc::message::group::configuration::update::Queue{ queue.id, queue.name};
+                        });
+                     }
+
+                     struct Update
+                     {
+                         // new or changed queues
+                        std::vector< queuebase::Queue> update;
+                        std::vector< common::strong::queue::id> remove;
+                        std::vector< common::strong::queue::id> zombies;
+
+                        CASUAL_CONST_CORRECT_SERIALIZE(
+                           CASUAL_SERIALIZE( update);
+                           CASUAL_SERIALIZE( remove);
+                           CASUAL_SERIALIZE( zombies);
+                        )
+                     };
+
+                     auto calculate_update( std::span< Queue> current, std::span< Queue> wanted)
+                     {
+                        Trace trace{ "queue::handle::local::local::configuration::update::request::detail::calculate_update"};
+
+                        Update result;
+
+                        // calculate the change we need to perform to conform to wanted state
+                        auto change = casual::configuration::model::change::calculate( current, wanted, detail::predicate::equal_name);
+
+                        log::debug( "change: ", change);
+
+                        // take care of removed queues
+                        {
+                           auto [ to_remove, non_empty] = algorithm::partition( change.removed, detail::predicate::is_empty);
+
+                           result.remove = algorithm::transform( to_remove, detail::transform_id);
+                           // non empty queues becomes zombies
+                           result.zombies = algorithm::transform( non_empty, detail::transform_id);
+
+                           if( non_empty)
+                              common::log::warning( common::code::casual::invalid_configuration, 
+                                 "the following queues (or their error queues) are non-empty and will be marked as zombies: ", 
+                                 algorithm::transform( non_empty, []( auto& queue){ return queue.name;}));
+                        }
+
+                        // take care of updates
+                        {
+                           result.update = algorithm::transform( change.modified, detail::transform_queuebase());
+                        }
+
+                        // take care of added
+                        {
+                           algorithm::transform( change.added, 
+                              std::back_inserter( result.update), 
+                              detail::transform_queuebase());
+                        }
+
+                        return result;
+
+                     }
+
                   } // detail
 
                   auto request( State& state)
@@ -701,7 +918,6 @@ namespace casual
                      {
                         Trace trace{ "queue::handle::local::configuration::update::request"};
                         log::debug( "message: ", message);
-
 
                         // this can't be updated if once set (yet)
                         if( ! state.queuebase)
@@ -715,89 +931,34 @@ namespace casual
                         state.note = message.model.note;
                         state.size.capacity = message.model.capacity;
 
-                        auto wanted = algorithm::transform( message.model.queues, []( auto& queue)
+                        // all existing queues, including error queues
+                        auto existing = algorithm::transform( state.queuebase.queues(), detail::transform_normalized());
+
+                        // current queues, excluding error queues (we only use error queues to update empty state)
+                        auto [ queues, error_queues] = algorithm::partition( existing, detail::predicate::is_queue);
+
+                        // update empty state to take error queues into account
+                        algorithm::for_each( queues, detail::update_empty( error_queues));
+
+                        auto wanted = algorithm::transform( message.model.queues, detail::transform_normalized());
+
+                        // we need to update/correlate ids for wanted queues
+                        algorithm::for_each( wanted, detail::update_ids( existing));
+
+                        auto update = detail::calculate_update( queues, wanted);
+
+                        log::debug( "update: ", update);
+
+                        // if something goes wrong we send fatal event
+                        common::event::guard::fatal( [&]()
                         {
-                           return queuebase::Queue{ queue.name, { queue.retry.count, queue.retry.delay}};
-                        });
-
-                        log::debug( "wanted: ", wanted);
-
-                        auto existing = state.queuebase.queues();
-                        // correlate existing ids
-                        {
-                           log::debug( "existing: ", existing);
-
-                           auto correlate_id = [&existing]( auto& queue)
-                           {
-                              if( auto found = algorithm::find( existing, queue.name))
-                              {
-                                 queue.id = found->id;
-                                 queue.error = found->error;
-                              }
-                           };
-
-                           algorithm::for_each( wanted, correlate_id);
-                        }
-
-                        auto zombies = std::get< 1>( algorithm::intersection( existing, wanted, []( auto& exists, auto& wants)
-                        {
-                           return exists.id == wants.id || exists.id == wants.error;
-                        }));
-
-                        using zombie_type = decltype( zombies)::value_type;
-                        std::vector< std::tuple< zombie_type, zombie_type> > joined;
-
-                        auto join_with_error_queue = [&joined, &zombies]( auto& queue)
-                        {
-                           if( auto found = algorithm::find_if( zombies, 
-                              [&queue](auto& item){ return queue.error == item.id;}))
-                           {
-                              joined.emplace_back( std::make_tuple( queue, *found));
-                           }
-                        };
-
-                        using Type = queue::ipc::message::group::state::queue::Type;
-                        algorithm::for_each_if( zombies, join_with_error_queue, []( auto& queue){ return queue.type() == Type::queue;});
-
-                        auto has_messages = []( auto& item){ return std::get< 0>( item).metric.count > 0 || std::get< 1>( item).metric.count > 0;};
-
-                        auto [ nonempty_queues, empty_queues] = algorithm::partition( joined, has_messages);
-
-                        log::debug( "nonempty_queues: ", nonempty_queues);
-                        log::debug( "empty_queues: ", empty_queues);
-
-                        std::vector<casual::common::strong::queue::id> remove;
-
-                        auto populate = []( auto& queues, auto& out){
-                           algorithm::transform( queues, 
-                              std::back_inserter( out), 
-                              []( auto& item) { return std::get< 0>( item).id;});
-                           algorithm::transform( queues, 
-                              std::back_inserter( out), 
-                              []( auto& item) { return std::get< 1>( item).id;});
-                        };
-
-                        populate( empty_queues, remove);
-                        populate( nonempty_queues, state.zombies);
-
-                        log::debug( "remove: ", remove);
-
-                        {
-                           // if something goes wrong we send fatal event
-                           auto queues = common::event::guard::fatal( [&]()
-                           { 
-                              return detail::update( state, wanted, remove, state.zombies);
-                           });
-
                            auto reply = common::message::reverse::type( message, process::handle());
                            reply.alias = state.alias;
-                           reply.queues = std::move( queues);
-                           state.multiplex.send( message.process.ipc, reply);
-                        }
 
-                        algorithm::for_each( nonempty_queues, []( auto& queuepair)
-                        {
-                           common::log::line( common::log::category::warning, "reconfigure zombie queues and remove messages to remove it: ", std::get< 0>( queuepair).name, " - ", std::get<1>( queuepair).name);
+                           // the actual update
+                           reply.queues = detail::update( state, std::move( update.update), update.remove, update.zombies);
+                           
+                           state.multiplex.send( message.process.ipc, reply);
                         });
 
                         state.size.current = state.queuebase.size();

@@ -102,7 +102,7 @@ namespace casual
          auto path = local::file();
          group::Queuebase database( path);
 
-         database.update( { queuebase::Queue{ "unittest_queue"}}, {});
+         database.update( { queuebase::Queue{ .name = "unittest_queue"}}, {});
 
          auto queues = database.queues();
 
@@ -123,7 +123,7 @@ namespace casual
          auto path = local::file();
          group::Queuebase database( path);
 
-         auto queue = database.update( {queuebase::Queue{ "unittest_queue"}}, {});
+         auto queue = database.update( {queuebase::Queue{ .name = "unittest_queue"}}, {});
 
          database.update( {}, { queue.at( 0).id});
 
@@ -137,7 +137,7 @@ namespace casual
          auto path = local::file();
          group::Queuebase database( path);
 
-         auto queue = database.update( { queuebase::Queue{ "unittest_queue"}}, {});
+         auto queue = database.update( { queuebase::Queue{ .name = "unittest_queue"}}, {});
 
          queue.at( 0).name = "foo-bar";
 
@@ -173,7 +173,7 @@ namespace casual
          
          {
             group::Queuebase database( path);
-            database.create( queuebase::Queue{ "unittest_queue"});
+            database.create( queuebase::Queue{ .name = "unittest_queue"});
          }
 
          {
@@ -202,7 +202,7 @@ namespace casual
 
             for( int index = 1; index <= 5; ++index)
             {
-               database.create( queuebase::Queue{ "unittest_queue_" + std::to_string( index)});
+               database.create( queuebase::Queue{ .name = "unittest_queue_" + std::to_string( index)});
             }
          }
 
@@ -231,7 +231,7 @@ namespace casual
 
          common::algorithm::for_n< 100>( [&queuebase]( auto index)
          {
-            queuebase.create( queuebase::Queue{ "unittest_queue" + std::to_string( index)});
+            queuebase.create( queuebase::Queue{ .name = "unittest_queue" + std::to_string( index)});
          });
          queuebase.persist();
 
@@ -250,7 +250,7 @@ namespace casual
 
          auto path = local::file();
          group::Queuebase database( path);
-         auto queue = database.create( queuebase::Queue{ "unittest_queue"});
+         auto queue = database.create( queuebase::Queue{ .name = "unittest_queue"});
 
          auto message = local::message( queue);
 
@@ -267,7 +267,7 @@ namespace casual
 
          auto path = local::file();
          group::Queuebase database( path);
-         auto queue = database.create( queuebase::Queue{ "unittest_queue"});
+         auto queue = database.create( queuebase::Queue{ .name = "unittest_queue"});
 
          auto message = local::message( queue);
 
@@ -290,7 +290,7 @@ namespace casual
 
          auto path = local::file();
          group::Queuebase database( path);
-         auto queue = database.create( queuebase::Queue{ "unittest_queue"});
+         auto queue = database.create( queuebase::Queue{ .name = "unittest_queue"});
 
          auto message = local::message( queue);
 
@@ -311,7 +311,7 @@ namespace casual
 
          auto path = local::file();
          group::Queuebase database( path);
-         auto queue = database.create( queuebase::Queue{ "unittest_queue"});
+         auto queue = database.create( queuebase::Queue{ .name = "unittest_queue"});
 
          auto origin = local::message( queue);
          database.enqueue( origin);
@@ -333,7 +333,7 @@ namespace casual
 
          auto path = local::file();
          group::Queuebase database( path);
-         auto queue = database.create( queuebase::Queue{ "enqueue_deque__info__expect__count_0__size_0"});
+         auto queue = database.create( queuebase::Queue{ .name = "enqueue_deque__info__expect__count_0__size_0"});
 
          auto origin = local::message( queue);
          database.enqueue( origin);
@@ -353,7 +353,7 @@ namespace casual
 
          auto path = local::file();
          group::Queuebase database( path);
-         auto queue = database.create( queuebase::Queue{ "enqueue_deque__info__expect_metric_to_reflect"});
+         auto queue = database.create( queuebase::Queue{ .name = "enqueue_deque__info__expect_metric_to_reflect"});
 
          auto origin = local::message( queue);
          database.enqueue( origin);
@@ -373,7 +373,7 @@ namespace casual
 
          auto path = local::file();
          group::Queuebase database( path);
-         auto queue = database.create( queuebase::Queue{ "enqueue_deque__info__expect_metric_to_reflect"});
+         auto queue = database.create( queuebase::Queue{ .name = "enqueue_deque__info__expect_metric_to_reflect"});
 
          auto origin = local::message( queue);
          database.enqueue( origin);
@@ -396,7 +396,7 @@ namespace casual
 
          auto path = local::file();
          group::Queuebase database( path);
-         auto queue = database.create( queuebase::Queue{ "dequeue_message__from_id"});
+         auto queue = database.create( queuebase::Queue{ .name = "dequeue_message__from_id"});
 
          auto origin = local::message( queue);
 
@@ -420,7 +420,7 @@ namespace casual
 
          auto path = local::file();
          group::Queuebase database( path);
-         auto queue = database.create( queuebase::Queue{ "unittest_queue"});
+         auto queue = database.create( queuebase::Queue{ .name = "unittest_queue"});
 
          auto origin = local::message( queue);
          origin.message.attributes.properties = "some: properties";
@@ -445,7 +445,7 @@ namespace casual
 
          auto path = local::file();
          group::Queuebase database( path);
-         auto queue = database.create( queuebase::Queue{ "unittest_queue"});
+         auto queue = database.create( queuebase::Queue{ .name = "unittest_queue"});
 
          auto origin = local::message( queue);
          origin.message.attributes.properties = "some: properties";
@@ -466,7 +466,7 @@ namespace casual
 
          auto path = local::file();
          group::Queuebase database( path);
-         auto queue = database.create( queuebase::Queue{ "unittest_queue"});
+         auto queue = database.create( queuebase::Queue{ .name = "unittest_queue"});
 
          auto messages = common::algorithm::generate_n< 100>( [&]( auto index)
          {
@@ -507,7 +507,7 @@ namespace casual
 
          auto path = local::file();
          group::Queuebase database( path);
-         auto queue = database.create( queuebase::Queue{ "unittest_queue"});
+         auto queue = database.create( queuebase::Queue{ .name = "unittest_queue"});
 
          common::transaction::ID xid = common::transaction::id::create();
          auto origin = local::message( queue, xid);
@@ -544,7 +544,7 @@ namespace casual
 
          auto path = local::file();
          group::Queuebase database( path);
-         auto queue = database.create( queuebase::Queue{ "unittest_queue"});
+         auto queue = database.create( queuebase::Queue{ .name = "unittest_queue"});
 
 
          auto origin = local::message( queue);
@@ -572,7 +572,7 @@ namespace casual
 
          auto path = local::file();
          group::Queuebase database( path);
-         auto queue = database.create( queuebase::Queue{ "unittest_queue"});
+         auto queue = database.create( queuebase::Queue{ .name = "unittest_queue"});
 
 
          auto origin = local::message( queue);
@@ -601,7 +601,7 @@ namespace casual
 
          auto path = local::file();
          group::Queuebase database( path);
-         auto queue = database.create( queuebase::Queue{ "unittest_queue"});
+         auto queue = database.create( queuebase::Queue{ .name = "unittest_queue"});
 
 
          common::transaction::ID xid = common::transaction::id::create();
@@ -621,7 +621,7 @@ namespace casual
 
          auto path = local::file();
          group::Queuebase database( path);
-         auto queue = database.create( queuebase::Queue{ "unittest_queue"});
+         auto queue = database.create( queuebase::Queue{ .name = "unittest_queue"});
 
 
          common::transaction::ID xid = common::transaction::id::create();
@@ -644,7 +644,7 @@ namespace casual
 
          auto path = local::file();
          group::Queuebase database( path);
-         auto queue = database.create( queuebase::Queue{ "unittest_queue"});
+         auto queue = database.create( queuebase::Queue{ .name = "unittest_queue"});
 
 
          auto origin = local::message( queue);
@@ -721,7 +721,7 @@ namespace casual
 
          auto path = local::file();
          group::Queuebase database( path);
-         auto queue = database.create( queuebase::Queue{ "unittest_queue"});
+         auto queue = database.create( queuebase::Queue{ .name = "unittest_queue"});
 
          using message_type = decltype( local::message( queue));
 
@@ -771,7 +771,7 @@ namespace casual
 
          auto path = local::file();
          group::Queuebase database( path);
-         auto queue = database.create( queuebase::Queue{ "unittest_queue"});
+         auto queue = database.create( queuebase::Queue{ .name = "unittest_queue"});
 
          auto restored = database.restore( queue.id);
          EXPECT_TRUE( restored == 0) << "restored: " << restored;
@@ -815,7 +815,7 @@ PRAGMA journal_mode;
 
          auto path = local::file();
          group::Queuebase database( path);
-         auto queue = database.create( queuebase::Queue{ "unittest_queue"});
+         auto queue = database.create( queuebase::Queue{ .name = "unittest_queue"});
 
          auto message = local::message( queue);
          {
@@ -851,7 +851,7 @@ PRAGMA journal_mode;
 
          auto path = local::file();
          group::Queuebase database( path);
-         auto queue = database.create( queuebase::Queue{ "unittest_queue", queuebase::queue::Retry{ 3, std::chrono::hours{ 1}}});
+         auto queue = database.create( queuebase::Queue{ .name = "unittest_queue", .retry = { .count = 3, .delay = std::chrono::hours{ 1}}});
          
          {
             auto message = local::message( queue);
@@ -898,7 +898,7 @@ PRAGMA journal_mode;
 
          auto path = local::file();
          group::Queuebase database( path);
-         auto queue = database.create( queuebase::Queue{ "unittest_queue"});
+         auto queue = database.create( queuebase::Queue{ .name = "unittest_queue"});
 
          platform::size::type enqueued_size{};
          common::algorithm::for_n< 44>( [ &]

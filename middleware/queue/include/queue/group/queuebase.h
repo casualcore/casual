@@ -34,12 +34,14 @@ namespace casual
                error_queue = 2,
             };
 
-            std::ostream& operator << ( std::ostream& out, Type value);
+            std::string_view description( Type value) noexcept;
 
             struct Retry 
             {
                platform::size::type count{};
                common::chronology::duration delay{};
+
+               friend bool operator == ( const Retry& lhs, const Retry& rhs) = default;
 
                CASUAL_CONST_CORRECT_SERIALIZE(
                   CASUAL_SERIALIZE( count);
@@ -51,10 +53,6 @@ namespace casual
 
          struct Queue
          {
-            Queue() = default;
-            inline Queue( std::string name, queue::Retry retry) : name{ std::move( name)}, retry{ retry} {}
-            inline Queue( std::string name) : name{ std::move( name)} {};
-
             common::strong::queue::id id;
             std::string name;
             queue::Retry retry;
@@ -64,6 +62,7 @@ namespace casual
 
             inline friend bool operator == ( const Queue& lhs, common::strong::queue::id id) { return lhs.id == id;}
             inline friend bool operator == ( const Queue& lhs, std::string_view name) { return lhs.name == name;}
+            inline friend bool operator == ( const Queue& lhs, const Queue& rhs) { return lhs.name == rhs.name && lhs.retry == rhs.retry;}
 
             CASUAL_CONST_CORRECT_SERIALIZE(
                CASUAL_SERIALIZE( id);
@@ -83,7 +82,7 @@ namespace casual
                dequeued = 4
             };
 
-            std::ostream& operator << ( std::ostream& out, State value);
+            std::string_view description( State value) noexcept;
 
             struct Available
             {

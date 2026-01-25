@@ -171,29 +171,29 @@ namespace casual
       {
          namespace queue
          {
-            std::ostream& operator << ( std::ostream& out, Type value)
+            std::string_view description( Type value) noexcept
             {
                switch( value)
                {
-                  case Type::error_queue: return out << "error_queue";
-                  case Type::queue: return out << "queue";
+                  case Type::error_queue: return "error_queue";
+                  case Type::queue: return "queue";
                }
-               return out << "<unknown>";
+               return "<unknown>";
             }
          } // queue
 
          namespace message
          {
-            std::ostream& operator << ( std::ostream& out, State value)
+            std::string_view description( State value) noexcept
             {
                switch( value)
                {
-                  case State::added: return out << "added";
-                  case State::enqueued: return out << "enqueued";
-                  case State::removed: return out << "removed";
-                  case State::dequeued: return out << "dequeued";
+                  case State::added: return "added";
+                  case State::enqueued: return "enqueued";
+                  case State::removed: return "removed";
+                  case State::dequeued: return "dequeued";
                }
-               return out << "<unknown>";
+               return "<unknown>";
             }
          } // message
       } // queuebase
