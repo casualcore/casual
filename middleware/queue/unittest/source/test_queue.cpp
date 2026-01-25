@@ -2231,5 +2231,41 @@ domain:
          }
       }
 
+       TEST( casual_queue, runtime_configure__no_groups_and_forwards__expect_state_call_to_succeed)
+       {
+            common::unittest::Trace trace;
+   
+            auto a = local::domain( R"(
+domain:
+   name: A
+   queue:
+      groups:
+         -  alias: "QA"
+            queuebase: ':memory:'
+            queues:
+               -  name: a
+         )");
+
+         // update to no groups and no forwards
+         {
+            constexpr std::string_view wanted = R"(
+domain:
+   name: A
+   queue:
+      groups: []
+      forwards: []
+)";
+            // runtime update
+            domain::unittest::configuration::post( configuration::model::transform( configuration::unittest::load( local::configuration::servers, wanted)));
+
+            // getting the state should work
+            auto state = unittest::state();
+            EXPECT_TRUE( state.groups.size() == 0) << CASUAL_NAMED_VALUE( state.groups);
+            EXPECT_TRUE( state.forward.groups.size() == 0) << CASUAL_NAMED_VALUE( state.forward.groups);
+
+         }
+
+      }
+
    } // queue
 } // casual
