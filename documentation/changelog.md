@@ -1,6 +1,12 @@
 # Changelog
 This is the changelog for `casual` and all changes are listed in this document.
 
+## [1.8.10] - 2026-01-26
+
+### Fixes
+- queue: queue-group now unzombie queues during runtime configuration (#[668](https://github.com/casualcore/casual/issues/668))
+- queue: queue-manager now sends state reply if no groups/forwards
+
 ## [1.8.9] - 2026-01-15
 
 ### Fixes
