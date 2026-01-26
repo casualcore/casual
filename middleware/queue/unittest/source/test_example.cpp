@@ -10,6 +10,7 @@
 #include "domain/unittest/manager.h"
 #include "queue/api/queue.h"
 #include "common/buffer/type.h"
+#include "service/unittest/utility.h"
 
 namespace casual
 {
@@ -74,6 +75,12 @@ domain:
                return tpcall( common::string::compose("casual/example/enqueue/", queuename).data(), buffer, len, &buffer, &len, 0);
             }
 
+            // wait for a service called via call_enqueue (above) to become available.
+            void wait_for_enqueue_service(const std::string& queuename)
+            {
+               using namespace std::string_literals;
+               casual::service::unittest::wait::until::advertised( "casual/example/enqueue/"s + queuename);
+            }
          } // <unnamed> 
 
       } // local
@@ -90,12 +97,25 @@ domain:
         arguments: [ --queues, non-existing]
 )";
          auto domain = local::domain( example_server);
+         // may take some time for the service to be advertised
+         local::wait_for_enqueue_service("non-existing");
 
          auto contents = common::unittest::random::binary( 128);
          auto buffer = tpalloc( X_OCTET, nullptr, contents.size());
          common::algorithm::copy( contents, common::binary::span::make( buffer, contents.size()));
 
          EXPECT_EQ( local::call_enqueue( buffer, "non-existing"), -1);
+         // Verify "how" it failed. TPENOENT (that could happen before the wait
+         // for the service was added) is not a "good" reason.
+         // The call to the service seems to fail with TPESVCERR. Probably
+         // because the service throws an exception when the queue is not
+         // found and this is not caught by the "service code". A "nice"
+         // service should perhaps fail with TPESVCFAIL instead (tpreturn
+         // with TPFAIL) and possibly with a "user" return code. The server
+         // (casual-queue-example_server) seems to be implemented with
+         // "low level" interfaces, does not use the XATMI api and is not
+         // built with casual_build_server. So it is a bit "special". 
+         EXPECT_EQ( code::xatmi{ tperrno}, code::xatmi::service_error) << "tperrno: " << tperrnostring(tperrno);
          tpfree( buffer);
       }
 
@@ -114,12 +134,14 @@ domain:
 
          auto contents = common::unittest::random::binary( 128);
 
+         local::wait_for_enqueue_service("example.q1");
+
          // enqueue 1 message
          {
             auto buffer = tpalloc( X_OCTET, nullptr, contents.size());
             common::algorithm::copy( contents, common::binary::span::make( buffer, contents.size()));
 
-            EXPECT_EQ( local::call_enqueue( buffer, "example.q1"), 0);
+            EXPECT_EQ( local::call_enqueue( buffer, "example.q1"), 0) << "tpcall tperrno: " << tperrnostring(tperrno);
             tpfree( buffer);
          }
 
@@ -150,6 +172,8 @@ domain:
 
          ::tx_begin();
 
+         local::wait_for_enqueue_service("example.q1");
+
          // enqueue 1 message
          {
             auto buffer = tpalloc( X_OCTET, nullptr, contents.size());
@@ -179,10 +203,16 @@ domain:
 )";
          auto domain = local::domain( example_server);
 
+         casual::service::unittest::wait::until::advertised( "casual/example/dequeue/non-existing");
+
          auto buffer = tpalloc( X_OCTET, nullptr, 128);
          long olen = 999;
 
          EXPECT_EQ( tpcall( "casual/example/dequeue/non-existing", nullptr, 0, &buffer, &olen, 0), -1);
+         // A "good" tperrno is TPESVCERR as this is the code returned by example_server
+         // when the queue it attempts to access does not exist
+         EXPECT_EQ( code::xatmi{ tperrno}, code::xatmi::service_error) << "tperrno: " << tperrnostring( tperrno);
+         tpfree(buffer);
       }
 
       TEST( casual_queue_example_server, dequeue_empty_queue__expect_empty_response)
@@ -201,8 +231,11 @@ domain:
          auto buffer = tpalloc( X_OCTET, nullptr, 128);
          long olen = 999;
 
+         casual::service::unittest::wait::until::advertised( "casual/example/dequeue/example.q1");
+
          EXPECT_EQ( tpcall( "casual/example/dequeue/example.q1", nullptr, 0, &buffer, &olen, 0), 0);
          EXPECT_EQ( olen, 0);
+         tpfree(buffer);
       }
 
       TEST( casual_queue_example_server, dequeue_1_message)
@@ -227,6 +260,8 @@ domain:
             common::algorithm::copy( contents, message.payload.data);
             queue::enqueue( "example.q1", message);
          }
+
+         casual::service::unittest::wait::until::advertised( "casual/example/dequeue/example.q1");
 
          // dequeue 1 message
          {
@@ -263,6 +298,8 @@ domain:
 
          auto contents = common::unittest::random::binary( 128);
 
+         local::wait_for_enqueue_service("example.q1");
+
          // enqueue 1 message
          {
             auto buffer = tpalloc( X_OCTET, nullptr, contents.size());
@@ -279,6 +316,12 @@ domain:
             EXPECT_EQ( messages.front().payload.type, "X_OCTET/");
             EXPECT_TRUE( common::algorithm::equal(messages.front().payload.data, contents));
          }
+
+         // In general, it may take some time for a service to be advertised
+         // It is unlikely/impossible in this case as this is not the first service
+         // called in current instance of the casual-queue-example-server.
+         // But just in case and for uniformity wait for this service also.
+         local::wait_for_enqueue_service("example.q2");
 
          // enqueue 1 message
          {
