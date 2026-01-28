@@ -358,8 +358,79 @@ domain:
 
             communication::device::blocking::send( request.process.ipc, message::reverse::type( request));
          }
-
   
+      }
+
+      TEST( http_inbound_call_buffer_type, missing_content_type__expect_exception)
+      {
+         const std::vector< call::header::Field> headers{
+            };
+
+            EXPECT_THROW({
+            call::buffer::type( headers);
+         }, std::system_error);
+      }
+
+      TEST( http_inbound_call_buffer_type, invalid_content_type__expect_exception)
+      {
+         const std::vector< call::header::Field> headers{
+            { "Content-Type", "application/qwerty"},
+            };
+
+         EXPECT_THROW({
+            call::buffer::type( headers);
+         }, std::system_error);
+      }
+
+      TEST( http_inbound_call_buffer_type, valid_content_type__expect_buffer)
+      {
+         const std::vector< call::header::Field> headers{
+            { "Content-Type", "application/json"},
+            };
+
+         EXPECT_TRUE( call::buffer::type( headers) == ".json/") << call::buffer::type( headers);
+      }
+
+      TEST( http_inbound_call_buffer_type, invalid_accept_type__expect_exception)
+      {
+         const std::vector< call::header::Field> headers{
+            { "Accept", "application/qwerty"},
+            };
+
+         EXPECT_THROW({
+            call::buffer::type( headers);
+         }, std::system_error);
+      }
+
+      TEST( http_inbound_call_buffer_type, valid_accept_type__expect_buffer)
+      {
+         const std::vector< call::header::Field> headers{
+            { "Accept", "application/qwerty, application/json"},
+            };
+
+         EXPECT_TRUE( call::buffer::type( headers) == ".json/") << call::buffer::type( headers);
+      }
+
+      TEST( http_inbound_call_buffer_type, different_accept_and_content_type__expect_exception)
+      {
+         const std::vector< call::header::Field> headers{
+            { "Accept", "application/toml, application/yaml"},
+            { "Content-Type", "application/json"},
+            };
+
+         EXPECT_THROW({
+            call::buffer::type( headers);
+         }, std::system_error);
+      }
+
+      TEST( http_inbound_call_buffer_type, intersect_content_and_accept_type__expect_buffer)
+      {
+         const std::vector< call::header::Field> headers{
+            { "Accept", "application/toml, application/json, application/yaml"},
+            { "Content-Type", "application/json"},
+            };
+
+         EXPECT_TRUE( call::buffer::type( headers) == ".json/") << call::buffer::type( headers);
       }
 
    } // http::inbound

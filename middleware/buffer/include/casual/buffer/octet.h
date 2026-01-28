@@ -20,6 +20,20 @@
 #define CASUAL_OCTET_OUT_OF_MEMORY 4
 #define CASUAL_OCTET_INTERNAL_FAILURE 128
 
+
+#ifdef __cplusplus
+
+#include <string_view>
+
+namespace casual::buffer::octet
+{
+   constexpr std::string_view key = CASUAL_OCTET "/";
+} // casual::buffer::octet
+
+extern "C" {
+#endif
+
+
 const char* casual_octet_description( int code);
 
 
@@ -29,4 +43,7 @@ int casual_octet_set( char** buffer, const char* data, long size);
 int casual_octet_get( const char* buffer, const char** data, long* size);
 
 
+#ifdef __cplusplus
+}
+#endif
 

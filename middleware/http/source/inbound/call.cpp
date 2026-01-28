@@ -31,13 +31,39 @@ namespace casual
             
             namespace buffer
             {
-               auto type( const std::vector< header::Field>& header)
+               //! @returns string pieces (views) owned by the caller
+               auto type( const std::vector< header::Field>& headers) -> std::vector< std::string_view>
                {
-                  if( auto found = algorithm::find( header, "content-type"))
-                      return protocol::convert::to::buffer( found->value());
+                  auto content = algorithm::find( headers, "content-type");
 
-                  common::code::raise::error( code::bad_request, "content-type header is mandatory");                 
+                  if( auto accept = algorithm::find( headers, "accept"))
+                  {
+                     auto accepts = 
+                        accept->value() |
+                        std::views::split(',') | 
+                        std::views::transform( []( auto type){ return std::string_view{ common::string::trim( type)};});
+                     
+                     if( content)
+                     {
+                        if( algorithm::find( accepts, content->value()))
+                           return { content->value()};
+
+                        // HTTP behaviour is normally to allow different content-type than what is accepted 
+                        // ... but currently, the source and target buffer need to be of the same type
+                        return {};
+                     }
+
+                     return accepts | std::ranges::to< std::vector>();
+                  }
+
+                  if( content)
+                     return { content->value()};
+
+                  // HTTP behaviour is normally to assume '*/*' if no content-type is given
+                  // ... but currently, the buffer type must be explicit
+                  return {};
                }
+
             } // buffer
 
             namespace extract::header
@@ -194,7 +220,7 @@ namespace casual
                      // extract execution and span from the traceparent header
                      std::tie( result.execution, result.parent.span) = extract::header::trace( request.payload.header);
 
-                     result.buffer.type = buffer::type( request.payload.header);
+                     result.buffer.type = call::buffer::type( request.payload.header);
                      result.buffer.data = std::move( request.payload.body);
                      result.header = std::move( request.payload.header);
 
@@ -206,10 +232,10 @@ namespace casual
                      Reply result;
                      result.payload.body = std::move( reply.buffer.data);
                      result.payload.header.emplace_back( "content-length", std::to_string( result.payload.body.size()));
-                     result.payload.header.emplace_back( "content-type", http::protocol::convert::from::buffer( reply.buffer.type));
+                     result.payload.header.emplace_back( "content-type", http::protocol::convert::to::content( reply.buffer.type));
                      result.payload.header.emplace_back( http::header::name::result::code, http::header::value::result::code( reply.code.result));
                      result.payload.header.emplace_back( http::header::name::result::user::code, http::header::value::result::user::code( reply.code.user));
-                     result.code = local::transform::reply::code( reply.code.result);
+                     result.code = transform::reply::code( reply.code.result);
 
                      return result;
                   }
@@ -272,7 +298,7 @@ namespace casual
                         if( reply.code.user != 0)
                            return static_cast< http::code>( reply.code.user);
 
-                        return local::transform::reply::code( reply.code.result);
+                        return transform::reply::code( reply.code.result);
                      };
 
                      result.payload.body = std::move( reply.buffer.data);
@@ -383,6 +409,21 @@ namespace casual
          
          return result;
       }
+
+      namespace buffer
+      {
+         auto type( const std::vector< header::Field>& headers) -> std::string_view
+         {
+            auto source = local::buffer::type( headers);
+            auto target = source | std::views::transform( []( auto value){ return protocol::convert::to::buffer( value);});
+            auto result = std::ranges::find_if( target, [] ( auto value) { return ! value.empty();});
+            
+            if(result != std::end( target)) 
+               return *result;
+
+            common::code::raise::error( code::not_acceptable, "invalid or missing 'content-type'/'accept' headers");
+         }
+      } // buffer
 
    } // http::inbound::call
 } // casual

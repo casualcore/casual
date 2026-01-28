@@ -7,7 +7,6 @@
 
 #include "http/common.h"
 
-#include "common/algorithm.h"
 #include "common/algorithm/compare.h"
 #include "common/algorithm/container.h"
 #include "common/buffer/type.h"
@@ -15,6 +14,7 @@
 #include "common/log/line.h"
 
 #include "casual/buffer/field.h"
+#include "casual/buffer/order.h"
 #include "casual/buffer/string.h"
 
 namespace casual
@@ -92,85 +92,47 @@ namespace casual
             {
                namespace
                {
-                  template< typename C, typename K, typename G>
-                  std::string find( C& container, const K& key, G&& generic)
+                  constexpr std::size_t buffer_type = 0;
+                  constexpr std::size_t content_type = 1;
+
+                  template< std::size_t key_index, std::size_t value_index>
+                  auto find( const auto& key) -> std::string_view
                   {
-                     auto found = common::algorithm::find( container, key);
+                     static const std::array mapping
+                     {
+                        std::pair{ common::buffer::type::x_octet, protocol::x_octet},
+                        std::pair{ common::buffer::type::binary, protocol::binary},
+                        std::pair{ common::buffer::type::json, protocol::json},
+                        std::pair{ common::buffer::type::yaml, protocol::yaml},
+                        std::pair{ common::buffer::type::toml, protocol::toml},
+                        std::pair{ common::buffer::type::xml, protocol::xml},
+                        std::pair{ casual::buffer::field::key, protocol::field},
+                        std::pair{ casual::buffer::order::key, protocol::order},
+                        std::pair{ casual::buffer::string::key, protocol::string},
+                        std::pair{ common::buffer::type::null, protocol::null},
+                     };
 
-                     if( found)
-                        return std::string{ found->second};
+                     auto result = std::ranges::find( mapping, key, [] ( const auto& value) -> decltype(auto) { return std::get< key_index>( value);});
 
-                     log::debug( "failed to find key: ", key, " - using generic buffer type protocol");
-                     return generic( key);
+                     if( result != std::end( mapping))
+                        return std::get< value_index>( *result);
+                     else
+                        return {};
                   }
 
-                  namespace buffer
-                  {
-                     namespace type
-                     {
-                        constexpr auto fielded() { return casual::buffer::field::key;}
-                        constexpr auto string() { return casual::buffer::string::key;}
-                        constexpr auto null() { return common::buffer::type::null;}
-                     } // type
-                  } // buffer
-
-                  constexpr std::string_view generic_prefix = "application/casual-generic/";
-
-               } // <unnamed>
+               } //
             } // local
-
-            namespace from
-            {
-               std::string buffer( std::string_view buffer)
-               {
-                  static const std::map< std::string_view, std::string_view> mapping{
-                     { common::buffer::type::x_octet, protocol::x_octet},
-                     { common::buffer::type::binary, protocol::binary},
-                     { common::buffer::type::json, protocol::json},
-                     { common::buffer::type::xml, protocol::xml},
-                     { local::buffer::type::fielded(), protocol::field},
-                     { local::buffer::type::string(), protocol::string},
-                     { local::buffer::type::null(), protocol::null},
-                  };
-
-                  auto generic = []( auto& buffer)
-                  {
-                     return common::string::compose( local::generic_prefix, buffer);
-                  };
-
-                  return local::find( mapping, buffer, generic);
-               }
-            } // from
 
             namespace to
             {
-               std::string buffer( std::string_view content)
+               std::string_view buffer( std::string_view content)
                {
-                  static const std::map< std::string_view, std::string_view> mapping{
-                     { protocol::x_octet, common::buffer::type::x_octet},
-                     { protocol::binary, common::buffer::type::binary},
-                     { protocol::json, common::buffer::type::json},
-                     { protocol::xml, common::buffer::type::xml},
-                     { protocol::field, local::buffer::type::fielded()},
-                     { protocol::string, local::buffer::type::string()},
-                     { protocol::null, local::buffer::type::null()},
-                  };
+                  return local::find< local::content_type, local::buffer_type>( content);
+               }
 
-                  // tries to deduce the buffer type generic
-                  auto generic = []( auto& content) -> std::string
-                  {
-                     auto prefix = common::algorithm::search( content, local::generic_prefix);
-
-                     if( std::begin( prefix) != std::begin( content))
-                     {
-                        log::line( common::log::category::error , "failed to deduce casual generic content - content: ", content);
-                        return {};
-                     }
-
-                     return { std::begin( content) + local::generic_prefix.size(), std::end( content)};
-                  };
-
-                  return local::find( mapping, content, generic);
+               std::string_view content( std::string_view buffer)
+               {
+                  return local::find< local::buffer_type, local::content_type>( buffer);
                }
             } // to
          } // convert

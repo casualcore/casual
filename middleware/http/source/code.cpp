@@ -32,6 +32,7 @@ namespace casual
 
                      case code::bad_request: return "Bad Request";
                      case code::not_found: return "Not Found";
+                     case code::not_acceptable: return "Not Acceptable";
                      case code::request_timeout: return "Request Timeout";
 
                      case code::internal_server_error: return "Internal Server Error";
@@ -39,7 +40,6 @@ namespace casual
                   }
                   return "<unknown>";
                }
-
 
             };
 
