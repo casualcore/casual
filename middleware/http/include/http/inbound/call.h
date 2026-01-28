@@ -137,7 +137,10 @@ namespace casual
          
       };
 
-
+      namespace buffer
+      {
+         auto type( const std::vector< header::Field>& headers) -> std::string_view;
+      } // buffer
 
    } // http::inbound::call
 } // casual

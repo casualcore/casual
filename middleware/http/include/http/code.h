@@ -23,6 +23,7 @@ namespace casual
          // 4xx
          bad_request = 400,
          not_found = 404,
+         not_acceptable = 406,
          request_timeout = 408,
          
 

@@ -107,12 +107,12 @@ namespace casual
                      // add content header
                      if( ! result.state().payload.type.empty())
                      {
-                        auto content = protocol::convert::from::buffer( result.state().payload.type);
+                        auto content = protocol::convert::to::content( result.state().payload.type);
 
                         common::log::debug( "content: ", content);
 
                         if( ! content.empty())
-                           result.state().header.request.add( "content-type: " + content);
+                           result.state().header.request.add( "content-type: " + std::string{ content});
                      }
 
                      return result;
