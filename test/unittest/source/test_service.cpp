@@ -584,7 +584,7 @@ domain:
       }
 
 
-      TEST( test_service, advertise_a__10_acall_no_reply_to_a___ack_to_SM__expect__deadline_remaining_to_be_2ms_as_the_service_timeout)
+      TEST( test_service, advertise_a__10_acall_no_reply_to_a___ack_to_SM__expect__deadline_remaining_to_be_100ms)
       {
          common::unittest::Trace trace;
 
@@ -595,7 +595,7 @@ domain:
       -  name: a
          execution:
             timeout:
-               duration: 2ms
+               duration: 100ms
 
 )");
          casual::service::unittest::advertise( { "a"});
@@ -611,30 +611,45 @@ domain:
          // do the first call
          acall_a();
 
-         algorithm::for_n( 10, []()
+         algorithm::for_n( 9, []()
          {
             auto request = communication::ipc::receive< common::message::service::call::callee::Request>();
-            // should always be the timeout of the service
-            EXPECT_TRUE( request.deadline.remaining == std::chrono::milliseconds{ 2}) << CASUAL_NAMED_VALUE( request);
+            // This test exist because of historical behaviour and has been adapted
+            // to check for new behaviour.
+            //
+            // At one time Casual did not treat service calls with TPNOREPLY in
+            // a special way.
+            // Time spent waiting for a free service was included in the service
+            // execution time. This introduced nondeterministic values for
+            // request.deadline.remaining. In the 1.8 timeframe Casual was modified
+            // to start the "execution timer" when the service starts execution.
+            // For a TPNOREPLY call this is sensible as nobody is waiting for
+            // a reply, so the time spent waiting is not relevant to the caller.
+            // The reasonable semantic for service timeout in this case 1is to
+            // apply it to just the service execution. Effectivly starting a new
+            // "independent" service execution. For "normal" nested calls the
+            // "outermost" service timeout applies to the sum of all involved
+            // services.
+            // This means that on "service entry" in this test the
+            // "remaining" time (in the callee::Request message) should be
+            // equal to the service timeout.
+            EXPECT_TRUE( request.deadline.remaining == 100ms ) << CASUAL_NAMED_VALUE( request);
 
-            // we fake that we are a real service, and set some stuff that a real service would do
-            {
-               // set deadline (if any) for further service calls downstream
-               casual::service::call::context().deadline( platform::time::clock::type::now(), request.deadline.remaining);
-            }
-
-            // do another nested call to our self
+            // do another nested call to "self"
             acall_a();
 
+            // simulate some execution time for the service.
+            process::sleep( 20ms);
             // send ack to SM
             casual::service::unittest::send::ack( request);
-         });
+      });
+         // process the final call to "a" to end the test cleanly.
+         auto request = communication::ipc::receive< common::message::service::call::callee::Request>();
+         // deadline.remaining should be the timeout of the service
+         EXPECT_TRUE( request.deadline.remaining == 100ms) << CASUAL_NAMED_VALUE( request);
 
-         // we need to clear the service call context, so that we don't have a pending deadline
-         // for the next tests
-         casual::service::call::context().clear();
-
-
+         // send ack to SM
+         casual::service::unittest::send::ack( request);
       }
       
       TEST( test_service, domain_A_advertise_a_b_domain_B_advertise_b__domain_C_call_a_with_trid__then_call_b_with_trid__expect_call_to_domain_A)
