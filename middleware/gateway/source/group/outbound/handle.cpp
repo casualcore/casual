@@ -355,9 +355,14 @@ namespace casual
 
                                  state.multiplex.send( shared->ipc, message);
 
-                                 // if the send indicate a termination, we make sure to remove this task
-                                 if( message.duplex == decltype( message.duplex)::terminated)
+                                 // TODO to send _terminated_ in the send message, we break protocol. We need to change this in 1.9
+                                 // For now we check if xatmi code is set to any thing -> terminated.
+                                 if( message.code.result != code::xatmi::absent)
                                     return task::concurrent::unit::Dispatch::done;
+
+                                 // if the send indicate a termination, we make sure to remove this task
+                                 //if( message.duplex == decltype( message.duplex)::terminated)
+                                 //   return task::concurrent::unit::Dispatch::done;
 
                                  return task::concurrent::unit::Dispatch::pending;
                               },
