@@ -93,6 +93,10 @@ namespace casual
                   exception::guard( [](){ communication::instance::outbound::service::manager::device().connector().clear();});
                   exception::guard( [](){ communication::instance::outbound::transaction::manager::device().connector().clear();});
 
+                  // reset queue instance, if any.
+                  exception::guard( [](){ communication::instance::outbound::queue::manager::device().connector().clear();});
+                  exception::guard( [](){ communication::instance::outbound::queue::manager::optional::device().connector().clear();});
+
                   exception::guard( [](){ casual::domain::discovery::instance::device().connector().clear();});
                }
 

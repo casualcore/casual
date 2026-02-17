@@ -82,6 +82,12 @@ namespace casual
                      request.name = message.name;
                      request.context.requester = lookup::context< decltype( request.context.requester)>( state, descriptor);
                      request.context.semantic = decltype( request.context.semantic)::direct;
+
+                     // set the lookup context action based on the message type. enqueue or dequeue could be disabled.
+                     if constexpr( std::same_as< M, casual::queue::ipc::message::group::enqueue::Request>)
+                        request.context.action = decltype( request.context.action)::enqueue;
+                     else
+                        request.context.action = decltype( request.context.action)::dequeue;
                   }
 
                   if( message.trid)
@@ -125,9 +131,11 @@ namespace casual
             }  
 
             template< typename M>
-            void fake_queue_error_reply( State& state, strong::socket::id descriptor, M&& request)
+            void fake_queue_error_reply( State& state, strong::socket::id descriptor, M&& request, common::code::queue code = common::code::queue::system)
             {
-               local::send_to_partner_ipc( state, descriptor, common::message::reverse::type( request));
+               auto reply = common::message::reverse::type( request);
+               reply.code = code;
+               local::send_to_partner_ipc( state, descriptor, std::move( reply));
             }
 
             template< typename M>
@@ -188,7 +196,7 @@ namespace casual
                void queue_request( State& state, strong::socket::id descriptor, const casual::queue::ipc::message::lookup::Reply& lookup, M& message)
                {
                   if( ! lookup.process.ipc)
-                     return local::fake_queue_error_reply( state, descriptor, message);
+                     return local::fake_queue_error_reply( state, descriptor, message, common::code::queue::no_queue);
 
                   state.multiplex.send( lookup.process.ipc, message, [ &state, descriptor]( auto& destination, auto& complete)
                   {

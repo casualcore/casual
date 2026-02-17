@@ -502,32 +502,53 @@ namespace casual
 
                namespace queue
                {
-                  namespace detail::create
+                  namespace detail
                   {
-                     auto task( State& state, auto& message, strong::socket::id descriptor)
+                  
+                     void unadvertise( State& state, strong::socket::id descriptor, std::string queue)
                      {
-                        using reply_type = common::message::reverse::type_t< decltype( message)>;
-                     
-                        return typename state::task_coordinator_type::unit_type{ descriptor, message.correlation, 
-                        [ &state, ipc = message.process.ipc]( reply_type& message, strong::socket::id descriptor)
+                        if( auto handle = state.connections.process_handle( descriptor))
                         {
-                           Trace trace{ "gateway::group::outbound::handle::local::internal::queue::detail::create::task Reply"};
-                           log::debug( "message: ", message);
-
-                           state.multiplex.send( ipc, message);
-                        },
-                        [ &state, ipc = message.process.ipc]( casual::task::concurrent::message::task::Failed& message, strong::socket::id descriptor)
-                        {
-                           Trace trace{ "gateway::group::outbound::handle::local::internal::detail::create::task task::Failed"};
-
-                           reply_type reply;
-                           reply.correlation = message.correlation;
-
-                           state.multiplex.send( ipc, reply);
-                        }};
+                           casual::queue::ipc::message::Advertise unadvertise{ handle};
+                           unadvertise.alias = instance::alias();
+                           unadvertise.queues.remove.push_back( std::move( queue));
+                           state.multiplex.send( ipc::manager::optional::queue(), unadvertise);
+                        }
+                        else
+                           log::error( code::casual::invalid_semantics, "failed to unadvertise - could not find ipc partner to ", descriptor);
                      }
-                     
-                  } // detail::create
+
+                     namespace create
+                     {
+                        auto task( State& state, auto& message, strong::socket::id descriptor)
+                        {
+                           using reply_type = common::message::reverse::type_t< decltype( message)>;
+                        
+                           return typename state::task_coordinator_type::unit_type{ descriptor, message.correlation, 
+                           [ &state, ipc = message.process.ipc, queue_name = message.name]( reply_type& message, strong::socket::id descriptor)
+                           {
+                              Trace trace{ "gateway::group::outbound::handle::local::internal::queue::detail::create::task Reply"};
+                              log::debug( "message: ", message);
+
+                              // if the reply has code::queue::no_queue, we need to unadvertise the queue.
+                              if( message.code == code::queue::no_queue)
+                                 detail::unadvertise( state, descriptor, queue_name);
+
+                              state.multiplex.send( ipc, message);
+                           },
+                           [ &state, ipc = message.process.ipc]( casual::task::concurrent::message::task::Failed& message, strong::socket::id descriptor)
+                           {
+                              Trace trace{ "gateway::group::outbound::handle::local::internal::queue::detail::create::task task::Failed"};
+
+                              reply_type reply;
+                              reply.correlation = message.correlation;
+
+                              state.multiplex.send( ipc, reply);
+                           }};
+                        }
+                        
+                     } // create
+                  } // detail
 
                   namespace basic
                   {
