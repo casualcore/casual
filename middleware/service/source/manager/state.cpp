@@ -646,7 +646,8 @@ namespace casual
 
          auto is_idle = [ &]( auto instance_id)
          {
-            return instances.sequential[ instance_id].idle();
+            return instances.sequential[ instance_id].idle()
+               && ! std::ranges::contains( disabled, instance_id);
          };
 
          auto& service = services[ caller.service];
