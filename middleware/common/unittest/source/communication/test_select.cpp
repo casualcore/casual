@@ -12,6 +12,8 @@
 #include "common/communication/ipc.h"
 #include "common/array.h"
 
+#include "casual/platform.h"
+
 namespace casual
 {
    namespace common::communication
@@ -137,8 +139,80 @@ namespace casual
          EXPECT_TRUE( ready.read.size() == 1);
       }
 
+
       
    } // common::communication
 
 } // casual
+
+
+// epoll specific stuff
+#if defined(CASUAL_PLATFORM_LINUX)
+
+#include "common/communication/select/epoll.h"
+
+namespace casual
+{
+   namespace common::communication
+   {
+      
+      TEST( common_communication_select_epoll, error_events_are_reported_as_ready)
+      {
+         unittest::Trace trace;
+
+ 
+         auto has_event = []( std::span<const ::epoll_event> events, int fd)
+         {
+            auto is_event = [ fd]( const ::epoll_event& event)
+            {
+               return event.data.fd == fd;
+            };
+
+            return std::ranges::any_of( events, is_event);
+         };
+
+
+         auto entries = array::make(
+            select::directive::detail::Entry{ .descriptor = strong::file::descriptor::id{ 1}, .event = select::directive::detail::Flags::in},
+            select::directive::detail::Entry{ .descriptor = strong::file::descriptor::id{ 2}, .event = select::directive::detail::Flags::out},
+            select::directive::detail::Entry{ .descriptor = strong::file::descriptor::id{ 3}, .event = select::directive::detail::Flags::in | select::directive::detail::Flags::out},
+            select::directive::detail::Entry{ .descriptor = strong::file::descriptor::id{ 4}, .event = select::directive::detail::Flags::in},
+            select::directive::detail::Entry{ .descriptor = strong::file::descriptor::id{ 5}, .event = select::directive::detail::Flags::out},
+            select::directive::detail::Entry{ .descriptor = strong::file::descriptor::id{ 6}, .event = select::directive::detail::Flags::in | select::directive::detail::Flags::out}
+         );
+
+         auto events = array::make(
+            ::epoll_event{ .events = EPOLLERR, .data = { .fd = 1}},
+            ::epoll_event{ .events = EPOLLERR, .data = { .fd = 2}},
+            ::epoll_event{ .events = EPOLLERR, .data = { .fd = 3}},
+            ::epoll_event{ .events = EPOLLIN, .data = { .fd = 4}},
+            ::epoll_event{ .events = EPOLLOUT, .data = { .fd = 5}},
+            ::epoll_event{ .events = EPOLLIN | EPOLLOUT, .data = { .fd = 6}}
+         );
+
+         auto ready = select::dispatch::detail::ready( entries, events);
+
+         EXPECT_TRUE( has_event( ready.read, 1));
+         EXPECT_TRUE( ! has_event( ready.read, 2));
+         EXPECT_TRUE( has_event( ready.read, 3));
+         EXPECT_TRUE( has_event( ready.read, 4));
+         EXPECT_TRUE( ! has_event( ready.read, 5));
+         EXPECT_TRUE( has_event( ready.read, 6));
+
+         EXPECT_TRUE( ! has_event( ready.write, 1));
+         EXPECT_TRUE( has_event( ready.write, 2));
+         // enent fd 3 has error, and we only choose to report it as read ready.
+         //EXPECT_TRUE( has_event( ready.write, 3));
+         EXPECT_TRUE( ! has_event( ready.write, 4));
+         EXPECT_TRUE( has_event( ready.write, 5));
+         EXPECT_TRUE( has_event( ready.write, 6));
+      
+      }
+
+   } // common::communication
+   
+} // casual
+
+
+#endif // CASUAL_PLATFORM_LINUX
 

@@ -21,6 +21,8 @@
 
 #include <sys/epoll.h>
 
+std::ostream& operator << ( std::ostream& out, const ::epoll_event& event);
+
 namespace casual
 {
    namespace common::communication::select
@@ -155,6 +157,9 @@ namespace casual
 
       namespace dispatch::detail
       {
+         // only exposed for unittests.
+         directive::Ready ready( std::span< const directive::detail::Entry> entries, std::span< ::epoll_event> events);
+
          directive::Ready select( Directive& directive);
 
       } // dispatch::detail

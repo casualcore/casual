@@ -27,9 +27,6 @@
 
 
 
-std::ostream& operator << ( std::ostream& out, const ::epoll_event& event);
-
-
 namespace casual
 {
    using namespace common;
@@ -130,14 +127,6 @@ namespace casual
                   events.size(), 
                   indefinitely, // timeout
                   &block.previous().set));
-            }
-
-            auto filter_predicate( Flags flags)
-            {
-               return [ flags]( const ::epoll_event& event)
-               {
-                  return flag::contains( Flags{ event.events}, flags);
-               };
             }
 
          } // <unnamed>
@@ -280,31 +269,72 @@ namespace casual
       {
          namespace detail
          {
+
+            directive::Ready ready( std::span< const directive::detail::Entry> entries, std::span< ::epoll_event> events)
+            {
+               using Flags = directive::detail::Flags;
+
+               auto deduce_flags = [ entries]( const ::epoll_event& event)
+               {
+                  auto flags = Flags{ event.events};
+
+                  if( ( flags & ( Flags::in | Flags::out)) == Flags::none)
+                  {
+                     // we got some "error" events, we need to check what the corrsponding entry has, 
+                     // if it's a read or write event.
+                     if( auto found = algorithm::find( entries, strong::file::descriptor::id{ event.data.fd}))
+                     {
+                        if( flag::contains( found->event, Flags::in))
+                           return Flags::in; // read
+                        else
+                           return Flags::out; // write
+                     }
+                     else
+                     {
+                        log::error( code::casual::internal_unexpected_value, "no entry found for event: ", event);
+                        return Flags::in; // read, we need to put it somewhere, but we don't know where, so we put it in the read section
+                     }
+                  }
+
+                  return flags;
+               };
+
+               
+               auto has_read = [ deduce_flags]( const ::epoll_event& event)
+               {
+                  return flag::contains( deduce_flags( event), Flags::in);
+               };
+
+               auto has_not_write = [ deduce_flags]( const ::epoll_event& event)
+               {
+                  return ! flag::contains( deduce_flags( event), Flags::out);
+               };
+
+               // Events can be both read and write, so we need to partition them and overlapp the 
+               // read/write events. 
+               //   read:  [read, read/write]
+               //   write: [read/write, write]
+
+               auto read_end = std::ranges::partition( events, has_read);
+
+               auto write_start = std::ranges::partition( std::begin( events), std::begin( read_end), has_not_write);
+
+               auto read = range::make( std::begin( events), std::begin( read_end));
+               auto write = range::make( std::begin( write_start), std::end( events));
+               
+               log::debug( "read: ", read);
+               log::debug( "write: ", write);
+
+               return directive::Ready{
+                  .read = read,
+                  .write = write
+               };
+            }
      
             directive::Ready select( Directive& directive)
             {
                Trace trace{ "common::communication::select::dispatch::detail::select"};
                log::debug( "directive: ", directive);
-
-               // helper function to sort the events so that we have read first, then read/write, and then write
-               auto read_write_order = []( const ::epoll_event& lhs, const ::epoll_event& rhs)
-               {
-                  auto score = []( const ::epoll_event& event)
-                  {
-                     using Flags = directive::detail::Flags;
-                     auto flags = Flags{ event.events};
-
-                     if( flag::contains( flags, Flags::in) && ! flag::contains( flags, Flags::out))
-                        return 0; // read
-                     if( flag::contains( flags, Flags::in | Flags::out))
-                        return 1; // read/write
-                     
-                     return 2; // write
-                  };
-
-                  return score( lhs) < score( rhs);
-               };
-
 
                // use the event "buffer"
                auto& events = directive.events();
@@ -317,29 +347,9 @@ namespace casual
                   code::system::raise( event_count.error(), "epoll_wait failed");
 
                auto ready = range::make( events.data(), *event_count);
-               
-               // Events can be both read and write, so we need to sort them and overlapp the 
-               // read/write events. 
-               //   read:  [read, read/write]
-               //   write: [read/write, write]
-               algorithm::sort( ready, read_write_order);
-               log::debug( "ready: ", ready);
-               
-               // find the first one that is not a read event
-               auto read_end = std::ranges::find_if( ready, predicate::negate( local::filter_predicate( local::Flags::in)));
-               // find the first one that is a write event
-               auto write_start = std::ranges::find_if( ready, local::filter_predicate( local::Flags::out));
 
-               auto read = range::make( std::begin( ready), read_end);
-               auto write = range::make( write_start, std::end( ready));
-               
-               log::debug( "read: ", read);
-               log::debug( "write: ", write);
+               return detail::ready( directive.entries(), ready);
 
-               return directive::Ready{
-                  .read = read,
-                  .write = write
-               };
             }
          } // detail
 
