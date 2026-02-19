@@ -864,20 +864,38 @@ namespace casual
          // remove
          local::remove_services( *this, instance_id, message.services.remove);
 
-         // find all potentially pending that might be enabled by the new concurrent service(s)
+         // try to match pending discoveries - we try to keep calls in transactions to the
+         // same instance "sticky".
          {
-            auto requested_service = [ &]( auto& pending)
+            auto requested_is_callable = [ this, instance_id]( const state::service::pending::Lookup& pending)
             {
-               if( auto service_id = services.lookup( pending.request.requested))
-                  return services[ service_id].is_concurrent_only();
-               return false;
+               auto service_id = services.lookup( pending.request.requested);
+
+               if( ! service_id)
+                  return false;
+
+               if( pending.request.trid)
+               {
+                  // right, the request is in a transaction, we need to match.
+                  if( auto found = algorithm::find( transaction.associations, pending.request.trid.global()))  
+                     return std::ranges::contains( found->second, instance_id) && services[ service_id].instances.has_instance( instance_id);
+
+                  return false;
+               }
+               else
+               {
+                  // we don't need to match transaction, but we need to make sure that the instance can handle the service.
+                  return services[ service_id].instances.has_instance( instance_id);
+               }
+
             };
 
-            auto extract = algorithm::stable::filter( pending.lookups, requested_service);
+            auto extract = algorithm::stable::filter( pending.lookups, requested_is_callable);
 
             return algorithm::container::extract( pending.lookups, extract);
 
          }
+
       }
 
       std::vector< state::instance::concurrent::id::type> State::disassociate( common::transaction::global::id::range gtrid)

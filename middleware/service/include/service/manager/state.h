@@ -347,6 +347,8 @@ namespace casual
 
                inline bool has_sequential() const noexcept { return ! m_sequential.empty();}
                inline bool has_concurrent() const noexcept { return ! m_concurrent.empty();}
+               inline bool has_instance( instance::concurrent::id::type id) const noexcept { return common::predicate::boolean( common::algorithm::find( m_concurrent, id));}
+
 
                inline bool empty() const noexcept { return m_sequential.empty() && m_concurrent.empty();}
                inline explicit operator bool() const noexcept { return ! empty();}
@@ -360,6 +362,8 @@ namespace casual
 
                inline const auto& sequential() const noexcept { return m_sequential;}
                inline const auto& concurrent() const noexcept { return m_concurrent;}
+
+               
 
                CASUAL_LOG_SERIALIZE(
                   CASUAL_SERIALIZE( m_sequential);

@@ -84,8 +84,9 @@ namespace casual
                   {
                      auto& instance = state.instances.concurrent[ concurrent.id];
                      return manager::admin::model::service::instance::Concurrent{
-                        instance.process,
-                        concurrent.hops
+                        .process = instance.process,
+                        .hops = concurrent.hops,
+                        .order = concurrent.order
                      };
                   };
 
