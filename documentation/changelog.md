@@ -1,6 +1,17 @@
 # Changelog
 This is the changelog for `casual` and all changes are listed in this document.
 
+
+## [1.8.11] - 2026-02-20
+
+### Fixes
+- common: select now handles EPOLLERR correctly ([#678](https://github.com/casualcore/casual/issues/678))
+- service: SM now respects 'sticky' trid for unknown services ([#679](https://github.com/casualcore/casual/issues/679))
+- service: kill contracted instance is now never reserved ([#675](https://github.com/casualcore/casual/issues/675))
+- gateway: outbound now unadvertises based on no_queue ([#676](https://github.com/casualcore/casual/issues/676))
+- gateway: protocol conforms for conversation send message ([#672](https://github.com/casualcore/casual/issues/672))
+- transaction: current trid is now reflected in log
+
 ## [1.8.10] - 2026-01-26
 
 ### Fixes
