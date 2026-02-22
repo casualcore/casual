@@ -353,6 +353,7 @@ namespace casual::configuration
 
          struct Model
          {
+            bool enabled = true;
             std::string log;
             std::vector< transaction::Resource> resources;
             std::vector< Mapping> mappings;
@@ -364,6 +365,7 @@ namespace casual::configuration
             friend auto operator <=> ( const Model&, const Model&) = default;
 
             CASUAL_CONST_CORRECT_SERIALIZE(
+               CASUAL_SERIALIZE( enabled);
                CASUAL_SERIALIZE( log);
                CASUAL_SERIALIZE( resources);
                CASUAL_SERIALIZE( mappings);
@@ -576,6 +578,7 @@ namespace casual::configuration
 
          struct Model
          {
+            bool enabled = true;
             Inbound inbound;
             Outbound outbound;
 
@@ -586,6 +589,7 @@ namespace casual::configuration
             friend auto operator <=> ( const Model&, const Model&) = default;
 
             CASUAL_CONST_CORRECT_SERIALIZE(
+               CASUAL_SERIALIZE( enabled);
                CASUAL_SERIALIZE( inbound);
                CASUAL_SERIALIZE( outbound);
             )
@@ -850,7 +854,6 @@ namespace casual::configuration
                   CASUAL_SERIALIZE( queues);
                   CASUAL_SERIALIZE( memberships);
                )
-
             };
             
          } // fanout
@@ -873,6 +876,7 @@ namespace casual::configuration
 
          struct Model
          {
+            bool enabled = true;
             std::vector< queue::Group> groups;
             Forward forward;
             Fanout fanout;
@@ -885,6 +889,7 @@ namespace casual::configuration
             friend auto operator <=> ( const Model&, const Model&) = default;
 
             CASUAL_CONST_CORRECT_SERIALIZE(
+               CASUAL_SERIALIZE( enabled);
                CASUAL_SERIALIZE( groups);
                CASUAL_SERIALIZE( forward);
                CASUAL_SERIALIZE( fanout);
@@ -893,6 +898,22 @@ namespace casual::configuration
          };
 
       } // queue
+
+      namespace file
+      {
+         struct Model
+         {
+            bool enabled = true;
+            std::string note;
+
+            friend auto operator <=> ( const Model&, const Model&) = default;
+
+            CASUAL_CONST_CORRECT_SERIALIZE(
+               CASUAL_SERIALIZE( enabled);
+               CASUAL_SERIALIZE( note);
+            )
+         };
+      } // file
 
    } // model
 
@@ -903,6 +924,7 @@ namespace casual::configuration
       model::transaction::Model transaction;
       model::service::Model service;
       model::queue::Model queue;
+      model::file::Model file;
       model::gateway::Model gateway;
 
       inline friend Model operator + ( Model lhs, Model rhs) { return set_union( std::move( lhs), std::move( rhs));}
@@ -920,10 +942,9 @@ namespace casual::configuration
          CASUAL_SERIALIZE( transaction);
          CASUAL_SERIALIZE( service);
          CASUAL_SERIALIZE( queue);
+         CASUAL_SERIALIZE( file);
          CASUAL_SERIALIZE( gateway);
       )
    };
-
-
 
 } // casual::configuration

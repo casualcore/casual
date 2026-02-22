@@ -106,8 +106,10 @@ namespace casual
 
                   if( ! domain.transaction)
                      return result;
+                  
+                  auto& transaction = *domain.transaction;
 
-                  auto& transaction = domain.transaction.value();
+                  result.enabled = transaction.enabled.value_or( result.enabled);
 
                   result.log = transaction.log;
 
@@ -316,6 +318,8 @@ namespace casual
 
                   auto& gateway = *domain.gateway;
 
+                  result.enabled = gateway.enabled.value_or( result.enabled);
+
                   log::debug( "gateway.reverse: ", gateway.reverse);
 
                   auto append_inbounds = []( auto& source, auto& target, auto connect)
@@ -401,8 +405,10 @@ namespace casual
 
                   if( ! domain.queue)
                      return result;
+                  
+                  auto& source = *domain.queue;
 
-                  auto& source = domain.queue.value();
+                  result.enabled = source.enabled.value_or( result.enabled);
 
                   result.note = source.note.value_or( "");
 
@@ -432,7 +438,7 @@ namespace casual
                            queue::Queue result;
 
                            result.name = queue.name;
-                           result.note = queue.note.value_or("");
+                           result.note = queue.note.value_or( "");
                            if( queue.retry)
                            {
                               auto& retry = queue.retry.value();
@@ -557,6 +563,24 @@ namespace casual
                      });
                   }
             
+                  return result;
+               }
+
+
+               auto file( const configuration::user::domain::Model& domain)
+               {
+                  Trace trace{ "configuration::model::local::file"};
+                
+                  file::Model result;
+
+                   if( ! domain.file)
+                      return result;
+
+                  auto& source = *domain.file;
+
+                  result.enabled = source.enabled.value_or( result.enabled);
+                  result.note = source.note.value_or( result.note);
+
                   return result;
                }
 
@@ -779,6 +803,7 @@ namespace casual
 
                   user::domain::transaction::Manager result;
 
+                  result.enabled = transaction.enabled;
                   result.log = transaction.log;
                   result.resources = algorithm::transform( transaction.resources, []( auto& value)
                   {
@@ -802,6 +827,8 @@ namespace casual
                   Trace trace{ "configuration::model::local::model::gateway"};
 
                   user::domain::gateway::Manager result;
+
+                  result.enabled = model.enabled;
 
                   auto transform_inbound = []( auto& value) 
                   {
@@ -906,6 +933,7 @@ namespace casual
                   Trace trace{ "configuration::model::local::model::queue"};
 
                   user::domain::queue::Manager result;
+                  result.enabled = queue.enabled;
                   result.note = null_if_empty( queue.note);
 
                   // set the default directory, if any. Either all groups has the same, ore non has any
@@ -1034,6 +1062,19 @@ namespace casual
 
                   return result;
                }
+
+               auto file( const configuration::model::file::Model& value)
+               {
+                  Trace trace{ "configuration::model::local::model::file"};
+
+                  user::domain::file::Manager result;
+
+                  result.enabled = value.enabled;
+                  result.note = null_if_empty( value.note);
+
+                  return result;
+               }
+
             } // model
 
          } // <unnamed>
@@ -1055,6 +1096,7 @@ namespace casual
             result.service = local::domain::service( *model.domain);
             result.gateway = local::domain::gateway( *model.domain);
             result.queue = local::domain::queue( *model.domain);
+            result.file = local::domain::file( *model.domain);
          }
 
 
@@ -1092,9 +1134,11 @@ namespace casual
             if( local::model::any::has::values( model.queue))
                domain.queue = local::model::queue( model.queue);
 
+            if( local::model::any::has::values( model.file))
+               domain.file = local::model::file( model.file);
+
             result.domain = std::move( domain);
          }
-
 
          return result;
       }

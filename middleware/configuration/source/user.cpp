@@ -19,6 +19,7 @@
 namespace casual
 {
    using namespace common;
+
    namespace configuration::user
    {
       namespace local
@@ -390,6 +391,14 @@ namespace casual
 
             }
          } // queue
+
+         namespace file
+         {
+            Model normalize( Model model)
+            {
+               return model;
+            }
+         } // file
 
          Model normalize( Model model)
          {

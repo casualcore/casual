@@ -105,9 +105,9 @@ namespace casual
 
          struct Group
          {
+            std::optional< bool> enabled;
             std::string name;
             std::optional< std::string> note;
-            std::optional< bool> enabled;
 
             std::optional< std::vector< std::string>> resources;
             std::optional< std::vector< std::string>> dependencies;
@@ -115,9 +115,9 @@ namespace casual
             friend inline bool operator == ( const Group& l, const std::string& r) { return l.name == r;}
 
             CASUAL_CONST_CORRECT_SERIALIZE(
+               CASUAL_SERIALIZE( enabled);
                CASUAL_SERIALIZE( name);
                CASUAL_SERIALIZE( note);
-               CASUAL_SERIALIZE( enabled);
                CASUAL_SERIALIZE( resources);
                CASUAL_SERIALIZE( dependencies);
             )
@@ -219,6 +219,8 @@ namespace casual
                   CASUAL_SERIALIZE( execution);
                   CASUAL_SERIALIZE( visibility);
 
+                  //! @deprecated
+
                   CASUAL_SERIALIZE( timeout);
                )
             };
@@ -316,6 +318,7 @@ namespace casual
 
             struct Manager
             {
+               std::optional< bool> enabled;
                std::optional< manager::Default> defaults;
 
                std::string log;
@@ -324,6 +327,7 @@ namespace casual
                friend Manager normalize( Manager manager);
 
                CASUAL_CONST_CORRECT_SERIALIZE(
+                  CASUAL_SERIALIZE( enabled);
                   CASUAL_SERIALIZE_NAME( defaults, "default");
                   CASUAL_SERIALIZE( log);
                   CASUAL_SERIALIZE( resources);
@@ -488,7 +492,7 @@ namespace casual
             };
 
 
-               //! @deprecated
+            //! @deprecated
             namespace listener
             {
                struct Default
@@ -571,6 +575,7 @@ namespace casual
 
             struct Manager
             {
+               std::optional< bool> enabled;
                std::optional< manager::Default> defaults;
 
                std::optional<gateway::Inbound> inbound;
@@ -587,6 +592,7 @@ namespace casual
                friend Manager normalize( Manager manager);
 
                CASUAL_CONST_CORRECT_SERIALIZE(
+                  CASUAL_SERIALIZE( enabled);
                   CASUAL_SERIALIZE_NAME( defaults, "default");
                   CASUAL_SERIALIZE( inbound);
                   CASUAL_SERIALIZE( outbound);
@@ -906,16 +912,18 @@ namespace casual
                   )
                };
 
+               std::optional< bool> enabled;
+               std::optional< std::string> note;
                std::optional< Default> defaults;
                std::optional< std::vector< Group>> groups;
                std::optional< Forward> forward;
                std::optional< Fanout> fanout;
 
-               std::optional< std::string> note;
 
                friend Manager normalize( Manager manager);
 
                CASUAL_CONST_CORRECT_SERIALIZE(
+                  CASUAL_SERIALIZE( enabled);
                   CASUAL_SERIALIZE( note);
                   CASUAL_SERIALIZE_NAME( defaults, "default");
                   CASUAL_SERIALIZE( groups);
@@ -925,6 +933,22 @@ namespace casual
             };
 
          } // queue
+
+         namespace file
+         {
+            struct Manager
+            {
+               std::optional< bool> enabled;
+               std::optional< std::string> note;
+
+               friend Manager normalize( Manager manager);
+
+               CASUAL_CONST_CORRECT_SERIALIZE(
+                  CASUAL_SERIALIZE( enabled);
+                  CASUAL_SERIALIZE( note);
+               )
+            };
+         } // file
 
 
          //! Default settings within a configuration file. This is only to help
@@ -985,6 +1009,7 @@ namespace casual
 
             std::optional< domain::gateway::Manager> gateway;
             std::optional< domain::queue::Manager> queue;
+            std::optional< domain::file::Manager> file;
 
             //! @deprecated
             std::optional< domain::global::Service> service;
@@ -1004,6 +1029,7 @@ namespace casual
                CASUAL_SERIALIZE( services);
                CASUAL_SERIALIZE( gateway);
                CASUAL_SERIALIZE( queue);
+               CASUAL_SERIALIZE( file);
                CASUAL_SERIALIZE( service);
             )
          };
