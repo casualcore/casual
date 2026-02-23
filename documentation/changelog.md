@@ -1,6 +1,13 @@
 # Changelog
 This is the changelog for `casual` and all changes are listed in this document.
 
+## [1.8.12] - 2026-02-23
+
+### Fixes
+- service: SM now cleans deadlines during prepare-shutdown from DM ([#681](https://github.com/casualcore/casual/issues/681))
+- service: SM now does not start timeout on pending lookup with no-reply ([#687](https://github.com/casualcore/casual/issues/687))
+- domain: if discovery dies DM treat it as fatal and shutdown - bandage for ([#684](https://github.com/casualcore/casual/issues/684))
+- common: fan::Out might get UB if callback mutates fan::Out - possible related to [#684](https://github.com/casualcore/casual/issues/684)
 
 ## [1.8.11] - 2026-02-20
 
