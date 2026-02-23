@@ -209,6 +209,17 @@ namespace casual
              
                std::optional< common::chronology::time_point> Deadline::add( deadline::Entry entry)
                {
+                  if( auto found = algorithm::find( m_entries, entry.correlation))
+                  {
+                     // this should not happen, but if it does, we update the entry and log a warning.
+                     log::warning( code::casual::internal_correlation, "entry already known to deadline - current: ", *found, ", new: ", entry);
+                     
+                     found->service = entry.service;
+                     found->target = entry.target;
+
+                     return {};
+                  }
+
                   auto inserted = m_entries.insert(
                      std::upper_bound( std::begin( m_entries), std::end( m_entries), entry),
                      std::move( entry));
@@ -262,6 +273,17 @@ namespace casual
                      return { m_entries.front().when};
 
                   return {};
+               }
+
+               std::optional< deadline::Directive> Deadline::remove( std::span< const common::strong::correlation::id> correlations)
+               {
+                  return std::ranges::fold_left( correlations, std::optional< deadline::Directive>{}, [ this]( auto&& result, auto& correlation)
+                  {
+                     if( auto deadline = Deadline::remove( correlation))
+                        return deadline;
+
+                     return result;
+                  });
                }
 
                deadline::Entry* Deadline::find_entry( const common::strong::correlation::id& correlation)
@@ -687,6 +709,21 @@ namespace casual
       {
          prepare_shutdown_result result;
 
+         auto handle_pending = [ this, &result]( auto service_id)
+         {
+            auto names = services.names( service_id);
+            auto lookups = common::algorithm::container::extract( 
+               pending.lookups,
+               std::get< 0>( common::algorithm::intersection( pending.lookups, names)));
+
+            auto get_correlation = []( auto& lookup){ return lookup.request.correlation;};
+
+            if( auto deadline = pending.deadline.remove( algorithm::transform( lookups, get_correlation)))
+               result.deadline = deadline;
+
+            std::ranges::move( lookups, std::back_inserter( result.pending));
+         };
+
          auto handle_process = [ &]( const auto& process)
          {
             if( auto instance_id = instances.sequential.lookup( process.ipc))
@@ -694,8 +731,9 @@ namespace casual
                // take care of services
                for( auto service_id : instances.sequential[ instance_id].services())
                   if( services[ service_id].instances.remove( instance_id))
-                     // This was the last instance for the service, we get the name(s) of the service for lookup-rejects
-                     algorithm::container::append( services.names( service_id), result.services);
+                     // This was the last instance for the service, take care of pending lookups for the service.
+                     handle_pending( service_id);
+                     
 
                result.instances.push_back( instance_id);
             }
@@ -707,6 +745,9 @@ namespace casual
          };
 
          algorithm::for_each( processes, handle_process);
+
+
+
 
          return result;
       }

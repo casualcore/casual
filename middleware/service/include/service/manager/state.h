@@ -284,6 +284,7 @@ namespace casual
                   std::optional< common::chronology::time_point> add( deadline::Entry entry);
                   std::optional< deadline::Directive> remove( const common::strong::correlation::id& correlation);
                   std::optional< deadline::Directive> remove( instance::sequential::id::type instance);
+                  std::optional< deadline::Directive> remove( std::span< const common::strong::correlation::id> correlations);
 
                   deadline::Entry* find_entry( const common::strong::correlation::id& correlation);
 
@@ -659,18 +660,22 @@ namespace casual
 
          struct prepare_shutdown_result
          {
-            std::vector< std::string> services;
             std::vector< state::instance::sequential::id::type> instances;
             std::vector< common::process::Handle> unknown;
+            std::vector< state::service::pending::Lookup> pending;
+            std::optional< state::service::pending::deadline::Directive> deadline;
 
             CASUAL_LOG_SERIALIZE(
-               CASUAL_SERIALIZE( services);
                CASUAL_SERIALIZE( instances);
                CASUAL_SERIALIZE( unknown);
+               CASUAL_SERIALIZE( pending);
+               CASUAL_SERIALIZE( deadline);
             )
          };
 
-         //! removes and extract all instances (deduced from `pid`) from all services
+         //! removes and extract all instances (deduced from `pid`) from all services.
+         //! removes and extract all pending lookups (removes corresponding deadlines) and return 
+         //! them together with the removed services and instances.
          [[nodiscard]] prepare_shutdown_result prepare_shutdown( std::vector< common::process::Handle> processes);
 
          struct update_result_t
