@@ -93,11 +93,11 @@ namespace casual
                   return done();
                }
 
-               //! Sets the pending state to failed regardless of previous state
+               //! Sets the pending state to failed for items that are still in pending state
                template< typename I>
                auto failed( I&& id) -> std::vector< strong::correlation::id>
                {
-                  auto has_id = [ &id]( auto& pending){ return pending.id == id;};
+                  auto has_id = [ &id]( auto& pending){ return pending.id == id && pending.state == Pending::State::pending;};
 
                   return algorithm::transform_if( m_pending, []( auto& pending)
                   {
@@ -160,12 +160,14 @@ namespace casual
             {
                if( auto found = algorithm::find( m_lookup, message.correlation))
                {
-                  // remove the entry if it's done.
-                  if( found->second->coordinate( std::move( message)))
-                     algorithm::container::erase( m_entries, found->second);
-
-                  // always remove from lookup to keep the state as small as possible
+                  // keep the entry alive and remove from lookup before coordinating,
+                  // to prevent iterator invalidation or use-after-free if the callback
+                  // (transitively) modifies the coordinator state.
+                  auto entry = found->second;
                   m_lookup.erase( std::begin( found));
+
+                  if( entry->coordinate( std::move( message)))
+                     algorithm::container::erase( m_entries, entry);
                }
             }
 

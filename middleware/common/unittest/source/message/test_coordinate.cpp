@@ -251,26 +251,34 @@ namespace casual
             {
                return local::Coordinate::Pending{ message.correlation, message.process.pid};
             }),
-            [&invoked, &other_process]( auto received, auto failed)
+            [&invoked, &other_process]( auto received, auto outcome)
             {
                {
-                  // all current process pendings is marked as failed
-                  decltype( failed) pendings;
-                  algorithm::copy_if( failed, std::back_inserter( pendings), [ pid = process::id()]( auto pending)
+                  // current process: only the pending item (not yet received) is marked as failed,
+                  // items already received remain in received state
+                  decltype( outcome) pendings;
+                  algorithm::copy_if( outcome, std::back_inserter( pendings), [ pid = process::id()]( auto pending)
                   {
                      return pid == pending.id;
                   });
                   ASSERT_TRUE( ! pendings.empty());
+                  // the one pending item is marked as failed
                   EXPECT_TRUE(
-                     algorithm::all_of( pendings, []( auto pending){
+                     algorithm::any_of( pendings, []( auto pending){
                         return pending.state == local::Coordinate::Pending::State::failed;
+                     })
+                  );
+                  // the already-received items remain as received (not reverted to failed)
+                  EXPECT_TRUE(
+                     algorithm::any_of( pendings, []( auto pending){
+                        return pending.state == local::Coordinate::Pending::State::received;
                      })
                   );
                }
                {
                   // all 'other' process pendings is still marked as received
-                  decltype( failed) pendings;
-                  algorithm::copy_if( failed, std::back_inserter( pendings), [ &other_process]( auto pending)
+                  decltype( outcome) pendings;
+                  algorithm::copy_if( outcome, std::back_inserter( pendings), [ &other_process]( auto pending)
                   {
                      return other_process.pid == pending.id;
                   });
@@ -298,7 +306,7 @@ namespace casual
          EXPECT_TRUE( ! invoked);
          EXPECT_TRUE( ! coordinate.empty()) << trace.compose( "coordinate: ", coordinate);
 
-         // purge all from coordinate with current pid
+         // fail the still-pending item from current pid (already-received items remain as received)
          coordinate.failed( process::id());
 
          // still one message from 'other' process to be received
