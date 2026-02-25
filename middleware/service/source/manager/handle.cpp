@@ -127,6 +127,7 @@ namespace casual
                   common::log::debug( "lookup: ", lookup);
 
                   auto reply = common::message::reverse::type( lookup.request);
+                  reply.service.name = lookup.request.requested;
                   reply.state = decltype( reply.state)::timeout;
                   state.multiplex.send( lookup.request.process.ipc, std::move( reply));
                }
@@ -589,9 +590,13 @@ namespace casual
                               break;
                            }
                            case Semantic::forward_request:
-                              // This is a request from service-forward from a previous _forward_ lookup.
-                              // We treat it as "regular" pending lookup.
-                              [[fallthrough]];
+                           {
+                              // right now forward is only used for "send and forget" semantics. We don't want the
+                              // a deadline to start while waiting for an instance to be available.
+                              state.pending.lookups.emplace_back( std::move( message), platform::time::clock::type::now());
+
+                              break;
+                           }
                            case Semantic::regular:
                            {
                               auto now = platform::time::clock::type::now();
@@ -739,6 +744,15 @@ namespace casual
                {
                   return [ &state]( common::message::service::lookup::Request& message)
                   {
+                     Trace trace{ "service::manager::handle::local::service::lookup"};
+                     common::log::debug( "message: ", message);
+
+                     using Semantic = decltype( message.context.semantic);
+                     
+                     // ignore/reset/discard deadline for no_reply semantics, as caller don't want a reply.
+                     if( common::algorithm::compare::any( message.context.semantic, Semantic::no_reply))
+                        message.deadline = std::nullopt;
+
                      detail::lookup( state, message);
                   };
                }

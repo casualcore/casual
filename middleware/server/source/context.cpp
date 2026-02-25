@@ -322,6 +322,9 @@ namespace casual
 
                auto target = casual::service::lookup::reply( std::move( lookup));
 
+               if( target.state != decltype( target.state)::idle)
+                  common::code::raise::error( common::code::xatmi::service_error, "forward failed - service: ", forward.parameter.service.name, " - state: ", target.state);
+
                request.buffer = std::move( forward.parameter.payload);
                request.service = target.service;
 
