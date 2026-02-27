@@ -7,13 +7,15 @@
 #include "common/unittest.h"
 
 #include "domain/discovery/api.h"
-#include "domain/unittest/manager.h"
 #include "domain/discovery/instance.h"
+#include "domain/unittest/manager.h"
+#include "domain/unittest/utility.h"
 
 #include "common/communication/device.h"
 #include "common/communication/ipc.h"
 #include "common/communication/instance.h"
 #include "common/array.h"
+#include "common/message/server.h"
 
 namespace casual
 {
@@ -818,6 +820,40 @@ domain:
             auto reply = communication::ipc::non::blocking::receive< message::discovery::topology::implicit::Update>();
             EXPECT_FALSE( reply);
          }
+      }
+
+      TEST( domain_discovery, kill_discovery__expect_fatal_domain_shutdown)
+      {
+         common::unittest::Trace trace;
+
+         auto domain = unittest::manager();
+
+         auto discovery = unittest::server( unittest::state(), "casual-domain-discovery");
+
+         ASSERT_TRUE( discovery);
+
+         common::signal::send( discovery.pid, common::code::signal::kill);
+
+        
+         // wait for the domain to be unavailable.
+         common::unittest::eventually::succeed( [ handle = domain.handle()]()
+         {
+            try
+            {
+               // we just send a ping to DM to check if we can communicate with it.
+               common::communication::ipc::call( handle.ipc, common::message::server::ping::Request{ process::handle()});
+            }
+            catch( ...)
+            {
+               auto error = exception::capture();
+               EXPECT_TRUE( error.code() == common::code::casual::communication_unavailable) << CASUAL_NAMED_VALUE( error);
+               return true;
+            }
+
+            return false;
+         });
+
+
       }
 
    } // domain::discovery

@@ -698,7 +698,10 @@ namespace casual
 
                            auto singleton = state.singleton( message.state.pid);
 
-                           auto [ server, executable] = state.remove( message.state.pid, message.state.reason);
+                           auto [ server, executable, fatal] = state.remove( message.state.pid, message.state.reason);
+
+                           if( fatal)
+                              communication::ipc::inbound::device().push( *fatal);
 
                            // only log on error if process is a singleton and is spawnable (i.e. not scaled down)
                            if( singleton && (( server && server->spawnable()) || ( executable && executable->spawnable())))
@@ -778,8 +781,10 @@ namespace casual
 
                      manager::task::event::dispatch( state, [&message](){ return message;});
 
-                     if( message.severity == decltype( message.severity)::fatal && state.runlevel == state::Runlevel::startup)
+                     if( message.severity == decltype( message.severity)::fatal)
                      {
+                        log::error( message.code, message.message);
+
                         // We're in a 'fatal' state, and the only thing we can do is to shutdown
                         state.runlevel = state::Runlevel::error;
                         handle::shutdown( state);
