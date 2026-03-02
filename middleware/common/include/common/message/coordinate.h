@@ -112,7 +112,7 @@ namespace casual
                   if( algorithm::any_of( m_pending, predicate::value::equal( Pending::State::pending)))
                      return false;
 
-                  m_callback( std::move( m_received), std::move( m_pending));
+                  m_callback( std::exchange( m_received, {}), std::exchange( m_pending, {}));
                   return true;
                }
 
@@ -160,12 +160,12 @@ namespace casual
             {
                if( auto found = algorithm::find( m_lookup, message.correlation))
                {
-                  // remove the entry if it's done.
-                  if( found->second->coordinate( std::move( message)))
-                     algorithm::container::erase( m_entries, found->second);
-
                   // always remove from lookup to keep the state as small as possible
-                  m_lookup.erase( std::begin( found));
+                  auto removed = algorithm::container::extract( m_lookup, std::begin( found));
+
+                  // remove the entry if it's done.
+                  if( removed.second->coordinate( std::move( message)))
+                     algorithm::container::erase( m_entries, removed.second);
                }
             }
 

@@ -427,7 +427,7 @@ namespace casual
                   });
                }
 
-               void handle_extended_lookup( State& state, message::discovery::Request request)
+               void handle_extended_lookup( State& state, message::discovery::Request&& request)
                {
                   Trace trace{ "discovery::handle::local::detail::handle_extended_lookup"};
 
