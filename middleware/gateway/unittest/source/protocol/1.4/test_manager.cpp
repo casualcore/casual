@@ -11,9 +11,12 @@
 
 #include "common/message/transaction.h"
 #include "common/communication/tcp.h"
+#include "common/communication/instance.h"
 
 #include "domain/unittest/manager.h"
+#include "domain/message/discovery.h"
 
+#include "service/lookup.h"
 #include "service/unittest/utility.h"
 
 
@@ -155,6 +158,125 @@ domain:
          // receive the call to b from within 'B' domain
          auto request_b = communication::ipc::receive< common::message::service::call::callee::Request>( correlation_b);
          EXPECT_TRUE( request_b.trid == request_a.trid) << CASUAL_NAMED_VALUE( request_b.trid);
+      }
+
+      TEST( gateway_protocol_1_4_manager, outbound_call_with_trid_request__expect_1_4__request)
+      {
+         common::unittest::Trace trace;
+
+         auto b = local::domain( R"(
+domain:
+   name: B
+   servers:
+      -  path: bin/casual-gateway-manager
+         memberships: [ gateway]
+   gateway:
+      reverse:
+         outbound:
+            groups:
+               -  connections: 
+                     -  address: 127.0.0.1:7010
+            )");
+
+         // connect as a _mockup-domain_ to the gateway.
+         auto device = unittest::tcp::connect::in( "127.0.0.1:7010", message::protocol::Version::v1_4);
+         EXPECT_TRUE( device.connector().socket());
+
+         // we wait until outbound is connected properly -> done the registration to discovery.
+         unittest::fetch::until( unittest::fetch::predicate::outbound::connected());
+
+         const auto data = common::unittest::random::binary( 128);
+
+         auto lookup = casual::service::Lookup{ "b", {}};
+         
+         // In our _mockup-domain_, expect discovery request to come in
+         {
+            auto request = communication::device::receive< casual::domain::message::discovery::Request>( device);
+            EXPECT_TRUE( request.domain.name == "B");
+            EXPECT_TRUE( std::ranges::contains( request.content.services, "b"));
+
+            // reply that we have the service.
+            auto reply = common::message::reverse::type( request);
+            reply.content.services.push_back( { "b", {}});
+
+
+            communication::device::blocking::send( device, reply);
+         }
+
+         const auto deadline_remaining = std::chrono::seconds( 10);
+         const auto trid = common::transaction::id::create();
+
+         // call the service via outbound
+         {
+            auto lookup_reply = casual::service::lookup::reply( std::move( lookup));
+            ASSERT_TRUE( lookup_reply.state == decltype( lookup_reply.state)::idle) << CASUAL_NAMED_VALUE( lookup_reply);
+
+            common::message::service::call::callee::Request request{ common::process::handle()};
+            request.service.name = "b";
+            request.flags = decltype( request.flags)::no_time;
+            request.correlation = lookup_reply.correlation;
+            request.buffer.data = data;
+            request.buffer.type = "X_OCTET/";
+            request.deadline.remaining = deadline_remaining;
+            request.trid = trid;
+
+            communication::device::blocking::send( lookup_reply.process.ipc, request);
+         }
+
+         // In our _mockup-domain_, expect v1_4 call request to come in, reply with v1_4 reply
+         {
+            auto request = communication::device::receive< common::message::service::call::v1_4::callee::Request>( device);
+            EXPECT_TRUE( request.service.name == "b");
+            EXPECT_TRUE( request.flags == decltype( request.flags)::no_time);
+            EXPECT_TRUE( request.buffer.data == data);
+            EXPECT_TRUE( request.buffer.type == "X_OCTET/");
+            EXPECT_TRUE( request.deadline.remaining == deadline_remaining);
+            EXPECT_TRUE( request.trid == trid);
+
+            common::message::service::call::v1_4::Reply reply;
+            reply.execution = request.execution;
+            reply.correlation = request.correlation;
+            reply.code.result = decltype( reply.code.result)::ok;
+            reply.buffer = std::move( request.buffer);
+            reply.transaction_state = decltype( reply.transaction_state)::ok;
+            communication::device::blocking::send( device, reply);
+         }
+
+         // expect the reply from outbound
+         {
+            auto reply = communication::ipc::receive< common::message::service::call::Reply>();
+            EXPECT_TRUE( reply.code.result == decltype( reply.code.result)::ok);
+            EXPECT_TRUE( reply.buffer.data == data);
+            EXPECT_TRUE( reply.buffer.type == "X_OCTET/");
+            EXPECT_TRUE( reply.transaction_state == decltype( reply.transaction_state)::ok);
+         }
+
+         // transaction cleanup, for good measure. Also good to make sure the commit messages are correct.
+         // send commit request to TM.
+         {
+            common::message::transaction::commit::Request commit{ common::process::handle()};
+            commit.trid = trid;
+            communication::device::blocking::send( communication::instance::outbound::transaction::manager::device(), commit);
+         }
+
+         // In our _mockup-domain_, expect resource commit request (one-phase-optimization) to come in with the same trid, reply with read-only
+         {
+            auto request = communication::device::receive< common::message::transaction::resource::commit::Request>( device);
+            EXPECT_TRUE( request.trid == trid);
+
+            auto reply = common::message::reverse::type( request);
+            reply.state = code::xa::read_only;
+            reply.trid = request.trid;
+            communication::device::blocking::send( device, reply);
+         }
+
+         // expect commit reply from TM
+         {
+            auto reply = communication::ipc::receive< common::message::transaction::commit::Reply>();
+            EXPECT_TRUE( reply.state == decltype( reply.state)::ok);
+            EXPECT_TRUE( reply.trid == trid);
+         }
+
       }
 
    } // gateway  

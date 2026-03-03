@@ -298,6 +298,8 @@ namespace casual
 
                            if( message::protocol::compatible< common::message::service::call::callee::Request>( connection->protocol()))
                               tcp::send( state, connection->descriptor(), message);
+                           else if( message::protocol::compatible< common::message::service::call::v1_4::callee::Request>( connection->protocol()))
+                              tcp::send( state, connection->descriptor(), message::protocol::transform::to< common::message::service::call::v1_4::callee::Request>( std::move( message)));
                            else
                               tcp::send( state, connection->descriptor(), message::protocol::transform::to< common::message::service::call::v1_2::callee::Request>( std::move( message)));
 

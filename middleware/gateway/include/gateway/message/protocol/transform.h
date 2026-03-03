@@ -34,6 +34,26 @@ namespace casual
          return result;
       }
 
+      template<>
+      inline common::message::service::call::v1_4::callee::Request to( common::message::service::call::callee::Request&& message)
+      {
+         common::message::service::call::v1_4::callee::Request result;
+         result.correlation = message.correlation;
+         result.execution = message.execution;
+         result.service = std::move( message.service);
+         result.deadline = std::move( message.deadline);
+         result.parent = std::move( message.parent);
+         result.trid = std::move( message.trid);
+         result.flags = message.flags;
+         result.pending = message.pending;
+         result.buffer = std::move( message.buffer);
+
+         // header is not used over the wire.
+         // result.header = std::move( message.header);
+
+         return result;
+      }
+
       inline auto from( common::message::service::call::v1_4::callee::Request&& message)
       {
          common::message::service::call::callee::Request result;
