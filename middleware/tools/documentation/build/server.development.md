@@ -35,7 +35,7 @@ The `echo` service will have `auto` transaction semantics, see below.
 
 
 ```bash
-$ casual-build-server --output simple-server --service echo --link-directives echo.cpp
+$ casual-build-server --output simple-server --service echo --build-directives echo.cpp
 ```
 
 ### advanced
@@ -62,12 +62,11 @@ server:
       function: echo
 
       # transaction characteristics
-      # Can be one of the following
-      # - auto : if a transaction is present join it, else start a new one (default)
-      # - join : if a transaction is present join it,
+      # - auto : if a transaction is present join it or else start a new one (default)
+      # - join : if a transaction is present join it
       # - none : don't join any transaction
       # - atomic : start a new transaction regardless.
-      # - branch : do not use unless you know what you're doing...
+      # - branch : branch the transaction if present (do not use unless you know what you're doing)
       transaction: join
 ```
 

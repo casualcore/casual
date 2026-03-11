@@ -97,22 +97,19 @@ namespace casual
                         }
                      }
                      
-                     constexpr auto description = R"(Generates a server 'main' source file
-
-)";
-
                      void main(int argc, const char** argv)
                      {
-                        Trace trace{ "tools::build::server::generate::local::main"};
-
                         Settings settings;
 
                         using namespace casual::argument;
-                        parse( description, {
+                        auto outcome = parse( "generates a server 'main' source file", {
                            Option( std::tie( settings.server.definition), {{ "-d", "--definition"}}, "path to server definition file")( argument::cardinality::one()),
                            Option( std::tie( settings.server.definition), {{ "-o", "--output"}}, "output file name - if not provided 'stdout' will be used"),
                            Option( std::tie( settings.files.system), {{ "--system-configuration"}, { "-p", "--properties-file"}}, "path to system configuration file"),
                         }, argc, argv);
+
+                        if( outcome != argument::Outcome::parsed)
+                           return;
 
                         local::generate( std::move( settings));
                      }
