@@ -15,7 +15,6 @@
 #include "common/functional.h"
 #include "common/buffer/type.h"
 
-
 #include <iterator>
 #include <istream>
 #include <functional>
@@ -31,7 +30,7 @@
 #include <rapidjson/error/en.h>
 #include <rapidjson/stringbuffer.h>
 #include <rapidjson/prettywriter.h>
-
+         
 
 namespace casual
 {

@@ -21,6 +21,8 @@
 
 #include <sys/epoll.h>
 
+std::ostream& operator << ( std::ostream& out, const ::epoll_event& event);
+
 namespace casual
 {
    namespace common::communication::select
@@ -87,6 +89,9 @@ namespace casual
             
          } // detail
 
+         //! @returns the descriptor from the event
+         strong::file::descriptor::id descriptor( const ::epoll_event& event) noexcept;
+
       } // directive
 
 
@@ -129,6 +134,8 @@ namespace casual
          inline auto descriptor() const { return m_epoll;}
          inline auto& events() { return m_events; }
 
+         const auto& entries() const { return m_entries;}
+
          CASUAL_LOG_SERIALIZE(
             CASUAL_SERIALIZE( m_epoll);
             CASUAL_SERIALIZE( m_entries);
@@ -150,6 +157,9 @@ namespace casual
 
       namespace dispatch::detail
       {
+         // only exposed for unittests.
+         directive::Ready ready( std::span< const directive::detail::Entry> entries, std::span< ::epoll_event> events);
+
          directive::Ready select( Directive& directive);
 
       } // dispatch::detail

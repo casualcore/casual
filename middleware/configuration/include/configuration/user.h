@@ -644,6 +644,8 @@ namespace casual
                std::optional< Enable> enable;
                std::optional< std::string> note;
 
+               inline friend bool operator == ( const Queue& lhs, std::string_view rhs) { return lhs.name == rhs;}
+
                //! @deprecated
                std::optional< platform::size::type> retries;
 

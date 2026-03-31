@@ -293,6 +293,13 @@ namespace casual
                return "<unknown>";
             }
          } // detail
+
+         //! @returns the descriptor from the event
+         strong::file::descriptor::id descriptor( const directive::kevent_t& event) noexcept
+         {
+            return strong::file::descriptor::id{ static_cast< platform::file::descriptor::native::type>( event.ident)};
+         }
+
       } // directive
 
 

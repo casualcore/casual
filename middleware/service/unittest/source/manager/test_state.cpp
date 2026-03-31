@@ -287,5 +287,45 @@ namespace casual
          }
       }
 
+      TEST( service_manager_state, disable_instance__reserve_instance__expect_no_instance_reserved)
+      {
+         common::unittest::Trace trace;
+
+         auto state = local::state();
+
+         // advertise
+         {
+            common::message::service::Advertise message;
+            message.process = common::process::handle();
+            message.services.add.push_back( { .name = "a"});
+            EXPECT_TRUE( state.update( std::move( message)).pending.empty());
+         }
+
+         auto a_id = state.services.lookup( "a");
+         ASSERT_TRUE( a_id);
+
+         {
+            auto instance_id = state.instances.sequential.lookup( common::process::handle().ipc);
+            ASSERT_TRUE( instance_id);
+            EXPECT_TRUE( state.instances.sequential[ instance_id].idle());
+            EXPECT_TRUE( state.instances.sequential[ instance_id].service( a_id));
+            
+            // disable the instance
+            state.disabled.push_back( instance_id);
+
+            auto caller = state::instance::Caller{
+               .process = state.instances.sequential[ instance_id].process,
+               .correlation = common::strong::correlation::id::generate(),
+               .trid = common::transaction::ID{ common::strong::process::id{ 999}},
+               .service = a_id,
+            };
+
+            // expect no instance to be reserved
+            EXPECT_FALSE(( state.reserve_sequential( std::move( caller))));
+         }
+
+
+      }
+
    } // service::manager
 } // casual

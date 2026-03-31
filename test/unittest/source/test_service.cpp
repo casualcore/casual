@@ -27,6 +27,8 @@
 #include "configuration/unittest/utility.h"
 #include "configuration/model/transform.h"
 
+#include "transaction/unittest/utility.h"
+
 #include "casual/xatmi.h"
 
 #include <chrono>
@@ -634,7 +636,110 @@ domain:
 
 
       }
+      
+      TEST( test_service, domain_A_advertise_a_b_domain_B_advertise_b__domain_C_call_a_with_trid__then_call_b_with_trid__expect_call_to_domain_A)
+      {
+         common::unittest::Trace trace;
 
+         auto a = local::domain( R"(
+domain:
+   name: A
+   gateway:
+      inbound:
+         groups:
+            -  connections:
+                  -  address: 127.0.0.1:7010
+
+         )");
+
+         casual::service::unittest::advertise( { "a", "b"});
+
+         auto b = local::domain( R"(
+domain:
+   name: B
+   gateway:
+      inbound:
+         groups:
+            -  connections:
+                  -  address: 127.0.0.1:7011
+         )");
+
+         casual::service::unittest::advertise( { "b"});
+
+         auto c = local::domain( R"(
+domain:
+   name: C
+   gateway:
+      outbound:
+         groups:
+            -  alias: A-out
+               order: 20
+               connections:
+                  -  address: 127.0.0.1:7010
+            -  alias: B-out
+               order: 10 # precedence over A-out
+               connections:
+                  -  address: 127.0.0.1:7011
+         )");
+
+         gateway::unittest::fetch::until( gateway::unittest::fetch::predicate::outbound::connected());
+
+         auto data = unittest::random::binary( 128);
+         auto trid = common::transaction::id::create();
+
+         // call the service a
+         auto correlation = casual::service::unittest::send::request( "a", data, trid);
+
+         // receive the call in domain A and reply
+         {
+            a.activate();
+
+            auto request = communication::ipc::receive< common::message::service::call::callee::Request>();
+            EXPECT_TRUE( request.service.name == "a") << CASUAL_NAMED_VALUE( request);
+            EXPECT_TRUE( request.buffer.data == data) << CASUAL_NAMED_VALUE( request.buffer.data);
+            EXPECT_TRUE( request.trid.global() == trid.global()) << CASUAL_NAMED_VALUE( request.trid);
+
+            auto reply = common::message::reverse::type( request);
+            communication::device::blocking::send( request.process.ipc, reply);
+
+            // send ack to SM
+            casual::service::unittest::send::ack( request);
+         }
+
+         // back to c
+         c.activate();
+
+         EXPECT_NO_THROW( casual::service::unittest::receive( correlation));
+
+         // call the service b
+         correlation = casual::service::unittest::send::request( "b", data, trid);
+
+         // expect to receive the call in domain A. SM should group based on trid.
+         {
+            a.activate();
+
+            auto request = communication::ipc::receive< common::message::service::call::callee::Request>();
+            EXPECT_TRUE( request.service.name == "b") << CASUAL_NAMED_VALUE( request);
+            EXPECT_TRUE( request.buffer.data == data) << CASUAL_NAMED_VALUE( request.buffer.data);
+            EXPECT_TRUE( request.trid.global() == trid.global()) << CASUAL_NAMED_VALUE( request.trid);
+
+            auto reply = common::message::reverse::type( request);
+            communication::device::blocking::send( request.process.ipc, reply);
+
+            // send ack to SM
+            casual::service::unittest::send::ack( request);
+         }
+
+         // back to c
+         c.activate();
+
+         // receive the call for good measure.
+         EXPECT_NO_THROW( casual::service::unittest::receive( correlation));
+
+         // commit the trid
+         casual::transaction::unittest::commit( trid);
+
+      }
    } // test::domain::service
 
 } // casual

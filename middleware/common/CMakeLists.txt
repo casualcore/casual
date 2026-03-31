@@ -215,6 +215,7 @@ target_sources(test-casual-common-isolated
     unittest/source/communication/test_tcp.cpp
     unittest/source/communication/test_ipc.cpp
     unittest/source/communication/test_stream.cpp
+    unittest/source/communication/test_select.cpp
     unittest/source/message/test_dispatch.cpp
     unittest/source/message/test_coordinate.cpp
     unittest/source/service/test_header.cpp

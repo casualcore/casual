@@ -52,6 +52,18 @@ namespace casual
 
                   using finalize_type = casual::manager::service::protocol::concurrent::Finalize< admin::model::State>;
 
+                  auto perform_finalize( State& state, finalize_type finalize, 
+                     std::vector< ipc::message::group::state::Reply> group_replies,
+                     std::vector< ipc::message::forward::group::state::Reply> forward_replies,
+                     std::vector< ipc::message::fanout::group::state::Reply> fanouts)
+                  {
+                     finalize( transform::model::state( 
+                        state,
+                        std::move( group_replies),
+                        std::move( forward_replies),
+                        std::move( fanouts)));
+                  }
+
                   struct Shared
                   {
                      Shared( manager::State& state, finalize_type finalize)
@@ -87,11 +99,10 @@ namespace casual
 
                         if( correlations.empty())
                         {
-                           finalize( transform::model::state( 
-                              *state,
+                           state::perform_finalize( *state, std::move( finalize),
                               std::move( reply.groups),
                               std::move( reply.forwards), 
-                              std::move( reply.fanouts)));
+                              std::move( reply.fanouts));
 
                            return casual::task::unit::Dispatch::done;
                         }
@@ -139,7 +150,11 @@ namespace casual
                   std::erase( shared->correlations, strong::correlation::id{});
 
                   if( shared->correlations.empty())
+                  {
+                     // we're done right away, we finalize with empty replies
+                     detail::state::perform_finalize( *shared->state, std::move( shared->finalize), {}, {}, {});
                      return casual::task::unit::action::Outcome::abort;
+                  }
 
                   return casual::task::unit::action::Outcome::success;
                });

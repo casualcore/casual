@@ -298,6 +298,8 @@ namespace casual
 
                            if( message::protocol::compatible< common::message::service::call::callee::Request>( connection->protocol()))
                               tcp::send( state, connection->descriptor(), message);
+                           else if( message::protocol::compatible< common::message::service::call::v1_4::callee::Request>( connection->protocol()))
+                              tcp::send( state, connection->descriptor(), message::protocol::transform::to< common::message::service::call::v1_4::callee::Request>( std::move( message)));
                            else
                               tcp::send( state, connection->descriptor(), message::protocol::transform::to< common::message::service::call::v1_2::callee::Request>( std::move( message)));
 
@@ -355,9 +357,14 @@ namespace casual
 
                                  state.multiplex.send( shared->ipc, message);
 
-                                 // if the send indicate a termination, we make sure to remove this task
-                                 if( message.duplex == decltype( message.duplex)::terminated)
+                                 // TODO to send _terminated_ in the send message, we break protocol. We need to change this in 1.9
+                                 // For now we check if xatmi code is set to any thing -> terminated.
+                                 if( message.code.result != code::xatmi::absent)
                                     return task::concurrent::unit::Dispatch::done;
+
+                                 // if the send indicate a termination, we make sure to remove this task
+                                 //if( message.duplex == decltype( message.duplex)::terminated)
+                                 //   return task::concurrent::unit::Dispatch::done;
 
                                  return task::concurrent::unit::Dispatch::pending;
                               },
@@ -497,32 +504,53 @@ namespace casual
 
                namespace queue
                {
-                  namespace detail::create
+                  namespace detail
                   {
-                     auto task( State& state, auto& message, strong::socket::id descriptor)
+                  
+                     void unadvertise( State& state, strong::socket::id descriptor, std::string queue)
                      {
-                        using reply_type = common::message::reverse::type_t< decltype( message)>;
-                     
-                        return typename state::task_coordinator_type::unit_type{ descriptor, message.correlation, 
-                        [ &state, ipc = message.process.ipc]( reply_type& message, strong::socket::id descriptor)
+                        if( auto handle = state.connections.process_handle( descriptor))
                         {
-                           Trace trace{ "gateway::group::outbound::handle::local::internal::queue::detail::create::task Reply"};
-                           log::debug( "message: ", message);
-
-                           state.multiplex.send( ipc, message);
-                        },
-                        [ &state, ipc = message.process.ipc]( casual::task::concurrent::message::task::Failed& message, strong::socket::id descriptor)
-                        {
-                           Trace trace{ "gateway::group::outbound::handle::local::internal::detail::create::task task::Failed"};
-
-                           reply_type reply;
-                           reply.correlation = message.correlation;
-
-                           state.multiplex.send( ipc, reply);
-                        }};
+                           casual::queue::ipc::message::Advertise unadvertise{ handle};
+                           unadvertise.alias = instance::alias();
+                           unadvertise.queues.remove.push_back( std::move( queue));
+                           state.multiplex.send( ipc::manager::optional::queue(), unadvertise);
+                        }
+                        else
+                           log::error( code::casual::invalid_semantics, "failed to unadvertise - could not find ipc partner to ", descriptor);
                      }
-                     
-                  } // detail::create
+
+                     namespace create
+                     {
+                        auto task( State& state, auto& message, strong::socket::id descriptor)
+                        {
+                           using reply_type = common::message::reverse::type_t< decltype( message)>;
+                        
+                           return typename state::task_coordinator_type::unit_type{ descriptor, message.correlation, 
+                           [ &state, ipc = message.process.ipc, queue_name = message.name]( reply_type& message, strong::socket::id descriptor)
+                           {
+                              Trace trace{ "gateway::group::outbound::handle::local::internal::queue::detail::create::task Reply"};
+                              log::debug( "message: ", message);
+
+                              // if the reply has code::queue::no_queue, we need to unadvertise the queue.
+                              if( message.code == code::queue::no_queue)
+                                 detail::unadvertise( state, descriptor, queue_name);
+
+                              state.multiplex.send( ipc, message);
+                           },
+                           [ &state, ipc = message.process.ipc]( casual::task::concurrent::message::task::Failed& message, strong::socket::id descriptor)
+                           {
+                              Trace trace{ "gateway::group::outbound::handle::local::internal::queue::detail::create::task task::Failed"};
+
+                              reply_type reply;
+                              reply.correlation = message.correlation;
+
+                              state.multiplex.send( ipc, reply);
+                           }};
+                        }
+                        
+                     } // create
+                  } // detail
 
                   namespace basic
                   {

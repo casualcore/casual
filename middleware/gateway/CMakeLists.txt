@@ -16,6 +16,7 @@ include_directories(
   $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/../queue/include>
   $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/../xatmi/include>
   $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/../cli/include>
+  $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/../queue/unittest/include>
   $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/../service/unittest/include>
   $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/../transaction/unittest/include>)
 
@@ -215,6 +216,7 @@ target_link_libraries(test-casual-gateway PRIVATE
   casual-configuration
   casual-unittest
   casual-domain-unittest
+  casual-queue-unittest
   casual-service-unittest
   casual-transaction-unittest
   gtest::gtest

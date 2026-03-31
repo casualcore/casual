@@ -922,7 +922,15 @@ domain:
       {
          common::unittest::Trace trace;
 
-         auto domain = local::domain();
+         auto domain = local::domain( R"(
+domain:
+   name: A
+   services:
+      -  name: a
+         execution:
+            timeout:
+               duration: 10s
+)");
 
          service::unittest::advertise( { "a"});
 
@@ -956,19 +964,38 @@ domain:
             auto absent = service::Lookup{ "a", {}};
             EXPECT_CODE( service::lookup::reply( std::move( absent)), common::code::xatmi::no_entry);
          }
+
+         // we expect no deadlines
+         {
+            auto state = unittest::state();
+            EXPECT_TRUE( state.deadlines.empty()) << CASUAL_NAMED_VALUE( state.deadlines);
+         }
       }
 
       TEST( service_manager, advertise_a_b_c_d___service_lookup_a_b_c_d___prepare_shutdown__expect_lookup_reply_1_idle__3_absent)
       {
          common::unittest::Trace trace;
 
-         auto domain = local::domain();
+         auto domain = local::domain( R"(
+domain:
+   name: A
+   default:
+      service:
+         execution:
+            timeout:
+               duration: 10s
+   services:
+      -  name: a
+      -  name: b
+      -  name: c
+      -  name: d
+)");
 
          service::unittest::advertise( { "a", "b", "c", "d"});
 
          auto idle = service::lookup::reply( service::Lookup{ "a", {}});
 
-         auto lookups = common::algorithm::container::emplace::initialize< std::vector< service::Lookup>>(
+         auto lookups = common::array::make(
             service::Lookup{ "b", {}},
             service::Lookup{ "c", {}},
             service::Lookup{ "d", {}}
@@ -1019,6 +1046,13 @@ domain:
             common::message::domain::process::prepare::shutdown::Reply reply;
             common::communication::device::non::blocking::receive( local::ipc::inbound(), reply);
             EXPECT_TRUE( reply.processes.empty());
+         }
+
+         {
+            // we expect no pending and no deadlines
+            auto state = unittest::state();
+            EXPECT_TRUE( state.pending.empty()) << CASUAL_NAMED_VALUE( state.pending);
+            EXPECT_TRUE( state.deadlines.empty()) << CASUAL_NAMED_VALUE( state.deadlines);
          }
       }
 
@@ -1535,6 +1569,80 @@ domain:
                EXPECT_TRUE( reply.process.ipc == first_lookup.process.ipc) << CASUAL_NAMED_VALUE( reply);
             }
          });
+      }
+
+      TEST( service_manager, advertise_a_b_timeout_500ms__lookup_twice__expect_second_lookup__correct_deadline)
+      {
+         common::unittest::Trace trace;
+
+         auto a = local::domain( R"(
+domain:
+   name: A
+   default:
+      service:
+         execution:
+            timeout:
+               duration: 500ms
+   services:
+      -  name: a
+      -  name: b
+      -  name: c
+)");
+         
+         service::unittest::advertise( { "a", "b"});
+
+         service::unittest::concurrent::advertise( { "c"});
+
+         // reserve the one instance of the service (our self)
+         auto lookup_a_reply = service::lookup::reply( service::Lookup{ "a", {}});
+
+         EXPECT_TRUE( lookup_a_reply.service.name == "a");
+         EXPECT_TRUE( lookup_a_reply.process == common::process::handle());
+         EXPECT_TRUE( lookup_a_reply.state == decltype( lookup_a_reply.state)::idle);
+
+         {
+            // should not create any deadline, since it's a concurrent service.
+            // we verify no additional deadlines later in this unittest.
+            auto lookup_c_reply = service::lookup::reply( service::Lookup{ "c", {}});
+
+            EXPECT_TRUE( lookup_c_reply.service.name == "c");
+            EXPECT_TRUE( lookup_c_reply.process == common::process::handle());
+            EXPECT_TRUE( lookup_c_reply.state == decltype( lookup_c_reply.state)::idle);
+         }
+
+
+         // lookup 'b', this should create a pending lookup with a deadline
+         service::Lookup lookup_b_request{ "b", {}};
+
+         {
+            auto has_service = []( auto service)
+            {
+               return [ service]( auto& deadline){ return deadline.service == service;};
+            };
+
+            auto state = unittest::state();
+            EXPECT_TRUE( state.deadlines.size() ==2);
+            EXPECT_TRUE( std::ranges::any_of( state.deadlines, has_service( "a"))) << CASUAL_NAMED_VALUE( state.deadlines); 
+            EXPECT_TRUE( std::ranges::any_of( state.deadlines, has_service( "b"))) << CASUAL_NAMED_VALUE( state.deadlines); 
+
+            // expect one pending for 'b'
+            EXPECT_TRUE( state.pending.size() == 1);
+            EXPECT_TRUE( state.pending.at( 0).requested == "b");
+         }
+
+         // send ack for the first lookup, this should remove deadline for the first lookup, 
+         // and update target for the remaining deadline to the new instance (our self)
+         {
+            unittest::send::ack( lookup_a_reply);
+
+            auto state = unittest::state();
+            EXPECT_TRUE( state.deadlines.size() == 1);
+            EXPECT_TRUE( state.deadlines.at( 0).service == "b");
+            EXPECT_TRUE( state.deadlines.at( 0).target == common::process::handle());
+
+         }
+
+
       }
 
    } // service

@@ -1,6 +1,41 @@
 # Changelog
 This is the changelog for `casual` and all changes are listed in this document.
 
+## [1.8.13] - 2026-03-31
+
+### Fixes
+- gateway: outbound now respects protocol v1.4 for service_call ([#681](https://github.com/casualcore/casual/issues/681))
+
+## [1.8.12] - 2026-02-23
+
+### Fixes
+- service: SM now cleans deadlines during prepare-shutdown from DM ([#681](https://github.com/casualcore/casual/issues/681))
+- service: SM now does not start timeout on pending lookup with no-reply ([#687](https://github.com/casualcore/casual/issues/687))
+- domain: if discovery dies DM treat it as fatal and shutdown - bandage for ([#684](https://github.com/casualcore/casual/issues/684))
+- common: fan::Out might get UB if callback mutates fan::Out - possible related to [#684](https://github.com/casualcore/casual/issues/684)
+
+## [1.8.11] - 2026-02-20
+
+### Fixes
+- common: select now handles EPOLLERR correctly ([#678](https://github.com/casualcore/casual/issues/678))
+- service: SM now respects 'sticky' trid for unknown services ([#679](https://github.com/casualcore/casual/issues/679))
+- service: kill contracted instance is now never reserved ([#675](https://github.com/casualcore/casual/issues/675))
+- gateway: outbound now unadvertises based on no_queue ([#676](https://github.com/casualcore/casual/issues/676))
+- gateway: protocol conforms for conversation send message ([#672](https://github.com/casualcore/casual/issues/672))
+- transaction: current trid is now reflected in log
+
+## [1.8.10] - 2026-01-26
+
+### Fixes
+- queue: queue-group now unzombie queues during runtime configuration (#[668](https://github.com/casualcore/casual/issues/668))
+- queue: queue-manager now sends state reply if no groups/forwards
+
+## [1.8.9] - 2026-01-15
+
+### Fixes
+- common: epoll now updates epoll state during flag remove ([#663](https://github.com/casualcore/casual/issues/663))
+    This fixes a potential busy-loop in select dispatch when removing write flags from a descriptor -> 100% cpu. 
+
 ## [1.8.8] - 2025-12-24
 
 ### Fixes

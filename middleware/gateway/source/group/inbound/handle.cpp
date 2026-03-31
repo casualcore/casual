@@ -95,11 +95,17 @@ namespace casual
                         Trace trace{ "gateway::group::inbound::handle::conversation::send"};
                         common::log::debug( "message: ", message);
 
-                        tcp::send( state, state.connections.partner( descriptor), message);
+                        auto connection = state.connections.find_external( descriptor);
+                        CASUAL_ASSERT( connection);
 
                         // if the sender has terminated the conversation we need to clean the task
-                        if( message.duplex == decltype( message.duplex)::terminated)
+                        // TODO we cant use _terminated_ until 1.9, we need to use a xatmi code for this, as before
+                        // if( message.duplex == decltype( message.duplex)::terminated)
+
+                        if( message.code.result != code::xatmi::absent)
                            state.tasks.remove( message.correlation);
+                           
+                        tcp::send( state, connection->descriptor(), message);
                      };
                   }
                   

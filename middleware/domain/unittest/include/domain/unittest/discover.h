@@ -35,5 +35,5 @@ namespace casual
          } // predicate
       } // fetch
       
-   } // domain::unittest::
+   } // domain::unittest::discover
 } // casual

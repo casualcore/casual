@@ -525,7 +525,8 @@ namespace casual
          //!
          //! @param pid
          //! @return pointer to Server and Executable which is not null if we gonna restart them.
-         std::tuple< state::Server*, state::Executable*> remove( common::strong::process::id pid, common::process::lifetime::exit::Reason reason);
+         //!   also return an optional error, to indicate fatal error. Only used when discovery dies.
+         std::tuple< state::Server*, state::Executable*, std::optional< common::message::event::Error>> remove( common::strong::process::id pid, common::process::lifetime::exit::Reason reason);
 
          //! @return environment variables for the process, including global/default variables
          template< typename E>

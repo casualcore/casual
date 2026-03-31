@@ -2124,5 +2124,148 @@ domain:
 
       }
 
+      TEST( casual_queue, zombie_queue__runtime_configure___expect_unzombied)
+      {
+         common::unittest::Trace trace;
+
+         auto queuebase = common::unittest::file::temporary::name( ".db");
+         auto scope = common::unittest::environment::scoped::variable( "CASUAL_UNITTEST_QUEUEBASE", queuebase.string());
+
+         // add messages to the 'zombie' queue
+         {
+            auto domain = local::domain( R"(
+domain:
+   name: A
+   queue:
+      groups:
+         -  alias: "Q"
+            queuebase: '${CASUAL_UNITTEST_QUEUEBASE}'
+            queues:
+               -  name: a
+               -  name: b
+               -  name: zombie_1
+               -  name: zombie_2
+)");
+
+            queue::Message message;
+            message.payload.type = common::buffer::type::binary;
+            message.payload.data = common::unittest::random::binary( 42);
+
+            ASSERT_TRUE( queue::enqueue( "zombie_1", message));
+            ASSERT_TRUE( queue::enqueue( "zombie_2", message));
+         }
+
+         // restart domain without the 'zombie' queue
+         {
+            auto domain = local::domain( R"(
+domain:
+   name: A
+   queue:
+      groups:
+         -  alias: "Q"
+            queuebase: '${CASUAL_UNITTEST_QUEUEBASE}'
+            queues:
+               -  name: a
+               -  name: b
+)");
+            auto state = unittest::state();
+            EXPECT_TRUE( state.zombies.size() == 4) << CASUAL_NAMED_VALUE( state.zombies);
+
+
+            // runtime configure with the 'zombie' queue back
+            {
+               constexpr std::string_view wanted = R"(
+domain:
+   name: A
+   queue:
+      groups:
+         -  alias: "Q"
+            queuebase: '${CASUAL_UNITTEST_QUEUEBASE}'
+            queues:
+               -  name: a
+               -  name: b
+               -  name: zombie_1
+               # unzombie zombie_2 and update retry policy
+               -  name: zombie_2
+                  retry:
+                     count: 5
+                     delay: 2s
+
+)";
+            
+               domain::unittest::configuration::post( configuration::model::transform( configuration::unittest::load( local::configuration::servers, wanted)));
+
+               state = unittest::state();
+               EXPECT_TRUE( state.zombies.size() == 0) << CASUAL_NAMED_VALUE( state.zombies);
+               ASSERT_TRUE( state.queues.size() == 4 * 2) << CASUAL_NAMED_VALUE( state.queues);
+               
+               // check that zombie_2 has the updated retry policy
+               {
+                  auto found = common::algorithm::find( state.queues, "zombie_2");
+                  ASSERT_TRUE( found);
+
+                  EXPECT_TRUE( found->retry.count == 5) << CASUAL_NAMED_VALUE( *found);
+                  EXPECT_TRUE( found->retry.delay == std::chrono::seconds{ 2}) << CASUAL_NAMED_VALUE( *found);
+               }
+
+               // we check that we get the correct configuration also 
+               {
+                  auto configuration = domain::unittest::configuration::get();
+                  auto& queues = configuration.domain.value().queue.value().groups.value().at( 0).queues;
+                  EXPECT_TRUE( queues.size() == 4) << CASUAL_NAMED_VALUE( queues);
+
+                  EXPECT_TRUE( common::algorithm::contains( queues, "a"));
+                  EXPECT_TRUE( common::algorithm::contains( queues, "b"));
+                  EXPECT_TRUE( common::algorithm::contains( queues, "zombie_1"));
+                  {
+                     auto found = common::algorithm::find( queues, "zombie_2");
+                     ASSERT_TRUE( found);
+                     EXPECT_TRUE( found->retry.value().count == 5) << CASUAL_NAMED_VALUE( *found);
+                     EXPECT_TRUE( found->retry.value().delay == "2s") << CASUAL_NAMED_VALUE( *found);
+
+                  }
+               }
+              
+            }
+
+         }
+      }
+
+       TEST( casual_queue, runtime_configure__no_groups_and_forwards__expect_state_call_to_succeed)
+       {
+            common::unittest::Trace trace;
+   
+            auto a = local::domain( R"(
+domain:
+   name: A
+   queue:
+      groups:
+         -  alias: "QA"
+            queuebase: ':memory:'
+            queues:
+               -  name: a
+         )");
+
+         // update to no groups and no forwards
+         {
+            constexpr std::string_view wanted = R"(
+domain:
+   name: A
+   queue:
+      groups: []
+      forwards: []
+)";
+            // runtime update
+            domain::unittest::configuration::post( configuration::model::transform( configuration::unittest::load( local::configuration::servers, wanted)));
+
+            // getting the state should work
+            auto state = unittest::state();
+            EXPECT_TRUE( state.groups.size() == 0) << CASUAL_NAMED_VALUE( state.groups);
+            EXPECT_TRUE( state.forward.groups.size() == 0) << CASUAL_NAMED_VALUE( state.forward.groups);
+
+         }
+
+      }
+
    } // queue
 } // casual

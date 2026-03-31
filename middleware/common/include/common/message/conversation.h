@@ -36,18 +36,20 @@ namespace casual
             {
                send,
                receive,
-               terminated
+               //terminated
             };
-            inline std::ostream& operator << ( std::ostream& out, Type value)
+
+            inline std::string_view description( Type value)
             {
                switch( value)
                {
-                  case Type::receive: return out << "receive";
-                  case Type::send: return out << "send";
-                  case Type::terminated: return out << "terminated";
+                  case Type::receive: return "receive";
+                  case Type::send: return "send";
+                  //case Type::terminated: return "terminated";
                }
-               return out << "<unknown>";
+               return "<unknown>";
             }
+
          } // duplex
 
 
@@ -170,6 +172,8 @@ namespace casual
          using send_base = basic_message< Type::conversation_send>;
          struct basic_send : send_base
          {
+            using send_base::send_base;
+
             duplex::Type duplex{};
             service::transaction::State transaction_state = service::transaction::State::ok;
             common::service::Code code = code::initialize();

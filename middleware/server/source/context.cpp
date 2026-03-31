@@ -250,6 +250,7 @@ namespace casual
                   // send reply
                   {
                      auto reply = common::message::reverse::type( message, common::process::handle());
+                     reply.code.result = common::code::xatmi::ok;
                      common::communication::device::blocking::send( message.process.ipc, reply);
                   }
 
@@ -290,7 +291,9 @@ namespace casual
                reply.buffer = std::move( result.payload);
 
                // we terminate the conversation -> we're doing a service return.
-               reply.duplex = decltype( reply.duplex)::terminated;
+               // TODO we can't do this until 1.9, _terminated_ is not supported in the protocol, 
+               // we need to use a xatmi code for this, as before
+               //reply.duplex = decltype( reply.duplex)::terminated;
 
                if( result.code.result == common::flag::xatmi::Return::success)
                   reply.code.result = common::code::xatmi::ok;  
@@ -318,6 +321,9 @@ namespace casual
                auto request = message;
 
                auto target = casual::service::lookup::reply( std::move( lookup));
+
+               if( target.state != decltype( target.state)::idle)
+                  common::code::raise::error( common::code::xatmi::service_error, "forward failed - service: ", forward.parameter.service.name, " - state: ", target.state);
 
                request.buffer = std::move( forward.parameter.payload);
                request.service = target.service;

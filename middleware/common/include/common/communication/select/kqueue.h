@@ -86,6 +86,9 @@ namespace casual
             
          } // detail
 
+         //! @returns the descriptor from the event
+         strong::file::descriptor::id descriptor( const directive::kevent_t& event) noexcept;
+
       } // directive
 
 
@@ -131,8 +134,13 @@ namespace casual
             CASUAL_SERIALIZE( m_entries);
          )
 
-         inline auto descriptor() const { return m_kqueue;}
+         //! @returns the kqueue descriptor
+         inline strong::file::descriptor::id descriptor() const { return m_kqueue;}
+
+
          inline auto& events() { return m_events; }
+
+         const auto& entries() const { return m_entries;}
 
       private:
 

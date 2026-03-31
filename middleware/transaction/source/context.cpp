@@ -11,6 +11,7 @@
 #include "common/communication/instance.h"
 #include "common/environment.h"
 #include "common/environment/normalize.h"
+#include "common/execution/context.h"
 #include "common/process.h"
 #include "common/instance.h"
 #include "common/log.h"
@@ -471,6 +472,7 @@ namespace casual
          Trace trace{ "transaction::Context::join"};
 
          auto& transaction = m_transactions.emplace_back( trid);
+         update_execution_context();
 
          if( trid)
             local::raise::code( local::resources::start::invoke( local::resources::start::policy::join(), transaction, m_resources.fixed), 
@@ -493,6 +495,8 @@ namespace casual
          local::log::event( "start", transaction.trid);
 
          m_transactions.push_back( std::move( transaction));
+         update_execution_context();
+
          return m_transactions.back();
       }
 
@@ -501,6 +505,7 @@ namespace casual
          Trace trace{ "transaction::Context::branch"};
 
          auto& transaction = m_transactions.emplace_back( id::branch( trid));
+         update_execution_context();
 
          if( transaction)
             local::raise::code( local::resources::start::invoke( local::resources::start::policy::branch(), transaction, m_resources.fixed),
@@ -543,6 +548,7 @@ namespace casual
 
          // Regardless, we will consume every transaction.
          auto transactions = std::exchange( m_transactions, {});
+         update_execution_context();
 
          common::log::line( common::log::category::transaction, "transactions: ", transactions);
 
@@ -752,6 +758,8 @@ namespace casual
          }            
 
          m_transactions.push_back( std::move( transaction));
+         update_execution_context();
+
          local::log::event( "begin", m_transactions.back().trid);
 
          return code::tx::ok;
@@ -919,6 +927,7 @@ namespace casual
          // we know that we got an _active_ transaction that passed the precondition.
          // we consume the transaction, regardless...
          auto transaction = common::algorithm::container::extract( m_transactions, std::prev( std::end( m_transactions)));
+         update_execution_context();
 
          return control_continuation( commit( transaction));
       }
@@ -972,6 +981,7 @@ namespace casual
          // we know that we got an _active_ transaction that passed the precondition.
          // we consume the transaction, regardless...
          auto transaction = common::algorithm::container::extract( m_transactions, std::prev( std::end( m_transactions)));
+         update_execution_context();
 
          return control_continuation( rollback( transaction));
       }
@@ -1069,6 +1079,7 @@ namespace casual
 
          // mark the transaction as suspended
          ongoing.suspend();
+         update_execution_context();
 
          // Tell the RM:s to suspend
          if( auto code = local::resources::end::invoke( local::resources::end::policy::suspend(), ongoing, m_resources.all); code != code::tx::ok)
@@ -1101,6 +1112,7 @@ namespace casual
 
             // We rotate the wanted to end;
             common::algorithm::rotate( m_transactions, ++found);
+            update_execution_context();
 
             local::log::event( "resume", current().trid);
 
@@ -1180,6 +1192,12 @@ namespace casual
          }
 
          casual::terminate( code::casual::internal_unexpected_value, "unknown control directive: ", std::to_underlying( m_control), " - this can not happen");
+      }
+
+      void Context::update_execution_context()
+      {
+         common::execution::context::trid::set( current().trid);
+
       }
 
    } // transaction

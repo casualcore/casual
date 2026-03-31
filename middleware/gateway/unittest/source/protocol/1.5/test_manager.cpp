@@ -121,6 +121,59 @@ domain:
          } 
       }
 
+      TEST( gateway_protocol_1_5_manager, conversation__tpreturn_send_message_duplex__not_value_terminate)
+      {
+         common::unittest::Trace trace;
+
+         auto a = local::domain( R"(
+domain:
+   name: A
+   servers:
+      - path: bin/casual-gateway-manager
+        memberships: [ gateway]
+      - path: ${CMAKE_BINARY_DIR}/middleware/example/server/bin/casual-example-server
+        memberships: [ user]
+   gateway:
+      inbound:
+         groups:
+            -  connections: 
+                  -  address: 127.0.0.1:7010
+         )");
+
+        
+         auto device = unittest::tcp::connect::out( "127.0.0.1:7010", message::protocol::Version::v1_5);
+         EXPECT_TRUE( device.connector().socket());
+
+         const auto data = common::unittest::random::binary( 128);
+
+
+         // connect
+         auto connect_reply = [ &]()
+         {
+            common::message::conversation::connect::callee::Request request;
+            request.duplex = decltype( request.duplex)::send;
+            request.service.name = "casual/example/echo";
+            request.buffer.data = data;
+            request.buffer.type = "X_OCTET/";
+
+            return common::communication::device::call( device, request, device);
+         }();
+
+         EXPECT_TRUE( connect_reply.code.result == code::xatmi::ok) << CASUAL_NAMED_VALUE( connect_reply);
+
+         // we should get a send from the server
+         {
+            auto message = communication::device::receive< common::message::conversation::callee::Send>( device);
+            EXPECT_TRUE( message.buffer.data == data) << CASUAL_NAMED_VALUE( message);
+            EXPECT_TRUE( message.duplex == decltype( message.duplex)::send) << CASUAL_NAMED_VALUE( message.duplex);
+
+            // we should get a xatmi code -> the code from tpreturn. This indicates that the conversation is terminated.
+            // other send messages has code.result set to _absent_.
+            EXPECT_TRUE( message.code.result == code::xatmi::ok) << CASUAL_NAMED_VALUE( message);
+
+         }
+
+      }
 
    } // gateway  
 } // casual

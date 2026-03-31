@@ -8,6 +8,7 @@
 
 #include "service/forward/instance.h"
 #include "service/unittest/utility.h"
+#include "service/lookup.h"
 
 #include "common/communication/instance.h"
 #include "common/message/service.h"
@@ -86,10 +87,12 @@ domain:
 
          common::message::service::call::callee::Request request;
          {
+
             request.process = common::process::handle();
             request.service.name = "service2";
             request.trid = common::transaction::id::create( common::process::id());
-            request.flags = common::message::service::call::request::Flag::no_transaction;
+            using Flag = common::message::service::call::request::Flag;
+            request.flags = Flag::no_reply | Flag::no_transaction;
          }
 
          // Send it to our forward, which will forward it to our self
@@ -212,6 +215,99 @@ domain:
             auto counts = local::message_count( sf.ipc);
 
             EXPECT_FALSE( common::algorithm::find( counts, common::message::Type::service_reply)) << CASUAL_NAMED_VALUE( counts);
+         }
+
+      }
+
+      TEST( service_forward, advertise_a_b__reserve_a__no_reply_lookup_b___expect_pending_deadline_based_on_service_timeout)
+      {
+         common::unittest::Trace trace;
+
+         auto domain = local::domain( R"(
+domain:
+   services:
+      -  name: a
+      -  name: b
+         execution:
+            timeout:
+               duration: 10s
+)");
+
+         service::unittest::advertise( { "a", "b"});
+
+         auto service_forward = local::service_forward();
+         EXPECT_TRUE( service_forward);
+
+
+         auto const deadline = common::chronology::time_point::clock::now() + std::chrono::seconds{ 2};
+         
+         auto reply_a = service::lookup::reply( service::Lookup{ "a", {}, {}, deadline});
+
+         {
+            EXPECT_TRUE( reply_a.state == decltype( reply_a.state)::idle);
+            // deadline is based on the deadline we sent in lookup request, so it should be around 2 seconds.
+            EXPECT_TRUE( reply_a.deadline.remaining <= std::chrono::seconds{ 2}) << CASUAL_NAMED_VALUE( reply_a);
+            EXPECT_TRUE( reply_a.deadline.remaining >= std::chrono::seconds{ 1}) << CASUAL_NAMED_VALUE( reply_a);
+            EXPECT_TRUE( reply_a.process == common::process::handle());
+         }
+
+         {
+            using Semantic = decltype( service::lookup::Context::semantic);
+            // send-and-forget lookup for b via service-forward, with the same deadline as a. deadline should be ignored for 
+            // this lookup, since it's send-and-forget.
+            auto reply_b = service::lookup::reply( service::Lookup{ "b", {}, { Semantic::no_reply}, deadline});
+            EXPECT_TRUE( reply_b.state == decltype( reply_b.state)::idle);
+            EXPECT_TRUE( ! reply_b.deadline.remaining ) << CASUAL_NAMED_VALUE( reply_b);
+            EXPECT_TRUE( reply_b.process == service_forward);
+
+            // Send call request to service-forward.
+            common::message::service::call::callee::Request request{ common::process::handle()};
+            request.service = reply_b.service;
+            request.deadline = reply_b.deadline;
+            request.flags = common::message::service::call::request::Flag::no_reply | common::message::service::call::request::Flag::no_transaction;
+            request.correlation = reply_b.correlation;
+            EXPECT_TRUE( common::communication::device::blocking::send( reply_b.process.ipc, request));
+
+            // sm should only have pending deadline for the first lookup.
+            auto state = casual::service::unittest::state();
+            EXPECT_TRUE( state.deadlines.size() == 1) << CASUAL_NAMED_VALUE( state.deadlines);
+            EXPECT_TRUE( state.deadlines.at( 0).service == "a") << CASUAL_NAMED_VALUE( state.deadlines);
+         }
+
+         // send ack for lookup_a
+         service::unittest::send::ack( reply_a);
+
+         // expect to get the call to b from service-forward
+         {
+            auto request = common::communication::ipc::receive< common::message::service::call::callee::Request>();
+            EXPECT_TRUE( request.flags == (common::message::service::call::request::Flag::no_reply | common::message::service::call::request::Flag::no_transaction));
+            EXPECT_TRUE( request.service.name == "b");
+            // caller should be our self.
+            EXPECT_TRUE( request.process == common::process::handle());
+
+            // we should get a deadline based on the execution timeout of service b.
+            EXPECT_TRUE( request.deadline.remaining <= std::chrono::seconds{ 10}) << CASUAL_NAMED_VALUE( request.deadline);
+            EXPECT_TRUE( request.deadline.remaining >= std::chrono::seconds{ 9}) << CASUAL_NAMED_VALUE( request.deadline);
+
+            // sm should have one pending deadline for the lookup to b, and it should be based on the execution timeout of b.
+            auto state = casual::service::unittest::state();
+
+            const auto now = common::chronology::time_point::clock::now();
+
+            EXPECT_TRUE( state.deadlines.size() == 1) << CASUAL_NAMED_VALUE( state.deadlines);
+            EXPECT_TRUE( state.deadlines.at( 0).service == "b") << CASUAL_NAMED_VALUE( state.deadlines);
+            EXPECT_TRUE( state.deadlines.at( 0).when <= now + std::chrono::seconds{ 10}) << CASUAL_NAMED_VALUE( state.deadlines);
+            EXPECT_TRUE( state.deadlines.at( 0).when >= now + std::chrono::seconds{ 9}) << CASUAL_NAMED_VALUE( state.deadlines);
+
+            // send ack for b call for good measure.
+            service::unittest::send::ack( request);
+         }
+
+         // some sanity check to make sure we don't have any pending deadlines in SM after the call is acked.
+         {
+            auto state = casual::service::unittest::state();
+            EXPECT_TRUE( state.deadlines.empty()) << CASUAL_NAMED_VALUE( state.deadlines);
+            EXPECT_TRUE( state.pending.empty()) << CASUAL_NAMED_VALUE( state.pending);
          }
 
       }

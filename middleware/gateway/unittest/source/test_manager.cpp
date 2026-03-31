@@ -35,6 +35,7 @@
 #include "domain/discovery/api.h"
 
 #include "queue/api/queue.h"
+#include "queue/unittest/utility.h"
 
 #include "configuration/model/load.h"
 #include "configuration/model/transform.h"
@@ -819,6 +820,117 @@ domain:
 
             EXPECT_TRUE( message.front().payload.data == payload);
             EXPECT_TRUE( message.front().payload.type == "json");
+         }
+      }
+
+
+      TEST( gateway_manager, domain_A_B__queue_foo__in_both__disable_foo_in_A___expect_enqueue__no_queue__next_enqueue___ok_to_to_domain_B)
+      {
+         common::unittest::Trace trace;
+
+         constexpr auto queue_manager = R"(
+domain:
+   servers:
+      - path: ${CMAKE_BINARY_DIR}/middleware/queue/bin/casual-queue-manager
+        memberships: [ base]
+        restart: true
+)";
+
+         auto a = local::domain( queue_manager, R"(
+domain:
+   name: A
+   gateway:
+      inbound:
+         groups:
+            -  alias: in-A
+               connections: 
+                  -  address: 127.0.0.1:7010
+   queue:
+      groups:
+         -  name: QA
+            queuebase: ":memory:"
+            queues:
+               - name: foo
+)"); 
+
+         auto b = local::domain( queue_manager, R"(
+domain:
+   name: B
+   gateway:
+      inbound:
+         groups:
+            -  alias: in-B
+               connections: 
+                  -  address: 127.0.0.1:7011
+                     discovery:
+                        forward: true
+   queue:
+      groups:
+         -  name: QB
+            queuebase: ":memory:"
+            queues:
+               - name: foo
+)");
+
+
+         auto c = local::domain( queue_manager, R"(
+domain:
+   name: C
+   gateway:
+      outbound:
+         groups:
+            -  alias: out-A
+               order: 1
+               connections: 
+                  -  address: 127.0.0.1:7010
+            -  alias: out-B
+               order: 2
+               connections: 
+                  -  address: 127.0.0.1:7011   
+)");
+
+         unittest::fetch::until( unittest::fetch::predicate::outbound::connected());
+
+         // we do a discover, to make sure that we get a determistic order of the queues
+         // foo in A should be ordered first
+         casual::domain::unittest::discover::request( {}, { "foo"});
+
+         // disable foo in A.
+         {
+            a.activate();
+
+            // remove foo from A
+            auto wanted = local::configuration::load( queue_manager, R"(
+domain:
+   queue:
+      groups:
+         -  name: QA
+            queuebase: ":memory:"
+            queues:
+               -  name: foo
+                  enable:
+                     enqueue: false
+                     dequeue: false
+
+)"); 
+            casual::domain::unittest::configuration::put( casual::configuration::model::transform( wanted));
+
+         }
+
+         // back to c
+         c.activate();
+
+         // enqueue to foo, we should get no_queue, because foo in A is disabled for enqueue.
+         // foo is unadvertised by out-A in during this enqueue
+         EXPECT_CODE( queue::enqueue( "foo", {}), code::queue::no_queue);
+
+         // we should get to out-B, and enqueue should succeed
+         EXPECT_NO_THROW( queue::enqueue( "foo", {}));
+
+         // verify that the message is in B
+         {
+            b.activate();
+            EXPECT_TRUE( queue::dequeue( "foo").size() == 1);
          }
       }
 

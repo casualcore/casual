@@ -18,6 +18,9 @@
 
 namespace casual
 {
+      
+   using namespace std::string_view_literals;      
+
    using namespace common;
    namespace domain::manager
    {
@@ -324,7 +327,7 @@ namespace casual
       } // state
 
 
-      std::tuple< state::Server*, state::Executable*> State::remove( common::strong::process::id pid, common::process::lifetime::exit::Reason reason)
+      std::tuple< state::Server*, state::Executable*, std::optional< common::message::event::Error>> State::remove( common::strong::process::id pid, common::process::lifetime::exit::Reason reason)
       {
          Trace trace{ "domain::manager::State::remove pid"};
 
@@ -351,7 +354,7 @@ namespace casual
 
          algorithm::container::erase( configuration.stakeholders, pid);
 
-         using result_type = std::tuple< state::Server*, state::Executable*>;
+         using result_type = std::tuple< state::Server*, state::Executable*, std::optional< common::message::event::Error>>;
 
          // Check if it's a server
          if( auto found = server( pid))
@@ -366,8 +369,27 @@ namespace casual
             // Try to remove ipc-queue (no-op if it's removed already)
             local::ipc::remove( process.ipc);
 
+            if( runlevel == state::Runlevel::running)
+            {
+               // if discovery dies, we want to return an error, so we can do a hard shutdown.
+               auto vital_servers = std::array{ "casual-domain-discovery"sv};
+               
+               if( std::ranges::contains( vital_servers, found->alias))
+               {
+                  common::message::event::Error error{ common::process::handle()};
+                  error.severity = decltype( error.severity)::fatal;
+                  error.code = code::casual::fatal_terminate;
+                  error.message = string::compose( "vital '", found->alias, "' has died, we can't continue - action: shutting down");
+
+                  return result_type{ nullptr, nullptr, error};
+               }
+
+               if( found->restart)
+                  return result_type{ found, nullptr, std::nullopt};
+            }
+
             if( found->restart && runlevel == state::Runlevel::running)
-               return result_type{ found, nullptr};
+               return result_type{ found, nullptr, std::nullopt};
          }
 
          // Find and remove from executable
@@ -379,7 +401,7 @@ namespace casual
             log::debug( "remove executable instance: ", pid);
 
             if( found->restart && runlevel == state::Runlevel::running)
-               return result_type{ nullptr, found};
+               return result_type{ nullptr, found, std::nullopt};
          }
 
          // check if it's a grandchild
