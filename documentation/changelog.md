@@ -1,6 +1,11 @@
 # Changelog
 This is the changelog for `casual` and all changes are listed in this document.
 
+## [1.8.13] - 2026-03-31
+
+### Fixes
+- gateway: outbound now respects protocol v1.4 for service_call ([#681](https://github.com/casualcore/casual/issues/681))
+
 ## [1.8.12] - 2026-02-23
 
 ### Fixes
