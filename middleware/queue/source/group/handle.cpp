@@ -715,7 +715,7 @@ namespace casual
                                  .retry = { 
                                     .count = queue.retry.count, 
                                     .delay = queue.retry.delay},
-                                 .empty = queue.metric.count == 0
+                                 .empty = queue.metric.count == 0 && queue.metric.uncommitted == 0
                               
                               };
                            }
