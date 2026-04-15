@@ -1,6 +1,12 @@
 # Changelog
 This is the changelog for `casual` and all changes are listed in this document.
 
+## [1.8.14] - 2026-04-15
+
+### Fixes
+- queue: queue-group now takes uncommitted messages into account for _empty_ ([#703](https://github.com/casualcore/casual/issues/703))
+
+
 ## [1.8.13] - 2026-03-31
 
 ### Fixes
