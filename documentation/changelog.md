@@ -1,12 +1,12 @@
 # Changelog
 This is the changelog for `casual` and all changes are listed in this document.
 
-## [1.8.14] - 2026-04-22
+## [1.8.14] - 2026-04-23
 
 ### Fixes
 - queue: queue-group now takes uncommitted messages into account for _empty_ ([#703](https://github.com/casualcore/casual/issues/703))
 - discovery: request from `SM` does not short-circuit reply -> `SM` can route based on "sticky" trid ([#679](https://github.com/casualcore/casual/issues/679))
-
+- buffer: added payload with 0 size to buffer pool now create a valid handle/pointer ([#705](https://github.com/casualcore/casual/issues/705))
 
 ## [1.8.13] - 2026-03-31
 

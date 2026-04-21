@@ -87,8 +87,14 @@ namespace casual
       {
          Trace trace{ "buffer::pool::Holder::adopt"};
 
+         log::debug( "payload: ", payload);
+
          if( payload.null())
             return {};
+
+         // we need to reserve at least 1 byte, to get a valid unique address for the buffer. 
+         if( payload.data.capacity() == 0)
+            payload.data.reserve( 1);
 
          // This is the only place where a buffer is consumed by the pool, hence can only happen
          // during service-invocation.
@@ -104,6 +110,10 @@ namespace casual
 
          if( payload.null())
             return { {}, {}};
+
+         // we need to reserve at least 1 byte, to get a valid unique address for the buffer. 
+         if( payload.data.capacity() == 0)
+            payload.data.reserve( 1);
 
          auto size = payload.data.size();
          auto& pool = get_pool( payload.type);

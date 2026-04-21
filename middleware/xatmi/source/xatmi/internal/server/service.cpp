@@ -31,6 +31,7 @@ namespace casual
                TPSVCINFO information( casual::server::service::invoke::Parameter& argument)
                {
                   common::Trace trace{ "server::xatmi::local::transform::information"};
+                  common::log::debug( "argument: ", argument);
 
                   TPSVCINFO result{};
 

@@ -5,7 +5,8 @@
 //!
 
 
-#include "xatmi.h"
+#include "casual/xatmi.h"
+#include "casual/xatmi/extended.h"
 
 #include "common/algorithm.h"
 #include "common/algorithm/compare.h"
@@ -70,15 +71,35 @@ namespace casual
 
                   return result;
                }
-            } // namespace receive
-         } // namespace
-      } // namespace local
+
+            } // receive
+
+            auto extract_headers( const char* buffer)
+            {
+               std::vector< std::string> fields;
+
+               auto callback = []( const char* header, void* context) -> int
+               {
+                  auto fields = static_cast< std::vector< std::string>* >( context);
+                  fields->emplace_back( header);
+                  return 0;
+               };
+
+               ::casual_header_browse( buffer, callback, &fields);
+
+               return fields;
+            }
+
+
+         } // <unnamed>
+      } // local
 
       extern "C"
       {
 
          void casual_example_echo( TPSVCINFO* info)
          {
+            common::log::debug( "header: ", local::extract_headers( info->data));
             tpreturn( TPSUCCESS, 0, info->data, info->len, 0);
          }
 

@@ -336,7 +336,7 @@ http {
             casual::service::unittest::advertise( { "forward/service"});
 
             auto executing = administration::unittest::cli::command::non::blocking::execute( 
-               "curl -sS -H 'Content-Type: application/some-type' -X GET 'http://localhost:8042/some/path?foo=bar'"
+               "curl -sS -H 'Content-Type: application/some-type' -H 'a:foo' -H 'b:bar' -X GET 'http://localhost:8042/some/path?foo=bar'"
             );
 
 
@@ -345,8 +345,10 @@ http {
 
                EXPECT_TRUE( request.buffer.data.empty()) << CASUAL_NAMED_VALUE( request);
                EXPECT_TRUE( request.buffer.type == common::buffer::type::http);
-
+               
                EXPECT_TRUE( request.header.at( "content-type").value() == "application/some-type") << CASUAL_NAMED_VALUE( request.header);
+               EXPECT_TRUE( request.header.at( "a").value() == "foo") << CASUAL_NAMED_VALUE( request.header);
+               EXPECT_TRUE( request.header.at( "b").value() == "bar") << CASUAL_NAMED_VALUE( request.header);
 
                EXPECT_TRUE( request.parent.service == "GET /some/path?foo=bar HTTP/1.1") << CASUAL_NAMED_VALUE( request.parent.service);
                
