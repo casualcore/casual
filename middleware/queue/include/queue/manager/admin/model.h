@@ -41,7 +41,8 @@ namespace casual
          std::string note;
          Size size;
 
-         friend bool operator == ( const Group& lhs, common::process::compare_equal_to_handle auto rhs) { return lhs.process == rhs;}
+         inline friend bool operator == ( const Group& lhs, common::process::compare_equal_to_handle auto rhs) { return lhs.process == rhs;}
+         inline friend bool operator == ( const Group& lhs, std::string_view rhs) { return lhs.alias == rhs;}
 
          CASUAL_CONST_CORRECT_SERIALIZE(
             CASUAL_SERIALIZE( process);
