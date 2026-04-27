@@ -144,6 +144,7 @@ namespace casual
          result.buffer = std::move( message.buffer);
          result.parent = std::move( message.parent.service);
          result.pending = message.pending;
+         result.duplex = message.duplex;
          result.service.name = std::move( message.service.name);
          result.service.timeout.duration = message.deadline.remaining.value_or( common::chronology::duration{});
          result.trid = std::move( message.trid);
@@ -158,6 +159,7 @@ namespace casual
          result.buffer = std::move( message.buffer);
          result.parent.service = std::move( message.parent);
          result.pending = message.pending;
+         result.duplex = message.duplex;
          result.service.name = std::move( message.service.name);
          
          if( message.service.timeout.duration > common::chronology::duration{})
