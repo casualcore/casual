@@ -11,56 +11,14 @@ env:
   ubi_image: casual/ubi8-builder
 
 jobs:
-  calculate-version: 
-    runs-on: self-hosted
-    outputs:
-      major_minor: ${{ steps.major_minor.outputs.value }}
-      base_version: ${{ steps.base_version.outputs.value }}
-      build_version: ${{ steps.build_version.outputs.value }}
-      casual_version: ${{ steps.casual_version.outputs.value }}
-      casual_release: ${{ steps.casual_release.outputs.value }}
+  calculate-version:
+    runs-on: ubuntu-latest
     steps:
-      - name: check out repository casual
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v6
+      - uses: casualcore/casual-version@6a8d033b9b6dae5efcf56b69ff13f4d9bb3918cc
+        id: version
         with:
-          path: 'casual'
-          fetch-depth: 0
-
-      - name: retrieve major/minor from branch
-        uses: kaisugi/action-regex-match@v1.0.1
-        id: regex-match
-        with:
-          text: ${{ github.ref }}
-          regex: '^.*/([0-9.]+)/.*$'
-
-      - name: set major/minor-version
-        id: major_minor
-        run: echo "value=${{ steps.regex-match.outputs.group1 }}" >> $GITHUB_OUTPUT
-
-      - name: set base_version
-        id: base_version
-        run: |
-          cd ${{ github.workspace }}/casual
-          echo "value=$( ${{ github.workspace }}/casual/pipeline/script/version.py ${{ steps.regex-match.outputs.group1 }} ${{ env.build_type}} )" >> $GITHUB_OUTPUT
-
-      - name: normalized branch
-        id: normalized_branch
-        run: echo "value=$( echo ${{ github.ref }} | sed -E -e 's/refs\/heads\/feature\/[0-9.]+\///g' -e 's/-/_/g' -e 's/\//_/g' )" >> $GITHUB_OUTPUT
-
-      - name: set build_version
-        id: build_version
-        run: |
-          echo "value=${{ steps.base_version.outputs.value }}${{ steps.normalized_branch.outputs.value }}.${{ github.run_number }}" >> $GITHUB_OUTPUT
-
-      - name: set casual_version
-        id: casual_version
-        run: |
-          echo "value=$( echo ${{ steps.build_version.outputs.value }} | awk -F'-' '{ print $1 }' )" >> $GITHUB_OUTPUT
-
-      - name: set casual_release
-        id: casual_release
-        run: |
-          echo "value=$( echo ${{ steps.build_version.outputs.value }} | awk -F'-' '{ print $2 }' )" >> $GITHUB_OUTPUT
+          build_type: env.alpha
   
   notification-start:
     runs-on: ubuntu-latest
@@ -125,29 +83,29 @@ jobs:
 
           chmod +x builder.sh
 
-      - name: Build
-        run: |
-          docker run --rm -v ${{ github.workspace }}:/git/casual:Z -i ${{ env.ubi_image}}:${{ needs.calculate-version.outputs.major_minor }}-cmake
+      # - name: Build
+      #   run: |
+      #     docker run --rm -v ${{ github.workspace }}:/git/casual:Z -i ${{ env.ubi_image}}:${{ needs.calculate-version.outputs.major_minor }}-cmake
 
-      - name: Logpublisher
-        if: ${{ failure() || cancelled() }}
-        run: |
-          ${{ github.workspace }}/casual/pipeline/script/post/logpublisher ${{ github.workspace }}/casual.log ${DISTRIBUTION}-${{ needs.calculate-version.outputs.build_version }}
+      # - name: Logpublisher
+      #   if: ${{ failure() || cancelled() }}
+      #   run: |
+      #     ${{ github.workspace }}/casual/pipeline/script/post/logpublisher ${{ github.workspace }}/casual.log ${DISTRIBUTION}-${{ needs.calculate-version.outputs.build_version }}
 
-      - name: Test Report
-        uses: dorny/test-reporter@v2
-        if: ${{ success() || failure() }}    # run this step even if previous step failed
-        with:
-          name: Google Tests - Ubi # Name of the check run which will be created
-          path: ./**/report.xml       # Path to test results
-          reporter: java-junit        # Format of test result
-          working-directory: casual
+      # - name: Test Report
+      #   uses: dorny/test-reporter@v2
+      #   if: ${{ success() || failure() }}    # run this step even if previous step failed
+      #   with:
+      #     name: Google Tests - Ubi # Name of the check run which will be created
+      #     path: ./**/report.xml       # Path to test results
+      #     reporter: java-junit        # Format of test result
+      #     working-directory: casual
 
-      - name: Save artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: ubi_rpm
-          path: ./**/casual-middleware*.rpm
+      # - name: Save artifact
+      #   uses: actions/upload-artifact@v4
+      #   with:
+      #     name: ubi_rpm
+      #     path: ./**/casual-middleware*.rpm
 
 
   notification-end:
