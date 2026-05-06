@@ -6,6 +6,7 @@
 
 
 #include "transaction/context.h"
+#include "transaction/common.h"
 
 #include "common/communication/ipc.h"
 #include "common/communication/instance.h"
@@ -59,12 +60,6 @@ namespace casual
          }
 
       } // commit
-
-      struct Trace : common::log::Trace
-      {
-         template< typename T>
-         Trace( T&& value) : common::log::Trace( std::forward< T>( value), common::log::category::transaction) {}
-      };
 
       Context& Context::instance()
       {
@@ -197,8 +192,8 @@ namespace casual
          std::tie( m_resources.dynamic, m_resources.fixed) =
             common::algorithm::partition( m_resources.all, []( auto& r){ return r.dynamic();});
 
-         common::log::line( common::log::category::transaction, "static resources: ", m_resources.fixed);
-         common::log::line( common::log::category::transaction, "dynamic resources: ", m_resources.dynamic);
+         log::line( "static resources: ", m_resources.fixed);
+         log::line( "dynamic resources: ", m_resources.dynamic);
 
          // Open the resources...
          // TODO semantics: Not sure if we can do this, or if users has to call tx_open by them self...
@@ -221,35 +216,6 @@ namespace casual
       {
          namespace
          {
-            namespace log
-            {
-               template< typename Code, typename... Ts>
-               [[nodiscard]] auto code( Code code, Ts&&... ts)
-               {
-                  if( code == Code::ok)
-                     common::log::debug( code, ' ', std::forward< Ts>( ts)...);
-                  else
-                     common::log::line( common::log::category::error, code, ' ', std::forward< Ts>( ts)...);
-
-                  return code;
-               }
-
-               void event( std::string_view context, const transaction::ID& trid)
-               {
-                  common::log::line( common::log::category::event::transaction, context, '|', trid);
-               }
-            } // log
-
-            namespace raise
-            {
-               //! raise error if not tx::ok
-               template< typename... Ts>
-               void code( code::tx code, Ts&&... ts)
-               {
-                  if( code != code::tx::ok)
-                     code::raise::error( code, std::forward< Ts>( ts)...);
-               }
-            } // raise
 
             namespace accumulate
             {
@@ -282,7 +248,48 @@ namespace casual
                   return transaction;
                }
             } // start
+            
 
+            namespace resources::transform
+            {
+               template< typename R>
+               auto ids( R&& resources)
+               {
+                  return common::algorithm::transform( resources, []( auto& resource)
+                  { 
+                     using resource_type = std::remove_cvref_t< decltype( resource)>;
+                     return std::invoke( &resource_type::id, resource);
+                  });
+               }
+
+            } // resources::transform
+
+            namespace raise
+            {
+               //! raise error if not tx::ok
+               template< typename... Ts>
+               void code( code::tx code, Ts&&... ts)
+               {
+                  if( code != code::tx::ok)
+                     code::raise::error( code, std::forward< Ts>( ts)...);
+               }
+            } // raise
+
+            namespace resources
+            {
+               //! invoke `xa_function` for all resources **involved** in `transaction` and return the accumulated code::tx result. 
+               //! The `flags` is passed to all invocations of `xa_function`
+               [[nodiscard]] common::code::tx invoke( const Transaction& transaction, std::span< Resource> resources, auto xa_function, common::flag::xa::Flag flags)
+               {
+                  return common::algorithm::accumulate( transaction.involved(), common::code::tx::ok, [ &transaction, resources, xa_function, flags]( auto code, auto id)
+                  {
+                     if( auto found = common::algorithm::find( resources, id))
+                        return code + code::convert::to::tx( std::invoke( xa_function, *found, transaction.trid, flags));
+
+                     return code;
+                  });
+               }
+            } // resources
 
             namespace resources::start
             {
@@ -297,7 +304,7 @@ namespace casual
                      message.trid = trid;
                      message.involved = std::move( resources);
 
-                     common::log::line( common::log::category::transaction, "involved message: ", message);
+                     log::line( "involved message: ", message);
 
                      return common::communication::ipc::call( common::communication::instance::outbound::transaction::manager::device(), message).involved;
                   }
@@ -312,150 +319,84 @@ namespace casual
                      message.involved = std::move( resources);
                      message.reply = false;
 
-                     common::log::line( common::log::category::transaction, "involved send-and-forget message: ", message);
+                     log::line( "involved send-and-forget message: ", message);
 
                      common::communication::device::blocking::send( common::communication::instance::outbound::transaction::manager::device(), message);
                   }
 
                } // involved
 
-               namespace transform
+
+               [[nodiscard]] common::code::tx invoke( Transaction& transaction, std::span< Resource> resources, common::flag::xa::Flag flags)
                {
-                  template< typename R>
-                  auto ids( R&& resources)
-                  {
-                     return common::algorithm::transform( resources, []( auto& resource){ return resource.id();});
-                  }
-               } // transform
+                  Trace trace{ "transaction::local::resources::start::invoke"};
+                  common::log::debug( "transaction: ", transaction, ", resources: ", resources, ", flags: ", flags);
 
-               template< typename P, typename R>
-               [[nodiscard]] code::tx invoke( P&& policy, Transaction& transaction, R&& resources)
-               {
-                  Trace trace{ "transaction::local::resources::start"};
+                  transaction.involve( transform::ids( resources));
 
-                  if( resources.empty())
-                     return code::tx::ok; // nothing to do...
-
-                  return policy( transaction, resources);
+                  return resources::invoke( transaction, resources, &Resource::start, flags);
                }
 
-               namespace policy
+               //! When a service invocation joins a transaction
+               [[nodiscard]] common::code::tx join( Transaction& transaction, std::span< Resource> resources)
                {
-                  //! When a service invocation joins a transaction
-                  auto join()
+                  Trace trace{ "transaction::local::resources::start::join"};
+                  common::log::debug( "transaction: ", transaction, ", resources: ", resources);
+
+                  if( std::empty( resources))
+                     return common::code::tx::ok; // nothing to do...
+
+                  // We absolutely know that this is a distributed transaction, since we've been invoked
+                  // with a transaction that we shall join...
+                  // We need to correlate with TM if we've going to use join our not.
+                  auto involved = involved::synchronize( transaction.trid, transform::ids( resources));
+
+                  // involve all resources
+                  transaction.involve( transform::ids( resources));
+
+                  return common::algorithm::accumulate( resources, common::code::tx::ok, [ &transaction, &involved]( auto code, auto& resource)
                   {
-                     return []( Transaction& transaction, auto&& resources)
-                     {
-                        // We absolutely know that this is a distributed transaction, since we've been invoked
-                        // with a transaction that we shall join...
-                        // We need to correlate with TM if we've going to use join our not.
-                        auto involved = involved::synchronize( transaction.trid, transform::ids( resources));
+                     auto flag = std::ranges::contains( involved, resource.id()) ? common::flag::xa::Flag::join : common::flag::xa::Flag::no_flags;
 
-                        // involve all resources
-                        transaction.involve( transform::ids( resources));
+                     return code + code::convert::to::tx( resource.start( transaction.trid, flag));
+                  });
+               }
 
-                        return local::log::code( common::algorithm::accumulate( resources, code::tx::ok, local::accumulate::code( [ &transaction, &involved]( auto& resource)
-                        {
-                           if( common::algorithm::find( involved, resource.id()))
-                              return code::convert::to::tx( resource.start( transaction.trid, common::flag::xa::Flag::join));
-                           else
-                              return code::convert::to::tx( resource.start( transaction.trid, common::flag::xa::Flag::no_flags));
-                        })), "join - failed to start one ore more resources");
-                     };
-                  }
+               [[nodiscard]] common::code::tx branch( Transaction& transaction, std::span< Resource> resources)
+               {
+                  Trace trace{ "transaction::local::resources::start::branch"};
+                  common::log::debug( "transaction: ", transaction, ", resources: ", resources);
 
-                  //! "helper" for start, branch and resume below
-                  template< typename R>
-                  auto start( Transaction& transaction, R& resources, common::flag::xa::Flag flags)
-                  {
-                     // involve the resources
-                     transaction.involve( transform::ids( resources));
+                  if( std::empty( resources))
+                     return common::code::tx::ok; // nothing to do...
 
-                     return common::algorithm::accumulate( transaction.involved(), code::tx::ok, local::accumulate::code( [ &transaction, &resources, flags]( auto& id)
-                     {
-                        if( auto found = common::algorithm::find( resources, id))
-                           return code::convert::to::tx( found->start( transaction.trid, flags));
+                  // We absolutely know that this is a distributed transaction (non-local gtrid)
+                  // we let the TM know about our resources
+                  involved::send( transaction.trid, transform::ids( resources));
 
-                        return code::tx::ok;
-                     })); 
-                  }
+                  return invoke( transaction, resources, common::flag::xa::Flag::no_flags);
+               }
 
-                  //! When a service invocation starts a transaction
-                  auto start()
-                  {
-                     return []( Transaction& transaction, auto&& resources)
-                     {
-                        return policy::start( transaction, resources, common::flag::xa::Flag::no_flags);
-                     };
-                  }
+               [[nodiscard]] common::code::tx resume( Transaction& transaction, std::span< Resource> resources)
+               {
+                  Trace trace{ "transaction::local::resources::start::resume"};
+                  common::log::debug( "transaction: ", transaction, ", resources: ", resources);
 
-                  auto branch()
-                  {
-                     return []( Transaction& transaction, auto&& resources)
-                     {
-                        // We absolutely know that this is a distributed transaction (non-local gtrid)
-                        // we let the TM know about our resources
-                        involved::send( transaction.trid, transform::ids( resources));
+                  return invoke( transaction, resources, common::flag::xa::Flag::resume);
+               }
 
-                        return policy::start( transaction, resources, common::flag::xa::Flag::no_flags);
-                     };
-                  }
-
-                  auto resume()
-                  {
-                     return []( Transaction& transaction, auto&& resources)
-                     {
-                        return policy::start( transaction, resources, common::flag::xa::Flag::resume);
-                     };
-                  }
-                  
-               } // policy
             } // resources::start
 
             namespace resources::end
             {
-               template< typename P, typename R>
-               [[nodiscard]] code::tx invoke( P&& policy, const Transaction& transaction, R& resources)
+
+               [[nodiscard]] common::code::tx invoke( const Transaction& transaction, std::span< Resource> resources, common::flag::xa::Flag flags)
                {
                   Trace trace{ "transaction::local::resources::end::invoke"};
-                  common::log::debug( "transaction: ", transaction, ", resources: ", resources);
+                  common::log::debug( "transaction: ", transaction, ", resources: ", resources, ", flags: ", flags);
 
-                  if( resources.empty())
-                     return code::tx::ok; // nothing to do...
-
-                  return policy( transaction, resources);
+                  return resources::invoke( transaction, resources, &Resource::end, flags);
                }
-
-               namespace policy
-               {
-                  template< typename R>
-                  auto end( const Transaction& transaction, R& resources, common::flag::xa::Flag flags)
-                  {
-                     return common::algorithm::accumulate( transaction.involved(), code::tx::ok, local::accumulate::code( [ &transaction, &resources, flags]( auto& id)
-                     {
-                        if( auto found = common::algorithm::find( resources, id))
-                           return code::convert::to::tx( found->end( transaction.trid, flags));
-
-                        return code::tx::ok;
-                     })); 
-                  }
-
-                  auto suspend()
-                  {
-                     return []( const Transaction& transaction, auto& resources)
-                     {
-                        return policy::end( transaction, resources, common::flag::xa::Flag::suspend);
-                     };
-                  }
-
-                  auto success()
-                  {
-                     return []( const Transaction& transaction, auto& resources)
-                     {
-                        return policy::end( transaction, resources, common::flag::xa::Flag::success);
-                     };
-                  }
-               } // policy
                
             } // resources::end
 
@@ -474,11 +415,13 @@ namespace casual
          auto& transaction = m_transactions.emplace_back( trid);
          update_execution_context();
 
-         if( trid)
-            local::raise::code( local::resources::start::invoke( local::resources::start::policy::join(), transaction, m_resources.fixed), 
-               "failed to join one or more fixed resources");
+         if( ! trid)
+            return transaction;
 
-         local::log::event( "join", trid);
+         local::raise::code( local::resources::start::join( transaction, m_resources.fixed),
+            "failed to join one or more fixed resources");
+
+         log::event( "join", trid);
 
          return transaction;
       }
@@ -489,10 +432,10 @@ namespace casual
 
          auto transaction = local::start::transaction();
 
-         local::raise::code( local::resources::start::invoke( local::resources::start::policy::start(), transaction, m_resources.fixed),
-            "failed to start on ore more fixed resources");
+          local::raise::code( local::resources::start::invoke( transaction, m_resources.fixed, common::flag::xa::Flag::no_flags),
+            "failed to start one or more fixed resources");
 
-         local::log::event( "start", transaction.trid);
+         log::event( "start", transaction.trid);
 
          m_transactions.push_back( std::move( transaction));
          update_execution_context();
@@ -508,10 +451,11 @@ namespace casual
          update_execution_context();
 
          if( transaction)
-            local::raise::code( local::resources::start::invoke( local::resources::start::policy::branch(), transaction, m_resources.fixed),
+            local::raise::code( local::resources::start::branch( transaction, m_resources.fixed),
                "failed to branch one or more fixed resources");
 
-         local::log::event( "branch", transaction.trid);
+
+         log::event( "branch", transaction.trid);
 
          return transaction;
       }
@@ -550,7 +494,7 @@ namespace casual
          auto transactions = std::exchange( m_transactions, {});
          update_execution_context();
 
-         common::log::line( common::log::category::transaction, "transactions: ", transactions);
+         log::line( "transactions: ", transactions);
 
          auto result = common::message::service::transaction::State::ok;
 
@@ -561,7 +505,7 @@ namespace casual
                if( transaction.trid)
                {
                   common::log::line( common::log::category::error, "pending replies associated with transaction - action: discard pending and set transaction state to rollback only");
-                  common::log::line( common::log::category::transaction, transaction);
+                  log::line( transaction);
 
                   result = common::message::service::transaction::State::error;
                }
@@ -575,13 +519,13 @@ namespace casual
 
          auto invoke_rollback = [ this]( const Transaction& transaction)
          {
-            return local::log::code( Context::rollback( transaction), "failed to rollback trid: ", transaction.trid);
+            return log::code( Context::rollback( transaction), "rollback trid: ", transaction.trid);
          };
 
          auto invoke_commit_rollback = [ this, invoke_rollback, commit]( const Transaction& transaction)
          {
             if( commit && transaction.state == Transaction::State::active)
-               return local::log::code( Context::commit( transaction), "failed to commit trid: ", transaction.trid);
+               return log::code( Context::commit( transaction), "commit trid: ", transaction.trid);
             else
                return invoke_rollback( transaction);
          };
@@ -634,7 +578,7 @@ namespace casual
 
             if( not_owner)
             {
-               common::log::line( common::log::category::transaction, "not_owner: ", *not_owner);
+               log::line( "not_owner: ", *not_owner);
 
                result += transform_state( not_owner->state);
 
@@ -642,14 +586,14 @@ namespace casual
                   result += decltype( result)::rollback;
 
                // end resource
-               code += local::resources::end::invoke( local::resources::end::policy::success(), *not_owner, m_resources.all);                  
+               code += local::resources::end::invoke( *not_owner, m_resources.all, common::flag::xa::Flag::success);
             }
          }
 
          result += transform_state( code);
 
-         common::log::line( common::log::category::transaction, "result: ", result);
-         common::log::line( common::log::category::event::transaction , "finalize");
+         log::line( "result: ", result);
+         log::event( "finalize", result);
 
          return result;
       }
@@ -703,7 +647,7 @@ namespace casual
          // RM:s can only unregister if we're outside global
          // transactions, and the rm is registered before
          if( transaction.trid || ! transaction.disassociate_dynamic( rmid))
-            return local::log::code( code::ax::protocol, "resource id: ", rmid);
+            return log::code( code::ax::protocol, "resource id: ", rmid);
 
          return code::ax::ok;
       }
@@ -720,11 +664,11 @@ namespace casual
             if( transaction.trid)
             {
                if( m_control != Control::stacked)
-                  return local::log::code( code::tx::protocol, "begin - already in transaction mode - ", transaction);
+                  return log::code( code::tx::protocol, "begin - already in transaction mode - ", transaction);
 
                // Tell the RM:s to suspend
-               if( auto code = local::resources::end::invoke( local::resources::end::policy::suspend(), transaction, m_resources.all); code != code::tx::ok)
-                  return local::log::code( code, "failed to suspend resources for transaction: ", transaction);
+               if( auto code = local::resources::end::invoke( transaction, m_resources.all, common::flag::xa::Flag::suspend); code != code::tx::ok)
+                  return log::code( code, "failed to suspend one or more resources - ", transaction);
             }
             else if( ! transaction.dynamic().empty())
                return code::tx::outside;
@@ -753,14 +697,14 @@ namespace casual
                   resource.end( transaction.trid, common::flag::xa::Flag::success);
                });
 
-               return local::log::code( code::tx::error, "some resources failed to start: ", common::algorithm::transform( failed, []( auto& rm){ return rm.id();}));
+               return log::code( code::tx::error, "some resources failed to start: ", common::algorithm::transform( failed, []( auto& rm){ return rm.id();}));
             }
          }            
 
          m_transactions.push_back( std::move( transaction));
          update_execution_context();
 
-         local::log::event( "begin", m_transactions.back().trid);
+         log::event( "begin", m_transactions.back().trid);
 
          return code::tx::ok;
       }
@@ -774,7 +718,7 @@ namespace casual
          //   seams really strange not to notify user that some of the resources has
          //   failed to open...
 
-         return local::log::code( common::algorithm::accumulate( m_resources.all, code::tx::ok, local::accumulate::code( []( auto& resource)
+         return log::code( common::algorithm::accumulate( m_resources.all, code::tx::ok, local::accumulate::code( []( auto& resource)
          {
             return code::convert::to::tx( resource.open());
          })), "failed to open one or more resource");
@@ -785,7 +729,7 @@ namespace casual
       {
          Trace trace{ "transaction::Context::close"};
 
-         return local::log::code( common::algorithm::accumulate( m_resources.all, code::tx::ok, local::accumulate::code( []( auto& resource)
+         return log::code( common::algorithm::accumulate( m_resources.all, code::tx::ok, local::accumulate::code( []( auto& resource)
          {
             return code::convert::to::tx( resource.close());
          })), "failed to close one or more resource");
@@ -802,16 +746,16 @@ namespace casual
                   Trace trace{ "transaction::local::precondition::commit"};
 
                   if( ! transaction.trid)
-                     return local::log::code( code::tx::protocol, "commit - no ongoing transaction");
+                     return log::code( code::tx::protocol, "commit - no ongoing transaction");
 
                   if( transaction.trid.owner() != common::process::handle())
-                     return local::log::code( code::tx::protocol, "commit - not owner of transaction: ", transaction.trid);
+                     return log::code( code::tx::protocol, "commit - not owner of transaction: ", transaction.trid);
 
                   if( transaction.state != Transaction::State::active)
-                     return local::log::code( code::tx::protocol, "commit - transaction is in rollback only mode - ", transaction.trid);
+                     return log::code( code::tx::protocol, "commit - transaction is in rollback only mode - ", transaction.trid);
 
                   if( transaction.pending())
-                     return local::log::code( code::tx::protocol, "commit - pending replies associated with transaction: ", transaction.trid);
+                     return log::code( code::tx::protocol, "commit - pending replies associated with transaction: ", transaction.trid);
 
                   return code::tx::ok;
                }
@@ -821,14 +765,14 @@ namespace casual
                   Trace trace{ "transaction::local::precondition::rollback"};
 
                   if( ! transaction)
-                     return local::log::code( code::tx::protocol, "rollback - no ongoing transaction");
+                     return log::code( code::tx::protocol, "rollback - no ongoing transaction");
 
                   if( transaction.trid.owner() != common::process::handle())
-                     return local::log::code( code::tx::protocol, "rollback - not owner of transaction: ", transaction.trid);
+                     return log::code( code::tx::protocol, "rollback - not owner of transaction: ", transaction.trid);
 
                   // TODO can we do a rollback with pending replies? I think so...
                   //if( transaction.pending())
-                  //  return local::log::code( code::tx::protocol, "rollback - pending replies associated with transaction: ", transaction.trid);
+                  //  return log::code( code::tx::protocol, "rollback - pending replies associated with transaction: ", transaction.trid);
 
                   return code::tx::ok;
                }
@@ -842,11 +786,13 @@ namespace casual
          Trace trace{ "transaction::Context::commit - transaction"};
          casual::assertion( transaction, "not a valid transaction: ", transaction);
 
-         // end resources
-         if( auto code = local::resources::end::invoke( local::resources::end::policy::success(), transaction, m_resources.all); code != code::tx::ok)
-            return local::log::code( code, "commit - failed to end one or more resources");
+         // end resources with success.
+         auto code = local::resources::end::invoke( transaction, m_resources.all, common::flag::xa::Flag::success);
+         log::line( "code: ", code);
 
-         if( transaction.local() && transaction.involved().size() <= 1)
+         // if we succeeded to end resources, and the transaction is local, and at most one resource is involved,
+         // we can do the commit directly against the resource (if any).
+         if( common::code::success( code) && transaction.local() && transaction.involved().size() <= 1)
          {
             Trace trace{ "transaction::Context::commit - local"};
 
@@ -854,14 +800,14 @@ namespace casual
             // We do the commit directly against the resource (if any).
             // TODO: we could do a two-phase-commit local if the transaction is 'local'
 
-            if( ! transaction.involved().empty())
-               return resource_commit( transaction.involved().front(), transaction, common::flag::xa::Flag::one_phase);
+            log::event( "commit", transaction.trid, transaction.involved());
 
-            local::log::event( "commit", transaction.trid); 
-
-            // No resources associated to this transaction, hence the commit is successful.
-            return code::tx::ok;
+            // we know that we have [0..1] resources, so we can use the _invoke function_ to do the commit, even if it's a bit of an overkill. 
+            // If we have no resource, this will just return ok.
+            return log::code( local::resources::invoke( transaction, m_resources.all, &Resource::commit, common::flag::xa::Flag::one_phase),
+               "commit, trid: ", transaction.trid);
          }
+         // otherwise, we let the TM take care of the commit.
          else
          {
             Trace trace{ "transaction::Context::commit - distributed"};
@@ -871,7 +817,7 @@ namespace casual
             request.involved = transaction.involved();
 
             auto reply = common::communication::ipc::call( common::communication::instance::outbound::transaction::manager::device(), request);
-            common::log::line( common::log::category::transaction, "message: ", reply);
+            log::line( "message: ", reply);
 
             switch( reply.stage)
             {
@@ -879,14 +825,14 @@ namespace casual
 
                case Stage::prepare:
                {
-                  common::log::line( common::log::category::transaction, "commit - stage prepare - state: ", reply.state);
+                  log::line( "commit - stage prepare - state: ", reply.state);
 
                   switch( m_commit_return)
                   {
                      using Enum = decltype( m_commit_return);
                      case Enum::logged:
                      {
-                        common::log::line( common::log::category::transaction, "decision logged directive");
+                        log::line( "decision logged directive");
 
                         // Discard the coming commit-message
                         common::communication::ipc::inbound::device().discard( reply.correlation);
@@ -897,7 +843,7 @@ namespace casual
                         // Wait for the commit
                         common::communication::device::blocking::receive( common::communication::ipc::inbound::device(), reply, reply.correlation);
 
-                        common::log::line( common::log::category::transaction, "commit reply: ", reply.state);
+                        log::line( "commit reply: ", reply.state);
                         break;
                      }
                   }
@@ -905,15 +851,15 @@ namespace casual
                   break;
                }
                case Stage::commit:
-                  local::log::event( "commit", transaction.trid);
-                  return local::log::code( reply.state, "commit - stage commit");
+                  log::event( "commit", "distributed", transaction.trid, reply.state);
+                  return log::code( reply.state, "commit - stage commit");
                case Stage::rollback:
-                  local::log::event( "commit", transaction.trid);
-                  return local::log::code( code::tx::rollback, "commit - stage rollback - state: ", reply.state);
+                  log::event( "commit", "distributed", transaction.trid, reply.state);
+                  return log::code( code::tx::rollback, "commit - stage rollback - state: ", reply.state);
             }
 
-            local::log::event( "commit", transaction.trid);
-            return local::log::code( reply.state, "during commit");
+            log::event( "commit", "distributed", transaction.trid, reply.state);
+            return log::code( reply.state, "commit, trid: ", transaction.trid);
          }
       }
 
@@ -935,41 +881,37 @@ namespace casual
       code::tx Context::rollback( const Transaction& transaction)
       {
          Trace trace{ "transaction::Context::rollback"};
-         casual::assertion( transaction, "not a valid transaction: ", transaction);
+         casual::assertion( transaction, "not a valid transaction: ", transaction); 
 
          // end resources
-         if( auto code = local::resources::end::invoke( local::resources::end::policy::success(), transaction, m_resources.all); code != code::tx::ok)
-            return local::log::code( code, "rollback - failed to end one or more resources for transaction: ", transaction.trid);
+         auto code = local::resources::end::invoke( transaction, m_resources.all, common::flag::xa::Flag::success);
 
-         if( transaction.local())
+         // if one or more resource failed to end, we let TM take care of the rollback.
+         // For example if rm returns XA_RB* error, it means that the resource has marked 
+         // the transaction as rollback only, and has dissociated the transaction from this thread
+         // of control. 
+         // In this case, we can't do a rollback against the resource in this thread of control.
+         // See XA state tables (Chapter 6), documentation/xa/state-tables.md.
+
+         if( common::code::success( code) && transaction.local())
          {
-            common::log::line( common::log::category::transaction, "rollback is local");
+            auto result = local::resources::invoke( transaction, m_resources.all, &Resource::rollback, common::flag::xa::Flag::no_flags);
 
-            auto involved = transaction.involved();
-            common::algorithm::transform( m_resources.fixed, involved, []( auto& r){ return r.id();});
+            log::event( "rollback", "local", transaction.trid, result);
 
-            auto result = common::algorithm::accumulate( common::algorithm::unique( common::algorithm::sort( involved)), code::tx::ok, local::accumulate::code( [&]( auto id)
-            {
-               return resource_rollback( id, transaction);
-            }));
-
-            local::log::event( "rollback", transaction.trid);
-
-            return result;
+            return log::code( result, "rollback, trid: ", transaction.trid);
          }
          else 
          {
-            common::log::line( common::log::category::transaction, "rollback is distributed");
-
             common::message::transaction::rollback::Request request{ common::process::handle()};
             request.trid = transaction.trid;
-            common::algorithm::container::append( transaction.involved(), request.involved);
+            request.involved = transaction.involved();
 
             auto reply = common::communication::ipc::call( common::communication::instance::outbound::transaction::manager::device(), request);
 
-            local::log::event( "rollback", transaction.trid);
+            log::event( "rollback", "distributed", transaction.trid, reply.state, transaction.involved());
 
-            return local::log::code( reply.state, "during rollback");
+            return log::code( reply.state, "rollback, trid: ", transaction.trid);
          }
       }
 
@@ -1009,7 +951,7 @@ namespace casual
       code::tx Context::set_transaction_timeout( common::chronology::duration timeout)
       {
          if( timeout < common::chronology::duration{})
-            return local::log::code( code::tx::argument, "set_transaction_timeout - timeout value has to be 0 or greater");
+            return log::code( code::tx::argument, "set_transaction_timeout - timeout value has to be 0 or greater");
 
          m_timeout = timeout;
          return code::tx::ok;
@@ -1026,7 +968,7 @@ namespace casual
             info->transaction_timeout = std::chrono::duration_cast< std::chrono::seconds>( m_timeout).count();
             info->transaction_control = std::to_underlying( m_control);
          }
-         return static_cast< bool>( transaction);
+         return common::predicate::boolean( transaction);
       }
 
       namespace local
@@ -1038,10 +980,10 @@ namespace casual
                auto suspend( const XID* xid, const Transaction& current)
                {
                   if( xid == nullptr)
-                     return local::log::code( code::tx::argument, "suspend: argument xid is null");
+                     return log::code( code::tx::argument, "suspend: argument xid is null");
 
                   if( current.trid.null())
-                     return local::log::code( code::tx::protocol, "suspend: attempt to suspend a null xid");
+                     return log::code( code::tx::protocol, "suspend: attempt to suspend a null xid");
 
                   return code::tx::ok;
                }
@@ -1049,16 +991,16 @@ namespace casual
                auto resume( const XID* xid, const Transaction& current)
                {
                   if( xid == nullptr)
-                     return local::log::code( code::tx::argument, "resume: argument xid is null");
+                     return log::code( code::tx::argument, "resume: argument xid is null");
 
                   if( common::transaction::xid::null( *xid))
-                     return local::log::code( code::tx::argument, "resume: attempt to resume a 'null xid'");
+                     return log::code( code::tx::argument, "resume: attempt to resume a 'null xid'");
 
                   if( current.trid && ! current.suspended())
-                     return local::log::code( code::tx::protocol, "resume: ongoing transaction is active");
+                     return log::code( code::tx::protocol, "resume: ongoing transaction is active");
 
                   if( ! current.dynamic().empty())
-                     return local::log::code( code::tx::outside, "resume: ongoing work outside global transaction: ", current);
+                     return log::code( code::tx::outside, "resume: ongoing work outside global transaction: ", current);
 
                   return code::tx::ok;
                }
@@ -1081,13 +1023,16 @@ namespace casual
          ongoing.suspend();
          update_execution_context();
 
-         // Tell the RM:s to suspend
-         if( auto code = local::resources::end::invoke( local::resources::end::policy::suspend(), ongoing, m_resources.all); code != code::tx::ok)
-            return local::log::code( code::tx::protocol, "suspend: failed to suspend one or more resources");
+         // tell the RM:s to suspend
+         auto code = local::resources::end::invoke( ongoing, m_resources.all, common::flag::xa::Flag::suspend);
+         log::line( "suspend code: ", code);
+
+         if( ! common::code::success( code))
+            return code;
 
          *xid = ongoing.trid.to_xid();
 
-         local::log::event( "suspend", ongoing.trid);
+         log::event( "suspend", ongoing.trid);
 
          return code::tx::ok;
       }
@@ -1102,24 +1047,24 @@ namespace casual
          if( auto found = common::algorithm::find( m_transactions, *xid))
          {
             if( ! found->suspended())
-               return local::log::code( code::tx::protocol, "resume: wanted transaction is not suspended");
+               return log::code( code::tx::protocol, "resume: wanted transaction is not suspended");
 
             found->resume();
 
             // Tell the RM:s to resume
-            if( auto code = local::resources::start::invoke( local::resources::start::policy::resume(), *found, m_resources.fixed); code != code::tx::ok)
-               return local::log::code( code::tx::argument, "resume: failed to resume one or more fixed resources");
+            if( auto code = local::resources::start::resume( *found, m_resources.fixed); code != code::tx::ok)
+               return log::code( code, "failed to resume one or more fixed resources");
 
             // We rotate the wanted to end;
             common::algorithm::rotate( m_transactions, ++found);
             update_execution_context();
 
-            local::log::event( "resume", current().trid);
+            log::event( "resume", current().trid);
 
             return code::tx::ok;
          }
          else
-            return local::log::code( code::tx::argument, "resume: transaction not known");
+            return log::code( code::tx::argument, "resume: transaction not known - xid: ", *xid);
 
       }
 
@@ -1130,8 +1075,8 @@ namespace casual
          if( ! transaction)
             return; // nothing to do
 
-         local::raise::code( local::resources::start::invoke( local::resources::start::policy::resume(), transaction, m_resources.fixed),
-            "failed to resume one ore more fixed resource");
+         local::raise::code( local::resources::start::resume( transaction, m_resources.fixed),
+            "failed to resume one or more fixed resources");
       }
 
       void Context::resources_suspend( Transaction& transaction)
@@ -1142,31 +1087,10 @@ namespace casual
             return;
 
          // Tell the RM:s to suspend
-         local::raise::code( local::resources::end::invoke( local::resources::end::policy::suspend(), transaction, m_resources.all),
-            "failed to suspend one ore more resource");
+         local::raise::code( local::resources::end::invoke( transaction, m_resources.all, common::flag::xa::Flag::suspend),
+            "failed to suspend one or more resources");
       }
 
-      code::tx Context::resource_commit( common::strong::resource::id rm, const Transaction& transaction, common::flag::xa::Flag flags)
-      {
-         Trace trace{ "transaction::Context::resources_commit"};
-         common::log::line( common::log::category::transaction, "transaction: ", transaction, " - rm: ", rm, " - flags: ", flags);
-
-         if( auto found = common::algorithm::find( m_resources.all, rm))
-            return common::code::convert::to::tx( found->commit( transaction.trid, flags));
-         else
-            return local::log::code( code::tx::error, "resource id not known - rm: ", rm, " transaction: ", transaction);
-      }
-
-      code::tx Context::resource_rollback( common::strong::resource::id rm, const Transaction& transaction)
-      {
-         Trace trace{ "transaction::Context::resource_rollback"};
-         common::log::line( common::log::category::transaction, "transaction: ", transaction, " - rm: ", rm);
-
-         if( auto found = common::algorithm::find( m_resources.all, rm))
-            return common::code::convert::to::tx( found->rollback( transaction.trid, common::flag::xa::Flag::no_flags));
-         else
-            return local::log::code( code::tx::error, "resource id not known - rm: ", rm, " transaction: ", transaction);
-      }
 
       code::tx Context::control_continuation( code::tx code)
       {
@@ -1187,7 +1111,8 @@ namespace casual
             case Control::stacked:
                // Tell the RM:s to resume, if we've got a transaction
                if( auto& current = Context::current())
-                  return code + local::resources::start::invoke( local::resources::start::policy::resume(), current, m_resources.all);
+                  return code + local::resources::start::resume( current, m_resources.fixed);
+
                return code;
          }
 

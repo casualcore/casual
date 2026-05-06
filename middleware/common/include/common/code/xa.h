@@ -34,6 +34,8 @@ namespace casual
 
       std::error_code make_error_code( code::ax code);
 
+      inline bool success( code::ax code) noexcept { return code == code::ax::ok;}
+
       enum class xa : int
       {
          rollback_unspecified = XA_RBROLLBACK,
@@ -73,6 +75,9 @@ namespace casual
 
       //! @returns the most severe of `a` and `b`
       code::xa severest( code::xa a, code::xa b) noexcept;
+
+      inline bool success( code::xa code) noexcept { return code == code::xa::ok || code == code::xa::read_only;}
+
 
    } // common::code
 } // casual

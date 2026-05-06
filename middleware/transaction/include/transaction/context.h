@@ -163,9 +163,6 @@ namespace casual
          [[nodiscard]] code::tx rollback( const Transaction& transaction);
 
 
-         [[nodiscard]] code::tx resource_commit( resource::id rm, const Transaction& transaction, common::flag::xa::Flag flags);
-         [[nodiscard]] code::tx resource_rollback( resource::id rm, const Transaction& transaction);
-
          [[nodiscard]] code::tx control_continuation( code::tx code);
 
          void update_execution_context();
