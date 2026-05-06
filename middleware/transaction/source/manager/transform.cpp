@@ -45,7 +45,7 @@ namespace casual
                   {
                      std::filesystem::rename( old, file);
                      event::notification::send( "transaction log file moved: ", std::filesystem::relative( old), " -> ", std::filesystem::relative( file));
-                     log::line( log::category::warning, "transaction log file moved: ", old, " -> ", file);
+                     common::log::line( common::log::category::warning, "transaction log file moved: ", old, " -> ", file);
                   }
                }
 

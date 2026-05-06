@@ -730,7 +730,7 @@ PRAGMA synchronous;
 
          friend std::ostream& operator << ( std::ostream& out, const Version& value) 
          { 
-            return out << "{ major: " << value.major << ", minor: " << value.minor << '}';
+            return out << value.major << '.' << value.minor;
          }
       };
       

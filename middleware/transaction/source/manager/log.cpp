@@ -25,10 +25,11 @@ namespace casual
       {
          // log the actual pragma settings
          m_connection.pragma_information( common::log::category::transaction);
-         
-         common::log::line( common::log::category::event::transaction, "log-version|",  sql::database::version::get( m_connection));
 
-         sql::database::version::set( m_connection, sql::database::Version{ 1, 0});
+         const auto version = sql::database::Version{ 1, 0};
+
+         sql::database::version::set( m_connection, version);
+         log::event( "log", m_connection.file(), version);
 
          m_connection.execute(
             R"( CREATE TABLE IF NOT EXISTS trans (

@@ -82,8 +82,8 @@ namespace casual
          using Flag = detail::Flag;
 
          EXPECT_TRUE( string::compose( Flag{}) == "[]");
-         EXPECT_TRUE( string::compose( Flag::a) == "[ a]");
-         EXPECT_TRUE( string::compose( Flag::a | Flag::b | Flag::d ) == "[ a, b, d]");
+         EXPECT_TRUE( string::compose( Flag::a) == "[a]");
+         EXPECT_TRUE( string::compose( Flag::a | Flag::b | Flag::d ) == "[a, b, d]");
       }
 
       TEST( common_flag, operator_or)
@@ -189,8 +189,8 @@ namespace casual
          using Flag = detail::subset::Flag;
 
          EXPECT_TRUE( string::compose( Flag{}) == "[]");
-         EXPECT_TRUE( string::compose( Flag::b) == "[ b]");
-         EXPECT_TRUE( string::compose( Flag::b | Flag::e) == "[ b, e]");
+         EXPECT_TRUE( string::compose( Flag::b) == "[b]");
+         EXPECT_TRUE( string::compose( Flag::b | Flag::e) == "[b, e]");
       }
 
 

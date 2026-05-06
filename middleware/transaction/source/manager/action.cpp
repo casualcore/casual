@@ -38,7 +38,7 @@ namespace casual
             void instances( State& state, state::resource::Proxy& proxy)
             {
                Trace trace{ "transaction:manager::action::resource::proxy::scale::instances"};
-               log::debug( "update instances for resource: ", proxy);
+               common::log::debug( "update instances for resource: ", proxy);
             
                auto count = proxy.configuration.instances - range::size( proxy.instances);
 
@@ -81,7 +81,7 @@ namespace casual
 
                         case State::spawned:
                         {
-                           log::debug( "Instance has not register yet. We, kill it...: ", instance);
+                           common::log::debug( "Instance has not register yet. We, kill it...: ", instance);
 
                            process::lifetime::terminate( { instance.process.pid});
                            instance.state( State::shutdown);
@@ -89,12 +89,12 @@ namespace casual
                         }
                         case State::shutdown:
                         {
-                           log::debug( "instance already in shutdown state - ", instance);
+                           common::log::debug( "instance already in shutdown state - ", instance);
                            break;
                         }
                         default:
                         {
-                           log::debug( "shutdown instance: ", instance);
+                           common::log::debug( "shutdown instance: ", instance);
                            instance.state( State::shutdown);
                            communication::ipc::flush::send( instance.process.ipc, message::shutdown::Request{});
                            break;
