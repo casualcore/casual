@@ -13,6 +13,7 @@
 #include "queue/common/queue.h"
 
 #include "common/transaction/id.h"
+#include "common/name.h"
 
 #include "casual/argument.h"
 #include "common/terminal.h"
@@ -787,18 +788,37 @@ output columns:
 
                   auto option()
                   {
-                     auto invoke = []()
+                     struct State
                      {
+                        bool all = false;
+                     };
+                     auto shared = std::make_shared< State>();
+
+                     auto invoke = [ shared]()
+                     {
+                        auto filter = [ shared]( auto& queue)
+                        {
+                           if( shared->all)
+                              return true;
+                           return ! common::name::hidden::name( queue.name);
+                        };
+
                         auto state = call::state();
 
-                        format::queues( state, algorithm::sort( state.queues));
+                        format::queues( state, algorithm::sort( algorithm::filter( state.queues, filter)));
                      };
+
+                     auto flag = argument::Option{ [ shared]()
+                        {
+                           shared->all = true;
+                           return argument::option::invoke::preemptive{};
+                        }, {{ "-a", "--all"}}, "include hidden queues"};
 
                      return argument::Option{
                         std::move( invoke),
                         argument::option::Names{ { "-lq", "--list-queues"}, { "-q"}},
                         { "list information of all queues in current domain", legend}
-                     };
+                     }( { std::move( flag)});
                   }
                   
                } // queues
@@ -807,38 +827,76 @@ output columns:
                {
                   auto option()
                   {
-                     auto invoke = []()
+                     struct State
                      {
+                        bool all = false;
+                     };
+                     auto shared = std::make_shared< State>();
+
+                     auto invoke = [ shared]()
+                     {
+                        auto filter = [ shared]( auto& queue)
+                        {
+                           if( shared->all)
+                              return true;
+                           return ! common::name::hidden::name( queue.name);
+                        };
+
                         auto state = call::state();
 
-                        format::queues( state, algorithm::sort( state.zombies));
+                        format::queues( state, algorithm::sort( algorithm::filter( state.zombies, filter)));
 
                      };
+
+                     auto flag = argument::Option{ [ shared]()
+                        {
+                           shared->all = true;
+                           return argument::option::invoke::preemptive{};
+                        }, {{ "-a", "--all"}}, "include hidden zombie queues"};
 
                      return argument::Option{
                         std::move( invoke),
                         argument::option::Names{ { "-lz", "--list-zombies"}, { "-z"}},
                         R"(list information of all zombie queues in current domain)"
-                     };
+                     }( { std::move( flag)});
                   }
                   
-               } // queues
+               } // zombies
 
                namespace queue::instances
                {
                   auto option()
                   {
-                     auto invoke = []()
+                     struct State
                      {
+                        bool all = false;
+                     };
+                     auto shared = std::make_shared< State>();
+
+                     auto invoke = [ shared]()
+                     {
+                        auto filter = [ shared]( auto& instance)
+                        {
+                           if( shared->all)
+                              return true;
+                           return ! common::name::hidden::name( instance.queue);
+                        };
+
                         auto state = call::state();
-                        format::queue::instances( normalize::instances( state));
+                        format::queue::instances( algorithm::sort( algorithm::filter( normalize::instances( state), filter)));
                      };
                      
+                     auto flag = argument::Option{ [ shared]()
+                        {
+                           shared->all = true;
+                           return argument::option::invoke::preemptive{};
+                        }, {{ "-a", "--all"}}, "include hidden queue instances"};
+
                      return argument::Option{
                         std::move( invoke),
                         {{ "-lqi", "--list-queue-instances"}},
                         R"(list instances for all queues, including external instances)"
-                     };
+                     }( { std::move( flag)});
                   }
                   
                } // queue::instances
@@ -2164,8 +2222,10 @@ Example:
                   auto metric_enqueued = []( auto& queue){ return queue.metric.enqueued;};
                   auto metric_dequeued = []( auto& queue){ return queue.metric.dequeued;};
 
+                  auto is_hidden = []( auto& queue){ return common::name::hidden::name( queue.name);};
+
                   auto split = algorithm::partition( state.queues, []( auto& queue){ return queue.type() == decltype( queue.type())::queue;});
-                  auto queues = std::get< 0>( split);
+                  auto [ hidden, queues] = algorithm::partition( std::get< 0>( split), is_hidden);
                   auto errors = std::get< 1>( split);
 
                   auto commit_count = []( auto& forward){ return forward.metric.commit.count;};
@@ -2175,6 +2235,8 @@ Example:
 
                   return {
                      { "queue.manager.group.count", string::compose( state.groups.size())},
+                     { "queue.manager.queue.hidden.count", string::compose( hidden.size())},
+                     { "queue.manager.queue.hidden.message.count", string::compose( hidden.empty() ? 0 : accumulate( message_count)( hidden))},
                      { "queue.manager.queue.count", string::compose( queues.size())},
                      { "queue.manager.queue.message.count", string::compose( accumulate( message_count)( queues))},
                      { "queue.manager.queue.message.size", string::compose( accumulate( message_size)( queues))},

@@ -9,6 +9,7 @@
 
 #include "common/code/xatmi.h"
 #include "common/serialize/macro.h"
+#include "common/name.h"
 
 #include <string>
 #include <iosfwd>
@@ -38,12 +39,6 @@ namespace casual
          constexpr std::string_view admin = ".admin";
          constexpr std::string_view deprecated = ".deprecated";
       } // category
-
-      namespace hidden
-      {
-         //! @returns true if the service `name` is _hidden_ (starts with `.`)
-         bool name( std::string_view service);         
-      } // hidden
 
       namespace visibility
       {

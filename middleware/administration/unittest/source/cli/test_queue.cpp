@@ -218,6 +218,53 @@ d.error  A       0  0.000      0     0    0  ED   0   0   0  -
          EXPECT_TRUE( capture.standard.out == expected) << capture.standard.out;
       }
 
+      TEST( cli_queue, hidden_queues)
+      {
+         common::unittest::Trace trace;
+
+         auto domain = local::domain( R"(
+domain:
+   name: A
+   queue:
+      groups:
+         -  alias: A
+            queues:
+               -  name: a
+               -  name: .b
+)");
+
+         // .b should be hidden by default
+         {
+            auto capture = local::execute( R"(casual --porcelain true queue --list-queues)");
+            auto rows = string::split( capture.standard.out, '\n');
+            EXPECT_TRUE( algorithm::any_of( rows, []( auto& row){ return row.starts_with( "a|");}));
+            EXPECT_TRUE( algorithm::none_of( rows, []( auto& row){ return row.starts_with( ".b|");}));
+         }
+
+         // .b should be shown with --all
+         {
+            auto capture = local::execute( R"(casual --porcelain true queue --list-queues --all)");
+            auto rows = string::split( capture.standard.out, '\n');
+            EXPECT_TRUE( algorithm::any_of( rows, []( auto& row){ return row.starts_with( "a|");}));
+            EXPECT_TRUE( algorithm::any_of( rows, []( auto& row){ return row.starts_with( ".b|");}));
+         }
+
+         // instances
+         {
+            auto capture = local::execute( R"(casual --porcelain true queue --list-queue-instances)");
+            auto rows = string::split( capture.standard.out, '\n');
+            EXPECT_TRUE( algorithm::any_of( rows, []( auto& row){ return row.starts_with( "a|");}));
+            EXPECT_TRUE( algorithm::none_of( rows, []( auto& row){ return row.starts_with( ".b|");}));
+         }
+
+         {
+            auto capture = local::execute( R"(casual --porcelain true queue --list-queue-instances --all)");
+            auto rows = string::split( capture.standard.out, '\n');
+            EXPECT_TRUE( algorithm::any_of( rows, []( auto& row){ return row.starts_with( "a|");}));
+            EXPECT_TRUE( algorithm::any_of( rows, []( auto& row){ return row.starts_with( ".b|");}));
+         }
+      }
+
       TEST( cli_queue, list_forward_groups)
       {
          common::unittest::Trace trace;

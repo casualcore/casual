@@ -16,6 +16,7 @@
 
 #include "casual/argument.h"
 #include "common/chronology.h"
+#include "common/name.h"
 #include "common/terminal.h"
 #include "common/exception/capture.h"
 #include "common/algorithm/compare.h"
@@ -454,7 +455,7 @@ output columns:
                            {
                               if( shared->all)
                                  return true; 
-                              return ! common::service::hidden::name( service.name);
+                              return ! common::name::hidden::name( service.name);
                            };
 
                            auto state = manager::admin::api::state();
@@ -496,7 +497,7 @@ output columns:
                            {
                               if( shared->all)
                                  return true; 
-                              return ! common::service::hidden::name( instance.service);
+                              return ! common::name::hidden::name( instance.service);
                            };
 
                            auto state = admin::api::state();
@@ -577,7 +578,7 @@ output columns:
                   {
                      auto state = admin::api::state();
 
-                     auto is_hidden = []( auto& service){ return common::service::hidden::name( service.name);};
+                     auto is_hidden = []( auto& service){ return common::name::hidden::name( service.name);};
 
                      auto [ hidden, services] = algorithm::partition( state.services, is_hidden);
 
@@ -668,7 +669,7 @@ output columns:
                         {
                            auto is_hidden = []( auto& service)
                            { 
-                              return common::service::hidden::name( service.name);
+                              return common::name::hidden::name( service.name);
                            };
 
                            auto state = manager::admin::api::state();
