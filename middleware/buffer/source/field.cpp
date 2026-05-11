@@ -1454,10 +1454,6 @@ namespace casual
                   template< typename T, typename A>
                   void assign( A& archive)
                   {
-                     T value;
-                     archive >> common::serialize::named::value::make( value, "value");
-                     
-                     
                      m_value.resize( sizeof( T));
                      archive >> common::serialize::named::value::make( *reinterpret_cast< T*>( m_value.data()), "value");
                   }
