@@ -12,6 +12,7 @@
 #include "queue/unittest/utility.h"
 #include "queue/common/queue.h"
 #include "queue/api/queue.h"
+#include "queue/group/queuebase.h"
 
 #include "common/array.h"
 #include "common/code/queue.h"
@@ -186,7 +187,7 @@ domain:
                -  name: a1
          -  queues:
                -  name: b1
-         -  alias: x
+         -  alias: C
             queues:
                -  name: c1
 )");
@@ -195,9 +196,9 @@ domain:
          auto state = unittest::state();
 
          ASSERT_TRUE( state.groups.size() == 3) << CASUAL_NAMED_VALUE( state.groups);
-         EXPECT_TRUE( state.groups.at( 0).alias == "group") << CASUAL_NAMED_VALUE( state.groups);
-         EXPECT_TRUE( state.groups.at( 1).alias == "group.2") << CASUAL_NAMED_VALUE( state.groups);
-         EXPECT_TRUE( state.groups.at( 2).alias == "x") << CASUAL_NAMED_VALUE( state.groups);
+         EXPECT_TRUE( common::algorithm::contains( state.groups, "group")) << CASUAL_NAMED_VALUE( state.groups);
+         EXPECT_TRUE( common::algorithm::contains( state.groups, "group.2")) << CASUAL_NAMED_VALUE( state.groups);
+         EXPECT_TRUE( common::algorithm::contains( state.groups, "C")) << CASUAL_NAMED_VALUE( state.groups);
       }
 
       TEST( casual_queue, enqueue_to_persistent_group__shutdown__boot_same_persistent_group__expect_metrics_reset)
@@ -2121,6 +2122,56 @@ domain:
             EXPECT_FALSE( common::communication::ipc::non::blocking::receive< domain::message::discovery::topology::implicit::Update>());
             common::process::sleep( std::chrono::milliseconds{ 10});
          });
+
+      }
+
+     TEST( casual_queue, zombie_queue__uncommitted_message__expect_zombie_queue)
+      {
+         common::unittest::Trace trace;
+
+         auto path = common::unittest::file::temporary::name( ".db");
+         auto scope = common::unittest::environment::scoped::variable( "CASUAL_UNITTEST_QUEUEBASE", path.string());
+
+         // add 'uncommitted' message to the 'zombie' queue
+         {
+            group::Queuebase queuebase( path);
+            queuebase.create( group::queuebase::Queue{ .name = "a"});
+            auto zombie = queuebase.create( group::queuebase::Queue{ .name = "zombie"});
+
+            auto message = queue::ipc::message::group::enqueue::Request{};
+            {
+               message.process = common::process::handle();
+               message.queue = zombie.id;
+               message.message.payload.type = common::buffer::type::binary;
+               message.message.payload.data = common::unittest::random::binary( 42);
+               message.trid = common::transaction::id::create();
+            }
+
+            queuebase.enqueue( message);
+         }
+
+         // start domain without the 'zombie' queue, should be detected as a zombie queue
+         {
+
+            auto domain = local::domain( R"(
+domain:
+   name: A
+   queue:
+      groups:
+         -  alias: "Q"
+            queuebase: '${CASUAL_UNITTEST_QUEUEBASE}'
+            queues:
+               -  name: a
+               -  name: b
+)");
+
+            auto state = unittest::state();
+            ASSERT_TRUE( state.zombies.size() == 2) << CASUAL_NAMED_VALUE( state.zombies);
+            EXPECT_TRUE( common::algorithm::contains( state.zombies, "zombie.error")) << CASUAL_NAMED_VALUE( state.zombies);
+            EXPECT_TRUE( common::algorithm::contains( state.zombies, "zombie")) << CASUAL_NAMED_VALUE( state.zombies);
+            EXPECT_TRUE( common::algorithm::contains( state.queues, "a")) << CASUAL_NAMED_VALUE( state.queues);
+            EXPECT_TRUE( common::algorithm::contains( state.queues, "b")) << CASUAL_NAMED_VALUE( state.queues);
+         }
 
       }
 

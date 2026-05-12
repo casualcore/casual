@@ -8,6 +8,7 @@
 #include <utility>
 
 #include "transaction/resource.h"
+#include "transaction/common.h"
 
 
 #include "common/environment/expand.h"
@@ -40,38 +41,10 @@ namespace casual
       {
          namespace
          {
-
             common::code::xa convert( int code)
             {
                return static_cast<  common::code::xa>( code);
             }
-
-            namespace log
-            {
-               template< typename... Ts>
-               void line( Ts&&... ts)
-               {
-                  common::log::line( common::log::category::transaction, std::forward< Ts>( ts)...);
-               }
-
-               template< typename... Ts>
-               auto code( common::code::xa code, resource::id rm, Ts&&... ts)
-               {
-                  if( code != common::code::xa::ok)
-                     common::log::error( code, "resource: ", rm, " - ", std::forward< Ts>( ts)...);
-
-                  return code;
-               }
-
-               template< typename... Ts>
-               void event( std::string_view context, Ts&&... ts)
-               {
-                  common::log::line( common::log::category::event::transaction, context, std::forward< Ts>( ts)...);
-                  
-               }
-
-            } // log
-
 
          } // <unnamed>
       } // local
@@ -82,13 +55,13 @@ namespace casual
          if( ! m_xa)
             common::code::raise::error( common::code::casual::invalid_argument, "xa-switch is null");
 
-         local::log::line( "associated resource: ", *this);
+         log::line( "associated resource: ", *this);
       }
 
 
       common::code::xa Resource::start( const transaction::ID& transaction, Flag flags) noexcept
       {
-         local::log::line( "start resource: ", m_id, " transaction: ", transaction, " flags: ", flags);
+         log::line( "xa_start: ", m_id, " transaction: ", transaction, " flags: ", flags);
 
          auto xid = transaction.to_xid();
 
@@ -103,20 +76,20 @@ namespace casual
          if( result == common::code::xa::duplicate_xid && ! common::flag::contains( flags, Flag::join))
          {
             // Transaction is already associated with this thread of control, we try to join instead
-            local::log::line( result, " - action: try to join instead");
+            log::line( result, " - action: try to join instead");
 
             flags |= Flag::join;
             result = local::convert( m_xa->xa_start_entry( &xid, m_id.value(), std::to_underlying( flags)));
          }
 
-         local::log::event( "resource-start|", m_id, '|', transaction, '|', result);
+         log::event( "xa_start", m_id, transaction, result);
 
-         return local::log::code( result, m_id, "failed to start trid: ", transaction, ", flags: ", flags);
+         return log::code( result, "xa_start: ", m_id, ", trid: ", transaction, ", flags: ", flags);
       }
 
       common::code::xa Resource::end( const transaction::ID& transaction, Flag flags) noexcept
       {
-         local::log::line( "end resource: ", m_id, ", transaction: ", transaction, ", flags: ", flags);
+         log::line( "xa_end: ", m_id, ", transaction: ", transaction, ", flags: ", flags);
 
          auto xid = transaction.to_xid();
 
@@ -125,15 +98,15 @@ namespace casual
             return local::convert( m_xa->xa_end_entry( &xid, m_id.value(), std::to_underlying( flags)));
          });
 
-         local::log::event( "resource-end|", m_id, '|', transaction, '|', result);
+         log::event( "xa_end", m_id, transaction, result);
 
-         return local::log::code( result, m_id, "failed to end trid: ", transaction, ", flags: ", flags);
+         return log::code( result, "xa_end: ", m_id, ", trid: ", transaction, ", flags: ", flags);
       }
 
       common::code::xa Resource::open( Flag flags) noexcept
       {
          auto info = common::environment::expand( m_openinfo);
-         local::log::line( "open resource: ", m_id, ", openinfo: ", info, ", flags: ", flags);
+         log::line( "xa_open: ", m_id, ", openinfo: ", info, ", flags: ", flags);
 
          auto result = local::convert( m_xa->xa_open_entry( info.c_str(), m_id.value(), std::to_underlying( flags)));
 
@@ -141,26 +114,24 @@ namespace casual
          if( result != common::code::xa::ok)
             common::event::error::send( result, "failed to open resource: ", m_id, " '", m_xa->name, "'");
 
-         local::log::event( "resource-open|", m_id, '|', result);
-
-         return result;
+         log::event( "xa_open", m_id, flags, result);
+         return log::code( result, "xa_open: ", m_id, ", flags: ", flags);
       }
 
       common::code::xa Resource::close( Flag flags) noexcept
       {
          auto info = common::environment::expand( m_closeinfo);
-         local::log::line( "close resource: ", m_id, ", closeinfo: ", info, ", flags: ", flags);
+         log::line( "xa_close: ", m_id, ", closeinfo: ", info, ", flags: ", flags);
 
          auto result = local::convert( m_xa->xa_close_entry( info.c_str(), m_id.value(), std::to_underlying( flags)));
 
-         local::log::event( "resource-close|", m_id, '|', result);
-
-         return local::log::code( result, m_id, "failed to close - flags: ", flags);
+         log::event( "xa_close", m_id, flags, result);
+         return log::code( result, "xa_close: ", m_id, ", flags: ", flags);
       }
 
       common::code::xa Resource::prepare( const transaction::ID& transaction, Flag flags) noexcept
       {
-         local::log::line( "prepare resource: ", m_id, " transaction: ", transaction, " flags: ", flags);
+         log::line( "prepare resource: ", m_id, " transaction: ", transaction, " flags: ", flags);
 
          auto xid = transaction.to_xid();
 
@@ -176,21 +147,19 @@ namespace casual
             // this transaction to the same "resource-server" that both domains _have connections to_
             if( prepared( transaction))
             {
-               local::log::line( common::code::xa::read_only, " trid already prepared: ", m_id, " trid: ", transaction, " flags: ", flags);
+               log::line( common::code::xa::read_only, " trid already prepared: ", m_id, " trid: ", transaction, " flags: ", flags);
                return common::code::xa::read_only;
             }
          }
 
-         local::log::event( "resource-prepare|", m_id, '|', transaction, '|', result);
+         log::event( "xa_prepare", m_id, transaction, flags, result);
 
-         local::log::line( result, " prepare rm: ", m_id, " trid: ", transaction, " flags: ", flags);
-
-         return result;
+         return log::code( result, "xa_prepare: ", m_id, ", trid: ", transaction, ", flags: ", flags);
       }
 
       common::code::xa Resource::commit( const transaction::ID& transaction, Flag flags) noexcept
       {
-         local::log::line( "commit resource: ", m_id, " transaction: ", transaction, " flags: ", flags);
+         log::line( "commit resource: ", m_id, " transaction: ", transaction, " flags: ", flags);
 
          auto xid = transaction.to_xid();
 
@@ -198,17 +167,15 @@ namespace casual
          {
             return local::convert( m_xa->xa_commit_entry( &xid, m_id.value(), std::to_underlying( flags)));
          });
+   
+         log::event( "xa_commit", m_id, transaction, flags, result);
 
-         local::log::code( result, m_id, "error during commit - xid: ", xid);
-
-         local::log::event( "resource-commit|", m_id, '|', transaction, '|', result);
-
-         return result;
+         return log::code( result, "xa_commit: ", m_id, ", trid: ", xid, ", flags: ", flags);
       }
 
       common::code::xa Resource::rollback( const transaction::ID& transaction, Flag flags) noexcept
       {
-         local::log::line( "rollback resource: ", m_id, " transaction: ", transaction, " flags: ", flags);
+         log::line( "rollback resource: ", m_id, " transaction: ", transaction, " flags: ", flags);
 
          auto xid = transaction.to_xid();
 
@@ -217,11 +184,9 @@ namespace casual
             return local::convert( m_xa->xa_rollback_entry( &xid, m_id.value(), std::to_underlying( flags)));
          });
 
-         local::log::code( result, m_id, " error during rollback - xid: ", xid);
+         log::event( "xa_rollback", m_id, transaction, flags, result);
 
-         local::log::event( "resource-rollback|", m_id, '|', transaction, '|', result);
-
-         return result;
+         return log::code( result, "xa_rollback: ", m_id, ", trid: ", xid, ", flags: ", flags);
       }
 
       bool Resource::dynamic() const noexcept
@@ -236,7 +201,7 @@ namespace casual
 
       common::code::xa Resource::reopen()
       {
-         local::log::line( "reopen resource: ", m_id);
+         log::line( "reopen resource: ", m_id);
 
          // we don't care if close "fails".
          close();

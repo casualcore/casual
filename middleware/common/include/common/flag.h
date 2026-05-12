@@ -86,14 +86,14 @@ namespace casual
                      return;
 
                   // print the flag
-                  out << ' ' << description( static_cast< flag_type>( unsigned_type( 1) << index));
+                  out << description( static_cast< flag_type>( unsigned_type( 1) << index));
 
                   // "consume" the bit/flag
                   bits.reset( index);
 
                   // prepare next if we've got any left
                   if( bits.any())
-                     out << ",";
+                     out << ", ";
 
                   // we don't get early-return, we always go through all bits...
                });

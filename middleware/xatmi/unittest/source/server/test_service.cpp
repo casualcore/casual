@@ -9,8 +9,10 @@
 #include "common/unittest.h"
 
 #include "casual/xatmi/internal/server/service.h"
-
 #include "casual/xatmi.h"
+#include "casual/xatmi/extended.h"
+
+#include "server/service/invoke.h"
 
 namespace casual
 {
@@ -41,12 +43,26 @@ namespace casual
                return parameter;
             }
 
+            auto extract_header( const char* buffer)
+            {
+               std::vector< std::string> result;
+               ::casual_header_browse( buffer, []( const char* header, void* context) -> int
+               {
+                  auto state = static_cast< std::vector< std::string>*>( context);
+                  state->push_back( header);
+                  return 0;
+
+               }, &result);
+
+               return result;
+            }
+
          } // <unnamed>
       } // local
 
 
 
-      TEST( server_service, equality)
+      TEST( xatmi_server_service, equality)
       {
          common::unittest::Trace trace;
 
@@ -56,7 +72,7 @@ namespace casual
          EXPECT_TRUE( s1 == s2);
       }
 
-      TEST( server_service, in_equality)
+      TEST( xatmi_server_service, in_equality)
       {
          common::unittest::Trace trace;
 
@@ -66,13 +82,57 @@ namespace casual
          EXPECT_TRUE( s1 != s2) << trace.compose( CASUAL_NAMED_VALUE( s1), " - ", CASUAL_NAMED_VALUE( s2));
       }
 
-      TEST( server_xatmi_service, tpsvcinfo_name_correctly_copied)
+      TEST( xatmi_server_service, tpsvcinfo_name_correctly_copied)
       {
          common::unittest::Trace trace;
 
          auto service = internal::server::service::create( "service_foo", &local::service_foo);
 
          service( local::parameter( "service_foo"));
+
+      }
+
+      TEST( xatmi_server_service, invoke)
+      {
+         common::unittest::Trace trace;
+
+         auto service = []( TPSVCINFO* info)
+         {
+            EXPECT_TRUE( info->data != nullptr);
+
+            std::array< char, 8 + 1> type{};
+            std::array< char, 16 + 1> subtype{};
+            EXPECT_TRUE( ::tptypes( info->data, type.data(), subtype.data()) == 0);
+            EXPECT_TRUE( type.data() == std::string_view{ ".http"}) << CASUAL_NAMED_VALUE( type.data());
+            EXPECT_TRUE( subtype.data() == std::string_view{ "body"}) << CASUAL_NAMED_VALUE( subtype.data());
+
+
+            // check the header fields
+            auto fields = local::extract_header( info->data);
+
+            EXPECT_TRUE( std::ranges::contains( fields, "a:foo")) << CASUAL_NAMED_VALUE( fields);
+            EXPECT_TRUE( std::ranges::contains( fields, "b:bar")) << CASUAL_NAMED_VALUE( fields);
+            EXPECT_TRUE( std::ranges::contains( fields, "c:baz")) << CASUAL_NAMED_VALUE( fields);
+
+            tpreturn( TPSUCCESS, 0, info->data, info->len, 0);
+         };
+
+         auto a = internal::server::service::create( "a", service);
+
+         server::service::invoke::Parameter argument{
+            .service = { .name = "a" },
+            .header = { { { "a", "foo"}, { "b", "bar"}, { "c", "baz"}}},
+            .payload = common::buffer::Payload{ common::buffer::type::http, 0},
+         };
+
+         auto result = a( std::move( argument));
+
+         EXPECT_TRUE( result.code.result == decltype( result.code.result)::success);
+         EXPECT_TRUE( result.payload.type == common::buffer::type::http);
+         EXPECT_TRUE( result.payload.data.empty());
+         EXPECT_TRUE( result.header.at( "a").value() == "foo") << CASUAL_NAMED_VALUE( result.header);
+         EXPECT_TRUE( result.header.at( "b").value() == "bar") << CASUAL_NAMED_VALUE( result.header);
+         EXPECT_TRUE( result.header.at( "c").value() == "baz") << CASUAL_NAMED_VALUE( result.header);
 
       }
 

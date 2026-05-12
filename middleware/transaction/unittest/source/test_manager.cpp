@@ -192,6 +192,17 @@ domain:
                transaction.replied( correlation);               
             }
 
+
+            auto context_clear_scope( std::vector< resource::Link> resources)
+            {
+               transaction::context().configure( std::move( resources));
+
+               return common::execute::scope( []()
+               {
+                  transaction::context().clear();
+               });
+            }
+
          } // <unnamed>
       } // local
 
@@ -501,7 +512,11 @@ domain:
          } // <unnamed>
       } // local
 
-      TEST( transaction_manager, begin_commit_transaction__1_resources_involved__xa_XA_RBDEADLOCK___expect__TX_HAZARD)
+      // The removed testcase transaction_manager, begin_commit_transaction__1_resources_involved__xa_XA_RBDEADLOCK___expect__TX_HAZARD
+      // is not correct. XA_RBDEADLOCK is a return code from the RM, and should be mapped to TX_ROLLBACK, not TX_HAZARD,
+      // since the resource has done rollback.
+
+      TEST( transaction_manager, begin_commit_transaction__1_resources_involved__tx_commit_XA_RBDEADLOCK___expect__TX_ROLLBACK)
       {
          common::unittest::Trace trace;
 
@@ -528,7 +543,7 @@ domain:
             EXPECT_TRUE( reply.involved.empty());
          }
 
-         EXPECT_EQ( local::commit(), common::code::tx::hazard);
+         EXPECT_EQ( local::commit(), common::code::tx::rollback);
       }
 
 
@@ -2098,6 +2113,57 @@ domain:
 
          // handle the second stale rollback request
          local::handle_rollback_request( resources);
+      }
+
+      TEST( transaction_manager, local_resource__rollback__xa_end__XA_RBTIMEOUT__expect_promoted_to_distributed_rollback)
+      {
+         common::unittest::Trace trace;
+
+         static_assert( XA_RBTIMEOUT == 106);
+
+         auto domain = local::domain( R"(
+system:
+   resources:
+      -  key: rm-mockup
+         server: bin/rm-proxy-casual-mockup
+         xa_struct_name: casual_mockup_xa_switch_static
+         libraries:
+            -  casual-mockup-rm
+domain:
+   name: A
+
+   transaction:
+      log: ":memory:"
+      resources:
+         - key: rm-mockup
+           name: rm1
+           instances: 1
+           openinfo: "--end 106" # XA_RBTIMEOUT
+)");
+
+         auto scope = local::context_clear_scope( { { "rm-mockup", "rm1", &casual_mockup_xa_switch_static}});
+
+         EXPECT_TRUE( local::begin() == common::code::tx::ok);
+
+         EXPECT_TRUE( local::rollback() == common::code::tx::ok);
+
+         // we check that the local resource only got xa_open, xa_start, and xa_end. No xa_rollback should
+         // be local, but promoted to distributed.
+         {  
+            // we only got one resource, hence id 1
+            auto& invocations = transaction::unittest::rm::state::get( common::strong::resource::id{ 1}).invocations;
+            EXPECT_TRUE( invocations.size() == 3) << CASUAL_NAMED_VALUE( invocations);
+            EXPECT_TRUE( invocations.at( 0) == unittest::rm::state::Invoke::xa_open_entry) << CASUAL_NAMED_VALUE( invocations.at( 0));
+            EXPECT_TRUE( invocations.at( 1) == unittest::rm::state::Invoke::xa_start_entry) << CASUAL_NAMED_VALUE( invocations.at( 1));
+            EXPECT_TRUE( invocations.at( 2) == unittest::rm::state::Invoke::xa_end_entry) << CASUAL_NAMED_VALUE( invocations.at( 2));
+
+         }
+          
+         // check that the resource proxy got xa_rollback
+         {
+            auto state = unittest::state();
+            EXPECT_TRUE( state.resources.at( 0).instances.at( 0).metrics.resource.count == 1); // xa_rollback
+         }
       }
    
    } // transaction

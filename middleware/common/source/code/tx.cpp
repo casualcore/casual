@@ -124,20 +124,23 @@ namespace casual
 
          // prioritize between lhs and rhs.
 
-         // range with order of most prioritized first.
-         constexpr auto prioritized_range = array::make( 
+         // Range with order of most prioritized first (documentation/xa/return-code-mapping.md).
+         constexpr auto prioritized_range = std::array{ 
+            tx::fail,
+            tx::mixed,
+            tx::hazard,
+            tx::error,
+            tx::outside,
+            tx::rollback,
+            tx::committed,
+            // TX_NOT_SUPPORTED, TX_EINVAL and TX_PROTOCOL_ERROR are AP-TM interface
+            // outcomes and are not part of the XA-to-TX RM severity hierarchy, but they
+            // must still dominate TX_OK during accumulation to avoid masking errors.
             tx::not_supported,
             tx::argument,
-            tx::hazard,
-            tx::mixed,
-            tx::fail,
-            tx::error,
-            tx::committed,
-            tx::rollback,
             tx::protocol,
-            tx::outside,
-            tx::ok
-            );
+            tx::ok,
+         };
 
          // if the found 'range' is smaller, it is farther back in the prioritization, hence less valuable.
          if( auto found_lhs = algorithm::find( prioritized_range, lhs))

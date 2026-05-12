@@ -30,7 +30,7 @@ namespace casual
       }
 
       template< concepts::range R>
-      auto shuffle( R&& range)
+      decltype( auto) shuffle( R&& range)
       {
          std::ranges::shuffle( range, random::generator());
          return std::forward< R>( range);

@@ -48,6 +48,8 @@ namespace casual
       static_assert( static_cast< int>( tx::ok) == 0, "tx::ok has to be 0");
 
       std::error_code make_error_code( code::tx code);
+
+      inline bool success( code::tx code) noexcept { return code == code::tx::ok;}
       
    } // common::code
 } // casual

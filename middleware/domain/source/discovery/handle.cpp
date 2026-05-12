@@ -276,7 +276,12 @@ namespace casual
                         return content::send_reply_if_included( state, shared->content, request);
                      };
 
-                     algorithm::container::erase_if( shared->api, send_if_included);
+                     // For API requests, we need to wait for all replies to give SM a chance to
+                     // correlate "sticky" transactions.
+
+                     // For discovery requests, we can send a reply as soon as the requested
+                     // services/queues have been discovered, so we can "short-circuit" the
+                     // discovery and avoid waiting for all replies.
                      algorithm::container::erase_if( shared->discovery, send_if_included);
 
                      if( shared->api.empty() && shared->discovery.empty())

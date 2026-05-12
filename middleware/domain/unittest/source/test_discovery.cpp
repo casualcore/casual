@@ -16,6 +16,7 @@
 #include "common/communication/instance.h"
 #include "common/array.h"
 #include "common/message/server.h"
+#include "common/algorithm/random.h"
 
 namespace casual
 {
@@ -689,6 +690,55 @@ domain:
 
       }
 
+      TEST( domain_discovery, discover_provider_10__api_discover__expect_no_short_circuit_reply)
+      {
+         common::unittest::Trace trace;
+
+         auto domain = unittest::manager();
+
+         std::array< communication::ipc::inbound::Device, 10> providers;
+
+         for( auto& provider : providers)
+            discovery::provider::registration( provider, discovery::provider::Ability::discover);
+
+         // send one request to discovery
+         const auto correlation = discovery::request( { "a"}, {});
+
+         // we'll reply from all providers, since it's an api request, and we don't short-circuit api requests
+         {
+            auto send_reply_and_expect_no_short_circuit = [ correlation]( auto& provider)
+            {
+               // check that we don't get a reply yet, since discovery should not short-circuit "api" requests.
+               // since we're replying 10 times, we should get a reply if we short-circuit before we reply from all providers.
+               // the first receive in this loop will be a 'no-op' 
+               EXPECT_TRUE( ! communication::ipc::non::blocking::receive< message::discovery::api::Reply>( correlation));
+
+               auto request = communication::device::receive< message::discovery::Request>( provider);
+               auto reply = common::message::reverse::type( request);
+               reply.content.services = algorithm::transform( request.content.services, []( auto& name)
+               {
+                  return common::message::service::concurrent::advertise::Service{
+                     name,
+                     "",
+                     common::service::transaction::Type::none,
+                     common::service::visibility::Type::discoverable
+                  };
+               });
+
+               communication::device::blocking::send( request.process.ipc, reply);
+            };
+
+            std::ranges::for_each( algorithm::random::shuffle( providers), send_reply_and_expect_no_short_circuit);
+         }
+
+         // we expect a reply to our original request
+         {
+            auto reply = communication::ipc::receive< message::discovery::api::Reply>( correlation);
+            ASSERT_TRUE( reply.content.services.size() == 1);
+            EXPECT_TRUE( reply.content.services.at( 0).name == "a");
+         }
+
+      }
 
 
       TEST( domain_discovery, act_as_SM_GW__discover_q1_s2_q1_q2__s1_q1_is_known___extended_discovery_for_s2_q2__all_is_found___expect_s1_s2_q1_q2__in_reply)
