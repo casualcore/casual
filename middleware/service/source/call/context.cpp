@@ -97,7 +97,6 @@ namespace casual
                inline Reply message(
                      State& state,
                      common::buffer::payload::Send&& buffer,
-                     const header::Fields& header,
                      async::Flag flags,
                      const service::lookup::Reply& lookup)
                {
@@ -114,8 +113,6 @@ namespace casual
                   message.parent.span = common::execution::context::get().span;
 
                   message.flags = static_cast< common::message::service::call::request::Flag>( flags);
-
-                  message.header = header;
 
                   auto& transaction = casual::transaction::context().current();
 
@@ -149,7 +146,7 @@ namespace casual
          } // <unnamed>
       } // local
       
-      common::strong::correlation::id Context::async( service::Lookup&& service, common::buffer::payload::Send buffer, async::Flag flags, const header::Fields& header)
+      common::strong::correlation::id Context::async( service::Lookup&& service, common::buffer::payload::Send buffer, async::Flag flags)
       {
          common::Trace trace( "service::call::Context::async lookup");
 
@@ -162,7 +159,7 @@ namespace casual
          auto target = service::lookup::reply( std::move( service));
 
          // The service exists. Take care of reserving descriptor and determine timeout
-         auto prepared = local::prepare::message( m_state, std::move( buffer), std::move( header), flags, target);
+         auto prepared = local::prepare::message( m_state, std::move( buffer), flags, target);
 
          // If some thing goes wrong we unreserve the descriptor
          auto unreserve = common::execute::scope( [&](){ m_state.pending.unreserve( prepared.correlation);});
@@ -187,9 +184,9 @@ namespace casual
       }
 
 
-      common::strong::correlation::id Context::async( const std::string& service, common::buffer::payload::Send buffer, async::Flag flags, const header::Fields& header)
+      common::strong::correlation::id Context::async( const std::string& service, common::buffer::payload::Send buffer, async::Flag flags)
       {
-         return async( local::prepare::lookup( service, flags, m_state.deadline), std::move( buffer), flags, header); 
+         return async( local::prepare::lookup( service, flags, m_state.deadline), std::move( buffer), flags); 
       }
 
       namespace local
@@ -261,8 +258,6 @@ namespace casual
          result.correlation = xatmi_descriptor;
          result.user = reply.code.user;
          result.buffer = std::move( reply.buffer);
-         result.header = std::move( reply.header);
-
 
          // We unreserve pending (at end of scope, regardless of outcome)
          auto discard = common::execute::scope( [&](){ m_state.pending.unreserve( result.correlation);});
@@ -340,7 +335,7 @@ namespace casual
          } // <unnamed>
       } // local
 
-      sync::Result Context::sync( const std::string& service, common::buffer::payload::Send buffer, sync::Flag flags, const header::Fields& header)
+      sync::Result Context::sync( const std::string& service, common::buffer::payload::Send buffer, sync::Flag flags)
       {
          // We can't have no-block when getting the reply
          flags -= sync::Flag::no_block;
@@ -348,12 +343,11 @@ namespace casual
          // Suspend if ongoing transaction and no no_transaction flag.
          auto guard = local::suspend::wrapper( flags);
 
-         auto descriptor = async( service, buffer, common::flag::convert( async::valid_flags, flags), header);
+         auto descriptor = async( service, buffer, common::flag::convert( async::valid_flags, flags));
          auto result = reply( descriptor, common::flag::convert( reply::valid_flags, flags));
 
          return { 
             .buffer = std::move( result.buffer),
-            .header = std::move( result.header), 
             .user = result.user};
       }
 

@@ -66,6 +66,12 @@ namespace casual
       casual::common::serialize::detail::dispatch( archive, member, name); \
    } \
 
+#define CASUAL_WRITE_SERIALIZE( statement) \
+   template< casual::common::serialize::archive::is::writer A>  \
+   void serialize( A& archive) const\
+   {  \
+      statement  \
+   } \
 
 #define CASUAL_LOG_SERIALIZE( statement) \
    template< casual::common::serialize::archive::is::writer A>  \
@@ -74,6 +80,7 @@ namespace casual
       statement  \
    } \
 
+   
 #define CASUAL_SERIALIZE( value) \
    casual::common::serialize::detail::dispatch( archive, value, #value)
 

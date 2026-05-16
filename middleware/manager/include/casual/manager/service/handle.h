@@ -58,6 +58,7 @@ namespace casual
             auto call( const context::State& state, common::message::service::call::callee::Request&& message)
             {
                common::Trace trace{ "manager::service::handle::detail::call"};
+               common::log::debug( "message: ", message);
 
                auto start = common::chronology::time_point::clock::now();
 

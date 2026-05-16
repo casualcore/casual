@@ -128,11 +128,11 @@ domain:
 
             common::message::service::call::callee::Request request{ common::process::handle()};
             request.service.name = "x";
-            request.header.add( { "foo", "bar"});
             request.trid = trid;
             request.deadline.remaining = std::chrono::seconds{ 10};
             request.buffer.data = payload;
             request.buffer.type = common::buffer::type::binary;
+            request.buffer.header.fields.add( { "baz", "bas"});
 
             communication::device::blocking::send( reply.process.ipc, request);
          }
@@ -245,7 +245,6 @@ domain:
          {
             common::message::service::call::v1_2::callee::Request request{ common::process::handle()};
             request.service.name = "x";
-            request.header.add( { "foo", "bar"});
             request.trid = trid;
             request.service.timeout.duration = std::chrono::seconds{ 10};
             request.buffer.data = payload;

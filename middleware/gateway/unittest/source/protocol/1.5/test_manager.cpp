@@ -88,11 +88,11 @@ domain:
          auto device = unittest::tcp::connect::out( "127.0.0.1:7010", message::protocol::Version::v1_5);
          EXPECT_TRUE( device.connector().socket());
 
-         const auto header = casual::header::Fields{{
-            { "a", "foo"},
-            { "b", "bar"},
-            { "c", "baz"}
-         }};
+         const auto header = casual::header::transform({
+            { "a:foo"},
+            { "b:bar"},
+            { "c:baz"}
+         });
 
          // send call
          auto correlation = [ &]()
@@ -101,17 +101,17 @@ domain:
             request.service.name = "a";
             request.buffer.data = common::unittest::random::binary( 128);
             request.buffer.type = "X_OCTET/";
-            request.header = header;
+            request.buffer.header = header;
 
             return common::communication::device::blocking::send( device, request);
          }();
 
          {
             auto request = communication::ipc::receive< common::message::service::call::callee::Request>( correlation);
-            EXPECT_TRUE( request.header == header) << CASUAL_NAMED_VALUE( request.header);
+            EXPECT_TRUE( request.buffer.header == header) << CASUAL_NAMED_VALUE( request.buffer.header);
             auto reply = common::message::reverse::type( request);
             reply.buffer = request.buffer;
-            reply.header = request.header;
+            reply.buffer.header = request.buffer.header;
 
             communication::device::blocking::send( request.process.ipc, reply);
             casual::service::unittest::send::ack( request);
@@ -120,7 +120,7 @@ domain:
          // receive from inbound
          {
             auto reply = communication::device::receive< common::message::service::call::Reply>( device);
-            EXPECT_TRUE( reply.header == header) << CASUAL_NAMED_VALUE( reply.header);
+            EXPECT_TRUE( reply.buffer.header == header) << CASUAL_NAMED_VALUE( reply.buffer.header);
 
          } 
       }
@@ -180,7 +180,7 @@ domain:
 
       }
 
-      TEST( gateway_protocol_1_5_manager, enqueue_dequeue__no_headers)
+      TEST( gateway_protocol_1_5_manager, inbound_enqueue_dequeue__no_headers)
       {
          common::unittest::Trace trace;
          
@@ -190,10 +190,6 @@ domain:
    servers:
       - path: ${CMAKE_BINARY_DIR}/middleware/gateway/bin/casual-gateway-manager
         memberships: [ gateway]
-      - path: ${CMAKE_BINARY_DIR}/middleware/example/server/bin/casual-example-server
-        memberships: [ user]
-      - path: ${CMAKE_BINARY_DIR}/middleware/queue/bin/casual-queue-manager
-        memberships: [ base]  
    
    queue:
       groups:
@@ -246,6 +242,135 @@ domain:
             EXPECT_TRUE( reply.message->attributes.available == available) << CASUAL_NAMED_VALUE( reply.message->attributes.available) << " vs " << CASUAL_NAMED_VALUE( available);
 
          }
+      }
+
+      TEST( gateway_protocol_1_5_manager, outbound_enqueue_dequeue__no_headers)
+      {
+         common::unittest::Trace trace;
+         
+         auto a = local::domain( R"(
+domain:
+   name: A
+   servers:
+      - path: ${CMAKE_BINARY_DIR}/middleware/gateway/bin/casual-gateway-manager
+        memberships: [ gateway]
+   
+   gateway:
+      reverse:
+         outbound:
+            groups:
+               -  connections: 
+                  -  address: 127.0.0.1:7010
+         )");
+
+
+         auto device = unittest::tcp::connect::in( "127.0.0.1:7010", message::protocol::Version::v1_5);
+         EXPECT_TRUE( device.connector().socket());
+
+         auto state = gateway::unittest::fetch::until( gateway::unittest::fetch::predicate::outbound::connected());
+
+         // the ipc that is associated with the connection. We can use this
+         // to directly interact with the outbound.
+         auto outbound_ipc = state.connections.at( 0).ipc;
+
+         const auto trid = common::transaction::id::create();
+         const auto timepoint = common::chronology::time_point::clock::now();
+         const auto payload = common::buffer::Payload{
+            .type = "X_OCTET/",
+            .data = common::unittest::random::binary( 10),
+            .header = casual::header::transform({
+               { "a:foo"},
+               { "b:bar"},
+               { "c:baz"}
+            })
+         }; 
+
+         const auto id = common::uuid::make();
+
+         common::strong::correlation::id correlation;
+         
+         // enqueue to outbound
+         {
+            queue::ipc::message::group::enqueue::Request request{ common::process::handle()};
+            request.name = "a";
+            request.trid = trid;
+            request.message.attributes.properties = "foo";
+            request.message.attributes.available = timepoint;
+            request.message.attributes.reply = "b";
+            request.message.payload = payload;
+
+            correlation = common::communication::device::blocking::send( outbound_ipc, request);
+         }
+
+         // receive 1.5 request from outbound
+         {
+            auto request = common::communication::device::receive< queue::ipc::message::group::enqueue::v1_5::Request>( device, correlation);
+            EXPECT_TRUE( request.name == "a") << CASUAL_NAMED_VALUE( request.name);
+            EXPECT_TRUE( request.trid == trid) << CASUAL_NAMED_VALUE( request.trid);
+            EXPECT_TRUE( request.message.attributes.properties == "foo") << CASUAL_NAMED_VALUE( request.message.attributes.properties);
+            EXPECT_TRUE( request.message.attributes.available == timepoint) << CASUAL_NAMED_VALUE( request.message.attributes.available) << " vs " << CASUAL_NAMED_VALUE( timepoint);
+            EXPECT_TRUE( request.message.attributes.reply == "b") << CASUAL_NAMED_VALUE( request.message.attributes.reply);
+            
+            auto reply = common::message::reverse::type( request);
+            reply.code = common::code::queue::ok;
+            reply.id = id;
+
+            common::communication::device::blocking::send( device, reply);
+         }
+
+         // get the reply from the outbound
+         {
+            auto reply = common::communication::ipc::receive< queue::ipc::message::group::enqueue::Reply>( correlation);
+            EXPECT_TRUE( reply.code == common::code::queue::ok) << CASUAL_NAMED_VALUE( reply.code);
+            EXPECT_TRUE( reply.id == id) << CASUAL_NAMED_VALUE( reply.id);
+         }
+
+         // dequeue to outbound
+         {
+            queue::ipc::message::group::dequeue::Request request{ common::process::handle()};
+            request.name = "a";
+            request.trid = trid;
+
+            correlation = common::communication::device::blocking::send( outbound_ipc, request);
+         }
+
+         // receive request from outbound, reply with 1.5 reply
+         {
+            auto request = common::communication::device::receive< queue::ipc::message::group::dequeue::Request>( device, correlation);
+            EXPECT_TRUE( request.name == "a") << CASUAL_NAMED_VALUE( request.name);
+            EXPECT_TRUE( request.trid == trid) << CASUAL_NAMED_VALUE( request.trid);
+            
+            auto reply = queue::ipc::message::group::dequeue::v1_5::Reply{};
+            reply.execution = request.execution;
+            reply.correlation = request.correlation;
+            reply.code = common::code::queue::ok;
+            reply.message = queue::ipc::message::group::dequeue::v1_5::Message{
+               .id = id,
+               .attributes = {
+                  .properties = "foo",
+                  .reply = "b",
+                  .available = timepoint,
+               }
+            };
+            reply.message->payload.type = payload.type;
+            reply.message->payload.data = payload.data;
+
+            common::communication::device::blocking::send( device, reply);
+         }
+
+         // receive reply from outbound
+         {
+            auto reply = common::communication::ipc::receive< queue::ipc::message::group::dequeue::Reply>( correlation);
+            EXPECT_TRUE( reply.code == common::code::queue::ok) << CASUAL_NAMED_VALUE( reply.code);
+            ASSERT_TRUE( reply.message);
+            EXPECT_TRUE( reply.message->id == id) << CASUAL_NAMED_VALUE( reply.message->id);
+            EXPECT_TRUE( reply.message->attributes.properties == "foo") << CASUAL_NAMED_VALUE( reply.message->attributes.properties);
+            EXPECT_TRUE( reply.message->attributes.available == timepoint) << CASUAL_NAMED_VALUE( reply.message->attributes.available) << " vs " << CASUAL_NAMED_VALUE( timepoint);
+            EXPECT_TRUE( reply.message->attributes.reply == "b") << CASUAL_NAMED_VALUE( reply.message->attributes.reply);
+            EXPECT_TRUE( reply.message->payload.type == payload.type) << CASUAL_NAMED_VALUE( reply.message->payload.type);
+            EXPECT_TRUE( reply.message->payload.data == payload.data) << CASUAL_NAMED_VALUE( reply.message->payload.data.size());
+         }
+
       }
    } // gateway  
 } // casual

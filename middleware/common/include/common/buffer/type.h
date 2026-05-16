@@ -17,6 +17,7 @@
 #include "common/string.h"
 #include "common/strong/type.h"
 
+#include "casual/header.h"
 #include "casual/xatmi/extended.h"
 #include "casual/xatmi/defines.h"
 
@@ -105,12 +106,6 @@ namespace casual
 
       struct Payload
       {
-         Payload();
-         Payload( std::nullptr_t);
-         Payload( string::Argument type);
-         Payload( string::Argument type, platform::binary::type buffer);
-         Payload( string::Argument type, platform::binary::size::type size);
-
          bool null() const;
          inline explicit operator bool () const { return ! type.empty();}
 
@@ -120,19 +115,24 @@ namespace casual
          std::string type;
          platform::binary::type data;
 
-         inline friend bool operator == ( const Payload& lhs, const Payload& rhs) = default;
+         //! out of band data associated with the payload
+         Header header;
 
-         friend std::ostream& operator << ( std::ostream& out, const Payload& value);
+         inline friend bool operator == ( const Payload& lhs, const Payload& rhs) = default;
 
          CASUAL_CONST_CORRECT_SERIALIZE(
             CASUAL_SERIALIZE( type);
             CASUAL_SERIALIZE( data);
+            CASUAL_SERIALIZE( header);
          )
       };
 
 
       namespace payload
       {
+         //! @returns a null payload, i.e. a payload with type "NULL" and no data.
+         Payload null();
+
          //! A view over a payload, with information about how much of the buffer
          //! that the user wants to use (transport) and how much that is reserved by the pool.
          struct Send
@@ -150,14 +150,15 @@ namespace casual
             inline auto transport() const noexcept { return m_transport;}
             inline auto reserved() const noexcept { return m_reserved;}
 
-            // We mimic buffer::Payload and only send 'transport' portion of memory
-            CASUAL_LOG_SERIALIZE(
+            template< casual::common::serialize::archive::is::writer A> 
+            void serialize( A& archive) const
+            {
+               auto data = binary::span::fixed::make( std::begin( payload().data), m_transport);
                CASUAL_SERIALIZE_NAME( payload().type, "type");
                CASUAL_SERIALIZE_NAME( m_transport, "size"); // size of the memory
-               CASUAL_SERIALIZE_NAME( binary::span::fixed::make( std::begin( payload().data), m_transport), "memory");
-            )
-
-            friend std::ostream& operator << ( std::ostream& out, const Send& value);
+               CASUAL_SERIALIZE( data);
+               CASUAL_SERIALIZE( payload().header);
+            }
 
          private:
             std::reference_wrapper< const Payload> m_payload;

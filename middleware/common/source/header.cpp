@@ -17,11 +17,12 @@
 namespace casual
 {
    using namespace common;
-   namespace header
+
+   inline namespace v1
    {
-      inline namespace v1
+      namespace header
       {
-         
+        
          Field::Field( std::string variable)
             : m_data{ std::move( variable)}
          {
@@ -91,6 +92,14 @@ namespace casual
             return nullptr;
          }
 
+         std::optional< header::Field> Fields::extract( std::string_view name)
+         {
+            if( auto found = algorithm::find( m_fields, name))
+               return algorithm::container::extract( m_fields, std::begin( found));
+
+            return {};
+
+         }
 
          Fields operator + ( Fields lhs, const Fields& rhs)
          {
@@ -103,30 +112,70 @@ namespace casual
             algorithm::container::append( rhs.m_fields, lhs.m_fields);
             return lhs;
          }
- 
-         
-         std::string flatten( const Fields& fields)
+
+         std::string flatten( const Header& header)
          {
-            if( fields.empty())
+            if( header.fields.empty())
                return {};
 
             // TODO: optimize, we could pre-calculate the size
 
-            return common::string::join( fields, '\n');
+            return common::string::join( header.fields, '\n');
          }
 
          
-         Fields parse( std::string_view flattened)
+         Header parse( std::string_view flattened)
          {
-            Fields result;
+            Header result;
 
             for( auto&& line : flattened | std::views::split( '\n'))
-               result.add( Field{ std::string{ std::begin( line), std::end( line)}});
+               result.fields.add( Field{ std::string{ std::begin( line), std::end( line)}});
                
             return result;
          }
 
-      } // v1
-   } // header
+         Header transform( const std::vector< std::string>& fields)
+         {
+            auto transform_field = []( const auto& field)
+            {
+               return header::Field{ field};
+            };
+
+            return Header{
+               .fields = algorithm::transform( fields, transform_field)
+            };
+         }
+
+         Header transform( std::vector< std::string>&& fields)
+         {
+            auto transform_field = []( auto& field)
+            {
+               return header::Field{ std::move( field)};
+            };
+
+            return Header{
+               .fields = algorithm::transform( std::move( fields), transform_field)
+            };
+         }
+
+         std::vector< std::string> transform( const Header& header)
+         {
+            return algorithm::transform( header.fields, []( auto& field)
+            {
+               return field.string();
+            });
+         }
+
+         std::vector< std::string> transform( Header&& header)
+         {
+            return algorithm::transform( header.fields, []( header::Field& field)
+            {
+               return std::move( field).extract();
+            });
+         }
+         
+
+      } // header
+   } // v1
 } // casual
 

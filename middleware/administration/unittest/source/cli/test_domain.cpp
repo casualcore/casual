@@ -325,8 +325,6 @@ casual-transaction-manager  running   9338  625e81669dbe473597ae8008c60113a4  20
 */
 
             auto lines = local::execute_get_lines( "casual --header false --color false domain --list-instances-server");
-            for ( auto& line : lines)
-               std::cout << line << std::endl;
 
             auto a = string::adjacent::split( lines.at( 0), ' ');
             EXPECT_TRUE( a.at( 0) == "a");
@@ -362,8 +360,6 @@ z      error         -  -
 z      error         -  - 
 */
             auto lines = local::execute_get_lines( "casual --header false --color false domain --list-instances-executable");
-            for ( auto& line : lines)
-               std::cout << line << std::endl;
 
             auto x = string::adjacent::split( lines.at( 0), ' ');
             EXPECT_TRUE( x.at( 0) == "x");

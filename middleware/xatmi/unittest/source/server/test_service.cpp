@@ -121,8 +121,11 @@ namespace casual
 
          server::service::invoke::Parameter argument{
             .service = { .name = "a" },
-            .header = { { { "a", "foo"}, { "b", "bar"}, { "c", "baz"}}},
-            .payload = common::buffer::Payload{ common::buffer::type::http, 0},
+            .payload = common::buffer::Payload{ 
+               .type = std::string{ common::buffer::type::http}, 
+               .data = {},
+               .header = { .fields = { { { "a", "foo"}, { "b", "bar"}, { "c", "baz"}}}}
+            },
          };
 
          auto result = a( std::move( argument));
@@ -130,9 +133,9 @@ namespace casual
          EXPECT_TRUE( result.code.result == decltype( result.code.result)::success);
          EXPECT_TRUE( result.payload.type == common::buffer::type::http);
          EXPECT_TRUE( result.payload.data.empty());
-         EXPECT_TRUE( result.header.at( "a").value() == "foo") << CASUAL_NAMED_VALUE( result.header);
-         EXPECT_TRUE( result.header.at( "b").value() == "bar") << CASUAL_NAMED_VALUE( result.header);
-         EXPECT_TRUE( result.header.at( "c").value() == "baz") << CASUAL_NAMED_VALUE( result.header);
+         EXPECT_TRUE( result.payload.header.fields.at( "a").value() == "foo") << CASUAL_NAMED_VALUE( result.payload.header);
+         EXPECT_TRUE( result.payload.header.fields.at( "b").value() == "bar") << CASUAL_NAMED_VALUE( result.payload.header);
+         EXPECT_TRUE( result.payload.header.fields.at( "c").value() == "baz") << CASUAL_NAMED_VALUE( result.payload.header);
 
       }
 

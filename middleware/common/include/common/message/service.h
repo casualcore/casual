@@ -9,6 +9,7 @@
 
 #include "common/message/type.h"
 #include "common/message/event.h"
+#include "common/message/compatibility.h"
 
 #include "common/transaction/id.h"
 #include "common/service/type.h"
@@ -17,8 +18,6 @@
 #include "common/flag/xatmi.h"
 #include "common/code/xatmi.h"
 #include "common/algorithm/compare.h"
-
-#include "casual/header.h"
 
 #include "common/serialize/line.h"
 
@@ -480,48 +479,40 @@ namespace casual
                   )
                };
 
-               struct base_request : message::basic_request< message::Type::service_call_v2>
-               {
-                  using base_type = message::basic_request< message::Type::service_call_v2>;
-                  using base_type::base_type;
-
-                  Service service;
-                  std::string parent;
-
-                  common::transaction::ID trid;
-                  request::Flag flags{};
-
-                  header::Fields header;
-
-                  //! pending time, only to be return in the "ACK", to collect
-                  //! metrics
-                  chronology::duration pending{};
-
-                  CASUAL_CONST_CORRECT_SERIALIZE(
-                     base_type::serialize( archive);
-                     CASUAL_SERIALIZE( service);
-                     CASUAL_SERIALIZE( parent);
-                     CASUAL_SERIALIZE( trid);
-                     CASUAL_SERIALIZE( flags);
-                     CASUAL_SERIALIZE( header);
-                     CASUAL_SERIALIZE( pending);
-                  )
-               };
-
                namespace callee
                {
-                  //! Represents a service call. via tp(a)call, from the callee's perspective
-                  struct Request : base_request
-                  {   
-                     using base_request::base_request;
 
-                     common::buffer::Payload buffer;
+                  struct Request : message::basic_request< message::Type::service_call_v2>
+                  {
+                     using base_type = message::basic_request< message::Type::service_call_v2>;
+                     using base_type::base_type;
+
+                     Service service;
+                     std::string parent;
+
+                     common::transaction::ID trid;
+                     request::Flag flags{};
+
+                     casual::Header header;
+
+                     //! pending time, only to be return in the "ACK", to collect
+                     //! metrics
+                     chronology::duration pending{};
+
+                     message::compatibility::Payload buffer;
 
                      CASUAL_CONST_CORRECT_SERIALIZE(
-                        base_request::serialize( archive);
+                        base_type::serialize( archive);
+                        CASUAL_SERIALIZE( service);
+                        CASUAL_SERIALIZE( parent);
+                        CASUAL_SERIALIZE( trid);
+                        CASUAL_SERIALIZE( flags);
+                        CASUAL_SERIALIZE( header);
+                        CASUAL_SERIALIZE( pending);
                         CASUAL_SERIALIZE( buffer);
                      )
                   };
+
                } // callee
 
 
@@ -531,7 +522,8 @@ namespace casual
                {
                   common::service::Code code;
                   Transaction transaction;
-                  common::buffer::Payload buffer;
+                  //! payload without header, to be used in message transformations between v1_2 and v1_4 (and later)
+                  message::compatibility::Payload buffer;
 
                   CASUAL_CONST_CORRECT_SERIALIZE(
                      base_reply::serialize( archive);
@@ -550,7 +542,7 @@ namespace casual
                {
                   common::service::Code code;
                   transaction::State transaction_state = transaction::State::ok;
-                  common::buffer::Payload buffer;
+                  message::compatibility::Payload buffer;
 
                   CASUAL_CONST_CORRECT_SERIALIZE(
                      base_reply::serialize( archive);
@@ -560,53 +552,44 @@ namespace casual
                   )
                };
 
-               //! this is exactly the same as Type::service_call (current), but we need a 
-               //! different type to be able to distinguish between v1_4 and v1_5 for gateway
-               //! protocol
-               struct base_request : message::basic_request< message::Type::service_call_v4>
-               {
-                  using base_type = message::basic_request< message::Type::service_call_v4>;
-                  using base_type::base_type;
-
-                  execution::context::Parent parent;
-                  service::call::Service service;
-                  service::call::Deadline deadline;
-
-                  common::transaction::ID trid;
-                  request::Flag flags{};
-
-                  header::Fields header;
-
-                  //! pending time, only to be return in the "ACK", to collect
-                  //! metrics
-                  chronology::duration pending{};
-
-                  CASUAL_CONST_CORRECT_SERIALIZE(
-                     base_type::serialize( archive);
-                     CASUAL_SERIALIZE( parent);
-                     CASUAL_SERIALIZE( service);
-                     CASUAL_SERIALIZE( deadline);
-                     CASUAL_SERIALIZE( trid);
-                     CASUAL_SERIALIZE( flags);
-                     CASUAL_SERIALIZE( header);
-                     CASUAL_SERIALIZE( pending);
-                  )
-               };
-
                namespace callee
                {
-                  //! Represents a service call. via tp(a)call, from the callee's perspective
-                  struct Request : base_request
-                  {   
-                     using base_request::base_request;
 
-                     common::buffer::Payload buffer;
+                  //! this is exactly the same as Type::service_call (current), but we need a 
+                  //! different type to be able to distinguish between v1_4 and v1_5 for gateway
+                  //! protocol
+                  struct Request : message::basic_request< message::Type::service_call_v4>
+                  {
+                     using base_type = message::basic_request< message::Type::service_call_v4>;
+                     using base_type::base_type;
+
+                     execution::context::Parent parent;
+                     service::call::Service service;
+                     service::call::Deadline deadline;
+
+                     common::transaction::ID trid;
+                     request::Flag flags{};
+
+                     casual::Header header;
+
+                     chronology::duration pending{};
+
+                     // no header in buffer.
+                     message::compatibility::Payload buffer;
 
                      CASUAL_CONST_CORRECT_SERIALIZE(
-                        base_request::serialize( archive);
+                        base_type::serialize( archive);
+                        CASUAL_SERIALIZE( parent);
+                        CASUAL_SERIALIZE( service);
+                        CASUAL_SERIALIZE( deadline);
+                        CASUAL_SERIALIZE( trid);
+                        CASUAL_SERIALIZE( flags);
+                        CASUAL_SERIALIZE( header);
+                        CASUAL_SERIALIZE( pending);
                         CASUAL_SERIALIZE( buffer);
                      )
                   };
+
                } // callee
             } // v1_4
 
@@ -623,8 +606,6 @@ namespace casual
                common::transaction::ID trid;
                request::Flag flags{};
 
-               header::Fields header;
-
                //! pending time, only to be return in the "ACK", to collect
                //! metrics
                chronology::duration pending{};
@@ -636,7 +617,6 @@ namespace casual
                   CASUAL_SERIALIZE( deadline);
                   CASUAL_SERIALIZE( trid);
                   CASUAL_SERIALIZE( flags);
-                  CASUAL_SERIALIZE( header);
                   CASUAL_SERIALIZE( pending);
                )
             };
@@ -685,14 +665,12 @@ namespace casual
                common::service::Code code;
                transaction::State transaction_state = transaction::State::ok;
                common::buffer::Payload buffer;
-               header::Fields header;
 
                CASUAL_CONST_CORRECT_SERIALIZE(
                   base_reply::serialize( archive);
                   CASUAL_SERIALIZE( code);
                   CASUAL_SERIALIZE( transaction_state);
                   CASUAL_SERIALIZE( buffer);
-                  CASUAL_SERIALIZE( header);
                )
             };
 

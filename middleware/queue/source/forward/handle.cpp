@@ -547,9 +547,7 @@ namespace casual
                            state.multiplex.send( ipc::service::manager(), request);
 
                            forward::state::pending::service::Lookup lookup{ std::move( *pending)};
-                           lookup.header = std::move( message.message->attributes.header);
-                           lookup.buffer.type = std::move( message.message->payload.type);
-                           lookup.buffer.data = std::move( message.message->payload.data);
+                           lookup.payload = std::move( message.message->payload);
 
                            state.pending.service.lookups.push_back( std::move( lookup));
 
@@ -690,7 +688,7 @@ namespace casual
                               return;
                            }
 
-                           message::service::call::caller::Request request{ buffer::payload::Send{ pending->buffer}};
+                           message::service::call::caller::Request request{ buffer::payload::Send{ pending->payload}};
                            request.process = process::handle();
                            request.correlation = pending->correlation;
                            request.trid = pending->trid;

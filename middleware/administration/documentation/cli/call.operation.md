@@ -14,6 +14,35 @@ call [0..1]
      
      @note: part of casual-pipe
 
+     Examples:
+     
+        json buffer:
+        
+        `echo '{ "key" : "some", "value": "json"}' \
+           | casual buffer --compose ".json/" \
+           | casual call --service a \
+           | casual buffer --extract`
+     
+        fielded buffer:
+        
+        `cat some-fields.yaml | casual buffer --field-from-human yaml \
+           | casual call --service a \
+           | casual buffer --field-to-human json`
+     
+        where the format of _human-fields_ are:
+     
+        ```yaml
+        fields:
+          - name: "CUSTOMER_ID"
+            value: "9999999"
+          - name: "CUSTOMER_NAME"
+            value: "foo bar"
+        ```
+     
+        from a dequeue
+        
+        `casual queue --dequeue qA | casual call --service a | casual queue --enqueue qB`
+
    SUB OPTIONS:
 
       -s, --service [0..1]  (<service>) [1]
@@ -21,8 +50,5 @@ call [0..1]
 
       --iterations [0..1]  (<value>) [1]
            number of iterations (default: 1) - this could be helpful for testing load
-
-      --examples [0..1]
-           prints several examples of how casual call can be used
 
 ```

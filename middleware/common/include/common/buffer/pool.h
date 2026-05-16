@@ -67,6 +67,8 @@ namespace casual
          Payload release( buffer::handle::type handle, platform::binary::size::type user_size);
          Payload release( buffer::handle::type handle);
 
+         casual::Header* find_header( buffer::handle::type handle);
+
          //! @returns true if the `handle` is the _special inbound_ buffer
          //! @note used only (?) in unittests
          bool inbound( buffer::handle::type handle) const;
@@ -101,6 +103,8 @@ namespace casual
 
             virtual Payload release( buffer::handle::type handle, platform::binary::size::type user_size) = 0;
             virtual Payload release( buffer::handle::type handle) = 0;
+
+            virtual casual::Header* find_header( buffer::handle::type handle) = 0;
 
             virtual bool inbound( buffer::handle::type handle) const = 0;
 
@@ -163,6 +167,12 @@ namespace casual
                // Adjust the buffer size, with regards to the user size
                buffer.payload.data.erase( std::begin( buffer.payload.data) + buffer.transport( user_size), std::end( buffer.payload.data));
                return std::move( buffer.payload);
+            }
+
+            casual::Header* find_header( buffer::handle::type handle) override
+            {
+               auto& buffer = m_pool.get( handle);
+               return &buffer.payload.header;
             }
 
             bool inbound( buffer::handle::type handle) const override { return m_pool.inbound( handle);}

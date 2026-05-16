@@ -430,12 +430,11 @@ domain:
          signal::timer::Scoped alarm{ std::chrono::seconds{ 5}};
 
          // we expect to get a forward call
+         try
          {
-            common::message::service::call::callee::Request request;
-            
-            common::communication::device::blocking::receive( 
-               common::communication::ipc::inbound::device(),
-               request);
+            auto request = common::communication::ipc::receive< common::message::service::call::callee::Request>();
+
+            common::log::debug( "request: ", request);
 
             EXPECT_TRUE( request.buffer.data == payload);
             EXPECT_TRUE( request.buffer.type == common::buffer::type::binary);
@@ -444,6 +443,12 @@ domain:
             reply.buffer = std::move( request.buffer);
             common::communication::device::blocking::send( request.process.ipc, reply);
          }
+         catch( ...)
+         {
+            common::log::debug( "common::exception::capture: ", common::exception::capture());
+            throw;
+         }
+
 
          // we expect the reply to be enqueued to a2
          {

@@ -25,7 +25,6 @@ namespace casual
       namespace protocol
       {
          using payload_type = common::buffer::Payload;
-         using headers_type = header::Fields;
 
          namespace io
          {
@@ -191,7 +190,7 @@ namespace casual
 
             using creator_type = std::function< Protocol( protocol::payload_type&&)>;
 
-            Protocol create( protocol::payload_type&& parameter, const header::Fields& headers);
+            Protocol create( protocol::payload_type&& parameter);
 
             template< typename Protocol>
             std::string_view registration( std::string_view type)
@@ -228,7 +227,7 @@ namespace casual
          };
 
          //! @returns a protocol deduced from `payload`
-         Protocol deduce( protocol::payload_type&& payload, const header::Fields& headers);
+         Protocol deduce( protocol::payload_type&& payload);
 
       } // protocol
 
@@ -289,9 +288,9 @@ namespace casual
       //! takes ownership of `payload` and deduces protocol and serializes the result (if not void) and return 
       //! common::service::invoke::Result
       template< typename... Ts>
-      auto user( protocol::payload_type&& payload, const protocol::headers_type& headers, Ts&&... ts)
+      auto user( protocol::payload_type&& payload, Ts&&... ts)
       {
-         return service::user( protocol::deduce( std::move( payload), headers), std::forward< Ts>( ts)...);
+         return service::user( protocol::deduce( std::move( payload)), std::forward< Ts>( ts)...);
       }
 
    } // common::serialize::service

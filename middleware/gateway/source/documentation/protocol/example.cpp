@@ -227,11 +227,11 @@ namespace casual
             message.buffer.type = ".binary/";
             message.buffer.data = local::binary::value( 128);
 
-            message.header = casual::header::Fields{ { 
-               { "a", "foo"},
-               { "b", "bar"},
-               { "c", "baz"}
-            }};
+            message.buffer.header = casual::header::transform( { 
+               { "a:foo"},
+               { "b:bar"},
+               { "c:baz"}
+            });
 
          }
 
@@ -271,11 +271,11 @@ namespace casual
             message.buffer.type = ".binary/";
             message.buffer.data = local::binary::value( 128);
 
-            message.header = casual::header::Fields{ { 
-               { "a", "foo"},
-               { "b", "bar"},
-               { "c", "baz"}
-            }};
+            message.buffer.header = casual::header::transform( { 
+               { "a:foo"},
+               { "b:bar"},
+               { "c:baz"}
+            });
          }
 
          void fill( common::message::conversation::connect::v1_2::callee::Request& message)
@@ -342,11 +342,11 @@ namespace casual
 
             message.message.id = 0x6ccc80fe613c4aa0b74cc7461d318422_uuid;
             message.message.attributes.properties = "property 1:property 2";
-            message.message.attributes.header = header::Fields{ { { "a", "b"}, { "c", "d"} } };
             message.message.attributes.reply = "queueB";
             message.message.attributes.available = local::time::point();
             message.message.payload.type = ".binary/";
             message.message.payload.data = local::binary::value( 128);
+            message.message.payload.header = header::transform( { "a:b", "c:d"});
          }
 
          void fill( casual::queue::ipc::message::group::enqueue::v1_5::Request& message)
@@ -405,10 +405,9 @@ namespace casual
                message.message->attributes.properties = "property 1:property 2";
                message.message->attributes.reply = "queueB";
                message.message->attributes.available = local::time::point();
-               message.message->attributes.header.add( { "a", "b"});
-               message.message->attributes.header.add( { "c", "d"});
                message.message->payload.type = ".json/";
                message.message->payload.data = { std::byte{ '{'}, std::byte{ '}'}};
+               message.message->payload.header = header::transform( { "a:b", "c:d"});
                message.message->redelivered = 1;
                message.message->timestamp = local::time::point();
             }

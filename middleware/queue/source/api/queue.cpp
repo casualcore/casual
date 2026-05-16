@@ -64,8 +64,8 @@ namespace casual
 
                   request.message.payload.data = message.payload.data;
                   request.message.payload.type = message.payload.type;
+                  request.message.payload.header = message.payload.header;
                   request.message.attributes.properties = message.attributes.properties;
-                  request.message.attributes.header = message.attributes.header;
                   request.message.attributes.reply = message.attributes.reply;
                   request.message.attributes.available = message.attributes.available;
                   request.name = lookup.name();
@@ -116,10 +116,10 @@ namespace casual
                            result.id = value.id;
                            result.attributes.available = value.attributes.available;
                            result.attributes.properties = std::move( value.attributes.properties);
-                           result.attributes.header = std::move( value.attributes.header);
                            result.attributes.reply = std::move( value.attributes.reply);
                            result.payload.type = std::move( value.payload.type);
                            result.payload.data = std::move( value.payload.data);
+                           result.payload.header = std::move( value.payload.header);
                            return result;
                         };
                      }
@@ -386,24 +386,15 @@ namespace casual
                // To hold reference data, so we don't need to copy the buffer.
                struct Payload
                {
-                  template< typename T, typename Range>
-                  Payload( T  type, Range range)
-                    : type(std::move( type)), data( std::begin( range), std::end( range))
-                  {
-
-                  }
-
-                  Payload( Payload&&) = default;
-                  Payload& operator = ( Payload&&) = default;
-
                   std::string type;
                   platform::binary::type data;
+                  Header header;
 
                   CASUAL_CONST_CORRECT_SERIALIZE(
-                  {
                      CASUAL_SERIALIZE( type);
                      CASUAL_SERIALIZE( data);
-                  })
+                     CASUAL_SERIALIZE( header);
+                  )
                };
 
                using Message = basic_message< Payload>;
@@ -416,7 +407,7 @@ namespace casual
 
                const queue::Lookup lookup{ queue, queue::Lookup::Action::enqueue};
 
-               auto send = common::buffer::pool::holder().get( common::buffer::handle::type{ message.payload.buffer}, message.payload.size);
+               auto buffer = common::buffer::pool::holder().get( common::buffer::handle::type{ message.payload.buffer}, message.payload.size);
 
                // We have to send only the real size of the buffer [buffer.begin, buffer.begin + transport_size)
                //
@@ -426,8 +417,12 @@ namespace casual
                // TODO: get rid of the copy in a conformant way
                //         we probably need to change the interface for 'binary' in write-archives (to take a range, or iterator first, last)
                copy::Message send_message{
-                  message.id, message.attributes,
-                  { send.payload().type, common::range::make( std::begin( send.payload().data), send.transport())}};
+                  .id = message.id, 
+                  .attributes = message.attributes};
+
+               send_message.payload.type = buffer.payload().type;
+               send_message.payload.data.assign( std::begin( buffer.payload().data), std::end( buffer.payload().data));
+               send_message.payload.header = buffer.payload().header;
 
                return local::enqueue( lookup, send_message);
             }
@@ -445,11 +440,7 @@ namespace casual
                   result.id = std::move( message.id);
 
                   {
-                     common::buffer::Payload payload;
-                     payload.type = std::move( message.payload.type);
-                     payload.data = std::move( message.payload.data);
-
-                     auto buffer = common::buffer::pool::holder().insert( std::move( payload));
+                     auto buffer = common::buffer::pool::holder().insert( std::move( message.payload));
                      result.payload.buffer = std::get< 0>( buffer).raw();
                      result.payload.size = std::get< 1>( buffer);                           
                   }

@@ -12,13 +12,13 @@ namespace casual
    {
       common::serialize::service::Protocol deduce( invoke::Parameter&& parameter)
       {
-         return common::serialize::service::protocol::deduce( std::move( parameter.payload), parameter.header);
+         return common::serialize::service::protocol::deduce( std::move( parameter.payload));
       }
 
       Concurrent deduce( invoke::concurrent::Parameter&& parameter)
       {
          return Concurrent{
-            .protocol = common::serialize::service::protocol::deduce( std::move( parameter.invoke.payload), parameter.invoke.header),
+            .protocol = common::serialize::service::protocol::deduce( std::move( parameter.invoke.payload)),
             .callback = std::move( parameter.callback)
          };
       }
