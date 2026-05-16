@@ -684,7 +684,7 @@ Sent to and received from other domains when one domain wants call a service in 
                request.parent.service = local::string::value( 128);
                request.buffer.type = local::string::value( 8) + '/' + local::string::value( 16);
                request.buffer.data = local::binary::value( 1024);
-               request.header = casual::header::Fields{ { { "key", "value"}}};
+               request.buffer.header = casual::header::transform( { { "key:value"}});
 
                local::format::type( out, request, {
                         { "execution", "uuid of the current execution context (breadcrumb)"},
@@ -812,7 +812,7 @@ Reply to call request
                message.transaction_state = decltype( message.transaction_state)::ok;
                message.buffer.type = local::string::value( 8) + '/' + local::string::value( 16);
                message.buffer.data = local::binary::value( 1024);
-               message.header = casual::header::Fields{ { { "key", "value"}}};
+               message.buffer.header = casual::header::transform( { { "key:value"}});
 
                local::format::type( out, message, {
                         { "execution", "uuid of the current execution context (breadcrumb)"},
@@ -1135,9 +1135,9 @@ Represent enqueue request.
 
                message.name = local::string::value( 32);
                message.message.attributes.properties = local::string::value( 32);
-               message.message.attributes.header = casual::header::Fields{ { { "a", "b"}}};
                message.message.attributes.reply = local::string::value( 32);
                message.message.payload.data = local::binary::value( 1024);
+               message.message.payload.header = casual::header::transform( { { "a:b"}});
 
                local::format::type( out, message, {
                         { "execution", "uuid of the current execution context (breadcrumb)"},
@@ -1292,10 +1292,10 @@ Represent dequeue reply.
 
                message.message.emplace();
                message.message->attributes.properties = local::string::value( 128);
-               message.message->attributes.header = casual::header::Fields{ { { "a", "b"}}};
                message.message->attributes.reply = local::string::value( 128);
                message.message->payload.type = local::string::value( 128);
                message.message->payload.data = local::binary::value( 1024); 
+               message.message->payload.header = casual::header::transform( { "a:b"});
                message.code = decltype( message.code)::system;
 
                local::format::type( out, message, {

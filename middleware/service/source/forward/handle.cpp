@@ -44,7 +44,7 @@ namespace casual
                      reply.correlation = message.correlation;
                      reply.execution = message.execution;
                      reply.code.result = code;
-                     reply.buffer = buffer::Payload{ nullptr};
+                     reply.buffer = buffer::payload::null();
 
                      state.multiplex.send( message.process.ipc, reply);
                   }

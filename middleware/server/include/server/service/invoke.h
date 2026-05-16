@@ -7,8 +7,6 @@
 
 #pragma once
 
-#include "casual/header.h"
-
 #include "common/buffer/type.h"
 #include "common/flag.h"
 
@@ -48,7 +46,6 @@ namespace casual
 
          Flag flags{};
          Service service;
-         header::Fields header;
          common::execution::context::Parent parent;
          common::buffer::Payload payload;
          common::strong::conversation::descriptor::id descriptor;
@@ -56,7 +53,6 @@ namespace casual
          CASUAL_LOG_SERIALIZE(
             CASUAL_SERIALIZE( flags);
             CASUAL_SERIALIZE( service);
-            CASUAL_SERIALIZE( header);
             CASUAL_SERIALIZE( parent);
             CASUAL_SERIALIZE( payload);
             CASUAL_SERIALIZE( descriptor);
@@ -82,12 +78,10 @@ namespace casual
 
       struct Result
       {
-         header::Fields header;
          common::buffer::Payload payload;
          result::Code code;
 
          CASUAL_LOG_SERIALIZE(
-            CASUAL_SERIALIZE( header);
             CASUAL_SERIALIZE( payload);
             CASUAL_SERIALIZE( code);
          )

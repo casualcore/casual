@@ -175,7 +175,7 @@ namespace casual
                {
                   auto result = common::message::reverse::type( message);
 
-                  result.buffer = common::buffer::Payload{ nullptr};
+                  result.buffer =  common::buffer::payload::null();
                   result.code.result = common::code::xatmi::service_error;
 
                   return result;
@@ -187,7 +187,7 @@ namespace casual
 
                   result.correlation = message.correlation;
                   result.execution = message.execution;
-                  result.buffer = common::buffer::Payload{ nullptr};
+                  result.buffer = common::buffer::payload::null();
                   result.code.result = common::code::xatmi::service_error;
 
                   return result;
@@ -198,7 +198,6 @@ namespace casual
                {
                   service::invoke::Parameter result{
                      .service = { .name = message.service.name},
-                     .header = std::move( message.header),
                      .parent = message.parent,
                      .payload = std::move( message.buffer)
                   };
@@ -266,7 +265,6 @@ namespace casual
 
                reply.code.user = result.code.user;
                reply.buffer = std::move( result.payload);
-               reply.header = std::move( result.header);
 
                if( result.code.result == common::flag::xatmi::Return::success)
                {

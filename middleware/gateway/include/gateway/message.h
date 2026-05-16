@@ -719,7 +719,6 @@ struct Value< type, A>  \
             CASUAL_SERIALIZE_NAME( value.trid, "xid");
             CASUAL_CUSTOMIZATION_POINT_SERIALIZE( flags);
             CASUAL_CUSTOMIZATION_POINT_SERIALIZE( buffer);
-            CASUAL_CUSTOMIZATION_POINT_SERIALIZE( header);
          })
       
          CASUAL_CUSTOMIZATION_POINT_NETWORK( common::message::service::call::Reply,
@@ -729,7 +728,6 @@ struct Value< type, A>  \
             CASUAL_CUSTOMIZATION_POINT_SERIALIZE( code.user);
             CASUAL_CUSTOMIZATION_POINT_SERIALIZE( transaction_state);
             CASUAL_CUSTOMIZATION_POINT_SERIALIZE( buffer);
-            CASUAL_CUSTOMIZATION_POINT_SERIALIZE( header);
          })
 
          CASUAL_CUSTOMIZATION_POINT_NETWORK( common::message::service::call::v1_4::Reply,
@@ -770,7 +768,8 @@ struct Value< type, A>  \
             CASUAL_CUSTOMIZATION_POINT_SERIALIZE( parent);
             CASUAL_SERIALIZE_NAME( value.trid, "xid");
             CASUAL_CUSTOMIZATION_POINT_SERIALIZE( duplex);
-            CASUAL_CUSTOMIZATION_POINT_SERIALIZE( buffer);
+            CASUAL_CUSTOMIZATION_POINT_SERIALIZE( buffer.type);
+            CASUAL_CUSTOMIZATION_POINT_SERIALIZE( buffer.data);
          })
 
          CASUAL_CUSTOMIZATION_POINT_NETWORK( common::message::conversation::connect::callee::Request,
@@ -781,7 +780,8 @@ struct Value< type, A>  \
             CASUAL_CUSTOMIZATION_POINT_SERIALIZE( parent);
             CASUAL_SERIALIZE_NAME( value.trid, "xid");
             CASUAL_CUSTOMIZATION_POINT_SERIALIZE( duplex);
-            CASUAL_CUSTOMIZATION_POINT_SERIALIZE( buffer);
+            CASUAL_CUSTOMIZATION_POINT_SERIALIZE( buffer.type);
+            CASUAL_CUSTOMIZATION_POINT_SERIALIZE( buffer.data);
          })
 
          CASUAL_CUSTOMIZATION_POINT_NETWORK( common::message::conversation::connect::Reply,
@@ -802,7 +802,8 @@ struct Value< type, A>  \
             CASUAL_CUSTOMIZATION_POINT_SERIALIZE( duplex);
             CASUAL_CUSTOMIZATION_POINT_SERIALIZE( code.result);
             CASUAL_CUSTOMIZATION_POINT_SERIALIZE( code.user);
-            CASUAL_CUSTOMIZATION_POINT_SERIALIZE( buffer);
+            CASUAL_CUSTOMIZATION_POINT_SERIALIZE( buffer.type);
+            CASUAL_CUSTOMIZATION_POINT_SERIALIZE( buffer.data);
          })
 
 
@@ -866,7 +867,15 @@ struct Value< type, A>  \
             CASUAL_CUSTOMIZATION_POINT_SERIALIZE( message);
          })
 
-         // without message.header
+         // part of over-the-wire message without payload.header
+         CASUAL_CUSTOMIZATION_POINT_NETWORK( queue::ipc::message::group::enqueue::v1_5::Message,
+         {
+            CASUAL_CUSTOMIZATION_POINT_SERIALIZE( id);
+            CASUAL_CUSTOMIZATION_POINT_SERIALIZE( attributes);
+            CASUAL_CUSTOMIZATION_POINT_SERIALIZE( payload.type);
+            CASUAL_CUSTOMIZATION_POINT_SERIALIZE( payload.data);
+         })
+
          CASUAL_CUSTOMIZATION_POINT_NETWORK( queue::ipc::message::group::enqueue::v1_5::Request,
          {
             CASUAL_CUSTOMIZATION_POINT_SERIALIZE( execution);
@@ -905,18 +914,29 @@ struct Value< type, A>  \
             CASUAL_CUSTOMIZATION_POINT_SERIALIZE( code);
          })
 
-         // without message.header
+         // a specific type (used in the real Reply types below) to be able to serialize it without the payload.header
+         CASUAL_CUSTOMIZATION_POINT_NETWORK( queue::ipc::message::group::dequeue::v1_5::Message,
+         {
+            CASUAL_CUSTOMIZATION_POINT_SERIALIZE( id);
+            CASUAL_CUSTOMIZATION_POINT_SERIALIZE( attributes);
+            CASUAL_CUSTOMIZATION_POINT_SERIALIZE( payload.type);
+            CASUAL_CUSTOMIZATION_POINT_SERIALIZE( payload.data);
+            CASUAL_CUSTOMIZATION_POINT_SERIALIZE( redelivered);
+            CASUAL_CUSTOMIZATION_POINT_SERIALIZE( timestamp);
+
+         })
+
          CASUAL_CUSTOMIZATION_POINT_NETWORK( queue::ipc::message::group::dequeue::v1_5::Reply,
          {
             CASUAL_CUSTOMIZATION_POINT_SERIALIZE( execution);
-            CASUAL_CUSTOMIZATION_POINT_SERIALIZE( message);
+            CASUAL_CUSTOMIZATION_POINT_SERIALIZE( message); // dequeue::v1_5::Message
             CASUAL_CUSTOMIZATION_POINT_SERIALIZE( code);
          })
 
          CASUAL_CUSTOMIZATION_POINT_NETWORK( queue::ipc::message::group::dequeue::v1_2::Reply,
          {
             CASUAL_CUSTOMIZATION_POINT_SERIALIZE( execution);
-            CASUAL_CUSTOMIZATION_POINT_SERIALIZE( message);
+            CASUAL_CUSTOMIZATION_POINT_SERIALIZE( message); // dequeue::v1_5::Message
          })
          
       } // serialize::customize::composite

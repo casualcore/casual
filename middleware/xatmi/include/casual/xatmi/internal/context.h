@@ -7,6 +7,7 @@
 #pragma once
 
 #include "casual/header.h"
+#include "common/buffer/type.h"
 
 #include "common/flag/xatmi.h"
 
@@ -14,43 +15,6 @@ namespace casual
 {
    namespace xatmi::internal
    {
-      namespace header
-      {
-         struct Context
-         {
-            void associate( common::buffer::handle::type handle, casual::header::Fields fields);
-            void disassociate( common::buffer::handle::type handle) noexcept;
-
-            const casual::header::Fields* find( common::buffer::handle::type handle) noexcept;
-
-            //! find the `old_handle` in the context and update it to `new_handle`
-            //! used when a buffer is reallocated, to keep the association
-            void update_handle( common::buffer::handle::type old_handle, common::buffer::handle::type new_handle) noexcept;
-            void clear() noexcept;
-
-            CASUAL_LOG_SERIALIZE(
-               CASUAL_SERIALIZE( m_fields);
-            )
-
-         private:
-            struct Holder
-            {
-               common::buffer::handle::type handle;
-               casual::header::Fields fields;
-
-               friend bool operator == ( const Holder& lhs, common::buffer::handle::type rhs) { return lhs.handle == rhs; }
-
-               CASUAL_LOG_SERIALIZE(
-                  CASUAL_SERIALIZE( handle);
-                  CASUAL_SERIALIZE( fields);
-               )
-            };
-
-            std::vector< Holder> m_fields;
-         };
-         
-      } // header
-
       namespace descriptor
       {
          struct Context
@@ -183,12 +147,10 @@ namespace casual
          void finalize();
 
          State state;
-         header::Context header; //! holds the header context
          descriptor::Context descriptor; //! holds the descriptor context
 
          CASUAL_LOG_SERIALIZE(
             CASUAL_SERIALIZE( state);
-            CASUAL_SERIALIZE( header);
             CASUAL_SERIALIZE( descriptor);
          )
 

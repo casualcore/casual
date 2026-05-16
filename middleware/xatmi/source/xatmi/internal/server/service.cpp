@@ -45,38 +45,20 @@ namespace casual
                   // This is the only place where we use adopt
                   result.data = common::buffer::pool::holder().adopt( std::move( argument.payload)).raw();
 
-                  // if we have a header, we associate it with the buffer handle -> give user access to it via handle
-                  if( ! argument.header.empty())
-                     context().header.associate( common::buffer::handle::type{ result.data}, std::move( argument.header));
-
                   return result;
                }
 
                common::buffer::Payload payload( const internal::state::Jump& jump)
                {
                   if( jump.buffer.data)
-                  {
-                     context().header.disassociate( common::buffer::handle::type{ jump.buffer.data});
                      return common::buffer::pool::holder().release( jump.buffer.data, jump.buffer.size);
-                  }
 
-                  return { nullptr};
-               }
-
-               casual::header::Fields header( const internal::state::Jump& jump)
-               {
-                  auto handle = common::buffer::handle::type{ jump.buffer.data};
-
-                  if( auto found = internal::context().header.find( handle))
-                     return *found;
-
-                  return {};
+                  return common::buffer::payload::null();
                }
 
                casual::server::service::invoke::Result result( const internal::state::Jump& jump)
                {
                   return casual::server::service::invoke::Result{ 
-                     .header = transform::header( jump),
                      .payload = transform::payload( jump),
                      .code = { .result = jump.state.value, .user = jump.state.code}
                   };
@@ -87,7 +69,6 @@ namespace casual
                   casual::server::service::invoke::Forward result;
 
                   result.parameter.payload =  transform::payload( jump);
-                  result.parameter.header = transform::header( jump);
                   result.parameter.service.name = jump.forward.service;
                   
                   return result;

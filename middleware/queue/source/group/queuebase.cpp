@@ -85,7 +85,7 @@ namespace casual
                      );
 
                      if( ! header.empty())
-                        result.message.attributes.header = header::parse( header);
+                        result.message.payload.header = header::parse( header);
                   }
 
                   auto fetch( sql::database::Row& row)
@@ -409,7 +409,7 @@ namespace casual
                message.message.attributes.available,
                platform::time::clock::type::now(),
                message.message.payload.data,
-               header::flatten( message.message.attributes.header));
+               header::flatten( message.message.payload.header));
 
          common::log::debug( "reply: ", reply);
          return reply;

@@ -17,32 +17,32 @@ namespace casual
    {
       namespace call
       {
-         Result invoke( std::string service, common::buffer::payload::Send payload, const Complement& complement)
+         Result invoke( std::string service, common::buffer::payload::Send payload, Flag flags)
          {
             common::Trace trace{ "service::call::invoke"};
 
-            return call::context().sync( std::move( service), payload, complement.flags, complement.header);
+            return call::context().sync( std::move( service), payload, flags);
          }
 
-         Result invoke( std::string service, const common::buffer::Payload& payload, const Complement& complement)
+         Result invoke( std::string service, const common::buffer::Payload& payload, Flag flags)
          {
-            return invoke( std::move( service), common::buffer::payload::Send{ payload}, complement);
+            return invoke( std::move( service), common::buffer::payload::Send{ payload}, flags);
          }
 
       } // call
 
       namespace send
       {
-         common::strong::correlation::id invoke( std::string service, common::buffer::payload::Send payload, const Complement& complement)
+         common::strong::correlation::id invoke( std::string service, common::buffer::payload::Send payload, Flag flags)
          {
             common::Trace trace{ "service::send::invoke"};
 
-            return call::context().async( std::move( service), payload, complement.flags, complement.header);
+            return call::context().async( std::move( service), payload, flags);
          }
 
-         common::strong::correlation::id invoke( std::string service, const common::buffer::Payload& payload, const Complement& complement)
+         common::strong::correlation::id invoke( std::string service, const common::buffer::Payload& payload, Flag flags)
          {
-            return invoke( std::move( service), common::buffer::payload::Send{ payload}, complement);
+            return invoke( std::move( service), common::buffer::payload::Send{ payload}, flags);
          }
 
       } // send

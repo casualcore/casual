@@ -108,12 +108,13 @@ namespace casual
             {
                Trace trace{ "manager::service::handle::detail::transform::parameter"};
 
+               common::log::debug( "message: ", message);
+
                using parameter_flag = manager::service::invoke::Parameter::Flag;
 
                return invoke::Parameter{ 
                   .flags = flag::convert( parameter_flag::no_reply, message.flags),
                   .service = std::move( message.service.name),
-                  .header = std::move( message.header),
                   .payload = std::move( message.buffer)};
             }
 
@@ -127,7 +128,6 @@ namespace casual
                   .invoke = { 
                      .flags = flag::convert( parameter_flag::no_reply, message.flags),
                      .service = std::move( message.service.name),
-                     .header = std::move( message.header),
                      .payload = std::move( message.buffer)
                   },
                   .callback = std::move( callback)

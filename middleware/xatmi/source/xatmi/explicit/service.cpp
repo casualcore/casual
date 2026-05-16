@@ -49,12 +49,6 @@ namespace local
          *odata = std::get< 0>( buffer).raw();
          *olen = std::get< 1>( buffer);
 
-         if( ! result.header.empty())
-         {
-            casual::common::log::debug( "result.header: ", result.header);
-            casual::xatmi::internal::context().header.associate( casual::common::buffer::handle::type{ *odata}, result.header);
-         }
-
       }
    } // <unnamed>
 } // local
@@ -95,14 +89,8 @@ int casual_service_call( const char* const service, char* idata, const long ilen
 
       auto maybe_block = casual::xatmi::internal::signal::maybe_block( flags);
 
-      auto get_complement = [ &](){
-         if( auto header = casual::xatmi::internal::context().header.find( handle))
-            return casual::service::call::Complement{ .flags = flags, .header = *header};
-         else
-            return casual::service::call::Complement{ .flags = flags};
-      };
 
-      auto result = casual::service::call::invoke( service, buffer, get_complement());
+      auto result = casual::service::call::invoke( service, buffer, flags);
 
       casual::xatmi::internal::user::code::set( result.user);
       local::handle_reply_buffer( result, flags, odata, olen);
@@ -161,17 +149,11 @@ int casual_service_asynchronous_send( const char* const service, char* idata, co
 
       auto& context = casual::xatmi::internal::context();
 
-      auto get_complement = [ &](){
-         if( auto header = context.header.find( handle))
-            return casual::service::send::Complement{ .flags = flags, .header = *header};
-         else
-            return casual::service::send::Complement{ .flags = flags};
-      };
 
       auto correlation = casual::service::send::invoke(
             service,
             buffer,
-            get_complement());
+            flags);
 
       if( casual::common::flag::contains( flags, Flag::no_reply))
          return 0;

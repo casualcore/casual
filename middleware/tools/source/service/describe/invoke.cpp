@@ -24,15 +24,12 @@ namespace casual
       {
          Trace trace{ "tools::service::describe::invoke"};
 
-         
          return algorithm::transform( services, []( const std::string& service)
          {
-            const casual::service::call::Complement complement{
-               .header = { { { "casual-service-describe", "true"}}}
-            };
+            auto header = casual::Header{ .fields = header::Fields{ { { "casual-service-describe", "true"}}}};
 
             casual::service::protocol::binary::Call call;
-            auto reply = call( service, complement);
+            auto reply = call( service, header);
             return reply.extract< common::serialize::service::Model>( "model");
          });
       }

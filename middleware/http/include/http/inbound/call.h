@@ -21,11 +21,6 @@ namespace casual
 {
    namespace http::inbound::call
    {  
-      namespace header
-      {
-         using Field = casual::header::Field;
-      } // header
-
       namespace detail
       {
          namespace transform
@@ -40,7 +35,7 @@ namespace casual
 
       struct Payload
       {
-         std::vector< header::Field> header;
+         casual::Header header;
          platform::binary::type body;
 
          CASUAL_LOG_SERIALIZE(
@@ -48,7 +43,6 @@ namespace casual
             CASUAL_SERIALIZE( body);
          )
       };
-
 
 
       //! assumes that we can 'extract' the full url from nginx.
@@ -139,7 +133,7 @@ namespace casual
 
       namespace buffer
       {
-         auto type( const std::vector< header::Field>& headers) -> std::string_view;
+         auto type( const Header& header) -> std::string_view;
       } // buffer
 
    } // http::inbound::call

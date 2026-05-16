@@ -78,6 +78,66 @@ if no 'type' is provided, `X_OCTET/` is used
                   }; 
                }
 
+               namespace header
+               {
+
+                  auto option()
+                  {
+                     auto invoke = []( std::vector< std::string> fields)
+                     {
+                        casual::cli::pipe::done::Scope done;
+
+                        auto handler = casual::cli::message::dispatch::create( 
+                           casual::cli::pipe::forward::handle::defaults(),
+                           casual::cli::pipe::handle::payloads(
+                              [ fields = std::move(fields)]( auto& message)
+                              {
+                                 message.payload.header = casual::header::transform( std::move( fields));
+
+                                 casual::cli::pipe::forward::message( message);
+                              }),
+                           std::ref( done)
+                        );
+
+                        communication::stream::inbound::Device in{ std::cin};
+                        common::message::dispatch::pump( casual::cli::pipe::condition::done( done), handler, in);
+
+                     };
+
+                     constexpr auto description = R"(replaces header fields in buffers
+
+reads buffers from stdin, replaces/sets the header fields with the supplied ones,
+and sends the modified buffers downstream via stdout
+
+@note: part of casual-pipe
+)"sv; 
+
+                     constexpr auto extended = R"(
+Examples:
+   
+   echo "{}" | casual buffer --compose .json/ \
+      | casual buffer --header name1:value1 name2:value2 
+      | casual call --service some/service
+      
+   casual transaction --begin \
+      | casual queue --dequeue a \
+      | casual buffer --header name1:value1 name2:value2 \
+      | casual queue --enqueue a \
+      | casual transaction --commit
+)"sv;
+
+
+                     return argument::Option{
+                        std::move( invoke),
+                        {{ "--header"}},
+                        { description, extended}
+                     };
+
+                  }
+                  
+               } // header
+
+
                auto duplicate()
                {
                   return argument::Option{
@@ -233,6 +293,7 @@ if --verbose is provided the type of the buffer will be sent to stderr.
                cli::local::field::from_human(),
                cli::local::field::to_human(),
                cli::local::compose(),
+               cli::local::header::option(),
                cli::local::duplicate(),
                cli::local::extract()
             });

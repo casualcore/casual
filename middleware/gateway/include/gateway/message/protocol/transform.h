@@ -230,12 +230,11 @@ namespace casual
          {
             casual::queue::ipc::message::group::dequeue::v1_5::Message result;
             result.id = message.id;
-            result.attributes =  casual::queue::ipc::message::group::dequeue::v1_5::Attributes{
-               .properties = std::move( message.attributes.properties),
-               .reply = std::move( message.attributes.reply),
-               .available = message.attributes.available
-            };
-            result.payload = std::move( message.payload);
+            result.attributes = std::move( message.attributes);
+            result.payload.type = std::move( message.payload.type);
+            result.payload.data = std::move( message.payload.data);
+            // no header in over-the-wire protocol v1.5. serialization specialization for 1.5/1.2 dequeue makes sure
+            // to not serialize the header
             result.redelivered = message.redelivered;
             result.timestamp = message.timestamp;
             return result;

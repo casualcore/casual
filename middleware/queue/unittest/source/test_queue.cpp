@@ -597,10 +597,10 @@ domain:
             {
                message.attributes.properties = "poop";
                message.attributes.reply = "a2";
-               message.attributes.header.add( header::Field{ "a", "1"});
-               message.attributes.header.add( header::Field{ "b", "2"});
                message.payload.type = common::buffer::type::binary;
                message.payload.data.assign( std::begin( payload), std::end( payload));
+               message.payload.header.fields.add( header::Field{ "a", "1"});
+               message.payload.header.fields.add( header::Field{ "b", "2"});
             }
 
             return queue::enqueue( "a1", message);
@@ -615,9 +615,9 @@ domain:
 
          EXPECT_TRUE( message.at( 0).attributes.properties == "poop");
          EXPECT_TRUE( message.at( 0).attributes.reply == "a2");
-         EXPECT_TRUE( message.at( 0).attributes.header.size() == 2) << CASUAL_NAMED_VALUE( message.at( 0).attributes.header);
-         EXPECT_TRUE( message.at( 0).attributes.header.at( "a").value() == "1");
-         EXPECT_TRUE( message.at( 0).attributes.header.at( "b").value() == "2");
+         EXPECT_TRUE( message.at( 0).payload.header.fields.size() == 2) << CASUAL_NAMED_VALUE( message.at( 0).payload.header.fields);
+         EXPECT_TRUE( message.at( 0).payload.header.fields.at( "a").value() == "1");
+         EXPECT_TRUE( message.at( 0).payload.header.fields.at( "b").value() == "2");
 
       }
 

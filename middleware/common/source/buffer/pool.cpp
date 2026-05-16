@@ -45,7 +45,7 @@ namespace casual
 
       const Payload& Holder::null_payload() const
       {
-         static const Payload singleton{ nullptr};
+         static const auto singleton = payload::null();
          return singleton;
       }
 
@@ -159,6 +159,14 @@ namespace casual
          log::line( log::category::buffer, "released ", result);
 
          return result;
+      }
+
+      casual::Header* Holder::find_header( buffer::handle::type handle)
+      {
+         if( auto found = algorithm::find_if( m_pools, manage_buffer( handle)))
+            return (*found)->find_header( handle);
+            
+         return nullptr;
       }
 
       bool Holder::inbound( buffer::handle::type handle) const

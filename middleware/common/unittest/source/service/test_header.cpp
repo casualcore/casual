@@ -121,18 +121,18 @@ namespace casual
          {
             common::unittest::Trace trace;
 
-            auto origin = header::Fields{ { header::Field{ "a:1"}, header::Field{ "b:2"}, header::Field{ "c:3"}}};
+            auto origin = header::transform( { "a:1", "b:2", "c:3"});
 
             auto flattened = header::flatten( origin);
 
             EXPECT_TRUE( flattened == "a:1\nb:2\nc:3") << CASUAL_NAMED_VALUE( flattened);
 
-            auto fields = header::parse( flattened);
+            auto header = header::parse( flattened);
 
-            EXPECT_TRUE( fields.size() == 3) << CASUAL_NAMED_VALUE( fields);
-            EXPECT_TRUE( fields.at( "a").value() == "1");
-            EXPECT_TRUE( fields.at( "b").value() == "2");
-            EXPECT_TRUE( fields.at( "c").value() == "3");
+            EXPECT_TRUE( header.fields.size() == 3) << CASUAL_NAMED_VALUE( header.fields);
+            EXPECT_TRUE( header.fields.at( "a").value() == "1");
+            EXPECT_TRUE( header.fields.at( "b").value() == "2");
+            EXPECT_TRUE( header.fields.at( "c").value() == "3");
          }
 
       } // service

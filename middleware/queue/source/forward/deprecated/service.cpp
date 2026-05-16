@@ -57,7 +57,7 @@ namespace casual
                {
                   auto result = casual::service::call::invoke( m_service,
                      payload,
-                     { .flags = casual::service::call::sync::Flag::no_time});
+                     casual::service::call::sync::Flag::no_time);
 
                   const auto& replyqueue = m_reply.value_or( message.attributes.reply);
 

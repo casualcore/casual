@@ -13,6 +13,7 @@
 #include "common/serialize/macro.h"
 #include "common/uuid.h"
 #include "common/chronology.h"
+#include "common/buffer/type.h"
 
 #include <string>
 
@@ -50,9 +51,6 @@ namespace casual
          //! Correlation information.
          std::string properties;
 
-         //! Additional header fields.
-         header::Fields header;
-
          //! reply queue.
          std::string reply;
 
@@ -61,7 +59,6 @@ namespace casual
 
          CASUAL_CONST_CORRECT_SERIALIZE(
             CASUAL_SERIALIZE( properties);
-            CASUAL_SERIALIZE( header);
             CASUAL_SERIALIZE( reply);
             CASUAL_SERIALIZE( available);
          )
@@ -83,17 +80,8 @@ namespace casual
          )
       };
 
-      struct Payload
-      {
-         std::string type;
-         platform::binary::type data;
-
-         CASUAL_CONST_CORRECT_SERIALIZE(
-            CASUAL_SERIALIZE( type);
-            CASUAL_SERIALIZE( data);
-         )
-      };
-
+      using Payload = common::buffer::Payload;
+      
 
       template< typename P>
       struct basic_message

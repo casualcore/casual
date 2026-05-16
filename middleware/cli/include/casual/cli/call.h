@@ -32,7 +32,7 @@ namespace casual
          // if no-block we don't mess with events
          if( ! common::terminal::output::directive().block())
          {
-            auto complement = casual::service::send::Complement{
+            auto complement = casual::service::protocol::binary::Send::Complement{
                .flags = casual::service::send::Flag::no_reply
             };
 
@@ -90,7 +90,7 @@ namespace casual
          // if no-block we don't mess with events
          if( ! common::terminal::output::directive().block())
          {
-            auto complement = casual::service::send::Complement{
+            auto complement = casual::service::protocol::binary::Send::Complement{
                .flags = casual::service::send::Flag::no_reply
             };
 

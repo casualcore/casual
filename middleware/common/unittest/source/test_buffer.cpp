@@ -62,7 +62,7 @@ namespace casual
          {
             common::unittest::Trace trace;
 
-            auto buffer = pool::holder().adopt( Payload{ buffer::type::binary, 1024});
+            auto buffer = pool::holder().adopt( Payload{ .type = std::string{ buffer::type::binary}, .data = platform::binary::type( 1024)});
 
             ASSERT_TRUE( buffer);
 
@@ -73,7 +73,7 @@ namespace casual
          {
             common::unittest::Trace trace;
 
-            auto inbound = pool::holder().adopt( Payload{ buffer::type::binary, 1024});
+            auto inbound = pool::holder().adopt( Payload{ .type = std::string{ buffer::type::binary}, .data = platform::binary::type( 1024)});
 
             pool::holder().deallocate( inbound);
 
@@ -89,7 +89,7 @@ namespace casual
          {
             common::unittest::Trace trace;
 
-            auto inbound = pool::holder().adopt( Payload{ buffer::type::binary, 1024});
+            auto inbound = pool::holder().adopt( Payload{ .type = std::string{ buffer::type::binary}, .data = platform::binary::type( 1024)});
 
             pool::holder().clear();
 
@@ -212,7 +212,7 @@ namespace casual
                input >> message;
 
                EXPECT_TRUE( message.buffer.type == type);
-               EXPECT_TRUE( message.buffer.data.size() == 100);
+               EXPECT_TRUE( message.buffer.data.size() == 100) << CASUAL_NAMED_VALUE( message.buffer.data.size());
                EXPECT_TRUE( algorithm::equal( binary::span::make( message.buffer.data.data(), info.size()), binary::span::make( info)));
             }
          }

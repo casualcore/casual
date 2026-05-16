@@ -343,15 +343,16 @@ namespace casual
                // marshal
                {
 
-                  buffer::Payload payload{ type, 128};
+                  buffer::Payload payload{  .type = type, .data = platform::binary::type( 128)};
                   algorithm::copy( common::binary::span::make( info), std::begin( payload.data));
+                  payload.header.fields.add( header::Field{ "casual.header.test.1: 42"});
+                  payload.header.fields.add( header::Field{ "casual.header.test.2: poop"});
 
                   EXPECT_TRUE( payload.data.size() == 128) << " payload.data.size(): " <<  payload.data.size();
                   EXPECT_TRUE( algorithm::equal( common::binary::span::Fixed< std::byte>{ std::begin( payload.data), info.size()}, common::binary::span::make( info))) << CASUAL_NAMED_VALUE( payload);
 
                   message::service::call::caller::Request message{ buffer::payload::Send{ payload, 100, 100}};
-                  message.header.add( header::Field{ "casual.header.test.1: 42"});
-                  message.header.add( header::Field{ "casual.header.test.2: poop"});
+
 
                   output << message;
 
@@ -373,9 +374,9 @@ namespace casual
                   // header
                   {
                      
-                     EXPECT_TRUE( message.header.size() == 2);
-                     EXPECT_TRUE( message.header.at( "casual.header.test.1").value() == "42");
-                     EXPECT_TRUE( message.header.at( "casual.header.test.2").value() == "poop");
+                     EXPECT_TRUE( message.buffer.header.fields.size() == 2);
+                     EXPECT_TRUE( message.buffer.header.fields.at( "casual.header.test.1").value() == "42");
+                     EXPECT_TRUE( message.buffer.header.fields.at( "casual.header.test.2").value() == "poop");
                   }
 
                }

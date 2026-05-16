@@ -21,6 +21,34 @@ namespace casual
       {
          namespace detail
          {
+
+            namespace complement
+            {
+               struct Call
+               {
+                  service::call::Flag flags{};
+                  casual::Header header;
+
+                  CASUAL_LOG_SERIALIZE(
+                     CASUAL_SERIALIZE( flags);
+                     CASUAL_SERIALIZE( header);
+                  )
+               };
+
+               struct Send
+               {
+                  service::send::Flag flags{};
+                  casual::Header header;
+
+                  CASUAL_LOG_SERIALIZE(
+                     CASUAL_SERIALIZE( flags);
+                     CASUAL_SERIALIZE( header);
+                  )
+               };
+               
+            } // complement
+
+
             template< typename Result, typename Policy>
             struct basic_result : Result
             {
@@ -67,9 +95,9 @@ namespace casual
                using input_policy = I;
                using result_policy = R;
                using result_type = basic_result< service::call::Result, result_policy>;
-               using Complement = service::call::Complement;
+               using Complement = complement::Call;
 
-               basic_call() : m_payload( input_policy::type())
+               basic_call() : m_payload{ .type = input_policy::type()}
                {}
 
                template< typename T>
@@ -87,29 +115,39 @@ namespace casual
                   return service::call::invoke( std::move( service), m_payload);
                }
 
-               //! calls the `service` with 0..* argument   s. If the first argument is `service::call::Complement`
-               //! it will be used as complement to the call, and not part of the payload.
+               //! calls the `service` with 0..* arguments. 
+               //! If first argument is of type `complement::Call`, it will be used as complement to the call, 
+               //  otherwise all arguments will be treated as input to the service and no complement will be used.
                //! @returns service reply in a form of `basic_result`
-               template< typename Arg, typename... Args>
-               result_type operator () ( common::string::Argument service, const Arg& arg, const Args&... args)
+               template< typename T, typename... Ts>
+               result_type operator () ( common::string::Argument service, T&& argument, Ts&&... arguments)
                {
-                  if constexpr( std::is_same_v< std::decay_t< Arg>, Complement>)
-                  {
-                     // `arg` is a `Complement`, so we don't add it to the payload
-                     ( ( m_input.archive << args), ...);
+                  service::call::Flag flags = service::call::Flag::no_flags;
 
-                     m_input.archive.consume( m_payload.data);
-                     return service::call::invoke( std::move( service), m_payload, arg);
-                  }
-                  else
+                  // check if the first argument is a complement, if so, extract flags and header from it
+                  // otherwise treat all arguments as input
                   {
-                     // `arg` is not a `Complement`, so we add it to the payload
-                     m_input.archive << arg;
-                     ( ( m_input.archive <<  args), ...);
+                     using argument_type = std::decay_t< decltype( argument)>;
 
-                     m_input.archive.consume( m_payload.data);
-                     return service::call::invoke( std::move( service), m_payload);
+                     static_assert( ! concepts::any_of< argument_type, complement::Send>, "use complement::Call");
+                  
+                     if constexpr( std::is_same_v< argument_type, complement::Call>)
+                     {
+                        flags = argument.flags;
+                        m_payload.header = std::forward< T>( argument).header;
+                     }
+                     else
+                     {
+                        m_input.archive << std::forward< T>( argument);
+                     }
                   }
+
+                  // the rest of the arguments are treated as input
+                  ( ( m_input.archive << std::forward< Ts>( arguments)), ...);
+
+                  m_input.archive.consume( m_payload.data);
+
+                  return service::call::invoke( std::move( service), m_payload, flags);
                }
 
             private:
@@ -149,7 +187,7 @@ namespace casual
                using input_policy = I;
                using result_policy = R;
                using receive_type = basic_receive< result_policy>;
-               using Complement = service::send::Complement;
+               using Complement = complement::Send;
 
                basic_send() : m_payload( input_policy::type()) {} //, m_input( m_payload) {}
 
@@ -168,29 +206,39 @@ namespace casual
                   return service::send::invoke( std::move( service), m_payload);
                }
 
-               //! calls the `service` with 0..* argument   s. If the first argument is `service::call::Complement`
-               //! it will be used as complement to the call, and not part of the payload.
+               //! calls the `service` with 0..* arguments
+               //! If the first argument are of type `complement::Send`, it will be used as complement to the call, 
+               //  otherwise all arguments will be treated as input to the service and no complement will be used.
                //! @returns service reply in a form of `basic_result`
-               template< typename Arg, typename... Args>
-               receive_type operator () ( common::string::Argument service, const Arg& arg, const Args&... args)
+               template< typename T, typename... Ts>
+               receive_type operator () ( common::string::Argument service, T&& argument, Ts&&... arguments)
                {
-                  if constexpr( std::is_same_v< std::decay_t< Arg>, Complement>)
-                  {
-                     // `arg` is a `Complement`, so we don't add it to the payload
-                     ( ( m_input.archive << args), ...);
+                  service::send::Flag flags = service::send::Flag::no_flags;
 
-                     m_input.archive.consume( m_payload.data);
-                     return service::send::invoke( std::move( service), m_payload, arg);
-                  }
-                  else
+                  // check if the first argument is a complement, if so, extract flags and header from it
+                  // otherwise treat all arguments as input
                   {
-                     // `arg` is not a `Complement`, so we add it to the payload
-                     m_input.archive << arg;
-                     ( ( m_input.archive <<  args), ...);
+                     using argument_type = std::decay_t< decltype( argument)>;
 
-                     m_input.archive.consume( m_payload.data);
-                     return service::send::invoke( std::move( service), m_payload);
+                     static_assert( ! concepts::any_of< argument_type, complement::Call>, "use complement::Send");
+                  
+                     if constexpr( std::is_same_v< argument_type, complement::Send>)
+                     {
+                        flags = argument.flags;
+                        m_payload.header = std::forward< T>( argument).header;
+                     }
+                     else
+                     {
+                        m_input.archive << std::forward< T>( argument);
+                     }
                   }
+
+                  // the rest of the arguments are treated as input
+                  ( ( m_input.archive << std::forward< Ts>( arguments)), ...);
+
+                  m_input.archive.consume( m_payload.data);
+
+                  return service::send::invoke( std::move( service), m_payload, flags);
                }
 
             private:
@@ -206,7 +254,7 @@ namespace casual
             {
                struct Input
                {
-                  static constexpr auto type() { return common::buffer::type::binary;};
+                  static constexpr auto type() { return std::string{ common::buffer::type::binary};};
                   common::serialize::Writer archive = common::serialize::binary::writer();
                };
 
