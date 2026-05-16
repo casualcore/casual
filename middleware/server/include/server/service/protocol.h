@@ -23,7 +23,7 @@ namespace casual
       {
          invoke::Result result;
          result.payload = common::serialize::service::user( 
-            std::move( parameter.payload), parameter.header, 
+            std::move( parameter.payload), 
             std::forward< Ts>( ts)...);
 
          return result;

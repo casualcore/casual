@@ -4,14 +4,10 @@
 //! This software is licensed under the MIT license, https://opensource.org/licenses/MIT
 //!
 
-
 #pragma once
-
-
 
 #include "common/serialize/macro.h"
 #include "common/string.h"
-#include "common/buffer/type.h"
 
 #include <string>
 #include <vector>
@@ -19,9 +15,9 @@
 
 namespace casual
 {
-   namespace header
+   inline namespace v1
    {
-      inline namespace v1
+      namespace header
       {
          struct Field 
          {
@@ -41,6 +37,7 @@ namespace casual
             inline friend auto operator <=> ( const Field& lhs, const Field& rhs) = default;
 
             inline const std::string& string() const & { return m_data;}
+            inline std::string extract() && { return std::move( m_data);}
 
             inline friend std::ostream& operator << ( std::ostream& out, const Field& field) { return out << field.m_data;}
 
@@ -70,6 +67,9 @@ namespace casual
             //! @returns the field with @p name or nullptr if not found
             const header::Field* find( std::string_view name) const;
 
+            //! @returns and removes the field with @p name or nullopt if not found
+            std::optional< header::Field> extract( std::string_view name);
+
             friend Fields operator + ( Fields lhs, const Fields& rhs);
             friend Fields& operator += ( Fields& lhs, const Fields& rhs);
 
@@ -78,27 +78,52 @@ namespace casual
             inline platform::size::type size() const noexcept { return m_fields.size();}
 
             inline auto begin() const noexcept { return std::begin( m_fields);}
+            inline auto begin() noexcept { return std::begin( m_fields);}
             inline auto end() const noexcept { return std::end( m_fields);}
+            inline auto end() noexcept { return std::end( m_fields);}
 
             inline friend bool operator == ( const Fields&, const Fields&) = default;
             inline friend auto operator <=> ( const Fields&, const Fields&) = default;
 
             CASUAL_FORWARD_SERIALIZE( m_fields);
 
-            inline std::vector< header::Field> extract() && { return std::move( m_fields);}
-
-
          private:
             std::vector< header::Field> m_fields;
          };
          
-         //! @returns a flattened representation of the fields, separated by '\n'
-         std::string flatten( const Fields& fields);
-         //! @returns parsed fields from the flattened representation
-         Fields parse( std::string_view flattened);
+      } // header
 
-      } // v1
-   } // header
+      struct Header
+      {
+         header::Fields fields;
+
+         inline friend bool operator == ( const Header&, const Header&) = default;
+         inline friend auto operator <=> ( const Header&, const Header&) = default;
+
+         CASUAL_CONST_CORRECT_SERIALIZE(
+            CASUAL_SERIALIZE( fields);
+         )
+      };
+
+      namespace header
+      {
+         //! @returns a flattened representation of the fields, separated by '\n'
+         std::string flatten( const Header& header);
+         //! @returns parsed fields from the flattened representation
+         Header parse( std::string_view flattened);
+
+         Header transform( const std::vector< std::string>& fields);
+         Header transform( std::vector< std::string>&& fields);
+
+         std::vector< std::string> transform( const Header& header);
+         std::vector< std::string> transform( Header&& header);
+         
+      } // header
+
+
+   } // v1
+   
 } // casual
+
 
 

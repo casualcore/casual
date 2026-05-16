@@ -32,13 +32,11 @@ namespace casual
          struct Result
          {
             common::buffer::Payload buffer;
-            header::Fields header;
             long user = 0;
             common::strong::correlation::id correlation;
 
             CASUAL_LOG_SERIALIZE(
                CASUAL_SERIALIZE( buffer);
-               CASUAL_SERIALIZE( header);
                CASUAL_SERIALIZE( user);
                CASUAL_SERIALIZE( correlation);
             )
@@ -52,7 +50,6 @@ namespace casual
          struct Result
          {
             common::buffer::Payload buffer;
-            header::Fields header;
             long user = 0;
          };
       } // sync
@@ -71,15 +68,15 @@ namespace casual
       {
          static Context& instance();
 
-         common::strong::correlation::id async( const std::string& service, common::buffer::payload::Send buffer, async::Flag flags, const header::Fields& header);
-         common::strong::correlation::id async( service::Lookup&& lookup, common::buffer::payload::Send buffer, async::Flag flags, const header::Fields& header);
+         common::strong::correlation::id async( const std::string& service, common::buffer::payload::Send buffer, async::Flag flags);
+         common::strong::correlation::id async( service::Lookup&& lookup, common::buffer::payload::Send buffer, async::Flag flags);
 
          reply::Result reply( const common::strong::correlation::id& correlation, reply::Flag flags);
          //! receives the next reply regardless of correlation.
          //! `reply::Flag::any` is implicit
          reply::Result reply( reply::Flag flags);
 
-         sync::Result sync( const std::string& service, common::buffer::payload::Send buffer, sync::Flag flags, const header::Fields& header);
+         sync::Result sync( const std::string& service, common::buffer::payload::Send buffer, sync::Flag flags);
 
          void cancel( const common::strong::correlation::id& correlation);
 

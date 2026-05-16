@@ -131,6 +131,28 @@ casual
          EXPECT_TRUE( output == expected) << output;
       }
 
+      TEST( cli_call, header_propagation)
+      {
+         common::unittest::Trace trace;
+         
+         auto domain = local::domain( R"(
+domain:
+   servers:
+      -  path: "${CMAKE_BINARY_DIR}/middleware/example/server/bin/casual-example-server"
+         memberships: [ user]
+)");
+
+
+         auto capture = administration::unittest::cli::command::execute( R"(echo "casual" \
+            | casual buffer --compose \
+            | casual buffer --header a:1 b:2 c:3 \
+            | casual call --service casual/example/echo \
+            | casual pipe --human-sink)");
+
+         EXPECT_TRUE( capture.standard.out.contains( "fields: [a:1, b:2, c:3]")) << CASUAL_NAMED_VALUE( capture);
+      }
+   
+
       TEST( cli_call, synchronous_call_no_entry)
       {
          common::unittest::Trace trace;
@@ -161,19 +183,6 @@ domain:
 
          auto capture = administration::unittest::cli::command::execute( R"(echo "casual" | casual buffer --compose | casual call --service casual/example/error/TPESYSTEM)");
          EXPECT_TRUE( local::check::format( capture.standard.error, code::xatmi::system)) << CASUAL_NAMED_VALUE( capture);
-      }
-
-      TEST( cli_call, show_examples)
-      {
-         common::unittest::Trace trace;
-         
-         auto domain = local::domain();
-
-         auto capture = unittest::cli::command::execute( R"(casual call --examples)");
-
-         // don't really know how to test stuff like this. 
-         EXPECT_TRUE( algorithm::search( capture.standard.out, std::string_view( "examples:"))) << CASUAL_NAMED_VALUE( capture);
-         
       }
 
    } // administration

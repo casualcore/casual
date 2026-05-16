@@ -34,10 +34,10 @@ namespace casual
          {
             namespace
             {
-               bool describe( const header::Fields& headers)
+               bool describe( const Header& header)
                {
-                  return headers.contains( "casual-service-describe") &&
-                     headers.at( "casual-service-describe").value() != "false";
+                  return header.fields.contains( "casual-service-describe") &&
+                     header.fields.at( "casual-service-describe").value() != "false";
                }
 
             } // <unnamed>
@@ -58,20 +58,22 @@ namespace casual
             registration< service::protocol::implementation::Xml>();
          }
 
-         Protocol Factory::create( protocol::payload_type&& payload, const header::Fields& headers)
+         Protocol Factory::create( protocol::payload_type&& payload)
          {
             Trace trace{ "common::serialize::service::protocol::Factory::create"};
             common::log::debug( "payload: ", payload);
 
             if( auto found = common::algorithm::find( m_creators, payload.type))
             {
+               bool do_describe = local::describe( payload.header);
+
                auto protocol = found->second( std::move( payload));
 
                // should we wrap it in 'adapters'?
                if( common::log::category::parameter)
                   protocol = Protocol::emplace< protocol::implementation::parameter::Log>( std::move( protocol));
                
-               if( local::describe( headers))
+               if( do_describe)
                   protocol = Protocol::emplace< protocol::implementation::Describe>( std::move( protocol));
 
                common::log::debug( "protocol: ", protocol);
@@ -83,9 +85,9 @@ namespace casual
          }
 
 
-         Protocol deduce( protocol::payload_type&& payload, const header::Fields& headers)
+         Protocol deduce( protocol::payload_type&& payload)
          {
-            return Factory::instance().create( std::move( payload), headers);
+            return Factory::instance().create( std::move( payload));
          }
          
       } // protocol

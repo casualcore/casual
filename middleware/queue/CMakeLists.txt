@@ -130,7 +130,6 @@ target_link_libraries(casual-queue-c-api PRIVATE
   casual-queue-api
   casual-queue-common
   casual-common
-  casual-xatmi-explicit
 )
 
 

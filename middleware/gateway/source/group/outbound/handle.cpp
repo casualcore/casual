@@ -576,7 +576,6 @@ namespace casual
                            if( message::protocol::compatible< casual::queue::ipc::message::group::enqueue::Request>( connection->protocol()))
                            {
                               detail::send( state, message, connection->descriptor());
-                              
                            }
                            else if( message::protocol::compatible< casual::queue::ipc::message::group::enqueue::v1_5::Request>( connection->protocol()))
                            {

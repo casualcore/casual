@@ -85,8 +85,8 @@ domain:
 
          // header
          {
-            auto capture = local::execute( R"(echo "casual" | casual buffer --compose | casual queue attributes --header a:1 b:2 c:3 | casual pipe --human-sink)");
-            EXPECT_TRUE( capture.standard.out.contains( "header: [a:1, b:2, c:3]")) << CASUAL_NAMED_VALUE( capture); 
+            auto capture = local::execute( R"(echo "casual" | casual buffer --compose | casual buffer --header a:1 b:2 c:3 | casual pipe --human-sink)");
+            EXPECT_TRUE( capture.standard.out.contains( "fields: [a:1, b:2, c:3]")) << CASUAL_NAMED_VALUE( capture); 
          }
 
          // available
@@ -113,12 +113,12 @@ domain:
 
             auto capture = local::execute( R"(echo "casual" \
                 | casual buffer --compose \
-                | casual queue attributes --header a:1 b:2 c:3 \
+                | casual buffer --header a:1 b:2 c:3 \
                 | casual queue --enqueue a \
                 | casual queue --dequeue a \
                 | casual pipe --human-sink)");
 
-            EXPECT_TRUE( capture.standard.out.contains( "header: [a:1, b:2, c:3]")) << CASUAL_NAMED_VALUE( capture);
+            EXPECT_TRUE( capture.standard.out.contains( "fields: [a:1, b:2, c:3]")) << CASUAL_NAMED_VALUE( capture);
 
       }
 

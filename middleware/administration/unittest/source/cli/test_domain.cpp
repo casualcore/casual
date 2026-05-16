@@ -320,13 +320,11 @@ c                           error        -                                 -  -
 casual-domain-discovery     running   9336  0c84164f1eac435d9d204691cb51d217  2025-08-12T11:20:29.146341+02:00
 casual-domain-manager       running   9335  2197b18883cd43d8aebd2efdf53ea8a9  2025-08-12T11:20:29.144350+02:00
 casual-gateway-manager      running   9340  8328d46e4108481187e1ccae01dc7678  2025-08-12T11:20:29.161847+02:00
-casual-service-manager      running   9337  9c0fd67e3a34487186b1656ae5397e5e  2025-08-12T11:20:29.150649+02:00
+casual-service-manager      running   9337  9c0fd67es3a34487186b1656ae5397e5e  2025-08-12T11:20:29.150649+02:00
 casual-transaction-manager  running   9338  625e81669dbe473597ae8008c60113a4  2025-08-12T11:20:29.151296+02:00
 */
 
             auto lines = local::execute_get_lines( "casual --header false --color false domain --list-instances-server");
-            for ( auto& line : lines)
-               std::cout << line << std::endl;
 
             auto a = string::adjacent::split( lines.at( 0), ' ');
             EXPECT_TRUE( a.at( 0) == "a");
@@ -362,8 +360,6 @@ z      error         -  -
 z      error         -  - 
 */
             auto lines = local::execute_get_lines( "casual --header false --color false domain --list-instances-executable");
-            for ( auto& line : lines)
-               std::cout << line << std::endl;
 
             auto x = string::adjacent::split( lines.at( 0), ' ');
             EXPECT_TRUE( x.at( 0) == "x");

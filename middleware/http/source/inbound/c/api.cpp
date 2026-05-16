@@ -30,7 +30,7 @@ namespace casual::http::inbound
       {
          namespace header
          {
-            // Responsible for memory dealloction for malloc created types
+            // Responsible for memory deallocation for malloc created types
             struct Guard
             {
                Guard() = default;
@@ -98,9 +98,9 @@ namespace casual::http::inbound
                }
             }
 
-            void set( const std::vector< http::inbound::call::header::Field>& headers)
+            void set( const casual::Header& header)
             {
-               auto found = common::algorithm::find( headers, http::header::name::execution::id);
+               auto found = common::algorithm::find( header.fields, http::header::name::execution::id);
                if( found && std::regex_match( found->value().data(), validation::format()))
                   common::execution::context::id::set( strong::execution::id{ found->value()});
                else
@@ -164,11 +164,16 @@ namespace casual::http::inbound
                context_holder->request.request_line.assign( request->line.data, request->line.size);
                context_holder->request.service.assign( request->service.data, request->service.size);
 
-               // copy all headers i.e. key and value
-               std::for_each( request->headers.data, request->headers.data + request->headers.size,[&context_holder]( auto& header)
+               auto transform_field = []( auto& field)
                {
-                  context_holder->request.payload.header.emplace_back( header.key, header.value);
-               });
+                  return casual::header::Field{ field.key, field.value};
+               };
+
+               // copy all headers i.e. key and value
+               context_holder->request.payload.header.fields = algorithm::transform( 
+                  std::span( request->headers.data, request->headers.size), 
+                  transform_field);
+
             }
          } // request
 
@@ -185,14 +190,14 @@ namespace casual::http::inbound
                   return ( header.name() != "content-type") && ( header.name() != "content-length");
                };
 
-               const auto header_size = common::algorithm::count_if( context_holder->reply.payload.header, user_defined_headers);
+               const auto header_size = common::algorithm::count_if( context_holder->reply.payload.header.fields, user_defined_headers);
 
                // use guard to be able to deallocate
                // this is the only dynamic char* list
                context_holder->guard.headers.data = ( casual_http_inbound_header_t *)malloc( header_size * sizeof( casual_http_inbound_header_t));
                context_holder->guard.headers.size = header_size;
                size_t header_number = 0;
-               common::algorithm::for_each_if( context_holder->reply.payload.header, [&header_number, &context_holder]( auto header)
+               common::algorithm::for_each_if( context_holder->reply.payload.header.fields, [&header_number, &context_holder]( auto header)
                {
                   auto& item = context_holder->guard.headers.data[ header_number];
                   item.key = memory::copy( header.name());
@@ -205,7 +210,7 @@ namespace casual::http::inbound
                reply->headers.data = context_holder->guard.headers.data;
                reply->headers.size = context_holder->guard.headers.size;
 
-               if( auto content_type = common::algorithm::find( context_holder->reply.payload.header, "content-type"))
+               if( auto content_type = common::algorithm::find( context_holder->reply.payload.header.fields, "content-type"))
                {
                   // is this safe?              
                   reply->content_type.data = const_cast< char*>( content_type->value().data());

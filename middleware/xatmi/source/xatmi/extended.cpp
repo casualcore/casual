@@ -11,6 +11,7 @@
 
 #include "common/instance.h"
 #include "common/log/stream.h"
+#include "common/buffer/pool.h"
 
 #include "common/execution/context.h"
 #include "common/uuid.h"
@@ -218,17 +219,22 @@ int casual_header_associate( const char* buffer_handle, const char** headers, lo
       if( ! headers || header_size <= 0)
          return 0;
 
-      auto transform_field = []( const char* header)
+      if( auto header = casual::common::buffer::pool::holder().find_header( casual::common::buffer::handle::type{ buffer_handle}))
       {
-         return casual::header::Field{ header};
-      };
+         auto transform_field = []( const char* header)
+         {
+            return casual::header::Field{ header};
+         };
 
-      auto fields = casual::common::algorithm::transform( casual::common::range::make( headers, header_size), transform_field);
+         *header = casual::Header{ .fields = casual::common::algorithm::transform( casual::common::range::make( headers, header_size), transform_field)};
+         return 0;
+      }
+      else
+      {
+         casual::xatmi::internal::error::set( casual::common::code::xatmi::argument); 
+         return -1;
+      }
 
-      casual::xatmi::internal::context().header.associate( 
-         casual::common::buffer::handle::type{ buffer_handle}, casual::header::Fields{ std::move( fields)});
-
-      return 0;
    }
    catch( ...)
    {
@@ -239,7 +245,10 @@ int casual_header_associate( const char* buffer_handle, const char** headers, lo
 
 void casual_header_disassociate( const char* buffer_handle)
 {
-   casual::xatmi::internal::context().header.disassociate( casual::common::buffer::handle::type{ buffer_handle});
+   if( auto header = casual::common::buffer::pool::holder().find_header( casual::common::buffer::handle::type{ buffer_handle}))
+   {
+      *header = {};
+   }
 }
 
 void casual_header_browse( const char* buffer_handle, casual_header_browse_callback callback, void* context)
@@ -247,9 +256,9 @@ void casual_header_browse( const char* buffer_handle, casual_header_browse_callb
    if( ! callback || ! buffer_handle)
       return;
 
-   if( auto fields = casual::xatmi::internal::context().header.find( casual::common::buffer::handle::type{ buffer_handle}))
+   if( auto header = casual::common::buffer::pool::holder().find_header( casual::common::buffer::handle::type{ buffer_handle}))
    {
-      for( const auto& field : *fields)
+      for( const auto& field : header->fields)
       {
          if( callback( field.string().data(), context) != 0)
             return;

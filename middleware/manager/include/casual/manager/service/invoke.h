@@ -8,7 +8,6 @@
 
 
 #include "common/flag/xatmi.h"
-#include "casual/header.h"
 #include "common/buffer/type.h"
 
 #include <string>
@@ -32,13 +31,11 @@ namespace casual
 
          Flag flags{};
          std::string service;
-         header::Fields header;
          common::buffer::Payload payload;
 
          CASUAL_LOG_SERIALIZE(
             CASUAL_SERIALIZE( flags);
             CASUAL_SERIALIZE( service);
-            CASUAL_SERIALIZE( header);
             CASUAL_SERIALIZE( payload);
          )
       };

@@ -60,7 +60,7 @@ namespace casual
             common::unittest::Trace trace;
 
             common::message::service::call::callee::Request call;
-            call.buffer = common::buffer::Payload{ nullptr};
+            call.buffer = common::buffer::payload::null();
 
             auto request = request::prepare( local::node(), std::move( call));
 

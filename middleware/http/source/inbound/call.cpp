@@ -32,11 +32,11 @@ namespace casual
             namespace buffer
             {
                //! @returns string pieces (views) owned by the caller
-               auto type( const std::vector< header::Field>& headers) -> std::vector< std::string_view>
+               auto type( const casual::Header& header) -> std::vector< std::string_view>
                {
-                  auto content = algorithm::find( headers, "content-type");
+                  auto content = algorithm::find( header.fields, "content-type");
 
-                  if( auto accept = algorithm::find( headers, "accept"))
+                  if( auto accept = algorithm::find( header.fields, "accept"))
                   {
                      auto accepts = 
                         accept->value() |
@@ -68,14 +68,10 @@ namespace casual
 
             namespace extract::header
             {
-               auto trace( std::vector< call::header::Field>& header) -> std::tuple< common::strong::execution::id, common::strong::execution::span::id>
+               auto trace( casual::Header& header) -> std::tuple< common::strong::execution::id, common::strong::execution::span::id>
                {
-                  if( auto found = algorithm::find( header, http::header::name::execution::trace::parent))
-                  {
-                     auto field = algorithm::container::extract( header, std::begin( found));
-
-                     return detail::transform::span( field.value());
-                  }
+                  if( auto field = header.fields.extract( http::header::name::execution::trace::parent))
+                     return detail::transform::span( field->value());
 
                   return {};
                }
@@ -222,7 +218,7 @@ namespace casual
 
                      result.buffer.type = call::buffer::type( request.payload.header);
                      result.buffer.data = std::move( request.payload.body);
-                     result.header = std::move( request.payload.header);
+                     result.buffer.header = std::move( request.payload.header);
 
                      return result;
                   }
@@ -231,11 +227,11 @@ namespace casual
                   {
                      Reply result;
                      result.payload.body = std::move( reply.buffer.data);
-                     result.payload.header.emplace_back( "content-length", std::to_string( result.payload.body.size()));
-                     result.payload.header.emplace_back( "content-type", http::protocol::convert::to::content( reply.buffer.type));
-                     result.payload.header.emplace_back( http::header::name::result::code, http::header::value::result::code( reply.code.result));
-                     result.payload.header.emplace_back( http::header::name::result::user::code, http::header::value::result::user::code( reply.code.user));
-                     result.code = transform::reply::code( reply.code.result);
+                     result.payload.header.fields.add( { "content-length", std::to_string( result.payload.body.size())});
+                     result.payload.header.fields.add( { "content-type", http::protocol::convert::to::content( reply.buffer.type)});
+                     result.payload.header.fields.add( { http::header::name::result::code, http::header::value::result::code( reply.code.result)});
+                     result.payload.header.fields.add( { http::header::name::result::user::code, http::header::value::result::user::code( reply.code.user)});
+                     result.code = local::transform::reply::code( reply.code.result);
 
                      return result;
                   }
@@ -257,10 +253,10 @@ namespace casual
                      auto message = common::binary::span::make( std::string_view{ error.what()});
 
                      result.payload.body.assign( std::begin( message), std::end( message));
-                     result.payload.header.emplace_back( "content-length", std::to_string( result.payload.body.size()));
-                     result.payload.header.emplace_back( "content-type", "text/plain");
-                     result.payload.header.emplace_back( http::header::name::result::code, http::header::value::result::code( static_cast< common::code::xatmi>( error.code().value())));
-                     result.payload.header.emplace_back( http::header::name::result::user::code, http::header::value::result::user::code( 0));
+                     result.payload.header.fields.add( { "content-length", std::to_string( result.payload.body.size())});
+                     result.payload.header.fields.add( { "content-type", "text/plain"});
+                     result.payload.header.fields.add( { http::header::name::result::code, http::header::value::result::code( static_cast< common::code::xatmi>( error.code().value()))});
+                     result.payload.header.fields.add( { http::header::name::result::user::code, http::header::value::result::user::code( 0)});
 
                      return result;
                   }
@@ -283,7 +279,7 @@ namespace casual
                      // this is forward semantics, so we always set buffer type to http/body
                      result.buffer.type = common::buffer::type::http;
                      result.buffer.data = std::move( request.payload.body);
-                     result.header = std::move( request.payload.header);
+                     result.buffer.header = std::move( request.payload.header);
 
                      return result;
                   }
@@ -302,7 +298,7 @@ namespace casual
                      };
 
                      result.payload.body = std::move( reply.buffer.data);
-                     result.payload.header = std::move( reply.header).extract();
+                     result.payload.header = std::move( reply.buffer.header);
                      result.code = deduce_status_code( reply);
 
                      return result;
@@ -412,9 +408,9 @@ namespace casual
 
       namespace buffer
       {
-         auto type( const std::vector< header::Field>& headers) -> std::string_view
+         auto type( const casual::Header& header) -> std::string_view
          {
-            auto source = local::buffer::type( headers);
+            auto source = local::buffer::type( header);
             auto target = source | std::views::transform( []( auto value){ return protocol::convert::to::buffer( value);});
             auto result = std::ranges::find_if( target, [] ( auto value) { return ! value.empty();});
             

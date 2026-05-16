@@ -1500,7 +1500,7 @@ namespace casual
 
          // this is done when a service is invoked, and only then.
 
-         auto handle = common::buffer::pool::holder().adopt( { CASUAL_FIELD "/", 0l});
+         auto handle = common::buffer::pool::holder().adopt( { .type = CASUAL_FIELD "/"});
 
          // verify that we keep track of the _special_ buffer.
          EXPECT_TRUE( common::buffer::pool::holder().inbound( handle));

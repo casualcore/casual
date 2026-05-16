@@ -722,14 +722,7 @@ namespace casual
                   result.id = message.id;
                   result.attributes = transform_attributes( std::move( message.attributes));
 
-                  // header fields are strings in cli representation
-                  result.header = algorithm::transform( message.attributes.header, []( auto& field)
-                  {
-                     return field.string();
-                  });
-
-                  result.payload.type = std::move( message.payload.type);
-                  result.payload.data = std::move( message.payload.data);
+                  result.payload = std::move( message.payload);
 
                   return result;
                };
@@ -738,13 +731,7 @@ namespace casual
                {
                   ipc::message::group::enqueue::Request result{ process::handle()};
 
-                  result.message.attributes.header = algorithm::transform( value.header, []( auto& field)
-                  {
-                     return header::Field{ field};
-                  });
-
-                  result.message.payload.data = std::move( value.payload.data);
-                  result.message.payload.type = std::move( value.payload.type);
+                  result.message.payload = std::move( value.payload);
 
                   return result;
                }
@@ -756,12 +743,8 @@ namespace casual
                   result.message.attributes.properties = std::move( message.attributes.properties);
                   result.message.attributes.reply = std::move( message.attributes.reply);
                   result.message.attributes.available = message.attributes.available;
-                  result.message.attributes.header = algorithm::transform( message.header, []( auto& field)
-                  {
-                     return header::Field{ field};
-                  });
-                  result.message.payload.data = std::move( message.payload.data);
-                  result.message.payload.type = std::move( message.payload.type);
+                  
+                  result.message.payload = std::move( message.payload);
 
                   return result;
                }
@@ -1823,7 +1806,6 @@ Example:
                   struct Shared
                   {
                      std::optional< std::string> properties;
-                     std::optional< std::vector< std::string>> header;
                      std::optional< std::string> reply;
                      std::optional< common::chronology::time_point> available;
                   };
@@ -1845,26 +1827,6 @@ Example:
                      }( argument::cardinality::zero_one());
                   };
 
-
-                  auto header = [ shared]()
-                  {
-                     auto invoke = [ shared]( std::vector< std::string> values)
-                     {
-                        shared->header = std::move( values);
-                        return argument::option::invoke::preemptive{};
-                     };
-
-                     constexpr auto description = R"(sets the 'header' attribute on piped queue messages
-
-values is a list of 'key:value' strings
-)";
-
-                     return argument::Option{
-                        std::move( invoke),
-                        {{ "--header"}},
-                        description
-                     }( argument::cardinality::zero_one());
-                  };
 
                   auto reply = [ shared]()
                   {
@@ -1912,8 +1874,6 @@ value is absolute time since epoch ([+]?<value>[h|min|s|ms|us|ns])+
                            message.attributes.reply = *shared->reply;
                         if( shared->available)
                            message.attributes.available = *shared->available;
-                        if( shared->header)
-                           message.header = *shared->header;
                         
                         casual::cli::pipe::forward::message( message);
                      };
@@ -1954,7 +1914,7 @@ value is absolute time since epoch ([+]?<value>[h|min|s|ms|us|ns])+
 Examples:
    
    casual queue --dequeue a \
-      | casual queue attributes --header a:1 b:2 c:3 \
+      | casual queue attributes --reply a.reply \
       | casual queue --enqueue a
 
    casual transaction --begin \
@@ -1962,7 +1922,6 @@ Examples:
       | casual queue attributes \
          --reply a.reply \
          --properties foo \
-         --header a:1 b:2 c:3 \
          --available 1625077800s \
       | casual queue --enqueue a \
       | casual transaction --commit
@@ -1975,11 +1934,10 @@ Examples:
                   }(
                      {
                         properties(),
-                        header(),
                         reply(),
                         available()
                      },
-                     argument::cardinality::range( 1, 4)
+                     argument::cardinality::range( 1, 3)
                   );
                  
                }

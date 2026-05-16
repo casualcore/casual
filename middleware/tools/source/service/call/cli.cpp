@@ -158,7 +158,7 @@ namespace casual
                   };
 
                   template< typename M>
-                  auto call( State& state, M& message)
+                  auto call( State& state, const M& message)
                   {
                      Trace trace{ "tools::service::call::local::handle::detail::call"};
 
@@ -255,7 +255,7 @@ namespace casual
                         if( auto found = algorithm::find( state.pending.calls, message.correlation))
                            state.pending.calls.erase( std::begin( found));
                         else
-                           log::line( log::category::error, "failed to correlate reply: ", message.correlation);
+                           log::error( code::casual::internal_correlation, "failed to correlate reply: ", message.correlation);
 
                         detail::reply( state, message);
 
@@ -300,13 +300,11 @@ namespace casual
 
                         algorithm::for_n( state.arguments.iterations, [&]()
                         {
-                           handle::detail::call( state, message);
+                           auto correlation = handle::detail::call( state, message);
 
-                           common::message::service::call::Reply reply;
-
-                           communication::device::blocking::receive( 
+                           auto reply = communication::device::receive< common::message::service::call::Reply>( 
                               communication::ipc::inbound::device(),
-                              reply);
+                              correlation);
 
                            handle::detail::reply( state, reply);
                         });
@@ -423,33 +421,6 @@ namespace casual
                   }
                };
             } // complete
-
-
-            auto show_examples()
-            {
-               std::cout << R"(examples:
-
-json buffer:
-`host# echo '{ "key" : "some", "value": "json"}' | casual buffer --compose ".json/" | casual call --service a | casual buffer --extract`
-
-fielded buffer:
-`host# cat some-fields.yaml | casual buffer --field-from-human yaml | casual call --service a | casual buffer --field-to-human json`
-
-where the format of _human-fields_ are:
-
-```yaml
-fields:
-  - name: "CUSTOMER_ID"
-    value: "9999999"
-  - name: "CUSTOMER_NAME"
-    value: "foo bar"
-```
-
-from a dequeue
-`host# casual queue --dequeue qA | casual call --service a | casual queue --enqueue qB`
-)";
-
-            }
    
          } // <unnamed>
       } // local
@@ -461,48 +432,72 @@ from a dequeue
 
          auto invoked = [ shared]()
          {
-            if( shared->show_examples)
-            {
-               local::show_examples();
-               return;
-            }
-
             if( terminal::output::directive().block())
                local::blocking::call( *shared);
             else
                local::call( *shared);
          };
 
-         auto example = [ shared]()
+         auto deprecated = []( auto name, auto message)
          {
-            shared->show_examples = true;
-            return argument::option::invoke::preemptive{};
+            return argument::Option{
+               [ message]( bool) { std::cerr << message << '\n';},
+               { {}, { name}},
+               message
+            };
          };
 
-         constexpr auto transaction_information = R"([removed] use `casual transaction --begin` instead)";
-         constexpr auto asynchronous_information = R"([removed] use `casual --block true|false call ...` instead)";
-
-         auto deprecated = []( auto message)
-         {
-            return [message]( bool) { std::cerr << message << '\n';};
-         };
-
-         return argument::Option{ invoked, {{ "call"}}, R"(generic service call
+         constexpr std::string_view description = R"(generic service call
 
 Reads buffer(s) from stdin and call the provided service, prints the reply buffer(s) to stdout.
 Assumes that the input buffer to be in a conformant format, ie, created by casual.
 Errors will be printed to stderr
 
 @note: part of casual-pipe
-)"
+)";
+
+         constexpr std::string_view extended = R"(
+Examples:
+
+   json buffer:
+   
+   `echo '{ "key" : "some", "value": "json"}' \
+      | casual buffer --compose ".json/" \
+      | casual call --service a \
+      | casual buffer --extract`
+
+   fielded buffer:
+   
+   `cat some-fields.yaml | casual buffer --field-from-human yaml \
+      | casual call --service a \
+      | casual buffer --field-to-human json`
+
+   where the format of _human-fields_ are:
+
+   ```yaml
+   fields:
+     - name: "CUSTOMER_ID"
+       value: "9999999"
+     - name: "CUSTOMER_NAME"
+       value: "foo bar"
+   ```
+
+   from a dequeue
+   
+   `casual queue --dequeue qA | casual call --service a | casual queue --enqueue qB`
+
+)";
+
+
+         return argument::Option{ invoked, {{ "call"}}, { description, extended}
             }( {
                argument::Option( std::tie( shared->service), local::complete::service, {{ "-s", "--service"}}, "service to call"),
                argument::Option( std::tie( shared->iterations), {{ "--iterations"}}, "number of iterations (default: 1) - this could be helpful for testing load"),
-               argument::Option{ std::move( example), {{ "--examples"}}, "prints several examples of how casual call can be used"},
-
+               
                // deprecated
-               argument::Option( deprecated( asynchronous_information), {{}, { "--asynchronous"}}, asynchronous_information),
-               argument::Option( deprecated( transaction_information), {{}, { "--transaction"}}, transaction_information),
+               deprecated( "--asynchronous", R"([removed] use `casual --block true|false call ...` instead)"),
+               deprecated( "--transaction", R"([removed] use `casual transaction --begin` instead)"),
+               
          });
 
       }

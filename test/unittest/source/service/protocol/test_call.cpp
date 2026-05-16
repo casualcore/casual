@@ -120,7 +120,7 @@ domain:
          EXPECT_TRUE( result.extract< std::string>() == arg_string);
       }
 
-      TEST( test_service_protocol_call, binary_send__with_complement)
+      TEST( test_service_protocol_call, binary_send__with_header_and_complement)
       {
          common::unittest::Trace trace;
 
@@ -128,9 +128,10 @@ domain:
 
          service::unittest::advertise( { "a"});
 
-         const auto header = casual::header::Fields{ { { "test-header", "casual"}}};
-
-         const auto complement = service::send::Complement{ .header = header};
+         const auto complement = service::protocol::binary::Send::Complement{ 
+            .flags = service::send::Flag::signal_restart,
+            .header = casual::header::transform( { { "test-header:casual"}})
+         };
 
          const long arg_long = 42;
          const std::string arg_string = "hello world";
@@ -141,20 +142,19 @@ domain:
             auto request = common::communication::ipc::receive< common::message::service::call::callee::Request>();
 
             // Check that the header was propagated.
-            EXPECT_TRUE( request.header.contains( "test-header"));
-            EXPECT_TRUE( request.header.at( "test-header").value() == "casual");
+            EXPECT_TRUE( request.buffer.header.fields.contains( "test-header"));
+            EXPECT_TRUE( request.buffer.header.fields.at( "test-header").value() == "casual");
 
             service::unittest::send::ack( request);
             auto reply = common::message::reverse::type( request);
             reply.buffer = request.buffer;
-            reply.header = request.header; // reply the header
             common::communication::device::blocking::send( request.process.ipc, reply);
          }
 
       
          auto result = receive();
 
-         EXPECT_TRUE( result.header == header);
+         EXPECT_TRUE( result.buffer.header == complement.header);
 
          EXPECT_TRUE( result.extract< long>() == arg_long);
          EXPECT_TRUE( result.extract< std::string>() == arg_string);

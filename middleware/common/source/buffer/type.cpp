@@ -39,48 +39,16 @@ namespace casual
          // TODO make sure this type is move only, and remove the copy during _service-forward_
          //static_assert( ! traits::is::copyable_v< Payload>);
 
-         Payload::Payload() = default;
-
-         Payload::Payload( std::nullptr_t) 
-          : type{ "NULL"} 
-         {}
-
-         Payload::Payload( string::Argument type) 
-          : Payload{ std::move( type), 0} 
-         {}
-
-         Payload::Payload( string::Argument type, platform::binary::size::type size)
-          : Payload{ std::move( type), platform::binary::type( size)}
-         {}
-
-         Payload::Payload( string::Argument type, platform::binary::type buffer)
-          : type( std::move( type)), data( std::move( buffer)) 
-         {
-            if( ! data.data())
-               data.reserve( 1);
-         }
-
          bool Payload::null() const
          {
             return type == "NULL";
          }
 
-         std::ostream& operator << ( std::ostream& out, const Payload& value)
-         {
-            return out << "{ type: " << value.type 
-               << ", data: @" << static_cast< const void*>( value.data.data()) 
-               << ", size: " << value.data.size() 
-               << ", capacity: " << value.data.capacity() 
-               << '}';
-         }
-
          namespace payload
          {
-            std::ostream& operator << ( std::ostream& out, const Send& value)
+            Payload null()
             {
-               return out << "{ payload: " << value.payload() 
-                  << ", transport: " << value.transport()
-                  <<'}';
+               return Payload{ .type = "NULL"};
             }
          }
 
@@ -94,7 +62,13 @@ namespace casual
          Buffer::Buffer( Payload payload) : payload( std::move( payload)) {}
 
          Buffer::Buffer( string::Argument type, platform::binary::size::type size)
-            : payload( std::move( type), size) {}
+            : payload{ 
+               .type = std::move( type), 
+               .data = platform::binary::type( size)} 
+         {
+            if( payload.data.capacity() == 0)
+               payload.data.reserve( 1);
+         }
 
 
          Buffer::Buffer( Buffer&&) noexcept = default;

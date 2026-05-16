@@ -346,9 +346,9 @@ http {
                EXPECT_TRUE( request.buffer.data.empty()) << CASUAL_NAMED_VALUE( request);
                EXPECT_TRUE( request.buffer.type == common::buffer::type::http);
                
-               EXPECT_TRUE( request.header.at( "content-type").value() == "application/some-type") << CASUAL_NAMED_VALUE( request.header);
-               EXPECT_TRUE( request.header.at( "a").value() == "foo") << CASUAL_NAMED_VALUE( request.header);
-               EXPECT_TRUE( request.header.at( "b").value() == "bar") << CASUAL_NAMED_VALUE( request.header);
+               EXPECT_TRUE( request.buffer.header.fields.at( "content-type").value() == "application/some-type") << CASUAL_NAMED_VALUE( request.buffer.header);
+               EXPECT_TRUE( request.buffer.header.fields.at( "a").value() == "foo") << CASUAL_NAMED_VALUE( request.buffer.header);
+               EXPECT_TRUE( request.buffer.header.fields.at( "b").value() == "bar") << CASUAL_NAMED_VALUE( request.buffer.header);
 
                EXPECT_TRUE( request.parent.service == "GET /some/path?foo=bar HTTP/1.1") << CASUAL_NAMED_VALUE( request.parent.service);
                
@@ -357,7 +357,7 @@ http {
                reply.buffer.data.assign_range( common::binary::span::make( std::string_view{ "foo"}));
                reply.buffer.type = common::buffer::type::http;
                reply.code.result = common::code::xatmi::ok;
-               reply.header = { { 
+               reply.buffer.header.fields = { { 
                   { "a", "foo"},
                   { "b", "bar"},
                   { "c", "baz"}
@@ -429,13 +429,13 @@ http {
                EXPECT_TRUE( body == origin_body ) << CASUAL_NAMED_VALUE( body);
                EXPECT_TRUE( request.buffer.type == common::buffer::type::http);
 
-               EXPECT_TRUE( request.header.at( "content-type").value() == "application/some-type") << CASUAL_NAMED_VALUE( request.header);
+               EXPECT_TRUE( request.buffer.header.fields.at( "content-type").value() == "application/some-type") << CASUAL_NAMED_VALUE( request.buffer.header);
 
                auto reply = common::message::reverse::type( request);
                reply.buffer.data.assign_range( common::binary::span::make( std::string_view{ "bar"}));
                reply.buffer.type = common::buffer::type::http;
                reply.code.result = common::code::xatmi::ok;
-               reply.header = { { 
+               reply.buffer.header.fields = { { 
                   { "a", "foo"},
                   { "b", "bar"},
                   { "c", "baz"}
@@ -506,14 +506,14 @@ http {
                EXPECT_TRUE( body == origin_body ) << CASUAL_NAMED_VALUE( body);
                EXPECT_TRUE( request.buffer.type == common::buffer::type::http);
 
-               EXPECT_TRUE( request.header.at( "content-type").value() == "application/some-type") << CASUAL_NAMED_VALUE( request.header);
+               EXPECT_TRUE( request.buffer.header.fields.at( "content-type").value() == "application/some-type") << CASUAL_NAMED_VALUE( request.buffer.header);
 
 
                auto reply = common::message::reverse::type( request);
                reply.buffer.data.assign_range( common::binary::span::make( std::string_view{ "casual-payload"}));
                reply.buffer.type = common::buffer::type::http;
                reply.code.result = common::code::xatmi::ok;
-               reply.header = { { 
+               reply.buffer.header.fields = { { 
                   { "a", "foo"},
                   { "b", "bar"},
                   { "c", "baz"}

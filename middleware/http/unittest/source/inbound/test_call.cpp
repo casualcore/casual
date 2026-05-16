@@ -66,18 +66,6 @@ domain:
                return {};
             }
 
-            namespace header
-            {
-               auto value( const std::vector< call::header::Field>& header, std::string_view key)
-               {
-                  if( auto found = algorithm::find( header, key))
-                     return found->value();
-
-                  common::code::raise::error( common::code::casual::invalid_argument, "unittest - failed to find key: ", key);
-               }
-            } // header
-
-
          } // <unnamed>
       } // local
 
@@ -96,7 +84,7 @@ domain:
          {
             call::Request result;
             result.service = "casual/example/echo";
-            result.payload.header = { call::header::Field{ "content-type:application/json"}};
+            result.payload.header = casual::header::transform( { "content-type:application/json"});
             algorithm::copy( binary::span::make( json), result.payload.body);
             return result; 
          };
@@ -107,11 +95,11 @@ domain:
          auto& reply = result.value();
          EXPECT_TRUE( reply.code == http::code::ok);
          EXPECT_TRUE( algorithm::equal( reply.payload.body, binary::span::make( json)));
-         EXPECT_TRUE( local::header::value( reply.payload.header, "content-type") == "application/json");
-         EXPECT_TRUE( local::header::value( reply.payload.header, "content-length") == std::to_string( json.size()));
+         EXPECT_TRUE( reply.payload.header.fields.at( "content-type").value() == "application/json");
+         EXPECT_TRUE( reply.payload.header.fields.at( "content-length").value() == std::to_string( json.size()));
 
-         EXPECT_TRUE( local::header::value( reply.payload.header, "casual-result-code") == "OK");
-         EXPECT_TRUE( local::header::value( reply.payload.header, "casual-result-user-code") == "0");
+         EXPECT_TRUE( reply.payload.header.fields.at( "casual-result-code").value() == "OK");
+         EXPECT_TRUE( reply.payload.header.fields.at( "casual-result-user-code").value() == "0");
 
       }
 
@@ -168,7 +156,7 @@ domain:
          {
             call::Request result;
             result.service = service;
-            result.payload.header = { call::header::Field{ "content-type:application/json"}};
+            result.payload.header = casual::header::transform( { "content-type:application/json"});
             algorithm::copy( binary::span::make( json), result.payload.body);
             return result; 
          };
@@ -180,7 +168,7 @@ domain:
          EXPECT_TRUE( reply.code == http::code::not_found) << CASUAL_NAMED_VALUE( reply.code);
 
          auto size = common::string::compose( "failed to lookup service: ", service, ": TPENOENT").size();
-         EXPECT_TRUE( local::header::value( reply.payload.header, "content-length") == std::to_string( size));
+         EXPECT_TRUE( reply.payload.header.fields.at( "content-length").value() == std::to_string( size));
       }
 
       TEST( http_inbound_call, call_rollback)
@@ -198,7 +186,7 @@ domain:
          {
             call::Request result;
             result.service = "casual/example/rollback";
-            result.payload.header = { call::header::Field{ "content-type:application/json"}};
+            result.payload.header = casual::header::transform( { "content-type:application/json"});
             algorithm::copy( binary::span::make( json), result.payload.body);
             return result; 
          };
@@ -209,10 +197,10 @@ domain:
          auto& reply = result.value();
          // TODO: is 500 really the best code?
          EXPECT_TRUE( reply.code == http::code::internal_server_error) << reply.code;
-         EXPECT_TRUE( local::header::value( reply.payload.header, "casual-result-code") == "TPESVCFAIL");
+         EXPECT_TRUE( reply.payload.header.fields.at( "casual-result-code").value() == "TPESVCFAIL");
 
-         EXPECT_TRUE( local::header::value( reply.payload.header, "content-type") == "application/json");
-         EXPECT_TRUE( local::header::value( reply.payload.header, "content-length") == std::to_string( json.size()));
+         EXPECT_TRUE( reply.payload.header.fields.at( "content-type").value() == "application/json");
+         EXPECT_TRUE( reply.payload.header.fields.at( "content-length").value() == std::to_string( json.size()));
 
       }
 
@@ -235,7 +223,7 @@ domain:
          {
             call::Request result;
             result.service = service;
-            result.payload.header = { call::header::Field{ "content-type:application/json"}};
+            result.payload.header = casual::header::transform( { "content-type:application/json"});
             algorithm::copy( binary::span::make( json), result.payload.body);
             return result; 
          };
@@ -272,8 +260,8 @@ domain:
 
             auto& reply = result.value();
             EXPECT_TRUE( reply.code == http::code::ok);
-            EXPECT_TRUE( local::header::value( reply.payload.header, "casual-result-code") == "OK");
-            EXPECT_TRUE( local::header::value( reply.payload.header, "casual-result-user-code") == "0");
+            EXPECT_TRUE( reply.payload.header.fields.at( "casual-result-code").value() == "OK");
+            EXPECT_TRUE( reply.payload.header.fields.at( "casual-result-user-code").value() == "0");
          }
       }
 
@@ -331,11 +319,12 @@ domain:
          {
             call::Request result;
             result.service = "a";
-            result.payload.header = { 
-               call::header::Field{ "content-type:application/json"},
+            result.payload.header.fields = std::vector{
+               casual::header::Field{ "content-type:application/json"},
                // use outbound to create the traceparent header
                outbound::request::detail::header::prepare::trace( execution, span)
             };
+
             algorithm::copy( binary::span::make( json), result.payload.body);
             return result; 
          };
@@ -363,74 +352,77 @@ domain:
 
       TEST( http_inbound_call_buffer_type, missing_content_type__expect_exception)
       {
-         const std::vector< call::header::Field> headers{
-            };
+         const Header header{
+            .fields = {}
+         };
 
             EXPECT_THROW({
-            call::buffer::type( headers);
+            call::buffer::type( header);
          }, std::system_error);
       }
 
       TEST( http_inbound_call_buffer_type, invalid_content_type__expect_exception)
       {
-         const std::vector< call::header::Field> headers{
-            { "Content-Type", "application/qwerty"},
+         const Header header{
+            .fields = { { { "Content-Type", "application/qwerty"}}},
             };
 
          EXPECT_THROW({
-            call::buffer::type( headers);
+            call::buffer::type( header);
          }, std::system_error);
       }
 
       TEST( http_inbound_call_buffer_type, valid_content_type__expect_buffer)
       {
-         const std::vector< call::header::Field> headers{
-            { "Content-Type", "application/json"},
-            };
+         const Header header{
+            .fields = { { { "Content-Type", "application/json"}}},
+         };
 
-         EXPECT_TRUE( call::buffer::type( headers) == ".json/") << call::buffer::type( headers);
+         EXPECT_TRUE( call::buffer::type( header) == ".json/") << call::buffer::type( header);
       }
 
       TEST( http_inbound_call_buffer_type, invalid_accept_type__expect_exception)
       {
-         const std::vector< call::header::Field> headers{
-            { "Accept", "application/qwerty"},
+         const Header header{
+            .fields = { { { "Accept", "application/qwerty"}}},
             };
 
          EXPECT_THROW({
-            call::buffer::type( headers);
+            call::buffer::type( header);
          }, std::system_error);
       }
 
       TEST( http_inbound_call_buffer_type, valid_accept_type__expect_buffer)
       {
-         const std::vector< call::header::Field> headers{
-            { "Accept", "application/qwerty, application/json"},
-            };
+         const Header header{
+            .fields = { { { "Accept", "application/qwerty, application/json"}}},
+         };
 
-         EXPECT_TRUE( call::buffer::type( headers) == ".json/") << call::buffer::type( headers);
+         EXPECT_TRUE( call::buffer::type( header) == ".json/") << call::buffer::type( header);
       }
 
       TEST( http_inbound_call_buffer_type, different_accept_and_content_type__expect_exception)
       {
-         const std::vector< call::header::Field> headers{
-            { "Accept", "application/toml, application/yaml"},
-            { "Content-Type", "application/json"},
-            };
+         const Header header{
+            .fields = { { 
+               { "Accept", "application/toml, application/yaml"}, 
+               { "Content-Type", "application/json"}}}
+         };
 
          EXPECT_THROW({
-            call::buffer::type( headers);
+            call::buffer::type( header);
          }, std::system_error);
       }
 
       TEST( http_inbound_call_buffer_type, intersect_content_and_accept_type__expect_buffer)
       {
-         const std::vector< call::header::Field> headers{
-            { "Accept", "application/toml, application/json, application/yaml"},
-            { "Content-Type", "application/json"},
-            };
+         const Header header{
+            .fields = { { 
+               { "Accept", "application/toml, application/json, application/yaml"}, 
+               { "Content-Type", "application/json"}}}
+         };
 
-         EXPECT_TRUE( call::buffer::type( headers) == ".json/") << call::buffer::type( headers);
+         EXPECT_TRUE( call::buffer::type( header) == ".json/") << call::buffer::type( header);
       }
 
    } // http::inbound

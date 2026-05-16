@@ -721,14 +721,13 @@ domain:
          {
             auto attributes = queue::Attributes{
                .properties = "foo",
-               .header = header::Fields{ { header::Field{ "bar", "baz"}}},
                .reply = "b",
                .available = available
             };
 
             queue::Message message{
                .attributes = attributes,
-               .payload = { .type = "json", .data = payload}
+               .payload = { .type = "json", .data = payload, .header = header::transform( { "bar:bas"})}
             };
 
             EXPECT_NO_THROW({
@@ -744,8 +743,8 @@ domain:
             
             EXPECT_TRUE( message.front().payload.data == payload);
             EXPECT_TRUE( message.front().payload.type == "json");
+            EXPECT_TRUE( message.front().payload.header.fields.at( "bar").value() == "bas");
             EXPECT_TRUE( message.front().attributes.properties == "foo");
-            EXPECT_TRUE( message.front().attributes.header.at( "bar").value() == "baz");
             EXPECT_TRUE( message.front().attributes.reply == "b");
             EXPECT_TRUE( message.front().attributes.available == available);
          }

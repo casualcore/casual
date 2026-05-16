@@ -105,14 +105,12 @@ namespace casual
 
             common::Uuid id;
             message::Attributes attributes;
-            std::vector< std::string> header;
             common::buffer::Payload payload;
 
             CASUAL_CONST_CORRECT_SERIALIZE(
                message_base::serialize( archive);
                CASUAL_SERIALIZE( id);
                CASUAL_SERIALIZE( attributes);
-               CASUAL_SERIALIZE( header);
                CASUAL_SERIALIZE( payload);
             ) 
          };
@@ -127,13 +125,11 @@ namespace casual
             using message_base::message_base;
 
             common::service::Code code;
-            std::vector< std::string> header;
             common::buffer::Payload payload;
 
             CASUAL_CONST_CORRECT_SERIALIZE(
                message_base::serialize( archive);
                CASUAL_SERIALIZE( code);
-               CASUAL_SERIALIZE( header);
                CASUAL_SERIALIZE( payload);
             )  
          };

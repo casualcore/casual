@@ -8,6 +8,7 @@
 
 
 #include "common/message/type.h"
+#include "common/message/compatibility.h"
 #include "common/transaction/id.h"
 #include "common/transaction/global.h"
 #include "common/buffer/type.h"
@@ -276,7 +277,6 @@ namespace casual
       struct Attributes 
       {
          std::string properties;
-         header::Fields header;
          std::string reply;
          common::chronology::time_point available;
 
@@ -284,13 +284,10 @@ namespace casual
          
          CASUAL_CONST_CORRECT_SERIALIZE(
             CASUAL_SERIALIZE( properties);
-            CASUAL_SERIALIZE( header);
             CASUAL_SERIALIZE( reply);
             CASUAL_SERIALIZE( available);
          ) 
       };
-
-      using Payload = common::buffer::Payload;
 
       namespace group
       {
@@ -441,7 +438,7 @@ namespace casual
             {
                common::Uuid id;
                ipc::message::Attributes attributes;
-               ipc::message::Payload payload;
+               common::buffer::Payload payload;
                platform::size::type redelivered{};
                common::chronology::time_point timestamp;
 
@@ -473,24 +470,14 @@ namespace casual
 
             namespace v1_5
             {
-               struct Attributes 
-               {
-                  std::string properties;
-                  std::string reply;
-                  common::chronology::time_point available;
-                  
-                  CASUAL_CONST_CORRECT_SERIALIZE(
-                     CASUAL_SERIALIZE( properties);
-                     CASUAL_SERIALIZE( reply);
-                     CASUAL_SERIALIZE( available);
-                  ) 
-               };
-
+               //! a specific message type to be able to serialize it without the payload.header
+               //! to conform to the over-the-wire protocol version 1.5. 
                struct Message
                {
                   common::Uuid id;
                   Attributes attributes;
-                  ipc::message::Payload payload;
+                  // no header
+                  common::message::compatibility::Payload payload;
                   platform::size::type redelivered{};
                   common::chronology::time_point timestamp;
 
@@ -508,7 +495,7 @@ namespace casual
                {
                   using base_reply::base_reply;
 
-                  // we use the old message, without header.
+                  // will serialize without payload.header, to conform to the over-the-wire protocol version 1.5.
                   std::optional< dequeue::v1_5::Message> message;
                   common::code::queue code{};
 
@@ -530,7 +517,7 @@ namespace casual
                {
                   using base_reply::base_reply;
 
-                  // we use the old message, without header.
+                  // will serialize without payload.header, to conform to the over-the-wire protocol version 1.2.
                   std::vector< dequeue::v1_5::Message> message;
 
                   inline explicit operator bool () const noexcept { return ! message.empty();}
@@ -583,7 +570,7 @@ namespace casual
             {
                common::Uuid id;
                ipc::message::Attributes attributes;
-               ipc::message::Payload payload;
+               common::buffer::Payload payload;
                
                CASUAL_CONST_CORRECT_SERIALIZE(
                   CASUAL_SERIALIZE( id);
@@ -646,7 +633,8 @@ namespace casual
                {
                   common::Uuid id;
                   enqueue::v1_5::Attributes attributes;
-                  ipc::message::Payload payload;
+                  // no header
+                  common::message::compatibility::Payload payload;
 
                   CASUAL_CONST_CORRECT_SERIALIZE(
                      CASUAL_SERIALIZE( id);

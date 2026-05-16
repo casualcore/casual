@@ -722,7 +722,6 @@ namespace casual
 
                   common::log::debug( "memory: ", buffer.payload);
 
-
                   const auto synchronize = common::execute::scope( [ handle, &buffer]() 
                   { 
                      *handle = buffer.handle().raw();
@@ -731,7 +730,14 @@ namespace casual
                   const auto data = static_cast< platform::binary::immutable::pointer>( source);
                   const auto size = count;
 
-                  buffer = common::buffer::Payload{ buffer.payload.type, { data, data + size}};
+                  buffer = common::buffer::Payload{ 
+                     .type = buffer.payload.type, 
+                     .data = { data, data + size},
+                     .header = buffer.payload.header,
+                  };
+
+                  if( buffer.payload.data.capacity() == 0)
+                     buffer.payload.data.reserve( 1);
 
                   common::log::debug( "memory: ", buffer.payload);
                }
@@ -1587,7 +1593,7 @@ namespace casual
             {
                Trace trace{ "field::internal::add"};
 
-               return pool_type::pool().insert( common::buffer::Payload{ key, std::move( buffer)}).handle().raw();
+               return pool_type::pool().insert( common::buffer::Payload{ .type = std::string{ key}, .data = std::move( buffer)}).handle().raw();
             }
 
          } // internal

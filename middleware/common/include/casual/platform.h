@@ -72,6 +72,7 @@
 namespace casual
 {
    using namespace std::literals::chrono_literals;
+   using namespace std::literals::string_view_literals;
    
    namespace platform
    {

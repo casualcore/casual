@@ -70,7 +70,7 @@ namespace casual
                      header::Fields header;
                      chronology::duration pending{};
                      duplex::Type duplex{};
-                     common::buffer::Payload buffer;
+                     message::compatibility::Payload buffer;
 
                      CASUAL_CONST_CORRECT_SERIALIZE(
                         base_type::serialize( archive);
@@ -98,7 +98,6 @@ namespace casual
                service::call::Deadline deadline;
 
                common::transaction::ID trid;
-               header::Fields header;
 
                //! pending time, only to be return in the "ACK", to collect
                //! metrics
@@ -112,7 +111,6 @@ namespace casual
                   CASUAL_SERIALIZE( parent);
                   CASUAL_SERIALIZE( deadline);
                   CASUAL_SERIALIZE( trid);
-                  CASUAL_SERIALIZE( header);
                   CASUAL_SERIALIZE( pending);
                   CASUAL_SERIALIZE( duplex);
                )
@@ -194,7 +192,7 @@ namespace casual
                Send( common::buffer::payload::Send buffer, Args&&... args)
                   : basic_send( std::forward< Args>( args)...), buffer( std::move( buffer))
                {}
-               common::buffer::payload::Send buffer;
+                common::buffer::payload::Send buffer;
 
                CASUAL_CONST_CORRECT_SERIALIZE(
                   basic_send::serialize( archive);

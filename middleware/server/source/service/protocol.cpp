@@ -14,7 +14,7 @@ namespace casual
 
       common::serialize::service::Protocol deduce( invoke::Parameter&& parameter)
       {
-         return common::serialize::service::protocol::deduce( std::move( parameter.payload), parameter.header);
+         return common::serialize::service::protocol::deduce( std::move( parameter.payload));
       }
 
    } // server::service::protocol
