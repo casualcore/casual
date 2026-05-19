@@ -97,7 +97,7 @@ namespace std
    };
 }
 
-casual::common::Uuid operator"" _uuid ( const char* data);
+casual::common::Uuid operator""_uuid ( const char* data);
 
 
 

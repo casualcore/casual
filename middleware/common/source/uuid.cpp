@@ -104,7 +104,7 @@ namespace casual
    } // common
 } // casual
 
-casual::common::Uuid operator"" _uuid ( const char* data)
+casual::common::Uuid operator""_uuid ( const char* data)
 {
    return casual::common::Uuid{ std::string_view( data + 2)};
 }
