@@ -63,7 +63,8 @@ namespace casual
             T decode( platform::binary::immutable::pointer where) noexcept
             {
                using network_type = common::network::byteorder::type< T>;
-               const auto encoded = *reinterpret_cast< const network_type*>( where);
+               network_type encoded{};
+               std::memcpy( &encoded, where, sizeof( encoded));
                return common::network::byteorder::decode<T>( encoded);
             }
 

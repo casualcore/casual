@@ -20,6 +20,7 @@
 
 #include <utility>
 #include <memory>
+#include <cstring>
 
 namespace casual
 {
@@ -293,8 +294,10 @@ namespace casual
                template<typename T>
                size_type select( const_data_type where, T& value) noexcept
                {
-                  //value = common::network::byteorder::decode< T>( *std::start_lifetime_as< common::network::byteorder::type< T>>( where));
-                  value = common::network::byteorder::decode< T>( *reinterpret_cast< const common::network::byteorder::type< T>*>( where));
+                  using network_type = common::network::byteorder::type< T>;
+                  network_type encoded{};
+                  std::memcpy( &encoded, where, sizeof( encoded));
+                  value = common::network::byteorder::decode< T>( encoded);
                   return common::network::byteorder::bytes< T>();
                }
 

@@ -36,7 +36,7 @@ namespace casual
          std::string m_string = "foo";
          short m_short = 256;
          long long m_longlong = std::numeric_limits< long long>::max();
-         common::chronology::time_point m_time = common::chronology::time_point::max();
+         common::chronology::time_point m_time{ std::chrono::seconds{ 1000 * 1000}};
          std::filesystem::path m_path{u8"/tmp/file.txt"};
 
          std::optional< long> m_optional = 42;
