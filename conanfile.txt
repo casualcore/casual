@@ -3,7 +3,6 @@ yaml-cpp/0.8.0
 pugixml/1.15
 gtest/1.16.0
 cppcodec/0.2
-tomlplusplus/3.4.0
 [generators]
 CMakeDeps
 CMakeToolchain

@@ -14,7 +14,6 @@ find_package(pugixml REQUIRED)
 find_package(yaml-cpp REQUIRED)
 find_package(GTest REQUIRED)
 find_package(cppcodec REQUIRED)
-find_package(tomlplusplus REQUIRED)
 
 include(FetchContent)
 FetchContent_Declare(
@@ -24,9 +23,19 @@ FetchContent_Declare(
   SOURCE_DIR     casual-thirdparty
 )
 
-FetchContent_MakeAvailable( 
-    casual_thirdparty 
+FetchContent_Declare(
+  polylite
+  GIT_REPOSITORY https://github.com/KristianIvarsson/polylite.git
+  GIT_TAG        4.2.0
 )
+
+FetchContent_MakeAvailable( 
+    casual_thirdparty
+    polylite
+)
+
+add_library(polylite INTERFACE)
+target_include_directories(polylite INTERFACE "${polylite_SOURCE_DIR}/include")
 
 set(CASUAL_THIRDPARTY_SOURCE_DIR "${casual_thirdparty_SOURCE_DIR}")
 set(CASUAL_THIRDPARTY_BINARY_DIR "${casual_thirdparty_BINARY_DIR}")
