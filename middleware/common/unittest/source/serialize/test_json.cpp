@@ -152,7 +152,6 @@ namespace casual
          }
       }
 
-
       TEST( common_serialize_json, load_invalid_document__expecting_exception)
       {
          common::unittest::Trace trace;

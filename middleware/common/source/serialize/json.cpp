@@ -14,6 +14,7 @@
 #include "common/transcode.h"
 #include "common/functional.h"
 #include "common/buffer/type.h"
+#include "common/log/line.h"
 
 #include <iterator>
 #include <istream>
@@ -405,7 +406,15 @@ namespace casual
                               switch( parent.GetType())
                               {
                                  case rapidjson::Type::kObjectType:
-                                    // do nothing?
+
+                                    // this should only happen if the user serializes an unnamed value to the archive. That is
+                                    // the first composite value that is serialized to the archive.
+                                    if( m_stack.size() != 1)
+                                       code::raise::error( code::casual::invalid_semantics, "cannot serialize unnamed value in object - name: ", name ? name : "");
+
+                                    // we push the parent/document to promote the node to 'current scope', and make it 
+                                    // symmetric to the end which pops it.
+                                    m_stack.push_back( &parent);
                                     break;
 
                                  default:
@@ -487,7 +496,12 @@ namespace casual
                            m_document.Swap( document);
                            m_allocator = &m_document.GetAllocator();
 
-                           m_stack.erase( std::begin( m_stack) + 1, std::end( m_stack));
+                           if( m_stack.size() != 1)
+                              common::log::error( code::casual::invalid_semantics, "stack should be back to root after consuming - stack size: ", m_stack.size());
+
+                           m_stack.clear();
+                           m_stack.push_back( &m_document);
+
                            m_document.SetObject();
                         }
 
