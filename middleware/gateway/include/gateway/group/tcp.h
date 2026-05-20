@@ -66,6 +66,10 @@ namespace casual
          inline explicit Connection( common::communication::Socket&& socket, message::protocol::Version protocol)
             : m_device{ std::move( socket)}, m_protocol{ protocol} {}
 
+         ~Connection();
+
+         Connection( Connection&&) = default;
+         Connection& operator = ( Connection&&) = default;
       
          inline auto descriptor() const noexcept { return m_device.connector().descriptor();}
 
