@@ -14,6 +14,8 @@
 #include "common/communication/ipc.h"
 #include "common/algorithm/random.h"
 
+#include <ranges>
+
 
 namespace casual
 {
@@ -315,6 +317,58 @@ namespace casual
          // everything handled
          EXPECT_TRUE( invoked);
          EXPECT_TRUE( coordinate.empty()) << trace.compose( "coordinate: ", coordinate);
+      }
+
+      TEST( common_message_coordinate, add_4_pending__2_received__1_failed__1_received___expect_invoke)
+      {
+         common::unittest::Trace trace;
+
+         bool invoked = false;
+
+         // fill the messages
+         auto origin = algorithm::generate_n< 4>( []( auto index)
+         {
+            auto handle = process::Handle{ strong::process::id( process::id().value() + index), communication::ipc::inbound::ipc()};
+            local::Reply message{ handle};
+            message.correlation = strong::correlation::id::generate();
+            return message;
+         });
+
+         local::Coordinate coordinate;
+
+         coordinate(
+            algorithm::transform( origin, []( auto& message)
+            {
+               return local::Coordinate::Pending{ message.correlation, message.process.pid};
+            }),
+            [&invoked]( auto received, auto failed)
+            {
+               invoked = true;
+            });
+
+         // receive first 2 messages
+         std::ranges::for_each( origin | std::views::take( 2), std::ref( coordinate));
+
+         EXPECT_TRUE( ! invoked);
+         EXPECT_TRUE( ! coordinate.empty()) << CASUAL_NAMED_VALUE( coordinate);
+
+         // fail the 3rd message
+         coordinate.failed( origin.at( 2).process.pid);
+
+         EXPECT_TRUE( ! invoked);
+         EXPECT_TRUE( ! coordinate.empty()) << CASUAL_NAMED_VALUE( coordinate);
+
+         // receiving the failed message should not cause any issues
+         coordinate( origin.at( 2));
+         EXPECT_TRUE( ! invoked);
+         EXPECT_TRUE( ! coordinate.empty()) << CASUAL_NAMED_VALUE( coordinate);
+
+         // receive the last messages
+         algorithm::for_each( origin | std::views::drop( 3), std::ref( coordinate));
+
+         EXPECT_TRUE( invoked);
+         EXPECT_TRUE( coordinate.empty()) << CASUAL_NAMED_VALUE( coordinate);
+
       }
 
       namespace local
