@@ -341,28 +341,28 @@ Binary representation of the example (network byte ordering in base64):
 
 Sent to and received from other domains when one domain wants call a service in the other domain
 
-role name           | network type   | network size | description                                                        
-------------------- | -------------- | ------------ | -------------------------------------------------------------------
-execution           | (fixed) binary |           16 | uuid of the current execution context (breadcrumb)                 
-service.name.size   | uint64         |            8 | service name size                                                  
-service.name.data   | dynamic string |       [0..*] | byte array with service name                                       
-has_value           | uint8          |            1 | if 1, deadline.remaining is propagated                             
-deadline.remaining  | uint64         |            8 | if has_value, the remaining time before deadline (ns)              
-parent.span         | (fixed) binary |            8 | parent execution span                                              
-parent.service.size | uint64         |            8 | parent service name size                                           
-parent.service.data | dynamic string |       [0..*] | byte array with parent service name                                
-xid.formatID        | uint64         |            8 | xid format type. if 0 no more information of the xid is transported
-xid.gtrid_length    | uint64         |            8 | length of the transaction gtrid part                               
-xid.bqual_length    | uint64         |            8 | length of the transaction branch part                              
-xid.data            | (fixed) binary |           32 | byte array with the size of gtrid_length + bqual_length (max 128)  
-flags               | uint64         |            8 | XATMI flags sent to the service                                    
-buffer.type.size    | uint64         |            8 | buffer type name size                                              
-buffer.type.data    | dynamic string |       [0..*] | byte array with buffer type in the form 'type/subtype'             
-buffer.data.size    | uint64         |            8 | buffer payload size (could be very big)                            
-buffer.data.data    | dynamic binary |       [0..*] | buffer payload data (with the size of buffer.payload.size)         
-header.size         | uint64         |            8 | number of header field entries                                     
-header.element.size | uint64         |            8 | size of field data                                                 
-header.element.data | dynamic string |       [0..*] | the field data, key:value string                                   
+role name                         | network type   | network size | description                                                        
+--------------------------------- | -------------- | ------------ | -------------------------------------------------------------------
+execution                         | (fixed) binary |           16 | uuid of the current execution context (breadcrumb)                 
+service.name.size                 | uint64         |            8 | service name size                                                  
+service.name.data                 | dynamic string |       [0..*] | byte array with service name                                       
+has_value                         | uint8          |            1 | if 1, deadline.remaining is propagated                             
+deadline.remaining                | uint64         |            8 | if has_value, the remaining time before deadline (ns)              
+parent.span                       | (fixed) binary |            8 | parent execution span                                              
+parent.service.size               | uint64         |            8 | parent service name size                                           
+parent.service.data               | dynamic string |       [0..*] | byte array with parent service name                                
+xid.formatID                      | uint64         |            8 | xid format type. if 0 no more information of the xid is transported
+xid.gtrid_length                  | uint64         |            8 | length of the transaction gtrid part                               
+xid.bqual_length                  | uint64         |            8 | length of the transaction branch part                              
+xid.data                          | (fixed) binary |           32 | byte array with the size of gtrid_length + bqual_length (max 128)  
+flags                             | uint64         |            8 | XATMI flags sent to the service                                    
+buffer.type.size                  | uint64         |            8 | buffer type name size                                              
+buffer.type.data                  | dynamic string |       [0..*] | byte array with buffer type in the form 'type/subtype'             
+buffer.data.size                  | uint64         |            8 | buffer payload size (could be very big)                            
+buffer.data.data                  | dynamic binary |       [0..*] | buffer payload data (with the size of buffer.payload.size)         
+buffer.header.fields.size         | uint64         |            8 | number of header field entries                                     
+buffer.header.fields.element.size | uint64         |            8 | size of field data                                                 
+buffer.header.fields.element.data | dynamic string |       [0..*] | the field data, key:value string                                   
 
 #### example 
 ```yaml
@@ -382,10 +382,11 @@ flags: 4
 buffer:
   type: ".binary/"
   data: !!binary "gIGCg4SFhoeIiYqLjI2Oj5CRkpOUlZaXmJmam5ydnp+goaKjpKWmp6ipqqusra6vsLGys7S1tre4ubq7vL2+v8DBwsPExcbHyMnKy8zNzs/Q0dLT1NXW19jZ2tvc3d7f4OHi4+Tl5ufo6err7O3u7/Dx8vP09fb3+Pn6+/z9/v8="
-header:
-  - "a:foo"
-  - "b:bar"
-  - "c:baz"
+  header:
+    fields:
+      - "a:foo"
+      - "b:bar"
+      - "c:baz"
 ...
 ```
 
@@ -494,19 +495,19 @@ Binary representation of the example (network byte ordering in base64):
 
 Reply to call request
 
-role name           | network type   | network size | description                                               
-------------------- | -------------- | ------------ | ----------------------------------------------------------
-execution           | (fixed) binary |           16 | uuid of the current execution context (breadcrumb)        
-code.result         | uint32         |            4 | XATMI result/error code, 0 represent OK                   
-code.user           | uint64         |            8 | XATMI user supplied code                                  
-transaction_state   | uint8          |            1 | 0:ok/absent, 1:rollback, 2:timeout, 3:error               
-buffer.type.size    | uint64         |            8 | buffer type name size                                     
-buffer.type.data    | dynamic string |       [0..*] | byte array with buffer type in the form 'type/subtype'    
-buffer.data.size    | uint64         |            8 | buffer payload size (could be very big)                   
-buffer.data.data    | dynamic binary |       [0..*] | buffer payload data (with the size of buffer.payload.size)
-header.size         | uint64         |            8 | number of header field entries                            
-header.element.size | uint64         |            8 | size of field data                                        
-header.element.data | dynamic string |       [0..*] | the field data, key:value string                          
+role name                         | network type   | network size | description                                               
+--------------------------------- | -------------- | ------------ | ----------------------------------------------------------
+execution                         | (fixed) binary |           16 | uuid of the current execution context (breadcrumb)        
+code.result                       | uint32         |            4 | XATMI result/error code, 0 represent OK                   
+code.user                         | uint64         |            8 | XATMI user supplied code                                  
+transaction_state                 | uint8          |            1 | 0:ok/absent, 1:rollback, 2:timeout, 3:error               
+buffer.type.size                  | uint64         |            8 | buffer type name size                                     
+buffer.type.data                  | dynamic string |       [0..*] | byte array with buffer type in the form 'type/subtype'    
+buffer.data.size                  | uint64         |            8 | buffer payload size (could be very big)                   
+buffer.data.data                  | dynamic binary |       [0..*] | buffer payload data (with the size of buffer.payload.size)
+buffer.header.fields.size         | uint64         |            8 | number of header field entries                            
+buffer.header.fields.element.size | uint64         |            8 | size of field data                                        
+buffer.header.fields.element.data | dynamic string |       [0..*] | the field data, key:value string                          
 
 #### example 
 ```yaml
@@ -518,10 +519,11 @@ transaction_state: ' '
 buffer:
   type: ".binary/"
   data: !!binary "gIGCg4SFhoeIiYqLjI2Oj5CRkpOUlZaXmJmam5ydnp+goaKjpKWmp6ipqqusra6vsLGys7S1tre4ubq7vL2+v8DBwsPExcbHyMnKy8zNzs/Q0dLT1NXW19jZ2tvc3d7f4OHi4+Tl5ufo6err7O3u7/Dx8vP09fb3+Pn6+/z9/v8="
-header:
-  - "a:foo"
-  - "b:bar"
-  - "c:baz"
+  header:
+    fields:
+      - "a:foo"
+      - "b:bar"
+      - "c:baz"
 ...
 ```
 
@@ -811,28 +813,28 @@ Binary representation of the example (network byte ordering in base64):
 
 Represent enqueue request.
 
-role name                              | network type   | network size | description                                                        
--------------------------------------- | -------------- | ------------ | -------------------------------------------------------------------
-execution                              | (fixed) binary |           16 | uuid of the current execution context (breadcrumb)                 
-name.size                              | uint64         |            8 | size of queue name                                                 
-name.data                              | dynamic string |       [0..*] | data of queue name                                                 
-xid.formatID                           | uint64         |            8 | xid format type. if 0 no more information of the xid is transported
-xid.gtrid_length                       | uint64         |            8 | length of the transaction gtrid part                               
-xid.bqual_length                       | uint64         |            8 | length of the transaction branch part                              
-xid.data                               | (fixed) binary |           32 | byte array with the size of gtrid_length + bqual_length (max 128)  
-message.id                             | (fixed) binary |           16 | id of the message                                                  
-message.attributes.properties.size     | uint64         |            8 | length of message properties                                       
-message.attributes.properties.data     | dynamic string |       [0..*] | data of message properties                                         
-message.attributes.header.size         | uint64         |            8 | number of header field entries                                     
-message.attributes.header.element.size | uint64         |            8 | length of header field string                                      
-message.attributes.header.element.data | dynamic string |       [0..*] | data of the header field string                                    
-message.attributes.reply.size          | uint64         |            8 | length of the reply queue                                          
-message.attributes.reply.data          | dynamic string |       [0..*] | data of reply queue                                                
-message.attributes.available           | uint64         |            8 | when the message is available for dequeue (us since epoch)         
-message.payload.type.size              | uint64         |            8 | length of the type string                                          
-message.payload.type.data              | dynamic string |       [0..*] | data of the type string                                            
-message.payload.data.size              | uint64         |            8 | size of the payload                                                
-message.payload.data.data              | dynamic binary |       [0..*] | data of the payload                                                
+role name                                  | network type   | network size | description                                                        
+------------------------------------------ | -------------- | ------------ | -------------------------------------------------------------------
+execution                                  | (fixed) binary |           16 | uuid of the current execution context (breadcrumb)                 
+name.size                                  | uint64         |            8 | size of queue name                                                 
+name.data                                  | dynamic string |       [0..*] | data of queue name                                                 
+xid.formatID                               | uint64         |            8 | xid format type. if 0 no more information of the xid is transported
+xid.gtrid_length                           | uint64         |            8 | length of the transaction gtrid part                               
+xid.bqual_length                           | uint64         |            8 | length of the transaction branch part                              
+xid.data                                   | (fixed) binary |           32 | byte array with the size of gtrid_length + bqual_length (max 128)  
+message.id                                 | (fixed) binary |           16 | id of the message                                                  
+message.attributes.properties.size         | uint64         |            8 | length of message properties                                       
+message.attributes.properties.data         | dynamic string |       [0..*] | data of message properties                                         
+message.attributes.reply.size              | uint64         |            8 | length of the reply queue                                          
+message.attributes.reply.data              | dynamic string |       [0..*] | data of reply queue                                                
+message.attributes.available               | uint64         |            8 | when the message is available for dequeue (us since epoch)         
+message.payload.type.size                  | uint64         |            8 | length of the type string                                          
+message.payload.type.data                  | dynamic string |       [0..*] | data of the type string                                            
+message.payload.data.size                  | uint64         |            8 | size of the payload                                                
+message.payload.data.data                  | dynamic binary |       [0..*] | data of the payload                                                
+message.payload.header.fields.size         | uint64         |            8 | number of header field entries                                     
+message.payload.header.fields.element.size | uint64         |            8 | size of field data                                                 
+message.payload.header.fields.element.data | dynamic string |       [0..*] | the field data, key:value string                                   
 
 #### example 
 ```yaml
@@ -848,19 +850,20 @@ message:
   id: !!binary "bMyA/mE8SqC3TMdGHTGEIg=="
   attributes:
     properties: "property 1:property 2"
-    header:
-      - "a:b"
-      - "c:d"
     reply: "queueB"
     available: 1559762216552100000
   payload:
     type: ".binary/"
     data: !!binary "gIGCg4SFhoeIiYqLjI2Oj5CRkpOUlZaXmJmam5ydnp+goaKjpKWmp6ipqqusra6vsLGys7S1tre4ubq7vL2+v8DBwsPExcbHyMnKy8zNzs/Q0dLT1NXW19jZ2tvc3d7f4OHi4+Tl5ufo6err7O3u7/Dx8vP09fb3+Pn6+/z9/v8="
+    header:
+      fields:
+        - "a:b"
+        - "c:d"
 ...
 ```
 
 Binary representation of the example (network byte ordering in base64):
-`cHPL9BRESkGHswCG8UP8YAAAAAAAAAAGcXVldWVBAAAAAAAAACoAAAAAAAAAEAAAAAAAAAAQW2wb9vJLSA29vN71TDoIUVtsG/byS0gNvbze9Uw6CFJszID+YTxKoLdMx0YdMYQiAAAAAAAAABVwcm9wZXJ0eSAxOnByb3BlcnR5IDIAAAAAAAAAAgAAAAAAAAADYTpiAAAAAAAAAANjOmQAAAAAAAAABnF1ZXVlQhWlY3jTqfCgAAAAAAAAAAguYmluYXJ5LwAAAAAAAACAgIGCg4SFhoeIiYqLjI2Oj5CRkpOUlZaXmJmam5ydnp+goaKjpKWmp6ipqqusra6vsLGys7S1tre4ubq7vL2+v8DBwsPExcbHyMnKy8zNzs/Q0dLT1NXW19jZ2tvc3d7f4OHi4+Tl5ufo6err7O3u7/Dx8vP09fb3+Pn6+/z9/v8=`
+`cHPL9BRESkGHswCG8UP8YAAAAAAAAAAGcXVldWVBAAAAAAAAACoAAAAAAAAAEAAAAAAAAAAQW2wb9vJLSA29vN71TDoIUVtsG/byS0gNvbze9Uw6CFJszID+YTxKoLdMx0YdMYQiAAAAAAAAABVwcm9wZXJ0eSAxOnByb3BlcnR5IDIAAAAAAAAABnF1ZXVlQhWlY3jTqfCgAAAAAAAAAAguYmluYXJ5LwAAAAAAAACAgIGCg4SFhoeIiYqLjI2Oj5CRkpOUlZaXmJmam5ydnp+goaKjpKWmp6ipqqusra6vsLGys7S1tre4ubq7vL2+v8DBwsPExcbHyMnKy8zNzs/Q0dLT1NXW19jZ2tvc3d7f4OHi4+Tl5ufo6err7O3u7/Dx8vP09fb3+Pn6+/z9/v8AAAAAAAAAAgAAAAAAAAADYTpiAAAAAAAAAANjOmQ=`
 
 
 
@@ -1005,26 +1008,26 @@ Binary representation of the example (network byte ordering in base64):
 
 Represent dequeue reply.
 
-role name                              | network type   | network size | description                                                                     
--------------------------------------- | -------------- | ------------ | --------------------------------------------------------------------------------
-execution                              | (fixed) binary |           16 | uuid of the current execution context (breadcrumb)                              
-has_value                              | uint8          |            1 | if 1 message has content, if 0 no more information of the message is transported
-message.id                             | (fixed) binary |           16 | id of the message                                                               
-message.attributes.properties.size     | uint64         |            8 | length of message properties                                                    
-message.attributes.properties.data     | dynamic string |       [0..*] | data of message properties                                                      
-message.attributes.header.size         | uint64         |            8 | number of header field entries                                                  
-message.attributes.header.element.size | uint64         |            8 | length of header field string                                                   
-message.attributes.header.element.data | dynamic string |       [0..*] | data of the header field string                                                 
-message.attributes.reply.size          | uint64         |            8 | length of the reply queue                                                       
-message.attributes.reply.data          | dynamic string |       [0..*] | data of reply queue                                                             
-message.attributes.available           | uint64         |            8 | when the message was available for dequeue (us since epoch)                     
-message.payload.type.size              | uint64         |            8 | length of the type string                                                       
-message.payload.type.data              | dynamic string |       [0..*] | data of the type string                                                         
-message.payload.data.size              | uint64         |            8 | size of the payload                                                             
-message.payload.data.data              | dynamic binary |       [0..*] | data of the payload                                                             
-message.redelivered                    | uint64         |            8 | how many times the message has been redelivered                                 
-message.timestamp                      | uint64         |            8 | when the message was enqueued (us since epoch)                                  
-code                                   | uint32         |            4 | result/error code                                                               
+role name                                  | network type   | network size | description                                                                     
+------------------------------------------ | -------------- | ------------ | --------------------------------------------------------------------------------
+execution                                  | (fixed) binary |           16 | uuid of the current execution context (breadcrumb)                              
+has_value                                  | uint8          |            1 | if 1 message has content, if 0 no more information of the message is transported
+message.id                                 | (fixed) binary |           16 | id of the message                                                               
+message.attributes.properties.size         | uint64         |            8 | length of message properties                                                    
+message.attributes.properties.data         | dynamic string |       [0..*] | data of message properties                                                      
+message.attributes.reply.size              | uint64         |            8 | length of the reply queue                                                       
+message.attributes.reply.data              | dynamic string |       [0..*] | data of reply queue                                                             
+message.attributes.available               | uint64         |            8 | when the message was available for dequeue (us since epoch)                     
+message.payload.type.size                  | uint64         |            8 | length of the type string                                                       
+message.payload.type.data                  | dynamic string |       [0..*] | data of the type string                                                         
+message.payload.data.size                  | uint64         |            8 | size of the payload                                                             
+message.payload.data.data                  | dynamic binary |       [0..*] | data of the payload                                                             
+message.payload.header.fields.size         | uint64         |            8 | number of header field entries                                                  
+message.payload.header.fields.element.size | uint64         |            8 | size of field data                                                              
+message.payload.header.fields.element.data | dynamic string |       [0..*] | the field data, key:value string                                                
+message.redelivered                        | uint64         |            8 | how many times the message has been redelivered                                 
+message.timestamp                          | uint64         |            8 | when the message was enqueued (us since epoch)                                  
+code                                       | uint32         |            4 | result/error code                                                               
 
 #### example 
 ```yaml
@@ -1034,14 +1037,15 @@ message:
   id: !!binary "bMyA/mE8SqC3TMdGHTGEIg=="
   attributes:
     properties: "property 1:property 2"
-    header:
-      - "a:b"
-      - "c:d"
     reply: "queueB"
     available: 1559762216552100000
   payload:
     type: ".json/"
     data: !!binary "e30="
+    header:
+      fields:
+        - "a:b"
+        - "c:d"
   redelivered: 1
   timestamp: 1559762216552100000
 code: 20
@@ -1049,7 +1053,7 @@ code: 20
 ```
 
 Binary representation of the example (network byte ordering in base64):
-`cHPL9BRESkGHswCG8UP8YAFszID+YTxKoLdMx0YdMYQiAAAAAAAAABVwcm9wZXJ0eSAxOnByb3BlcnR5IDIAAAAAAAAAAgAAAAAAAAADYTpiAAAAAAAAAANjOmQAAAAAAAAABnF1ZXVlQhWlY3jTqfCgAAAAAAAAAAYuanNvbi8AAAAAAAAAAnt9AAAAAAAAAAEVpWN406nwoAAAABQ=`
+`cHPL9BRESkGHswCG8UP8YAFszID+YTxKoLdMx0YdMYQiAAAAAAAAABVwcm9wZXJ0eSAxOnByb3BlcnR5IDIAAAAAAAAABnF1ZXVlQhWlY3jTqfCgAAAAAAAAAAYuanNvbi8AAAAAAAAAAnt9AAAAAAAAAAIAAAAAAAAAA2E6YgAAAAAAAAADYzpkAAAAAAAAAAEVpWN406nwoAAAABQ=`
 
 
 
@@ -1182,9 +1186,8 @@ xid:
   bqual_length: 16
   data: !!binary "W2wb9vJLSA29vN71TDoIUVtsG/byS0gNvbze9Uw6CFI="
 duplex: 0
-buffer:
-  type: ".binary/"
-  data: !!binary "gIGCg4SFhoeIiYqLjI2Oj5CRkpOUlZaXmJmam5ydnp+goaKjpKWmp6ipqqusra6vsLGys7S1tre4ubq7vL2+v8DBwsPExcbHyMnKy8zNzs/Q0dLT1NXW19jZ2tvc3d7f4OHi4+Tl5ufo6err7O3u7/Dx8vP09fb3+Pn6+/z9/v8="
+buffer.type: ".binary/"
+buffer.data: !!binary "gIGCg4SFhoeIiYqLjI2Oj5CRkpOUlZaXmJmam5ydnp+goaKjpKWmp6ipqqusra6vsLGys7S1tre4ubq7vL2+v8DBwsPExcbHyMnKy8zNzs/Q0dLT1NXW19jZ2tvc3d7f4OHi4+Tl5ufo6err7O3u7/Dx8vP09fb3+Pn6+/z9/v8="
 ...
 ```
 
@@ -1283,9 +1286,8 @@ execution: !!binary "cHPL9BRESkGHswCG8UP8YA=="
 duplex: 0
 code.result: 0
 code.user: 42
-buffer:
-  type: ".binary/"
-  data: !!binary "gIGCg4SFhoeIiYqLjI2Oj5CRkpOUlZaXmJmam5ydnp+goaKjpKWmp6ipqqusra6vsLGys7S1tre4ubq7vL2+v8DBwsPExcbHyMnKy8zNzs/Q0dLT1NXW19jZ2tvc3d7f4OHi4+Tl5ufo6err7O3u7/Dx8vP09fb3+Pn6+/z9/v8="
+buffer.type: ".binary/"
+buffer.data: !!binary "gIGCg4SFhoeIiYqLjI2Oj5CRkpOUlZaXmJmam5ydnp+goaKjpKWmp6ipqqusra6vsLGys7S1tre4ubq7vL2+v8DBwsPExcbHyMnKy8zNzs/Q0dLT1NXW19jZ2tvc3d7f4OHi4+Tl5ufo6err7O3u7/Dx8vP09fb3+Pn6+/z9/v8="
 ...
 ```
 

@@ -9,6 +9,7 @@
 
 
 #include "common/message/service.h"
+#include "common/message/compatibility.h"
 
 #include "common/flag/service/conversation.h"
 
@@ -124,7 +125,7 @@ namespace casual
                   Request( common::buffer::payload::Send buffer, Args&&... args)
                      : base_request( std::forward< Args>( args)...), buffer( std::move( buffer))
                   {}
-                  common::buffer::payload::Send buffer;
+                  common:: buffer::payload::Send buffer;
 
                   CASUAL_CONST_CORRECT_SERIALIZE(
                      base_request::serialize( archive);

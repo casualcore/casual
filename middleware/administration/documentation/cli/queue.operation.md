@@ -91,15 +91,10 @@ queue [0..1]
            
            @note: part of casual-pipe
 
-         SUB OPTIONS [1..4]:
+         SUB OPTIONS [1..3]:
 
             --properties [0..1]  (<value>) [1]
                  sets the 'properties' attribute on piped queue messages
-
-            --header [0..1]  (<value>) [0..*]
-                 sets the 'header' attribute on piped queue messages
-                 
-                 values is a list of 'key:value' strings
 
             --reply [0..1]  (<queue>) [1]
                  sets the 'reply' attribute on piped queue messages
