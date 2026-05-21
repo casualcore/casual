@@ -707,9 +707,9 @@ Sent to and received from other domains when one domain wants call a service in 
                         { "buffer.type.data", "byte array with buffer type in the form 'type/subtype'"},
                         { "buffer.data.size", "buffer payload size (could be very big)"},
                         { "buffer.data.data", "buffer payload data (with the size of buffer.payload.size)"},
-                        { "header.size", "number of header field entries"},
-                        { "header.element.size", "size of field data"},
-                        { "header.element.data", "the field data, key:value string"},
+                        { "buffer.header.fields.size", "number of header field entries"},
+                        { "buffer.header.fields.element.size", "size of field data"},
+                        { "buffer.header.fields.element.data", "the field data, key:value string"},
                      });
 
                local::example_and_base64< message_type>( out);
@@ -823,9 +823,9 @@ Reply to call request
                         { "buffer.type.data", "byte array with buffer type in the form 'type/subtype'"},
                         { "buffer.data.size", "buffer payload size (could be very big)"},
                         { "buffer.data.data", "buffer payload data (with the size of buffer.payload.size)"},
-                        { "header.size", "number of header field entries"},
-                        { "header.element.size", "size of field data"},
-                        { "header.element.data", "the field data, key:value string"},
+                        { "buffer.header.fields.size", "number of header field entries"},
+                        { "buffer.header.fields.element.size", "size of field data"},
+                        { "buffer.header.fields.element.data", "the field data, key:value string"},
                      });
 
                local::example_and_base64< message_type>( out);
@@ -1150,9 +1150,6 @@ Represent enqueue request.
                         { "message.id", "id of the message"},
                         { "message.attributes.properties.size", "length of message properties"},
                         { "message.attributes.properties.data", "data of message properties"},
-                        { "message.attributes.header.size", "number of header field entries"},
-                        { "message.attributes.header.element.size", "length of header field string"},
-                        { "message.attributes.header.element.data", "data of the header field string"},
                         { "message.attributes.reply.size", "length of the reply queue"},
                         { "message.attributes.reply.data", "data of reply queue"},
                         { "message.attributes.available", "when the message is available for dequeue (us since epoch)"},
@@ -1160,6 +1157,9 @@ Represent enqueue request.
                         { "message.payload.type.data", "data of the type string"},
                         { "message.payload.data.size", "size of the payload"},
                         { "message.payload.data.data", "data of the payload"},
+                        { "message.payload.header.fields.size", "number of header field entries"},
+                        { "message.payload.header.fields.element.size", "size of field data"},
+                        { "message.payload.header.fields.element.data", "the field data, key:value string"},
                      });
 
                local::example_and_base64< message_type>( out);   
@@ -1304,9 +1304,6 @@ Represent dequeue reply.
                   { "message.id", "id of the message"},
                   { "message.attributes.properties.size", "length of message properties"},
                   { "message.attributes.properties.data", "data of message properties"},
-                  { "message.attributes.header.size", "number of header field entries"},
-                  { "message.attributes.header.element.size", "length of header field string"},
-                  { "message.attributes.header.element.data", "data of the header field string"},
                   { "message.attributes.reply.size", "length of the reply queue"},
                   { "message.attributes.reply.data", "data of reply queue"},
                   { "message.attributes.available", "when the message was available for dequeue (us since epoch)"},
@@ -1314,6 +1311,9 @@ Represent dequeue reply.
                   { "message.payload.type.data", "data of the type string"},
                   { "message.payload.data.size", "size of the payload"},
                   { "message.payload.data.data", "data of the payload"},
+                  { "message.payload.header.fields.size", "number of header field entries"},
+                  { "message.payload.header.fields.element.size", "size of field data"},
+                  { "message.payload.header.fields.element.data", "the field data, key:value string"},
                   { "message.redelivered", "how many times the message has been redelivered"},
                   { "message.timestamp", "when the message was enqueued (us since epoch)"},
                   { "code", "result/error code"},

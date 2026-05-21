@@ -38,6 +38,14 @@ buffer [0..1]
            
            @note: part of casual-pipe
 
+      --header [0..1]  (<value>) [0..*]
+           replaces header fields in buffers
+           
+           reads buffers from stdin, replaces/sets the header fields with the supplied ones,
+           and sends the modified buffers downstream via stdout
+           
+           @note: part of casual-pipe
+
       --duplicate [0..1]  (<value>) [1]
            duplicates buffers read from stdin and send them downstream via stdout
            

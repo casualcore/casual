@@ -115,6 +115,7 @@ namespace casual
                   generate_option( "gateway");
                   generate_option( "discovery");
                   generate_option( "buffer");
+                  generate_option( "buffer --header");
                   generate_option( "describe");
                   generate_option( "call");
                   generate_option( "internal");

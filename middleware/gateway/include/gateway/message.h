@@ -768,8 +768,7 @@ struct Value< type, A>  \
             CASUAL_CUSTOMIZATION_POINT_SERIALIZE( parent);
             CASUAL_SERIALIZE_NAME( value.trid, "xid");
             CASUAL_CUSTOMIZATION_POINT_SERIALIZE( duplex);
-            CASUAL_CUSTOMIZATION_POINT_SERIALIZE( buffer.type);
-            CASUAL_CUSTOMIZATION_POINT_SERIALIZE( buffer.data);
+            CASUAL_CUSTOMIZATION_POINT_SERIALIZE( buffer);
          })
 
          CASUAL_CUSTOMIZATION_POINT_NETWORK( common::message::conversation::connect::callee::Request,
@@ -872,8 +871,7 @@ struct Value< type, A>  \
          {
             CASUAL_CUSTOMIZATION_POINT_SERIALIZE( id);
             CASUAL_CUSTOMIZATION_POINT_SERIALIZE( attributes);
-            CASUAL_CUSTOMIZATION_POINT_SERIALIZE( payload.type);
-            CASUAL_CUSTOMIZATION_POINT_SERIALIZE( payload.data);
+            CASUAL_CUSTOMIZATION_POINT_SERIALIZE( payload);
          })
 
          CASUAL_CUSTOMIZATION_POINT_NETWORK( queue::ipc::message::group::enqueue::v1_5::Request,
@@ -919,8 +917,7 @@ struct Value< type, A>  \
          {
             CASUAL_CUSTOMIZATION_POINT_SERIALIZE( id);
             CASUAL_CUSTOMIZATION_POINT_SERIALIZE( attributes);
-            CASUAL_CUSTOMIZATION_POINT_SERIALIZE( payload.type);
-            CASUAL_CUSTOMIZATION_POINT_SERIALIZE( payload.data);
+            CASUAL_CUSTOMIZATION_POINT_SERIALIZE( payload);
             CASUAL_CUSTOMIZATION_POINT_SERIALIZE( redelivered);
             CASUAL_CUSTOMIZATION_POINT_SERIALIZE( timestamp);
 

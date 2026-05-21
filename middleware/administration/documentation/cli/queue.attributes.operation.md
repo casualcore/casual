@@ -13,7 +13,7 @@ attributes [0..1]
      Examples:
         
         casual queue --dequeue a \
-           | casual queue attributes --header a:1 b:2 c:3 \
+           | casual queue attributes --reply a.reply \
            | casual queue --enqueue a
      
         casual transaction --begin \
@@ -21,20 +21,14 @@ attributes [0..1]
            | casual queue attributes \
               --reply a.reply \
               --properties foo \
-              --header a:1 b:2 c:3 \
               --available 1625077800s \
            | casual queue --enqueue a \
            | casual transaction --commit
 
-   SUB OPTIONS [1..4]:
+   SUB OPTIONS [1..3]:
 
       --properties [0..1]  (<value>) [1]
            sets the 'properties' attribute on piped queue messages
-
-      --header [0..1]  (<value>) [0..*]
-           sets the 'header' attribute on piped queue messages
-           
-           values is a list of 'key:value' strings
 
       --reply [0..1]  (<queue>) [1]
            sets the 'reply' attribute on piped queue messages
