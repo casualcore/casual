@@ -1,6 +1,14 @@
 # Changelog
 This is the changelog for `casual` and all changes are listed in this document.
 
+## [1.8.15] - 2026-05-21
+
+### Fixes
+- gateway: shutdown is not perform on socket before close ([#720](https://github.com/casualcore/casual/issues/720))
+- server: exception thrown from service exit the server ([#717](https://github.com/casualcore/casual/issues/717))
+- common: json write archive has UB during consume ([#719](https://github.com/casualcore/casual/issues/719))
+- common: add reentry guard for fan::Out::Entry::done ([#719](https://github.com/casualcore/casual/issues/719))
+
 ## [1.8.14] - 2026-05-11
 
 ### Fixes
