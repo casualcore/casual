@@ -94,7 +94,6 @@ target_sources(casual-common
 target_include_directories(casual-common PRIVATE
   $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
   $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/../xatmi/include>
-  $<BUILD_INTERFACE:${CASUAL_THIRDPARTY_SOURCE_DIR}/rapidjson/include>
 )
 
 target_link_directories(casual-common PRIVATE
@@ -102,10 +101,10 @@ target_link_directories(casual-common PRIVATE
 )
 
 target_link_libraries(casual-common PRIVATE
+  polylite
   yaml-cpp
   pugixml::pugixml
   cppcodec::cppcodec
-  tomlplusplus::tomlplusplus
   $<$<PLATFORM_ID:Darwin>:iconv>
   $<$<PLATFORM_ID:Linux>:pthread>
   $<$<PLATFORM_ID:Linux>:uuid>
@@ -144,7 +143,6 @@ target_sources(casual-unittest
 target_include_directories(casual-unittest PRIVATE
   $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
   $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/../xatmi/include>
-  $<BUILD_INTERFACE:${CASUAL_THIRDPARTY_SOURCE_DIR}/rapidjson/include>
 )
 
 target_link_directories(casual-unittest PRIVATE

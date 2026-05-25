@@ -16,8 +16,11 @@
 #include "common/transcode.h"
 #include "common/buffer/type.h"
 
-#include <yaml-cpp/yaml.h>
-#include <yaml-cpp/binary.h>
+#include "common/serialize/detail/poly.h"
+
+#include <poly/yaml.hpp>
+
+#include <format>
 
 namespace casual
 {
@@ -37,422 +40,101 @@ namespace casual
 
                namespace reader
                {
-                  namespace load
+                  namespace detail
                   {
-                     YAML::Node document( std::istream& stream)
+                     template< typename... types>
+                     struct overloaded : types...
                      {
-                        try
-                        {
-                           auto result = YAML::Load( stream);
-
-                           if( result)
-                              return result;
-                           else
-                              code::raise::error( code::casual::invalid_document, "no document");
-                        }
-                        catch( const YAML::ParserException& e)
-                        {
-                           code::raise::error( code::casual::invalid_document, e.what());
-                        }
-                     }
-
-                     YAML::Node document( const std::string& yaml)
-                     {
-                        // we need a real document
-                        std::istringstream stream{ yaml.empty() ? "---\n" : yaml};
-                        return document( stream);
-                     }
-
-                     YAML::Node document( const platform::binary::type& yaml)
-                     {
-                        auto span = binary::span::to_string_like( yaml);
-                        return document( std::string( span.data(), span.size()));
-                     }
-
-                  } // load
-
-                  namespace canonical
-                  {
-                     struct Parser 
-                     {
-                        auto operator() ( const YAML::Node& document)
-                        {
-                           deduce( document, nullptr);
-                           return std::exchange( m_canonical, {});
-                        }
-
-                     private:
-
-                        void deduce( const YAML::Node& node, const char* name)
-                        {
-                           switch( node.Type())
-                           { 
-                              case YAML::NodeType::Undefined: break; // ?!?
-                              case YAML::NodeType::Null: break; // ?!?
-                              case YAML::NodeType::Scalar: scalar( node, name); break;
-                              case YAML::NodeType::Sequence: sequence( node, name); break;
-                              case YAML::NodeType::Map: map( node, name); break;
-                           }
-                        }
-
-                        void scalar( const YAML::Node& node, const char* name)
-                        {
-                           m_canonical.attribute( name);
-                        }
-
-                        void sequence( const YAML::Node& node, const char* name)
-                        {
-                           m_canonical.container_start( name);
-
-                           for( auto& current : node)
-                              deduce( current, nullptr);
-                           
-                           m_canonical.container_end();
-                        }
-
-                        void map( const YAML::Node& node, const char* name)
-                        {
-                           m_canonical.composite_start( name);
-
-                           for( auto current = node.begin(); current != node.end(); ++current)
-                              deduce( current->second, current->first.as<std::string>().data());
-                           
-                           m_canonical.composite_end();
-                        }
-
-                        policy::canonical::Representation m_canonical;
+                        using types::operator()...;
                      };
 
-                     auto parse( const YAML::Node& document)
-                     {
-                        return Parser{}( document);
-                     }
-                     
-                  } // canonical
+                     template< typename... types>
+                     overloaded( types...) -> overloaded< types...>;
 
-                  class Implementation
+                     template< typename type>
+                     concept arithmetic = std::integral< type> || std::floating_point< type>;
+                  } // detail
+
+
+                  struct Implementation : common::serialize::detail::poly::reader
                   {
-                  public:
-
                      constexpr static auto archive_properties() { return common::serialize::archive::Property::named;}
 
                      constexpr static auto keys() { return local::keys();}
 
-                     template< typename... Ts>
-                     Implementation( Ts&&... ts) : m_stack{ load::document( std::forward< Ts>( ts)...)}, m_document{ range::back( m_stack)} {}
+                     Implementation( std::string_view value) : base{ ::poly::yaml::parse( value)} {}
+                     Implementation( std::istream& value) : base{ ::poly::yaml::parse( value)} {}
+                     Implementation( const std::vector<std::byte>& value) : Implementation{ std::string_view{ common::binary::span::to_string_like( value)}} {}
 
-                     std::tuple< platform::size::type, bool> container_start( platform::size::type size, const char* name)
+                     using base::read;
+
+                     bool read( std::string& value, const char* const name)
                      {
-                        auto node = structured_node( name);
-
-                        if( ! node)
-                           return std::make_tuple( 0, false);
-
-                        size = node.size();
-
-                        if( size)
+                        if( auto node = verify< ::poly::node::string, ::poly::node::boolean, ::poly::node::integer, ::poly::node::decimal, ::poly::node::nothing>( name))
                         {
-                           // If there are elements, it must be a sequence
-                           if( node.Type() != YAML::NodeType::Sequence)
-                              code::raise::error( code::casual::invalid_document, "expected sequence for node: ", name);
+                           std::visit
+                           (
+                              detail::overloaded
+                              {
+                                 [&]( ::poly::node::string& data) { value = std::move( data); },
+                                 [&]( detail::arithmetic auto& data) { value = std::format( "{}", data); },
+                                 [&]( auto& data) {}
+                              },
+                              *node
+                           );
 
-                           // We stack'em in reverse order
-                           for( auto index = size; index > 0; --index)
-                              m_stack.push_back( node[ index - 1]);
+                           return true;
                         }
 
-                        return std::make_tuple( size, true);
+                        return false;
                      }
 
-                     void container_end( const char* name)
+                     bool read( platform::binary::type& value, const char* const name)
                      {
-                        m_stack.pop_back();
-                     }
-
-                     bool composite_start( const char* name)
-                     {
-                        return predicate::boolean( structured_node( name));
-                     }
-
-                     void composite_end( const char* name)
-                     {
-                        m_stack.pop_back();
-                     }
-
-                     template< typename T>
-                     bool read( T& value, const char* name)
-                     {
-
-                        if( name)
+                        if( auto node = verify< ::poly::node::binary, ::poly::node::string>( name))
                         {
-                           // has name == has to exist in a map
-                           if( auto node = current_map_node( name))
-                           {
-                              read( node, value);
-                              return true;
-                           }
-
-                           return false;
+                           if( node->is_binary())
+                              return value = std::move( node->as_binary()), true;
+                           
+                           return value = transcode::base64::decode( std::move( node->as_string())), true;
                         }
-
-                        assert( ! m_stack.empty());
-            
-                        // we assume it is a value from a previous pushed sequence node.
-                        // and we consume it.
-                        read( m_stack.back(), value);
-                        m_stack.pop_back();
-                        
-                        return true;
+                        return false;
                      }
 
-                     policy::canonical::Representation canonical()
+                     bool read( binary::span::Fixed< std::byte> value, const char* const name)
                      {
-                        return canonical::parse( m_document);
-                     }
-
-                  private:
-
-                     YAML::Node current_map_node( const char* name)
-                     {
-                        assert( name);
-                        assert( ! m_stack.empty());
-
-                        // the back node should be a "map"
-                        if( m_stack.back().Type() != YAML::NodeType::Map)
-                           code::raise::error( code::casual::invalid_document, "expected map for '", name, "'");
-
-                        return m_stack.back()[ name];
-                     }
-
-                     YAML::Node structured_node( const char* name)
-                     {
-                        // if not named, we assume it is a value from a previous pushed sequence node, or root document
-                        if( ! name)
+                        platform::binary::type data;
+                        if( read( data, name))
                         {
-                           assert( ! m_stack.empty());
-                           return m_stack.back();
+                           if( range::size( data) != range::size( value))
+                              code::raise::error( code::casual::invalid_node, "binary size mismatch");
+                           algorithm::copy( data, std::begin( value));
+                           return true;
                         }
-
-                        if( auto node = current_map_node( name))
-                        {
-                           // we push it to promote the node to 'current scope'. 
-                           // composite_end/container_end will pop it.
-                           m_stack.push_back( node);
-                           return m_stack.back();
-                        }
-
-                        // 'nil' value. default ctor sets an "ok state", end operator bool returns true, 
-                        // not intuitive...
-                        return YAML::Node{ YAML::NodeType::Undefined};
+                        return false;
                      }
-
-                     template<typename T>
-                     static void consume( const YAML::Node& node, T& value)
-                     {
-                        try
-                        {
-                           // node can be null, if no value is set to the node.
-                           if( ! node.IsNull())
-                              value = node.as<T>();
-                        }
-                        catch( const YAML::InvalidScalar& e)
-                        {
-                           code::raise::error( code::casual::invalid_node, e.what());
-                        }
-                     }
-
-                     static std::string_view scalar( const YAML::Node& node)
-                     {
-                        try
-                        {
-                           if( node.IsNull())
-                              return {};
-                           else
-                              return node.Scalar();
-                        }
-                        catch( const YAML::InvalidScalar& e)
-                        {
-                           code::raise::error( code::casual::invalid_node, e.what());
-                        }
-                     }
-
-
-                     static void read( const YAML::Node& node, bool& value) { consume( node, value);}
-                     static void read( const YAML::Node& node, short& value) { consume( node, value);}
-                     static void read( const YAML::Node& node, int& value) { consume( node, value);}
-                     static void read( const YAML::Node& node, long& value) { consume( node, value);}
-                     static void read( const YAML::Node& node, long long& value) { consume( node, value);}
-                     static void read( const YAML::Node& node, float& value) { consume( node, value);}
-                     static void read( const YAML::Node& node, double& value) { consume( node, value);}
-                     static void read( const YAML::Node& node, char& value)
-                     {
-                        value = *transcode::utf8::string::decode( scalar( node)).data();
-                     }
-                     static void read( const YAML::Node& node, std::string& value)
-                     {
-                        value = transcode::utf8::string::decode( scalar( node));
-                     }
-                     static void read( const YAML::Node& node, std::u8string& value)
-                     {
-                        value = transcode::utf8::cast( scalar( node));
-                     }
-                     static void read( const YAML::Node& node, platform::binary::type& value)
-                     {
-                        YAML::Binary binary;
-                        consume( node, binary);
-
-                        auto span = binary::span::make( binary.data(), binary.size());
-                        value.assign( std::begin( span), std::end( span));
-                     }
-                     static void read( const YAML::Node& node, binary::span::Fixed< std::byte> value)
-                     {
-                        YAML::Binary binary;
-                        consume( node, binary);
-                        auto span = binary::span::make( binary.data(), binary.size());
-                        algorithm::copy( span, value);
-                     }
-
-                  protected:
-                     std::vector< YAML::Node> m_stack;
-                     YAML::Node m_document;
                   };
 
                } // reader
 
                namespace writer
                {
-
-                  class Implementation
+                  struct Implementation : common::serialize::detail::poly::writer
                   {
-                  public:
-
-                     enum class State : short
-                     {
-                        empty,
-                        implicit_map,
-                        unnamed_root,
-                     };
-
                      constexpr static auto archive_properties() { return common::serialize::archive::Property::named;}
 
-                     static decltype( auto) keys() { return local::keys();}
-
-                     Implementation()
+                     constexpr static auto keys() { return local::keys();}
+                     
+                     void consume( std::ostream& destination)
                      {
-                        m_output.SetFloatPrecision( std::numeric_limits< float >::max_digits10);
-                        m_output.SetDoublePrecision( std::numeric_limits< double >::max_digits10);
-                        m_output << YAML::BeginDoc;
+                        ::poly::yaml::write( m_root, destination);
                      }
-
-                     platform::size::type container_start( const platform::size::type size, const char* name)
-                     {
-                        possible_implicit_map( name);
-
-                        m_output << YAML::BeginSeq;
-
-                        return size;
-                     }
-
-                     void container_end( const char*)
-                     {
-                        m_output << YAML::EndSeq;
-                     }
-
-                     void composite_start( const char* name)
-                     {
-                        possible_implicit_map( name);
-                           
-                        m_output << YAML::BeginMap;
-                     }
-
-                     void composite_end( const char*)
-                     {
-                        m_output << YAML::EndMap;
-                     }
-
-                     template< typename T>
-                     void write( T value, const char* name)
-                     {
-                        possible_implicit_map( name);
-                        write( value);
-                     }
-
-                     const YAML::Emitter& document() const { return m_output;}
-
-                     std::string consume()
-                     {
-                        if( std::exchange( m_state, State::empty) == State::implicit_map)
-                           m_output << YAML::EndMap;
-
-                        m_output << YAML::EndDoc;
-
-                        auto size = m_output.size();
-                        auto offset = std::exchange( m_offset, size);
-
-                        m_output << YAML::BeginDoc;
-
-                        return std::string( m_output.c_str() + offset, size - offset);
-                     }
-
-                  private:
-
-                     void possible_implicit_map( const char* key)
-                     {
-                        if( key)
-                        {
-                           if( m_state == State::empty)
-                           {
-                              // we need to wrap in a map
-                              m_output << YAML::BeginMap;
-                              m_state = State::implicit_map;
-                           }
-                           
-                           m_output << YAML::Key << key;
-                           m_output << YAML::Value;
-                        }  
-                        else if( m_state == State::empty)
-                           m_state = State::unnamed_root;
-                     }
-
-
-                     template< concepts::arithmetic T>
-                     void write( T value)
-                     {
-                        m_output << value;
-                     }
-
-                     // A few overloads
-
-                     void write( char value)
-                     {
-                        m_output << YAML::SingleQuoted << transcode::utf8::string::encode( std::string{ value});
-                     }
-
-                     void write( std::string_view value)
-                     {
-                        m_output << YAML::DoubleQuoted << transcode::utf8::string::encode( value);
-                     }
-
-                     void write( std::u8string_view value)
-                     {
-                        m_output << YAML::DoubleQuoted << std::string{ transcode::utf8::cast( value)};
-                     }
-
-                     void write( std::span< const std::byte> value)
-                     {
-                        // TODO: Is this conformant ?
-                        const YAML::Binary binary( reinterpret_cast< const unsigned char*>( value.data()), value.size());
-                        m_output << binary;
-                     }
-
-                     State m_state = State::empty;
-                     YAML::Emitter m_output;
-                     platform::size::type m_offset = 0;
                   };
 
                } // writer
-            } // <unnamed>
+            } // 
          } // local
+
          namespace strict
          {
             serialize::Reader reader( const std::string& source) { return create::reader::strict::create< local::reader::Implementation>( source);}
@@ -486,7 +168,8 @@ namespace casual
          namespace reader
          {
             template struct Registration< yaml::local::reader::Implementation>;
-         } // writer
+         } // reader
+
          namespace writer
          {
             template struct Registration< yaml::local::writer::Implementation>;
