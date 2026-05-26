@@ -459,8 +459,14 @@ namespace casual
                      common::Trace trace{ "server::local::handle::service_call::message"};
                      common::log::debug( "message: ", message);
 
-                     handle::generic_call( state, std::move( message));
-
+                     try
+                     {
+                        handle::generic_call( state, std::move( message));
+                     }
+                     catch( ...)
+                     {
+                        common::log::error( common::exception::capture());
+                     }
                   };
                }
 
@@ -471,7 +477,14 @@ namespace casual
                      common::Trace trace{ "server::local::handle::conversation_connect::message"};
                      common::log::debug( "message: ", message);
 
-                     handle::generic_call( state, std::move( message));
+                     try
+                     {
+                        handle::generic_call( state, std::move( message));
+                     }
+                     catch( ...)
+                     {
+                        common::log::error( common::exception::capture());
+                     }
                   };
                }
                

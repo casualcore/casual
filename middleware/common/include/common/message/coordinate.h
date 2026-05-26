@@ -109,10 +109,20 @@ namespace casual
 
                bool done()
                {
+                  if( ! m_callback)
+                  {
+                     log::error( code::casual::invalid_semantics, "fan out entry is in invalid state - no callback");
+                     return true;
+                  }
+
                   if( algorithm::any_of( m_pending, predicate::value::equal( Pending::State::pending)))
                      return false;
 
-                  m_callback( std::exchange( m_received, {}), std::exchange( m_pending, {}));
+                  // exchange to empty state, so we can check if the callback has been invoked or not, to
+                  // ensure it is only invoked once.
+                  // Even if the callback throws we have the callback in an empty state, thus ensuring it is only invoked once.
+                  std::exchange( m_callback, {})( std::exchange( m_received, {}), std::exchange( m_pending, {}));
+
                   return true;
                }
 

@@ -120,13 +120,26 @@ namespace casual
          EXPECT_TRUE( casual_field_add_string( &invalid, FLD_STRING1, "Casual rules!") == CASUAL_FIELD_INVALID_HANDLE);
          EXPECT_TRUE( casual_field_add_binary( &invalid, FLD_BINARY1, "!#¤%&", 5) == CASUAL_FIELD_INVALID_HANDLE);
 
-         EXPECT_TRUE( casual_field_get_char( invalid, FLD_CHAR1, 0, nullptr) == CASUAL_FIELD_INVALID_HANDLE);
-         EXPECT_TRUE( casual_field_get_short( invalid, FLD_SHORT1, 0, nullptr) == CASUAL_FIELD_INVALID_HANDLE);
-         EXPECT_TRUE( casual_field_get_long( invalid, FLD_LONG1, 0, nullptr) == CASUAL_FIELD_INVALID_HANDLE);
-         EXPECT_TRUE( casual_field_get_float( invalid, FLD_FLOAT1, 0, nullptr) == CASUAL_FIELD_INVALID_HANDLE);
-         EXPECT_TRUE( casual_field_get_double( invalid, FLD_DOUBLE1, 0, nullptr) == CASUAL_FIELD_INVALID_HANDLE);
-         EXPECT_TRUE( casual_field_get_string( invalid, FLD_STRING1, 0, nullptr) == CASUAL_FIELD_INVALID_HANDLE);
-         EXPECT_TRUE( casual_field_get_binary( invalid, FLD_BINARY1, 0, nullptr, nullptr) == CASUAL_FIELD_INVALID_HANDLE);
+         struct
+         {
+            char v_char;
+            short v_short;
+            long v_long;
+            float v_float;
+            double v_double;
+            const char* v_string;
+            const char* v_binary;
+            long v_binary_size;
+
+         } value{};
+
+         EXPECT_TRUE( casual_field_get_char( invalid, FLD_CHAR1, 0, &value.v_char) == CASUAL_FIELD_INVALID_HANDLE);
+         EXPECT_TRUE( casual_field_get_short( invalid, FLD_SHORT1, 0, &value.v_short) == CASUAL_FIELD_INVALID_HANDLE);
+         EXPECT_TRUE( casual_field_get_long( invalid, FLD_LONG1, 0, &value.v_long) == CASUAL_FIELD_INVALID_HANDLE);
+         EXPECT_TRUE( casual_field_get_float( invalid, FLD_FLOAT1, 0, &value.v_float) == CASUAL_FIELD_INVALID_HANDLE);
+         EXPECT_TRUE( casual_field_get_double( invalid, FLD_DOUBLE1, 0, &value.v_double) == CASUAL_FIELD_INVALID_HANDLE);
+         EXPECT_TRUE( casual_field_get_string( invalid, FLD_STRING1, 0, &value.v_string) == CASUAL_FIELD_INVALID_HANDLE);
+         EXPECT_TRUE( casual_field_get_binary( invalid, FLD_BINARY1, 0, &value.v_binary, &value.v_binary_size) == CASUAL_FIELD_INVALID_HANDLE);
 
          EXPECT_TRUE( casual_field_explore_value( invalid, FLD_CHAR1, 0, nullptr) == CASUAL_FIELD_INVALID_HANDLE);
 

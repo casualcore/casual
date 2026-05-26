@@ -10,6 +10,7 @@
 
 #include "common/communication/ipc.h"
 #include "common/string/compose.h"
+#include "common/posix.h"
 
 namespace casual
 {
@@ -17,6 +18,17 @@ namespace casual
    {
       using namespace common;
 
+      Connection::~Connection()
+      {
+         // do an explict shutdown of the socket, to make sure that the peer gets notified about the close, and then the 
+         // socket dtor will take care of the close.
+
+         // TODO: we should probably have a specific tcp socket type that does this in its dtor.
+
+         if( auto descriptor = m_device.connector().socket().descriptor())
+            if( posix::log::result( ::shutdown( descriptor.value(), SHUT_WR), "failed to shutdown socket: ", descriptor))
+               log::debug( "gateway::group::tcp::Connection shutdown descriptor: ", descriptor);
+      }
 
       void Connection::unsent( common::communication::select::Directive& directive)
       {

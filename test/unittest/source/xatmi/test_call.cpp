@@ -741,6 +741,23 @@ domain:
          EXPECT_TRUE( tperrno == TPESVCERR) << "tperrno: " << tperrno;
       }
 
+      TEST( test_xatmi_call, tpcall_service_example_error_system__then_service_echo___expect_echo_ok)
+      {
+         common::unittest::Trace trace;
+
+         auto domain = local::domain();
+
+         // causal/example/error/system will throw an exception from the c-function and should result in TPESVCERR.
+         // We want to verify that the error is correctly propagated and that we can still call other services after the error.
+         // That is, the server doesn not exit.
+
+         EXPECT_FALSE( local::call( "casual/example/error/system"));
+         EXPECT_TRUE( tperrno == TPESVCERR) << "tperrno: " << tperrno;
+
+         EXPECT_TRUE( local::call( "casual/example/echo")) << "tperrno: " << tperrnostring( tperrno);
+
+      }
+
       TEST( test_xatmi_call, tpcall_service_TPESYSTEM___expect_error_TPESYSTEM)
       {
          common::unittest::Trace trace;
