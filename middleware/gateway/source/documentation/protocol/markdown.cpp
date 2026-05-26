@@ -557,7 +557,6 @@ message.type is used to dispatch to handler for that particular message, and kno
 It's probably a good idea (probably the only way) to read the header only, to see how much more you have to read to get
 the rest of the message.
 
-
 )";
 
             local::format::type( out, CASUAL_NAMED_VALUE( header), {
@@ -565,8 +564,11 @@ the rest of the message.
                { "header.correlation", "correlation id of the message"},
                { "header.size", "the size of the payload that follows"},
             });
-         }
 
+            out << R"(
+**NOTE** the binary examples for each message below do not include the header, but only the payload that follows the header
+)";
+         }
 
          template< typename M>
          void transaction_request( std::ostream& out, M&& message)
@@ -1436,7 +1438,7 @@ Sent to establish a conversation
                message.trid = common::transaction::id::create();
                message.buffer.type = local::string::value( 8) + '/' + local::string::value( 16);
                message.buffer.data = local::binary::value( 1024);
-               message.buffer.header = casual::header::transform( { { "a:b", "c:d", "e:f"}});
+               message.buffer.header = casual::header::transform( { { "a:b"}});
                using Duplex = decltype( message.duplex);
                message.duplex = Duplex::receive;
 
@@ -1508,6 +1510,42 @@ Sent to establish a conversation
                local::example_and_base64< message_type>( out);
             }
 
+            {
+               using message_type = common::message::conversation::connect::v1_2::callee::Request;
+
+               local::message::section< message_type>( out, "##") << R"(
+
+Sent to establish a conversation
+
+)";
+               message_type message;
+
+               message.service.name = local::string::value( 128);
+               message.parent = local::string::value( 128);
+               message.trid = common::transaction::id::create();
+               message.buffer.type = local::string::value( 8) + '/' + local::string::value( 16);
+               message.buffer.data = local::binary::value( 1024);
+               using Duplex = decltype( message.duplex);
+               message.duplex = Duplex::receive;
+
+               local::format::type( out, message, {
+                        { "execution", "uuid of the current execution context (breadcrumb)"},
+                        { "service.name.size", "size of the service name"},
+                        { "service.name.data", "data of the service name"},
+                        { "service.timeout.duration", "timeout (in ns"},
+                        { "parent.size", "size of the parent service name (the caller)"},
+                        { "parent.data", "data of the parent service name (the caller)"},
+                        { "xid.formatID", "xid format type. if 0 no more information of the xid is transported"},
+                        { "xid.gtrid_length", "length of the transaction gtrid part"},
+                        { "xid.bqual_length", "length of the transaction branch part"},
+                        { "xid.data", "byte array with the size of gtrid_length + bqual_length (max 128)"},
+                        { "duplex", string::compose( "in what duplex the callee shall enter ", local::enumeration::values( Duplex::receive, Duplex::send))},
+                        { "buffer.type.size", "buffer type name size"},
+                        { "buffer.type.data", "byte array with buffer type in the form 'type/subtype'"},
+                        { "buffer.data.size", "buffer payload size (could be very big)"},
+                        { "buffer.data.data", "buffer payload data (with the size of buffer.payload.size)"},
+                     });
+            }
 
             {
                using message_type = common::message::conversation::connect::Reply;
@@ -1539,13 +1577,13 @@ Represent a message sent 'over' an established connection
 
                message.buffer.type = local::string::value( 8) + '/' + local::string::value( 16);
                message.buffer.data = local::binary::value( 1024); 
-               message.buffer.header = casual::header::transform( { { "a:b", "c:d", "e:f"}});
+               message.buffer.header = casual::header::transform( { { "a:b"}});
                using Duplex = decltype( message.duplex);
                message.duplex = Duplex::receive;
 
                local::format::type( out, message, {
                         { "execution", "uuid of the current execution context (breadcrumb)"},
-                        { "duplex", string::compose( "in what duplex the callee shall enter (", Duplex::receive, ":", std::to_underlying( Duplex::receive), ", ", Duplex::send, ":", std::to_underlying( Duplex::send),')') },
+                        { "duplex", string::compose( "in what duplex the callee shall enter ", local::enumeration::values( Duplex::receive, Duplex::send, Duplex::terminated))},
                         { "events", "events"},
                         { "code.result", "status of the connection"},
                         { "code.user", "user code, if callee did a tpreturn and supplied user-code"},
@@ -1578,7 +1616,7 @@ Represent a message sent 'over' an established connection
 
                local::format::type( out, message, {
                         { "execution", "uuid of the current execution context (breadcrumb)"},
-                        { "duplex", string::compose( "in what duplex the callee shall enter (", Duplex::receive, ":", std::to_underlying( Duplex::receive), ", ", Duplex::send, ":", std::to_underlying( Duplex::send),')') },
+                        { "duplex", string::compose( "in what duplex the callee shall enter ", local::enumeration::values( Duplex::receive, Duplex::send))},
                         { "events", "events"},
                         { "code.result", "status of the connection"},
                         { "code.user", "user code, if callee did a tpreturn and supplied user-code"},
@@ -1607,45 +1645,7 @@ Sent to abruptly disconnect the conversation
                      });
 
                local::example_and_base64< message_type>( out);
-            }
-
-            {
-               using message_type = common::message::conversation::connect::v1_2::callee::Request;
-
-               local::message::section< message_type>( out, "##") << R"(
-
-Sent to establish a conversation
-
-)";
-               message_type message;
-
-               message.service.name = local::string::value( 128);
-               message.parent = local::string::value( 128);
-               message.trid = common::transaction::id::create();
-               message.buffer.type = local::string::value( 8) + '/' + local::string::value( 16);
-               message.buffer.data = local::binary::value( 1024);
-               using Duplex = decltype( message.duplex);
-               message.duplex = Duplex::receive;
-
-               local::format::type( out, message, {
-                        { "execution", "uuid of the current execution context (breadcrumb)"},
-                        { "service.name.size", "size of the service name"},
-                        { "service.name.data", "data of the service name"},
-                        { "service.timeout.duration", "timeout (in ns"},
-                        { "parent.size", "size of the parent service name (the caller)"},
-                        { "parent.data", "data of the parent service name (the caller)"},
-                        { "xid.formatID", "xid format type. if 0 no more information of the xid is transported"},
-                        { "xid.gtrid_length", "length of the transaction gtrid part"},
-                        { "xid.bqual_length", "length of the transaction branch part"},
-                        { "xid.data", "byte array with the size of gtrid_length + bqual_length (max 128)"},
-                        { "duplex", string::compose( "in what duplex the callee shall enter (", Duplex::receive, ":", std::to_underlying( Duplex::receive), ", ", Duplex::send, ":", std::to_underlying( Duplex::send),')') },
-                        { "buffer.type.size", "buffer type name size"},
-                        { "buffer.type.data", "byte array with buffer type in the form 'type/subtype'"},
-                        { "buffer.data.size", "buffer payload size (could be very big)"},
-                        { "buffer.data.data", "buffer payload data (with the size of buffer.payload.size)"},
-                     });
-            }
-            
+            }            
          }
          
 

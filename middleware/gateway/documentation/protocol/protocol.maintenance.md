@@ -53,12 +53,13 @@ message.type is used to dispatch to handler for that particular message, and kno
 It's probably a good idea (probably the only way) to read the header only, to see how much more you have to read to get
 the rest of the message.
 
-
 role name          | network type   | network size | description                                  
 ------------------ | -------------- | ------------ | ---------------------------------------------
 header.type        | uint64         |            8 | type of the message that the payload contains
 header.correlation | (fixed) binary |           16 | correlation id of the message                
 header.size        | uint64         |            8 | the size of the payload that follows         
+
+**NOTE** the binary examples for each message below do not include the header, but only the payload that follows the header
 
 
 ## gateway_domain_connect_request - **#7200** - _[1.0, 1.1, 1.2, 1.3, 1.4, 1.5, 1.6]_
@@ -857,13 +858,14 @@ message:
     data: !!binary "gIGCg4SFhoeIiYqLjI2Oj5CRkpOUlZaXmJmam5ydnp+goaKjpKWmp6ipqqusra6vsLGys7S1tre4ubq7vL2+v8DBwsPExcbHyMnKy8zNzs/Q0dLT1NXW19jZ2tvc3d7f4OHi4+Tl5ufo6err7O3u7/Dx8vP09fb3+Pn6+/z9/v8="
     header:
       fields:
-        - "a:b"
-        - "c:d"
+        - "a:foo"
+        - "b:bar"
+        - "c:baz"
 ...
 ```
 
 Binary representation of the example (network byte ordering in base64):
-`cHPL9BRESkGHswCG8UP8YAAAAAAAAAAGcXVldWVBAAAAAAAAACoAAAAAAAAAEAAAAAAAAAAQW2wb9vJLSA29vN71TDoIUVtsG/byS0gNvbze9Uw6CFJszID+YTxKoLdMx0YdMYQiAAAAAAAAABVwcm9wZXJ0eSAxOnByb3BlcnR5IDIAAAAAAAAABnF1ZXVlQhWlY3jTqfCgAAAAAAAAAAguYmluYXJ5LwAAAAAAAACAgIGCg4SFhoeIiYqLjI2Oj5CRkpOUlZaXmJmam5ydnp+goaKjpKWmp6ipqqusra6vsLGys7S1tre4ubq7vL2+v8DBwsPExcbHyMnKy8zNzs/Q0dLT1NXW19jZ2tvc3d7f4OHi4+Tl5ufo6err7O3u7/Dx8vP09fb3+Pn6+/z9/v8AAAAAAAAAAgAAAAAAAAADYTpiAAAAAAAAAANjOmQ=`
+`cHPL9BRESkGHswCG8UP8YAAAAAAAAAAGcXVldWVBAAAAAAAAACoAAAAAAAAAEAAAAAAAAAAQW2wb9vJLSA29vN71TDoIUVtsG/byS0gNvbze9Uw6CFJszID+YTxKoLdMx0YdMYQiAAAAAAAAABVwcm9wZXJ0eSAxOnByb3BlcnR5IDIAAAAAAAAABnF1ZXVlQhWlY3jTqfCgAAAAAAAAAAguYmluYXJ5LwAAAAAAAACAgIGCg4SFhoeIiYqLjI2Oj5CRkpOUlZaXmJmam5ydnp+goaKjpKWmp6ipqqusra6vsLGys7S1tre4ubq7vL2+v8DBwsPExcbHyMnKy8zNzs/Q0dLT1NXW19jZ2tvc3d7f4OHi4+Tl5ufo6err7O3u7/Dx8vP09fb3+Pn6+/z9/v8AAAAAAAAAAwAAAAAAAAAFYTpmb28AAAAAAAAABWI6YmFyAAAAAAAAAAVjOmJheg==`
 
 
 
@@ -1040,12 +1042,11 @@ message:
     reply: "queueB"
     available: 1559762216552100000
   payload:
-    type: ".json/"
-    data: !!binary "e30="
+    type: ".binary/"
+    data: !!binary "gIGCg4SFhoeIiYqLjI2Oj5CRkpOUlZaXmJmam5ydnp+goaKjpKWmp6ipqqusra6vsLGys7S1tre4ubq7vL2+v8DBwsPExcbHyMnKy8zNzs/Q0dLT1NXW19jZ2tvc3d7f4OHi4+Tl5ufo6err7O3u7/Dx8vP09fb3+Pn6+/z9/v8="
     header:
       fields:
-        - "a:b"
-        - "c:d"
+        []
   redelivered: 1
   timestamp: 1559762216552100000
 code: 20
@@ -1053,7 +1054,7 @@ code: 20
 ```
 
 Binary representation of the example (network byte ordering in base64):
-`cHPL9BRESkGHswCG8UP8YAFszID+YTxKoLdMx0YdMYQiAAAAAAAAABVwcm9wZXJ0eSAxOnByb3BlcnR5IDIAAAAAAAAABnF1ZXVlQhWlY3jTqfCgAAAAAAAAAAYuanNvbi8AAAAAAAAAAnt9AAAAAAAAAAIAAAAAAAAAA2E6YgAAAAAAAAADYzpkAAAAAAAAAAEVpWN406nwoAAAABQ=`
+`cHPL9BRESkGHswCG8UP8YAFszID+YTxKoLdMx0YdMYQiAAAAAAAAABVwcm9wZXJ0eSAxOnByb3BlcnR5IDIAAAAAAAAABnF1ZXVlQhWlY3jTqfCgAAAAAAAAAAguYmluYXJ5LwAAAAAAAACAgIGCg4SFhoeIiYqLjI2Oj5CRkpOUlZaXmJmam5ydnp+goaKjpKWmp6ipqqusra6vsLGys7S1tre4ubq7vL2+v8DBwsPExcbHyMnKy8zNzs/Q0dLT1NXW19jZ2tvc3d7f4OHi4+Tl5ufo6err7O3u7/Dx8vP09fb3+Pn6+/z9/v8AAAAAAAAAAAAAAAAAAAABFaVjeNOp8KAAAAAU`
 
 
 
@@ -1090,8 +1091,8 @@ message:
     reply: "queueB"
     available: 1559762216552100000
   payload:
-    type: ".json/"
-    data: !!binary "e30="
+    type: ".binary/"
+    data: !!binary "gIGCg4SFhoeIiYqLjI2Oj5CRkpOUlZaXmJmam5ydnp+goaKjpKWmp6ipqqusra6vsLGys7S1tre4ubq7vL2+v8DBwsPExcbHyMnKy8zNzs/Q0dLT1NXW19jZ2tvc3d7f4OHi4+Tl5ufo6err7O3u7/Dx8vP09fb3+Pn6+/z9/v8="
   redelivered: 1
   timestamp: 1559762216552100000
 code: 20
@@ -1099,7 +1100,7 @@ code: 20
 ```
 
 Binary representation of the example (network byte ordering in base64):
-`cHPL9BRESkGHswCG8UP8YAFTL4tsFXZNyp/oKjAC3leeAAAAAAAAABVwcm9wZXJ0eSAxOnByb3BlcnR5IDIAAAAAAAAABnF1ZXVlQhWlY3jTqfCgAAAAAAAAAAYuanNvbi8AAAAAAAAAAnt9AAAAAAAAAAEVpWN406nwoAAAABQ=`
+`cHPL9BRESkGHswCG8UP8YAFTL4tsFXZNyp/oKjAC3leeAAAAAAAAABVwcm9wZXJ0eSAxOnByb3BlcnR5IDIAAAAAAAAABnF1ZXVlQhWlY3jTqfCgAAAAAAAAAAguYmluYXJ5LwAAAAAAAACAgIGCg4SFhoeIiYqLjI2Oj5CRkpOUlZaXmJmam5ydnp+goaKjpKWmp6ipqqusra6vsLGys7S1tre4ubq7vL2+v8DBwsPExcbHyMnKy8zNzs/Q0dLT1NXW19jZ2tvc3d7f4OHi4+Tl5ufo6err7O3u7/Dx8vP09fb3+Pn6+/z9/v8AAAAAAAAAARWlY3jTqfCgAAAAFA==`
 
 
 
@@ -1135,19 +1136,77 @@ message:
       reply: "queueB"
       available: 1559762216552100000
     payload:
-      type: ".json/"
-      data: !!binary "e30="
+      type: ".binary/"
+      data: !!binary "gIGCg4SFhoeIiYqLjI2Oj5CRkpOUlZaXmJmam5ydnp+goaKjpKWmp6ipqqusra6vsLGys7S1tre4ubq7vL2+v8DBwsPExcbHyMnKy8zNzs/Q0dLT1NXW19jZ2tvc3d7f4OHi4+Tl5ufo6err7O3u7/Dx8vP09fb3+Pn6+/z9/v8="
     redelivered: 1
     timestamp: 1559762216552100000
 ...
 ```
 
 Binary representation of the example (network byte ordering in base64):
-`cHPL9BRESkGHswCG8UP8YAAAAAAAAAABUy+LbBV2Tcqf6CowAt5XngAAAAAAAAAVcHJvcGVydHkgMTpwcm9wZXJ0eSAyAAAAAAAAAAZxdWV1ZUIVpWN406nwoAAAAAAAAAAGLmpzb24vAAAAAAAAAAJ7fQAAAAAAAAABFaVjeNOp8KA=`
+`cHPL9BRESkGHswCG8UP8YAAAAAAAAAABUy+LbBV2Tcqf6CowAt5XngAAAAAAAAAVcHJvcGVydHkgMTpwcm9wZXJ0eSAyAAAAAAAAAAZxdWV1ZUIVpWN406nwoAAAAAAAAAAILmJpbmFyeS8AAAAAAAAAgICBgoOEhYaHiImKi4yNjo+QkZKTlJWWl5iZmpucnZ6foKGio6SlpqeoqaqrrK2ur7CxsrO0tba3uLm6u7y9vr/AwcLDxMXGx8jJysvMzc7P0NHS09TV1tfY2drb3N3e3+Dh4uPk5ebn6Onq6+zt7u/w8fLz9PX29/j5+vv8/f7/AAAAAAAAAAEVpWN406nwoA==`
 
 
 
-## conversation_connect_request - **#3220** - _[1.3, 1.4, 1.5, 1.6]_
+## conversation_connect_request - **#3230** - _[1.6]_
+
+Sent to establish a conversation
+
+role name                         | network type   | network size | description                                                        
+--------------------------------- | -------------- | ------------ | -------------------------------------------------------------------
+execution                         | (fixed) binary |           16 | uuid of the current execution context (breadcrumb)                 
+service.name.size                 | uint64         |            8 | size of the service name                                           
+service.name.data                 | dynamic string |       [0..*] | data of the service name                                           
+has_value                         | uint8          |            1 | if 1, deadline.remaining is propagated                             
+deadline.remaining                | uint64         |            8 | if has_value, the remaining time before deadline (ns)              
+parent.span                       | (fixed) binary |            8 | parent execution span                                              
+parent.service.size               | uint64         |            8 | parent service name size                                           
+parent.service.data               | dynamic string |       [0..*] | byte array with parent service name                                
+xid.formatID                      | uint64         |            8 | xid format type. if 0 no more information of the xid is transported
+xid.gtrid_length                  | uint64         |            8 | length of the transaction gtrid part                               
+xid.bqual_length                  | uint64         |            8 | length of the transaction branch part                              
+xid.data                          | (fixed) binary |           32 | byte array with the size of gtrid_length + bqual_length (max 128)  
+duplex                            | uint16         |            2 | in what duplex the callee shall enter [receive:1, send:0]          
+buffer.type.size                  | uint64         |            8 | buffer type name size                                              
+buffer.type.data                  | dynamic string |       [0..*] | byte array with buffer type in the form 'type/subtype'             
+buffer.data.size                  | uint64         |            8 | buffer payload size (could be very big)                            
+buffer.data.data                  | dynamic binary |       [0..*] | buffer payload data (with the size of buffer.payload.size)         
+buffer.header.fields.size         | uint64         |            8 | number of header field entries                                     
+buffer.header.fields.element.size | uint64         |            8 | size of field data                                                 
+buffer.header.fields.element.data | dynamic string |       [0..*] | the field data, key:value string                                   
+
+#### example 
+```yaml
+---
+execution: !!binary "cHPL9BRESkGHswCG8UP8YA=="
+service.name: "service1"
+deadline.remaining: 42000000000
+parent:
+  span: !!binary "gIGCg4SFhoc="
+  service: "parent-service"
+xid:
+  formatID: 42
+  gtrid_length: 16
+  bqual_length: 16
+  data: !!binary "W2wb9vJLSA29vN71TDoIUVtsG/byS0gNvbze9Uw6CFI="
+duplex: 0
+buffer:
+  type: ".binary/"
+  data: !!binary "gIGCg4SFhoeIiYqLjI2Oj5CRkpOUlZaXmJmam5ydnp+goaKjpKWmp6ipqqusra6vsLGys7S1tre4ubq7vL2+v8DBwsPExcbHyMnKy8zNzs/Q0dLT1NXW19jZ2tvc3d7f4OHi4+Tl5ufo6err7O3u7/Dx8vP09fb3+Pn6+/z9/v8="
+  header:
+    fields:
+      - "a:foo"
+      - "b:bar"
+      - "c:baz"
+...
+```
+
+Binary representation of the example (network byte ordering in base64):
+`cHPL9BRESkGHswCG8UP8YAAAAAAAAAAIc2VydmljZTEBAAAACcdlJACAgYKDhIWGhwAAAAAAAAAOcGFyZW50LXNlcnZpY2UAAAAAAAAAKgAAAAAAAAAQAAAAAAAAABBbbBv28ktIDb283vVMOghRW2wb9vJLSA29vN71TDoIUgAAAAAAAAAAAAguYmluYXJ5LwAAAAAAAACAgIGCg4SFhoeIiYqLjI2Oj5CRkpOUlZaXmJmam5ydnp+goaKjpKWmp6ipqqusra6vsLGys7S1tre4ubq7vL2+v8DBwsPExcbHyMnKy8zNzs/Q0dLT1NXW19jZ2tvc3d7f4OHi4+Tl5ufo6err7O3u7/Dx8vP09fb3+Pn6+/z9/v8AAAAAAAAAAwAAAAAAAAAFYTpmb28AAAAAAAAABWI6YmFyAAAAAAAAAAVjOmJheg==`
+
+
+
+## conversation_connect_request_v5 - **#3220** - _[1.3, 1.4, 1.5]_
 
 Sent to establish a conversation
 
@@ -1165,7 +1224,7 @@ xid.formatID        | uint64         |            8 | xid format type. if 0 no m
 xid.gtrid_length    | uint64         |            8 | length of the transaction gtrid part                               
 xid.bqual_length    | uint64         |            8 | length of the transaction branch part                              
 xid.data            | (fixed) binary |           32 | byte array with the size of gtrid_length + bqual_length (max 128)  
-duplex              | uint16         |            2 | in what duplex the callee shall enter (receive:1, send:0)          
+duplex              | uint16         |            2 | in what duplex the callee shall enter [receive:1, send:0]          
 buffer.type.size    | uint64         |            8 | buffer type name size                                              
 buffer.type.data    | dynamic string |       [0..*] | byte array with buffer type in the form 'type/subtype'             
 buffer.data.size    | uint64         |            8 | buffer payload size (could be very big)                            
@@ -1186,8 +1245,9 @@ xid:
   bqual_length: 16
   data: !!binary "W2wb9vJLSA29vN71TDoIUVtsG/byS0gNvbze9Uw6CFI="
 duplex: 0
-buffer.type: ".binary/"
-buffer.data: !!binary "gIGCg4SFhoeIiYqLjI2Oj5CRkpOUlZaXmJmam5ydnp+goaKjpKWmp6ipqqusra6vsLGys7S1tre4ubq7vL2+v8DBwsPExcbHyMnKy8zNzs/Q0dLT1NXW19jZ2tvc3d7f4OHi4+Tl5ufo6err7O3u7/Dx8vP09fb3+Pn6+/z9/v8="
+buffer:
+  type: ".binary/"
+  data: !!binary "gIGCg4SFhoeIiYqLjI2Oj5CRkpOUlZaXmJmam5ydnp+goaKjpKWmp6ipqqusra6vsLGys7S1tre4ubq7vL2+v8DBwsPExcbHyMnKy8zNzs/Q0dLT1NXW19jZ2tvc3d7f4OHi4+Tl5ufo6err7O3u7/Dx8vP09fb3+Pn6+/z9/v8="
 ...
 ```
 
@@ -1206,40 +1266,17 @@ execution                | (fixed) binary |           16 | uuid of the current e
 service.name.size        | uint64         |            8 | size of the service name                                           
 service.name.data        | dynamic string |       [0..*] | data of the service name                                           
 service.timeout.duration | uint64         |            8 | timeout (in ns                                                     
-parent.size              | uint64         |            8 | parent service name size                                           
-parent.data              | dynamic string |       [0..*] | byte array with parent service name                                
+parent.size              | uint64         |            8 | size of the parent service name (the caller)                       
+parent.data              | dynamic string |       [0..*] | data of the parent service name (the caller)                       
 xid.formatID             | uint64         |            8 | xid format type. if 0 no more information of the xid is transported
 xid.gtrid_length         | uint64         |            8 | length of the transaction gtrid part                               
 xid.bqual_length         | uint64         |            8 | length of the transaction branch part                              
 xid.data                 | (fixed) binary |           32 | byte array with the size of gtrid_length + bqual_length (max 128)  
-duplex                   | uint16         |            2 | in what duplex the callee shall enter (receive:1, send:0)          
+duplex                   | uint16         |            2 | in what duplex the callee shall enter [receive:1, send:0]          
 buffer.type.size         | uint64         |            8 | buffer type name size                                              
 buffer.type.data         | dynamic string |       [0..*] | byte array with buffer type in the form 'type/subtype'             
 buffer.data.size         | uint64         |            8 | buffer payload size (could be very big)                            
 buffer.data.data         | dynamic binary |       [0..*] | buffer payload data (with the size of buffer.payload.size)         
-
-#### example 
-```yaml
----
-execution: !!binary "cHPL9BRESkGHswCG8UP8YA=="
-service.name: "service1"
-service.timeout.duration: 42000000000
-parent: "parent-service"
-xid:
-  formatID: 42
-  gtrid_length: 16
-  bqual_length: 16
-  data: !!binary "W2wb9vJLSA29vN71TDoIUVtsG/byS0gNvbze9Uw6CFI="
-duplex: 0
-buffer:
-  type: ".binary/"
-  data: !!binary "gIGCg4SFhoeIiYqLjI2Oj5CRkpOUlZaXmJmam5ydnp+goaKjpKWmp6ipqqusra6vsLGys7S1tre4ubq7vL2+v8DBwsPExcbHyMnKy8zNzs/Q0dLT1NXW19jZ2tvc3d7f4OHi4+Tl5ufo6err7O3u7/Dx8vP09fb3+Pn6+/z9/v8="
-...
-```
-
-Binary representation of the example (network byte ordering in base64):
-`cHPL9BRESkGHswCG8UP8YAAAAAAAAAAIc2VydmljZTEAAAAJx2UkAAAAAAAAAAAOcGFyZW50LXNlcnZpY2UAAAAAAAAAKgAAAAAAAAAQAAAAAAAAABBbbBv28ktIDb283vVMOghRW2wb9vJLSA29vN71TDoIUgAAAAAAAAAAAAguYmluYXJ5LwAAAAAAAACAgIGCg4SFhoeIiYqLjI2Oj5CRkpOUlZaXmJmam5ydnp+goaKjpKWmp6ipqqusra6vsLGys7S1tre4ubq7vL2+v8DBwsPExcbHyMnKy8zNzs/Q0dLT1NXW19jZ2tvc3d7f4OHi4+Tl5ufo6err7O3u7/Dx8vP09fb3+Pn6+/z9/v8=`
-
 
 
 ## conversation_connect_reply - **#3211** - _[1.0, 1.1, 1.2, 1.3, 1.4, 1.5, 1.6]_
@@ -1264,14 +1301,55 @@ Binary representation of the example (network byte ordering in base64):
 
 
 
-## conversation_send - **#3212** - _[1.0, 1.1, 1.2, 1.3, 1.4, 1.5, 1.6]_
+## conversation_send - **#3231** - _[1.6]_
+
+Represent a message sent 'over' an established connection
+
+role name                         | network type   | network size | description                                                            
+--------------------------------- | -------------- | ------------ | -----------------------------------------------------------------------
+execution                         | (fixed) binary |           16 | uuid of the current execution context (breadcrumb)                     
+duplex                            | uint16         |            2 | in what duplex the callee shall enter [receive:1, send:0, terminated:2]
+code.result                       | uint32         |            4 | status of the connection                                               
+code.user                         | uint64         |            8 | user code, if callee did a tpreturn and supplied user-code             
+buffer.type.size                  | uint64         |            8 | buffer type name size                                                  
+buffer.type.data                  | dynamic string |       [0..*] | byte array with buffer type in the form 'type/subtype'                 
+buffer.data.size                  | uint64         |            8 | buffer payload size (could be very big)                                
+buffer.data.data                  | dynamic binary |       [0..*] | buffer payload data (with the size of buffer.payload.size)             
+buffer.header.fields.size         | uint64         |            8 | number of header field entries                                         
+buffer.header.fields.element.size | uint64         |            8 | size of field data                                                     
+buffer.header.fields.element.data | dynamic string |       [0..*] | the field data, key:value string                                       
+
+#### example 
+```yaml
+---
+execution: !!binary "cHPL9BRESkGHswCG8UP8YA=="
+duplex: 2
+code.result: 0
+code.user: 42
+buffer:
+  type: ".binary/"
+  data: !!binary "gIGCg4SFhoeIiYqLjI2Oj5CRkpOUlZaXmJmam5ydnp+goaKjpKWmp6ipqqusra6vsLGys7S1tre4ubq7vL2+v8DBwsPExcbHyMnKy8zNzs/Q0dLT1NXW19jZ2tvc3d7f4OHi4+Tl5ufo6err7O3u7/Dx8vP09fb3+Pn6+/z9/v8="
+  header:
+    fields:
+      - "a:foo"
+      - "b:bar"
+      - "c:baz"
+...
+```
+
+Binary representation of the example (network byte ordering in base64):
+`cHPL9BRESkGHswCG8UP8YAACAAAAAAAAAAAAAAAqAAAAAAAAAAguYmluYXJ5LwAAAAAAAACAgIGCg4SFhoeIiYqLjI2Oj5CRkpOUlZaXmJmam5ydnp+goaKjpKWmp6ipqqusra6vsLGys7S1tre4ubq7vL2+v8DBwsPExcbHyMnKy8zNzs/Q0dLT1NXW19jZ2tvc3d7f4OHi4+Tl5ufo6err7O3u7/Dx8vP09fb3+Pn6+/z9/v8AAAAAAAAAAwAAAAAAAAAFYTpmb28AAAAAAAAABWI6YmFyAAAAAAAAAAVjOmJheg==`
+
+
+
+## conversation_send_v5 - **#3212** - _[1.0, 1.1, 1.2, 1.3, 1.4, 1.5]_
 
 Represent a message sent 'over' an established connection
 
 role name        | network type   | network size | description                                               
 ---------------- | -------------- | ------------ | ----------------------------------------------------------
 execution        | (fixed) binary |           16 | uuid of the current execution context (breadcrumb)        
-duplex           | uint16         |            2 | in what duplex the callee shall enter (receive:1, send:0) 
+duplex           | uint16         |            2 | in what duplex the callee shall enter [receive:1, send:0] 
 code.result      | uint32         |            4 | status of the connection                                  
 code.user        | uint64         |            8 | user code, if callee did a tpreturn and supplied user-code
 buffer.type.size | uint64         |            8 | buffer type name size                                     
@@ -1286,8 +1364,9 @@ execution: !!binary "cHPL9BRESkGHswCG8UP8YA=="
 duplex: 0
 code.result: 0
 code.user: 42
-buffer.type: ".binary/"
-buffer.data: !!binary "gIGCg4SFhoeIiYqLjI2Oj5CRkpOUlZaXmJmam5ydnp+goaKjpKWmp6ipqqusra6vsLGys7S1tre4ubq7vL2+v8DBwsPExcbHyMnKy8zNzs/Q0dLT1NXW19jZ2tvc3d7f4OHi4+Tl5ufo6err7O3u7/Dx8vP09fb3+Pn6+/z9/v8="
+buffer:
+  type: ".binary/"
+  data: !!binary "gIGCg4SFhoeIiYqLjI2Oj5CRkpOUlZaXmJmam5ydnp+goaKjpKWmp6ipqqusra6vsLGys7S1tre4ubq7vL2+v8DBwsPExcbHyMnKy8zNzs/Q0dLT1NXW19jZ2tvc3d7f4OHi4+Tl5ufo6err7O3u7/Dx8vP09fb3+Pn6+/z9/v8="
 ...
 ```
 
@@ -1314,26 +1393,3 @@ execution: !!binary "cHPL9BRESkGHswCG8UP8YA=="
 Binary representation of the example (network byte ordering in base64):
 `cHPL9BRESkGHswCG8UP8YA==`
 
-
-
-## conversation_connect_request_v2 - **#3210** - _[1.0, 1.1, 1.2]_
-
-Sent to establish a conversation
-
-role name                | network type   | network size | description                                                        
------------------------- | -------------- | ------------ | -------------------------------------------------------------------
-execution                | (fixed) binary |           16 | uuid of the current execution context (breadcrumb)                 
-service.name.size        | uint64         |            8 | size of the service name                                           
-service.name.data        | dynamic string |       [0..*] | data of the service name                                           
-service.timeout.duration | uint64         |            8 | timeout (in ns                                                     
-parent.size              | uint64         |            8 | size of the parent service name (the caller)                       
-parent.data              | dynamic string |       [0..*] | data of the parent service name (the caller)                       
-xid.formatID             | uint64         |            8 | xid format type. if 0 no more information of the xid is transported
-xid.gtrid_length         | uint64         |            8 | length of the transaction gtrid part                               
-xid.bqual_length         | uint64         |            8 | length of the transaction branch part                              
-xid.data                 | (fixed) binary |           32 | byte array with the size of gtrid_length + bqual_length (max 128)  
-duplex                   | uint16         |            2 | in what duplex the callee shall enter (receive:1, send:0)          
-buffer.type.size         | uint64         |            8 | buffer type name size                                              
-buffer.type.data         | dynamic string |       [0..*] | byte array with buffer type in the form 'type/subtype'             
-buffer.data.size         | uint64         |            8 | buffer payload size (could be very big)                            
-buffer.data.data         | dynamic binary |       [0..*] | buffer payload data (with the size of buffer.payload.size)         
