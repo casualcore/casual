@@ -357,14 +357,9 @@ namespace casual
 
                                  state.multiplex.send( shared->ipc, message);
 
-                                 // TODO to send _terminated_ in the send message, we break protocol. We need to change this in 1.9
-                                 // For now we check if xatmi code is set to any thing -> terminated.
-                                 if( message.code.result != code::xatmi::absent)
-                                    return task::concurrent::unit::Dispatch::done;
-
                                  // if the send indicate a termination, we make sure to remove this task
-                                 //if( message.duplex == decltype( message.duplex)::terminated)
-                                 //   return task::concurrent::unit::Dispatch::done;
+                                 if( message.duplex == decltype( message.duplex)::terminated)
+                                    return task::concurrent::unit::Dispatch::done;
 
                                  return task::concurrent::unit::Dispatch::pending;
                               },
@@ -406,6 +401,8 @@ namespace casual
 
                            if( message::protocol::compatible< common::message::conversation::connect::callee::Request>( connection->protocol()))
                               tcp::send( state, connection->descriptor(), message);
+                           else if( message::protocol::compatible< common::message::conversation::connect::v1_5::callee::Request>( connection->protocol()))
+                              tcp::send( state, connection->descriptor(), message::protocol::transform::to< common::message::conversation::connect::v1_5::callee::Request>( std::move( message)));
                            else
                               tcp::send( state, connection->descriptor(), message::protocol::transform::to< common::message::conversation::connect::v1_2::callee::Request>( std::move( message)));
 
@@ -434,8 +431,14 @@ namespace casual
                         Trace trace{ "gateway::group::outbound::handle::local::internal::conversation::send"};
                         log::debug( "message: ", message);
 
-                        auto tcp = state.connections.partner( descriptor);
-                        tcp::send( state, tcp, message);
+                        auto connection = state.connections.find_external( descriptor);
+                        CASUAL_ASSERT( connection);
+
+                        if( message::protocol::compatible< common::message::conversation::callee::Send>( connection->protocol()))
+                           tcp::send( state, connection->descriptor(), message);
+                        else
+                           tcp::send( state, connection->descriptor(), message::protocol::transform::to< common::message::conversation::v1_5::callee::Send>( std::move( message)));
+
                      };
                   }
 
@@ -686,6 +689,22 @@ namespace casual
                   } // connect
 
                   auto send = basic_task< common::message::conversation::callee::Send>;
+
+                  namespace v1_5
+                  {
+                     auto send( State& state)
+                     {
+                        return [ &state]( common::message::conversation::v1_5::callee::Send message)
+                        {
+                           Trace trace{ "gateway::group::outbound::handle::local::external::conversation::callee::v1_5::send"};
+                           log::debug( "message: ", message);
+
+                           state.tasks( message::protocol::transform::from( std::move( message)));
+                        };
+                     }
+
+                     
+                  } // v1_5
 
                } // conversation
 
@@ -1004,6 +1023,7 @@ namespace casual
             // conversation
             local::external::conversation::connect::reply( state),
             local::external::conversation::send( state),
+            local::external::conversation::v1_5::send( state),
 
             // queue
             local::external::queue::enqueue::reply( state),

@@ -126,12 +126,15 @@ namespace casual
          // 3202
          // 3203
 
-         conversation_connect_request_v2 = 3210,
-         conversation_connect_reply      = 3211,
-         conversation_send               = 3212,
-         conversation_disconnect         = 3213,
-
-         conversation_connect_request = 3220,
+         conversation_connect_request_v2 = 3210, // pinned
+         conversation_connect_reply      = 3211, // pinned
+         conversation_send_v5            = 3212, // pinned
+         conversation_disconnect         = 3213, // pinned
+         conversation_connect_request_v5 = 3220, // pinned
+         
+         // v6.. buffer with header fields
+         conversation_connect_request = 3230, // pinned
+         conversation_send = 3231, // pinned
 
          // event messages
          EVENT_BASE = 4000,

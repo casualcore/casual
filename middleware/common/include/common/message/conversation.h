@@ -36,8 +36,7 @@ namespace casual
             enum class Type : short
             {
                send,
-               receive,
-               //terminated
+               receive
             };
 
             inline std::string_view description( Type value)
@@ -46,11 +45,9 @@ namespace casual
                {
                   case Type::receive: return "receive";
                   case Type::send: return "send";
-                  //case Type::terminated: return "terminated";
                }
                return "<unknown>";
             }
-
          } // duplex
 
 
@@ -68,7 +65,7 @@ namespace casual
                      service::call::v1_2::Service service;
                      std::string parent;
                      common::transaction::ID trid;
-                     header::Fields header;
+                     //header::Fields header;
                      chronology::duration pending{};
                      duplex::Type duplex{};
                      message::compatibility::Payload buffer;
@@ -78,7 +75,7 @@ namespace casual
                         CASUAL_SERIALIZE( service);
                         CASUAL_SERIALIZE( parent);
                         CASUAL_SERIALIZE( trid);
-                        CASUAL_SERIALIZE( header);
+                        //CASUAL_SERIALIZE( header);
                         CASUAL_SERIALIZE( pending);
                         CASUAL_SERIALIZE( duplex);
                         CASUAL_SERIALIZE( buffer);
@@ -87,6 +84,44 @@ namespace casual
 
                } // callee
             } // v1_2
+
+            namespace v1_5
+            {
+               namespace callee
+               {
+                  using base_type = message::basic_request< Type::conversation_connect_request_v5>;
+                  struct Request : base_type
+                  {
+                     using base_type::base_type;
+
+                     service::call::Service service;
+                     execution::context::Parent parent;
+                     service::call::Deadline deadline;
+
+                     common::transaction::ID trid;
+
+                     //! pending time, only to be return in the "ACK", to collect
+                     //! metrics
+                     chronology::duration pending{};
+
+                     duplex::Type duplex{};
+
+                     common::message::compatibility::Payload buffer;
+
+                     CASUAL_CONST_CORRECT_SERIALIZE(
+                        base_type::serialize( archive);
+                        CASUAL_SERIALIZE( service);
+                        CASUAL_SERIALIZE( parent);
+                        CASUAL_SERIALIZE( deadline);
+                        CASUAL_SERIALIZE( trid);
+                        CASUAL_SERIALIZE( pending);
+                        CASUAL_SERIALIZE( duplex);
+                        CASUAL_SERIALIZE( buffer);
+                     )
+                  };
+                  
+               } // callee
+            } // v1_5
 
 
             using base_type = message::basic_request< Type::conversation_connect_request>;
@@ -167,13 +202,60 @@ namespace casual
 
          } // connect
 
+         namespace v1_5
+         {
+            namespace callee
+            {
+               using send_base = basic_message< Type::conversation_send_v5>;
+               struct Send : send_base
+               {
+                  using send_base::send_base;
+
+                  duplex::Type duplex{};
+                  service::transaction::State transaction_state = service::transaction::State::ok;
+                  common::service::Code code = code::initialize();
+                  common::message::compatibility::Payload buffer;
+
+                  CASUAL_CONST_CORRECT_SERIALIZE(
+                     send_base::serialize( archive);
+                     CASUAL_SERIALIZE( duplex);
+                     CASUAL_SERIALIZE( transaction_state);
+                     CASUAL_SERIALIZE( code);
+                     CASUAL_SERIALIZE( buffer);
+                  )
+               };
+
+            } // callee
+         } // v1_5
+
+         namespace duplex::send
+         {
+            enum class Type : short
+            {
+               send,
+               receive,
+               terminated
+            };
+
+            inline std::string_view description( Type value)
+            {
+               switch( value)
+               {
+                  case Type::receive: return "receive";
+                  case Type::send: return "send";
+                  case Type::terminated: return "terminated";
+               }
+               return "<unknown>";
+            }
+         } // duplex::send
+
 
          using send_base = basic_message< Type::conversation_send>;
          struct basic_send : send_base
          {
             using send_base::send_base;
 
-            duplex::Type duplex{};
+            duplex::send::Type duplex{};
             service::transaction::State transaction_state = service::transaction::State::ok;
             common::service::Code code = code::initialize();
 

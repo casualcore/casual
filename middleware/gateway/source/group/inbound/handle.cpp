@@ -99,14 +99,15 @@ namespace casual
                         CASUAL_ASSERT( connection);
 
                         // if the sender has terminated the conversation we need to clean the task
-                        // TODO we cant use _terminated_ until 1.9, we need to use a xatmi code for this, as before
-                        // if( message.duplex == decltype( message.duplex)::terminated)
-
-                        if( message.code.result != code::xatmi::absent)
+                        if( message.duplex == decltype( message.duplex)::terminated)
                            state.tasks.remove( message.correlation);
-                           
-                        tcp::send( state, connection->descriptor(), message);
+
+                        if( message::protocol::compatible< common::message::conversation::callee::Send>( connection->protocol()))
+                           tcp::send( state, connection->descriptor(), message);
+                        else
+                           tcp::send( state, connection->descriptor(), message::protocol::transform::to< common::message::conversation::v1_5::callee::Send>( std::move( message)));
                      };
+
                   }
                   
                } // conversation
@@ -347,13 +348,28 @@ namespace casual
                         };
                      }
 
+                     namespace v1_5
+                     {
+                        auto request( State& state)
+                        {
+                           return [&state]( common::message::conversation::connect::v1_5::callee::Request& message, strong::socket::id descriptor)
+                           {
+                              Trace trace{ "gateway::group::inbound::handle::local::external::conversation::connect::v1_5::request"};
+                              log::debug( "message: ", message);
+
+                              state.tasks.add( task::create::service::conversation( state, descriptor, message::protocol::transform::from( std::move( message))));
+                           };
+                        }
+                        
+                     } // v1_5
+
                      namespace v1_2
                      {
                         auto request( State& state)
                         {
                            return [&state]( common::message::conversation::connect::v1_2::callee::Request& message, strong::socket::id descriptor)
                            {
-                              Trace trace{ "gateway::group::inbound::handle::local::external::conversation::connect::request"};
+                              Trace trace{ "gateway::group::inbound::handle::local::external::conversation::connect::v1_2::request"};
                               log::debug( "message: ", message);
 
                               state.tasks.add( task::create::service::conversation( state, descriptor, message::protocol::transform::from( std::move( message))));
@@ -387,6 +403,22 @@ namespace casual
                         state.tasks( message);
                      };
                   }
+
+                  namespace v1_5
+                  {
+                     auto send( State& state)
+                     {
+                        return [&state]( common::message::conversation::v1_5::callee::Send& message)
+                        {
+                           Trace trace{ "gateway::group::inbound::handle::local::external::conversation::v1_5::send"};
+                           common::log::debug( "message: ", message);
+
+                           // uses the previous lookup address to pass through the send message.
+                           state.tasks( message::protocol::transform::from( std::move( message)));
+                        };
+                     }
+
+                  } // v1_5
                   
                } // conversation
 
@@ -618,9 +650,11 @@ namespace casual
 
             // conversation
             local::external::conversation::connect::request( state),
+            local::external::conversation::connect::v1_5::request( state),
             local::external::conversation::connect::v1_2::request( state),
             local::external::conversation::disconnect( state),
             local::external::conversation::send( state),
+            local::external::conversation::v1_5::send( state),
 
             // queue
             local::external::queue::enqueue::request( state),

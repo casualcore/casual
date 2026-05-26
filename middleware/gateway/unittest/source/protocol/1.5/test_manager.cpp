@@ -166,9 +166,9 @@ domain:
 
          EXPECT_TRUE( connect_reply.code.result == code::xatmi::ok) << CASUAL_NAMED_VALUE( connect_reply);
 
-         // we should get a send from the server
+         // we should get a send v1_5 from the server
          {
-            auto message = communication::device::receive< common::message::conversation::callee::Send>( device);
+            auto message = communication::device::receive< common::message::conversation::v1_5::callee::Send>( device);
             EXPECT_TRUE( message.buffer.data == data) << CASUAL_NAMED_VALUE( message);
             EXPECT_TRUE( message.duplex == decltype( message.duplex)::send) << CASUAL_NAMED_VALUE( message.duplex);
 
@@ -275,6 +275,11 @@ domain:
 
          const auto trid = common::transaction::id::create();
          const auto timepoint = common::chronology::time_point::clock::now();
+         const auto execution = common::strong::execution::id::generate();
+         const auto parent_service = std::string{ "parent-service"};
+         const auto parent_span = std::string{ "parent-span"};
+         const auto deadline = std::chrono::seconds{ 42};
+         const auto pending = std::chrono::milliseconds{ 7};
          const auto payload = common::buffer::Payload{
             .type = "X_OCTET/",
             .data = common::unittest::random::binary( 10),
@@ -372,5 +377,214 @@ domain:
          }
 
       }
+
+      TEST( gateway_protocol_1_5_manager, outbound_conversation_connect__no_headers)
+      {
+         common::unittest::Trace trace;
+         
+         auto a = local::domain( R"(
+domain:
+   name: A
+   servers:
+      - path: ${CMAKE_BINARY_DIR}/middleware/gateway/bin/casual-gateway-manager
+        memberships: [ gateway]
+   
+   gateway:
+      reverse:
+         outbound:
+            groups:
+               -  connections: 
+                  -  address: 127.0.0.1:7010
+         )");
+
+
+         auto device = unittest::tcp::connect::in( "127.0.0.1:7010", message::protocol::Version::v1_5);
+         EXPECT_TRUE( device.connector().socket());
+
+         auto state = gateway::unittest::fetch::until( gateway::unittest::fetch::predicate::outbound::connected());
+
+         // the ipc that is associated with the connection. We can use this
+         // to directly interact with the outbound.
+         auto outbound_ipc = state.connections.at( 0).ipc;
+
+
+         // send discovery connect directly to outbound
+         const auto origin_request = []()
+         {
+            common::message::conversation::connect::callee::Request request{ common::process::handle()};
+            request.duplex = decltype( request.duplex)::send;
+            request.execution = common::strong::execution::id::generate();
+            request.service.name = "a";
+            request.service.requested = "b";
+            request.parent.service = "q";
+            request.parent.span = common::strong::execution::span::id::generate();
+            request.deadline.remaining = std::chrono::seconds{ 42};
+            request.trid = common::transaction::id::create();
+            request.pending = std::chrono::milliseconds{ 7};
+            request.buffer = common::buffer::Payload{
+               .type = "X_OCTET/",
+               .data = common::unittest::random::binary( 10),
+               .header = casual::header::transform({
+                  { "a:foo"},
+                  { "b:bar"},
+                  { "c:baz"}
+               })};
+            return request;
+         }();
+         
+
+         auto correlation = common::communication::device::blocking::send( outbound_ipc, origin_request);
+         
+
+         // receive 1.5 request from outbound
+         {
+            auto message = communication::device::receive< common::message::conversation::connect::v1_5::callee::Request>( device, correlation);
+            EXPECT_TRUE( message.correlation == correlation) << CASUAL_NAMED_VALUE( message.correlation);
+            EXPECT_TRUE( message.execution == origin_request.execution) << CASUAL_NAMED_VALUE( message.execution);
+            // only service.name is propagated between domains.
+            EXPECT_TRUE( message.service.name == origin_request.service.name) << CASUAL_NAMED_VALUE( message.service) << " vs " << CASUAL_NAMED_VALUE( origin_request.service);
+            EXPECT_TRUE( message.parent.service == origin_request.parent.service) << CASUAL_NAMED_VALUE( message.parent.service);
+            // there's a new span created over the outbound.
+            EXPECT_TRUE( message.parent.span);
+            EXPECT_TRUE( message.parent.span != origin_request.parent.span) << CASUAL_NAMED_VALUE( message.parent.span) << " vs " << CASUAL_NAMED_VALUE( origin_request.parent.span);
+            ASSERT_TRUE( message.deadline.remaining);
+            EXPECT_TRUE( message.deadline == origin_request.deadline) << CASUAL_NAMED_VALUE( message.deadline);
+            EXPECT_TRUE( message.trid == origin_request.trid) << CASUAL_NAMED_VALUE( message.trid);
+            // pending is not propagated between domains.
+            // EXPECT_TRUE( message.pending == origin_request.pending) << CASUAL_NAMED_VALUE( message.pending);
+            EXPECT_TRUE( message.buffer.data == origin_request.buffer.data) << CASUAL_NAMED_VALUE( message);
+            EXPECT_TRUE( message.buffer.type == origin_request.buffer.type) << CASUAL_NAMED_VALUE( message);
+            EXPECT_TRUE( message.duplex == origin_request.duplex) << CASUAL_NAMED_VALUE( message.duplex);
+
+            // send connect reply
+            auto reply = common::message::conversation::connect::Reply{};
+            reply.correlation = message.correlation;
+            reply.execution = message.execution;
+            reply.code.result = code::xatmi::ok;
+            common::communication::device::blocking::send( device, reply);
+         }
+
+         // receive reply from outbound
+         {
+            auto reply = common::communication::ipc::receive< common::message::conversation::connect::Reply>( correlation);
+            EXPECT_TRUE( reply.code.result == code::xatmi::ok) << CASUAL_NAMED_VALUE( reply.code);
+         }
+
+      }
+
+      TEST( gateway_protocol_1_5_manager, outbound_conversation_send__no_headers)
+      {
+         common::unittest::Trace trace;
+
+         auto a = local::domain( R"(
+domain:
+   name: A
+   servers:
+      - path: ${CMAKE_BINARY_DIR}/middleware/gateway/bin/casual-gateway-manager
+        memberships: [ gateway]
+
+   gateway:
+      reverse:
+         outbound:
+            groups:
+               -  connections:
+                  -  address: 127.0.0.1:7010
+         )");
+
+
+         auto device = unittest::tcp::connect::in( "127.0.0.1:7010", message::protocol::Version::v1_5);
+         EXPECT_TRUE( device.connector().socket());
+
+         auto state = gateway::unittest::fetch::until( gateway::unittest::fetch::predicate::outbound::connected());
+
+         // the ipc that is associated with the connection. We can use this
+         // to directly interact with the outbound.
+         auto outbound_ipc = state.connections.at( 0).ipc;
+
+         const auto origin_send = []()
+         {
+            common::message::conversation::callee::Send message;
+            message.execution = common::strong::execution::id::generate();
+            message.duplex = decltype( message.duplex)::receive;
+            message.transaction_state = decltype( message.transaction_state)::ok;
+            message.code = common::service::Code{ common::code::xatmi::ok, 42L};
+            message.buffer.type = "X_OCTET/";
+            message.buffer.data = common::unittest::random::binary( 13);
+            return message;
+         }();
+
+         auto send_correlation = common::communication::device::blocking::send( outbound_ipc, origin_send);
+
+         {
+            auto message = communication::device::receive< common::message::conversation::v1_5::callee::Send>( device, send_correlation);
+            EXPECT_TRUE( message.correlation == send_correlation) << CASUAL_NAMED_VALUE( message.correlation);
+            EXPECT_TRUE( message.execution == origin_send.execution) << CASUAL_NAMED_VALUE( message.execution);
+            EXPECT_TRUE( message.duplex == decltype( message.duplex)::receive) << CASUAL_NAMED_VALUE( message.duplex);
+            EXPECT_TRUE( message.transaction_state == origin_send.transaction_state) << CASUAL_NAMED_VALUE( message.transaction_state);
+            // code.result should be absent in non-terminated send messages.
+            EXPECT_TRUE( message.code.result == decltype( message.code.result)::absent) << CASUAL_NAMED_VALUE( message.code);
+            EXPECT_TRUE( message.code.user == origin_send.code.user) << CASUAL_NAMED_VALUE( message.code);
+            EXPECT_TRUE( message.buffer.type == origin_send.buffer.type) << CASUAL_NAMED_VALUE( message.buffer.type);
+            EXPECT_TRUE( message.buffer.data == origin_send.buffer.data) << CASUAL_NAMED_VALUE( message.buffer.data.size());
+         }
+      }
+
+      TEST( gateway_protocol_1_5_manager, outbound_conversation_send_duplex_terminated)
+      {
+         common::unittest::Trace trace;
+
+         auto a = local::domain( R"(
+domain:
+   name: A
+   servers:
+      - path: ${CMAKE_BINARY_DIR}/middleware/gateway/bin/casual-gateway-manager
+        memberships: [ gateway]
+
+   gateway:
+      reverse:
+         outbound:
+            groups:
+               -  connections:
+                  -  address: 127.0.0.1:7010
+         )");
+
+
+         auto device = unittest::tcp::connect::in( "127.0.0.1:7010", message::protocol::Version::v1_5);
+         EXPECT_TRUE( device.connector().socket());
+
+         auto state = gateway::unittest::fetch::until( gateway::unittest::fetch::predicate::outbound::connected());
+
+         // the ipc that is associated with the connection. We can use this
+         // to directly interact with the outbound.
+         auto outbound_ipc = state.connections.at( 0).ipc;
+
+         const auto origin_send = []()
+         {
+            common::message::conversation::callee::Send message;
+            message.execution = common::strong::execution::id::generate();
+            message.duplex = decltype( message.duplex)::terminated;
+            message.transaction_state = decltype( message.transaction_state)::ok;
+            message.code = common::service::Code{ common::code::xatmi::ok, 42L};
+            message.buffer.type = "X_OCTET/";
+            message.buffer.data = common::unittest::random::binary( 13);
+            return message;
+         }();
+
+         auto send_correlation = common::communication::device::blocking::send( outbound_ipc, origin_send);
+
+         {
+            auto message = communication::device::receive< common::message::conversation::v1_5::callee::Send>( device, send_correlation);
+            EXPECT_TRUE( message.correlation == send_correlation) << CASUAL_NAMED_VALUE( message.correlation);
+            EXPECT_TRUE( message.execution == origin_send.execution) << CASUAL_NAMED_VALUE( message.execution);
+            EXPECT_TRUE( message.duplex == decltype( message.duplex){}) << CASUAL_NAMED_VALUE( message.duplex);
+            EXPECT_TRUE( message.transaction_state == origin_send.transaction_state) << CASUAL_NAMED_VALUE( message.transaction_state);
+            // when duplex is terminated, the code.result should be set to NOT absent, in this case ok.
+            EXPECT_TRUE( message.code.result == decltype( message.code.result)::ok) << CASUAL_NAMED_VALUE( message.code);
+            EXPECT_TRUE( message.buffer.type == origin_send.buffer.type) << CASUAL_NAMED_VALUE( message.buffer.type);
+            EXPECT_TRUE( message.buffer.data == origin_send.buffer.data) << CASUAL_NAMED_VALUE( message.buffer.data.size());
+         }
+
+      }
+
    } // gateway  
 } // casual

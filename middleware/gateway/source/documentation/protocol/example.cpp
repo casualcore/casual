@@ -93,6 +93,24 @@ namespace casual
                   return result;
                };
 
+               auto payload()
+               {
+                  return buffer::Payload{
+                     .type = ".binary/",
+                     .data = binary::value( 128),
+                     .header = casual::header::transform( { 
+                        { "a:foo"},
+                        { "b:bar"},
+                        { "c:baz"}
+                     })
+                  };
+               }
+
+               auto compatibility_payload()
+               {
+                  return common::message::compatibility::Payload{ local::payload()};
+               }
+
             } // <unnamed>
          } // local
 
@@ -224,15 +242,8 @@ namespace casual
             message.trid = local::trid();
 
             message.flags = common::message::service::call::request::Flag::no_reply;
-            message.buffer.type = ".binary/";
-            message.buffer.data = local::binary::value( 128);
 
-            message.buffer.header = casual::header::transform( { 
-               { "a:foo"},
-               { "b:bar"},
-               { "c:baz"}
-            });
-
+            message.buffer = local::payload();
          }
 
          void fill( common::message::service::call::v1_2::Reply& message)
@@ -244,8 +255,7 @@ namespace casual
             message.transaction.trid = local::trid();
             message.transaction.state = decltype( message.transaction.state)::ok;
 
-            message.buffer.type = ".binary/";
-            message.buffer.data = local::binary::value( 128);
+            message.buffer = local::compatibility_payload();
          }
 
          void fill( common::message::service::call::v1_4::Reply& message)
@@ -256,8 +266,7 @@ namespace casual
             message.code.user = 42;
             message.transaction_state = decltype( message.transaction_state)::ok;
 
-            message.buffer.type = ".binary/";
-            message.buffer.data = local::binary::value( 128);
+            message.buffer = local::compatibility_payload();
          }
 
          void fill( common::message::service::call::Reply& message)
@@ -268,29 +277,7 @@ namespace casual
             message.code.user = 42;
             message.transaction_state = decltype( message.transaction_state)::ok;
 
-            message.buffer.type = ".binary/";
-            message.buffer.data = local::binary::value( 128);
-
-            message.buffer.header = casual::header::transform( { 
-               { "a:foo"},
-               { "b:bar"},
-               { "c:baz"}
-            });
-         }
-
-         void fill( common::message::conversation::connect::v1_2::callee::Request& message)
-         {
-            local::set_general( message);
-
-            message.service.name = "service1";
-            message.service.timeout.duration = std::chrono::seconds{ 42};
-
-            message.parent = "parent-service";
-            message.trid = local::trid();
-
-            message.duplex = decltype( message.duplex)::send;
-            message.buffer.type = ".binary/";
-            message.buffer.data = local::binary::value( 128);
+            message.buffer = local::payload();
          }
 
          void fill( common::message::conversation::connect::callee::Request& message)
@@ -305,8 +292,36 @@ namespace casual
             message.trid = local::trid();
 
             message.duplex = decltype( message.duplex)::send;
-            message.buffer.type = ".binary/";
-            message.buffer.data = local::binary::value( 128);
+            message.buffer = local::payload();
+         }
+
+         void fill( common::message::conversation::connect::v1_5::callee::Request& message)
+         {
+            local::set_general( message);
+
+            message.service.name = "service1";
+            message.deadline.remaining = std::chrono::seconds{ 42};
+
+            message.parent.service = "parent-service";
+            message.parent.span = local::span();
+            message.trid = local::trid();
+
+            message.duplex = decltype( message.duplex)::send;
+            message.buffer = local::compatibility_payload();;
+         }
+
+         void fill( common::message::conversation::connect::v1_2::callee::Request& message)
+         {
+            local::set_general( message);
+
+            message.service.name = "service1";
+            message.service.timeout.duration = std::chrono::seconds{ 42};
+
+            message.parent = "parent-service";
+            message.trid = local::trid();
+
+            message.duplex = decltype( message.duplex)::send;
+            message.buffer = local::compatibility_payload();
          }
 
          void fill( common::message::conversation::connect::Reply& message)
@@ -319,13 +334,24 @@ namespace casual
          {
             local::set_general( message);
 
-            message.duplex = decltype( message.duplex)::send;
-
-            message.buffer.type = ".binary/";
-            message.buffer.data = local::binary::value( 128);
+            message.duplex = decltype( message.duplex)::terminated;
 
             message.code.result = common::code::xatmi::ok;
             message.code.user = 42;
+
+            message.buffer = local::payload();
+         }
+
+         void fill( common::message::conversation::v1_5::callee::Send& message)
+         {
+            local::set_general( message);
+
+            message.duplex = decltype( message.duplex)::send;
+
+            message.code.result = common::code::xatmi::ok;
+            message.code.user = 42;
+
+            message.buffer = local::compatibility_payload();
          }
 
          void fill( common::message::conversation::Disconnect& message)
@@ -344,9 +370,8 @@ namespace casual
             message.message.attributes.properties = "property 1:property 2";
             message.message.attributes.reply = "queueB";
             message.message.attributes.available = local::time::point();
-            message.message.payload.type = ".binary/";
-            message.message.payload.data = local::binary::value( 128);
-            message.message.payload.header = header::transform( { "a:b", "c:d"});
+
+            message.message.payload = local::payload();
          }
 
          void fill( casual::queue::ipc::message::group::enqueue::v1_5::Request& message)
@@ -360,8 +385,8 @@ namespace casual
             message.message.attributes.properties = "property 1:property 2";
             message.message.attributes.reply = "queueB";
             message.message.attributes.available = local::time::point();
-            message.message.payload.type = ".binary/";
-            message.message.payload.data = local::binary::value( 128);
+
+            message.message.payload = local::compatibility_payload();
          }
 
          void fill( casual::queue::ipc::message::group::enqueue::Reply& message)
@@ -392,9 +417,6 @@ namespace casual
             message.block = false;
          }
 
-
-
-
          void fill( casual::queue::ipc::message::group::dequeue::Reply& message)
          {
             local::set_general( message);
@@ -405,9 +427,7 @@ namespace casual
                message.message->attributes.properties = "property 1:property 2";
                message.message->attributes.reply = "queueB";
                message.message->attributes.available = local::time::point();
-               message.message->payload.type = ".json/";
-               message.message->payload.data = { std::byte{ '{'}, std::byte{ '}'}};
-               message.message->payload.header = header::transform( { "a:b", "c:d"});
+               message.message->payload = local::compatibility_payload();
                message.message->redelivered = 1;
                message.message->timestamp = local::time::point();
             }
@@ -426,8 +446,7 @@ namespace casual
                   message.attributes.properties = "property 1:property 2";
                   message.attributes.reply = "queueB";
                   message.attributes.available = local::time::point();
-                  message.payload.type = ".json/";
-                  message.payload.data = { std::byte{ '{'}, std::byte{ '}'}};
+                  message.payload = local::compatibility_payload();
                   message.redelivered = 1;
                   message.timestamp = local::time::point();
                   return message;

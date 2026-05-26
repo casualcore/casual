@@ -46,6 +46,8 @@ if (APPLE)
         -Wno-implicit-fallthrough
         -Wno-missing-field-initializers
         -Wno-unused-variable
+        -Wno-deprecated-literal-operator
+        -Wno-main
     )
 else()
     add_compile_options(

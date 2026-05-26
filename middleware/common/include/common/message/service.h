@@ -40,6 +40,8 @@ namespace casual
 
                inline auto logical_name() const noexcept { return requested.value_or( name); }
 
+               friend bool operator == ( const Service&, const Service&) = default;
+
                CASUAL_CONST_CORRECT_SERIALIZE(
                   CASUAL_SERIALIZE( name);
                   CASUAL_SERIALIZE( requested);
@@ -49,6 +51,8 @@ namespace casual
             struct Deadline
             {
                std::optional< chronology::duration> remaining;
+
+               friend bool operator == ( const Deadline&, const Deadline&) = default;
 
                CASUAL_CONST_CORRECT_SERIALIZE(
                   CASUAL_SERIALIZE( remaining);

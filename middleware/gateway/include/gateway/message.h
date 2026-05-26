@@ -760,6 +760,28 @@ struct Value< type, A>  \
             CASUAL_CUSTOMIZATION_POINT_SERIALIZE( buffer);
          })
 
+         CASUAL_CUSTOMIZATION_POINT_NETWORK( common::message::conversation::connect::callee::Request,
+         {
+            CASUAL_CUSTOMIZATION_POINT_SERIALIZE( execution);
+            CASUAL_CUSTOMIZATION_POINT_SERIALIZE( service.name);
+            CASUAL_CUSTOMIZATION_POINT_SERIALIZE( deadline.remaining);
+            CASUAL_CUSTOMIZATION_POINT_SERIALIZE( parent);
+            CASUAL_SERIALIZE_NAME( value.trid, "xid");
+            CASUAL_CUSTOMIZATION_POINT_SERIALIZE( duplex);
+            CASUAL_CUSTOMIZATION_POINT_SERIALIZE( buffer);
+         })
+
+         CASUAL_CUSTOMIZATION_POINT_NETWORK( common::message::conversation::connect::v1_5::callee::Request,
+         {
+            CASUAL_CUSTOMIZATION_POINT_SERIALIZE( execution);
+            CASUAL_CUSTOMIZATION_POINT_SERIALIZE( service.name);
+            CASUAL_CUSTOMIZATION_POINT_SERIALIZE( deadline.remaining);
+            CASUAL_CUSTOMIZATION_POINT_SERIALIZE( parent);
+            CASUAL_SERIALIZE_NAME( value.trid, "xid");
+            CASUAL_CUSTOMIZATION_POINT_SERIALIZE( duplex);
+            CASUAL_CUSTOMIZATION_POINT_SERIALIZE( buffer);
+         })
+
          CASUAL_CUSTOMIZATION_POINT_NETWORK( common::message::conversation::connect::v1_2::callee::Request,
          {
             CASUAL_CUSTOMIZATION_POINT_SERIALIZE( execution);
@@ -771,17 +793,6 @@ struct Value< type, A>  \
             CASUAL_CUSTOMIZATION_POINT_SERIALIZE( buffer);
          })
 
-         CASUAL_CUSTOMIZATION_POINT_NETWORK( common::message::conversation::connect::callee::Request,
-         {
-            CASUAL_CUSTOMIZATION_POINT_SERIALIZE( execution);
-            CASUAL_CUSTOMIZATION_POINT_SERIALIZE( service.name);
-            CASUAL_CUSTOMIZATION_POINT_SERIALIZE( deadline.remaining);
-            CASUAL_CUSTOMIZATION_POINT_SERIALIZE( parent);
-            CASUAL_SERIALIZE_NAME( value.trid, "xid");
-            CASUAL_CUSTOMIZATION_POINT_SERIALIZE( duplex);
-            CASUAL_CUSTOMIZATION_POINT_SERIALIZE( buffer.type);
-            CASUAL_CUSTOMIZATION_POINT_SERIALIZE( buffer.data);
-         })
 
          CASUAL_CUSTOMIZATION_POINT_NETWORK( common::message::conversation::connect::Reply,
          {
@@ -801,10 +812,17 @@ struct Value< type, A>  \
             CASUAL_CUSTOMIZATION_POINT_SERIALIZE( duplex);
             CASUAL_CUSTOMIZATION_POINT_SERIALIZE( code.result);
             CASUAL_CUSTOMIZATION_POINT_SERIALIZE( code.user);
-            CASUAL_CUSTOMIZATION_POINT_SERIALIZE( buffer.type);
-            CASUAL_CUSTOMIZATION_POINT_SERIALIZE( buffer.data);
+            CASUAL_CUSTOMIZATION_POINT_SERIALIZE( buffer);
          })
 
+         CASUAL_CUSTOMIZATION_POINT_NETWORK( common::message::conversation::v1_5::callee::Send,
+         {
+            CASUAL_CUSTOMIZATION_POINT_SERIALIZE( execution);
+            CASUAL_CUSTOMIZATION_POINT_SERIALIZE( duplex);
+            CASUAL_CUSTOMIZATION_POINT_SERIALIZE( code.result);
+            CASUAL_CUSTOMIZATION_POINT_SERIALIZE( code.user);
+            CASUAL_CUSTOMIZATION_POINT_SERIALIZE( buffer);
+         })
 
          namespace detail
          {

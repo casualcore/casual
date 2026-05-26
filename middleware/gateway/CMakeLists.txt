@@ -200,6 +200,7 @@ target_sources(test-casual-gateway
     unittest/source/protocol/1.4/test_manager.cpp
     unittest/source/protocol/1.2/test_manager.cpp
     unittest/source/protocol/1.0/test_manager.cpp
+    unittest/source/protocol/test_transform.cpp
     source/documentation/protocol/example.cpp
 )
 
