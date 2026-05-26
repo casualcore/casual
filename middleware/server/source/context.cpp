@@ -188,6 +188,8 @@ namespace casual
                   result.correlation = message.correlation;
                   result.execution = message.execution;
                   result.buffer = common::buffer::payload::null();
+                  // set the reply message as in "error state" by default.
+                  result.duplex = decltype( result.duplex)::terminated;
                   result.code.result = common::code::xatmi::service_error;
 
                   return result;
@@ -287,11 +289,7 @@ namespace casual
 
                reply.code.user = result.code.user;
                reply.buffer = std::move( result.payload);
-
-               // we terminate the conversation -> we're doing a service return.
-               // TODO we can't do this until 1.9, _terminated_ is not supported in the protocol, 
-               // we need to use a xatmi code for this, as before
-               //reply.duplex = decltype( reply.duplex)::terminated;
+               reply.duplex = decltype( reply.duplex)::terminated;
 
                if( result.code.result == common::flag::xatmi::Return::success)
                   reply.code.result = common::code::xatmi::ok;  

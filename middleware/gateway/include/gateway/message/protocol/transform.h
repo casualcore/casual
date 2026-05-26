@@ -151,6 +151,23 @@ namespace casual
          return result;
       }
 
+      template<>
+      inline common::message::conversation::connect::v1_5::callee::Request to( common::message::conversation::connect::callee::Request&& message)
+      {
+         common::message::conversation::connect::v1_5::callee::Request result;
+         result.correlation = message.correlation;
+         result.execution = message.execution;
+         result.service = std::move( message.service);
+         result.parent = std::move( message.parent);
+         result.deadline = std::move( message.deadline);
+         result.trid = std::move( message.trid);
+         result.pending = message.pending;
+         result.duplex = message.duplex;
+         result.buffer.data = std::move( message.buffer.data);
+         result.buffer.type = std::move( message.buffer.type);
+         return result;
+      }
+
       inline auto from( common::message::conversation::connect::v1_2::callee::Request&& message)
       {
          common::message::conversation::connect::callee::Request result{ message.process};
@@ -166,6 +183,92 @@ namespace casual
             result.deadline.remaining = message.service.timeout.duration;
          
          result.trid = std::move( message.trid);
+         return result;
+      }
+
+      inline auto from( common::message::conversation::connect::v1_5::callee::Request&& message)
+      {
+         common::message::conversation::connect::callee::Request result{ message.process};
+         result.correlation = message.correlation;
+         result.execution = message.execution;
+         result.service = std::move( message.service);
+         result.parent = std::move( message.parent);
+         result.deadline = std::move( message.deadline);
+         result.trid = std::move( message.trid);
+         result.pending = message.pending;
+         result.duplex = message.duplex;
+         result.buffer.data = std::move( message.buffer.data);
+         result.buffer.type = std::move( message.buffer.type);
+         
+         return result;
+      }
+
+      template<>
+      inline common::message::conversation::v1_5::callee::Send to( common::message::conversation::callee::Send&& message)
+      {
+         common::message::conversation::v1_5::callee::Send result;
+         result.correlation = message.correlation;
+         result.execution = message.execution;         
+         result.transaction_state = message.transaction_state;
+         result.buffer.data = std::move( message.buffer.data);
+         result.buffer.type = std::move( message.buffer.type);
+
+         using duplex_t = decltype( message.duplex);
+         using duplex_v1_5_t = decltype( result.duplex);
+         
+         if( message.duplex == duplex_t::terminated)
+         {
+            // duplex is not of interest.
+            result.duplex = {};
+
+            // we set code.result to NOT "absent" to signal the receiver that this is a "terminated" message, 
+            // and that it should not expect any more messages in this conversation. 
+            // This is needed since v1.5 protocol does not have the "terminated" duplex type.
+            result.code = message.code;
+            if( result.code.result == common::code::xatmi::absent)
+               result.code.result = common::code::xatmi::ok;
+         }
+         else
+         {
+            if( message.duplex == duplex_t::send)
+               result.duplex = duplex_v1_5_t::send;
+            else if( message.duplex == duplex_t::receive)
+               result.duplex = duplex_v1_5_t::receive;
+
+            // this is not a "terminated" message, make sure code.result is "absent", as this is 
+            // used to signal NOT "terminated" messages in v1.5 protocol.
+            result.code.result = common::code::xatmi::absent;
+            result.code.user = message.code.user;
+
+         }
+
+         return result;
+      }
+
+      inline auto from( common::message::conversation::v1_5::callee::Send&& message)
+      {
+         common::message::conversation::callee::Send result;
+         result.correlation = message.correlation;
+         result.execution = message.execution;
+
+         result.transaction_state = message.transaction_state;
+         result.code = message.code;
+         result.buffer.data = std::move( message.buffer.data);
+         result.buffer.type = std::move( message.buffer.type);
+
+         if( result.code.result != common::code::xatmi::absent)
+         {
+            // this is a "terminated" message, set duplex accordingly.
+            result.duplex = common::message::conversation::duplex::send::Type::terminated;
+         }
+         else 
+         {
+            if( message.duplex == decltype( message.duplex)::send)
+               result.duplex = decltype( result.duplex)::send;
+            else if( message.duplex == decltype( message.duplex)::receive)
+               result.duplex = decltype( result.duplex)::receive;
+         }
+
          return result;
       }
 

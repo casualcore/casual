@@ -24,6 +24,8 @@ namespace casual
          code::xatmi result = code::xatmi::ok;
          long user{};
 
+         friend bool operator == ( const Code&, const Code&) = default;
+
          CASUAL_CONST_CORRECT_SERIALIZE(
             CASUAL_SERIALIZE( result);
             CASUAL_SERIALIZE( user);

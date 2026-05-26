@@ -56,13 +56,14 @@ namespace casual
                      return state::descriptor::Value::Duplex::send;
                }
 
+               template< typename E = state::descriptor::Value::Duplex>
                auto invert( state::descriptor::Value::Duplex duplex)
                {
                   using Duplex = decltype( duplex);
                   switch( duplex)
                   {
-                     case Duplex::receive: return Duplex::send;
-                     case Duplex::send: return Duplex::receive;
+                     case Duplex::receive: return E::send;
+                     case Duplex::send: return E::receive;
                      default: common::code::raise::error( common::code::casual::invalid_semantics, "duplex: ", duplex);
                   }
                }
@@ -421,7 +422,7 @@ namespace casual
             // normal case! No pending event so prepare and send data
             auto message = local::prepare::message< common::message::conversation::caller::Send>( value, std::move( buffer));
 
-            message.duplex = local::duplex::invert( value.duplex);
+            message.duplex = local::duplex::invert<decltype( message.duplex)>( value.duplex);
 
             common::communication::device::blocking::send( value.process.ipc, message);
 
@@ -486,7 +487,6 @@ namespace casual
             // types of interest...
             constexpr static auto types = common::array::make(
                   common::message::conversation::callee::Send::type(),
-                  //message::Type::conversation_disconnect);
                   common::message::Type::conversation_disconnect,
                   common::message::Type::service_reply);
 
@@ -589,9 +589,9 @@ namespace casual
          // return code is to be passed even for tpreturn when not in control
          // of the session (as long as no data buffer is passed to tpreturn).     
 
-         using Result = decltype( message.code.result);
-         if( message.code.result != Result::absent)
+         if( message.duplex == decltype( message.duplex)::terminated)
          {
+            using Result = decltype( message.code.result);
             switch( message.code.result)
             {
                case Result::ok:
@@ -615,7 +615,7 @@ namespace casual
          
          if( message.duplex == decltype( message.duplex)::send)
          {
-            value.duplex = message.duplex;
+            value.duplex = decltype( value.duplex)::send;
             result.event = decltype( result.event)::send_only;
          }
 

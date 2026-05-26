@@ -111,10 +111,19 @@ namespace casual
       struct version_traits< common::message::service::call::v1_2::Reply> : version_helper< Version::v1_0, Version::v1_2> {};
 
       template<>
-      struct version_traits< common::message::conversation::connect::callee::Request> : version_helper< Version::v1_3> {};
+      struct version_traits< common::message::conversation::connect::callee::Request> : version_helper< Version::v1_6> {};
+
+      template<>
+      struct version_traits< common::message::conversation::connect::v1_5::callee::Request> : version_helper< Version::v1_3, Version::v1_5> {};
 
       template<>
       struct version_traits< common::message::conversation::connect::v1_2::callee::Request> : version_helper<Version::v1_0, Version::v1_2> {};
+
+      template<>
+      struct version_traits< common::message::conversation::callee::Send> : version_helper< Version::v1_6> {};
+
+      template<>
+      struct version_traits< common::message::conversation::v1_5::callee::Send> : version_helper< Version::v1_0, Version::v1_5> {};
 
 
 
