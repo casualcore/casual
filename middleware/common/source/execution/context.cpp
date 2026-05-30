@@ -72,11 +72,6 @@ namespace casual
          {
             strong::execution::id set( strong::execution::id id)
             {
-               // set environment for possible children (extremely useful to have the same execution id
-               // in unittest for all children, unittest::Trace resets the execution::id -> we get an unique 
-               // execution id per unittest/trace)
-               environment::variable::set( environment::variable::name::execution::id, id);
-
                return std::exchange( local::context().id, id);
             }
 

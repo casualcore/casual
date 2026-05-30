@@ -338,7 +338,7 @@ domain:
          auto service = service::lookup::reply( service::Lookup{ "a", {}});
          ASSERT_TRUE( ! service.absent());
 
-         // we send a ping message to SM to change it's execution-id
+         // we send a ping message to SM to change its execution-id
          {
             common::message::server::ping::Request message{ common::process::handle()};
             message.execution = common::strong::execution::id::generate();

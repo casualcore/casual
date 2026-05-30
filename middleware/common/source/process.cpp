@@ -149,6 +149,10 @@ namespace casual
                   //! Appends from current process environment, if not exists in `variables`
                   auto current( std::vector< common::environment::Variable> variables)
                   {
+                     // add/replace execution id to environment variables, so children will have the same execution id.
+                     // this is mostly to keep unittest scope correlated.
+                     common::environment::variable::set( common::environment::variable::name::execution::id, common::execution::context::get().id);
+
                      auto result = common::environment::variable::current();
                      algorithm::append_replace( variables, result, common::environment::variable::predicate::equal_name());
 
