@@ -100,7 +100,10 @@ namespace casual
 
                   common::message::service::call::Reply message;
                   message.correlation = reservation.caller.correlation;
+                  message.execution = reservation.caller.execution;
                   message.code.result = code; 
+
+                  common::log::debug( "reply: ", message);
 
                   state.multiplex.send( reservation.caller.process.ipc, std::move( message));
 
@@ -108,6 +111,7 @@ namespace casual
                   {
                      common::message::event::service::Metric metric;
                      metric.code.result = code;
+                     metric.execution = reservation.caller.execution;
                      metric.correlation = reservation.caller.correlation;
                      metric.service = state.services[ reservation.caller.service].information.logical_name();
                      metric.process = reservation.callee;
@@ -164,7 +168,7 @@ namespace casual
 
          auto handle_timeout = [&state]( auto& entry)
          {
-            auto order_assassination = []( State& state, auto& entry, auto instance_id)
+            auto order_assassination = []( State& state, auto& entry, auto instance_id, auto execution)
             {
                auto& service = state.services[ entry.service];
 
@@ -181,6 +185,8 @@ namespace casual
 
                // send event, at least domain-manager want's to know...
                common::message::event::process::Assassination event{ common::process::handle()};
+               event.correlation = entry.correlation;
+               event.execution = execution;
                event.target = state.instances.sequential[ instance_id].process.pid;
                event.contract = contract;
                event.announcement = announcement;
@@ -216,7 +222,7 @@ namespace casual
                   if( caller.semantic == state::instance::caller::Semantic::reply)
                      local::error::reply( state, { .caller = caller, .callee = instance.process}, common::code::xatmi::timeout);
                   
-                  order_assassination( state, entry, entry.target);
+                  order_assassination( state, entry, entry.target, caller.execution);
                }
                else
                {
@@ -639,7 +645,13 @@ namespace casual
                            {
                               auto semantic = message.no_reply() ? state::instance::caller::Semantic::no_reply : state::instance::caller::Semantic::reply;
 
-                              return { .process = message.process, .correlation = message.correlation, .trid = message.trid, .service = service_id, .semantic = semantic};
+                              return { 
+                                 .process = message.process, 
+                                 .execution = message.execution, 
+                                 .correlation = message.correlation, 
+                                 .trid = message.trid, 
+                                 .service = service_id, 
+                                 .semantic = semantic};
                            };
 
                            if( auto instance_id = state.reserve_sequential( get_caller( message)))

@@ -338,9 +338,18 @@ domain:
          auto service = service::lookup::reply( service::Lookup{ "a", {}});
          ASSERT_TRUE( ! service.absent());
 
+         // we send a ping message to SM to change it's execution-id
+         {
+            common::message::server::ping::Request message{ common::process::handle()};
+            message.execution = common::strong::execution::id::generate();
+            common::communication::ipc::call( common::communication::instance::outbound::service::manager::device(), message);
+
+         }
+
          auto reply = common::communication::ipc::receive< common::message::service::call::Reply>();
 
          EXPECT_TRUE( reply.code.result == decltype( reply.code.result)::timeout);
+         EXPECT_TRUE( reply.execution == service.execution);
 
          auto event = common::communication::ipc::receive< common::message::event::process::Assassination>();
 

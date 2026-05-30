@@ -109,6 +109,7 @@ namespace casual
             struct Caller
             {
                common::process::Handle process;
+               common::strong::execution::id execution;
                common::strong::correlation::id correlation;
                common::transaction::ID trid;
                service::id::type service;
@@ -119,6 +120,7 @@ namespace casual
 
                CASUAL_LOG_SERIALIZE(
                   CASUAL_SERIALIZE( process);
+                  CASUAL_SERIALIZE( execution);
                   CASUAL_SERIALIZE( correlation);
                   CASUAL_SERIALIZE( trid);
                   CASUAL_SERIALIZE( service);
