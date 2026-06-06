@@ -6,59 +6,23 @@ on:
 
 env:
   build_type: normal
-  ubi_image: casual/ubi8-builder
 
 jobs:
-  calculate-version: 
-    runs-on: self-hosted
+  calculate-version:
+    runs-on: ubuntu-latest
     outputs:
-      major_minor: ${{ steps.major_minor.outputs.value }}
-      base_version: ${{ steps.base_version.outputs.value }}
-      build_version: ${{ steps.build_version.outputs.value }}
-      casual_version: ${{ steps.casual_version.outputs.value }}
-      casual_release: ${{ steps.casual_release.outputs.value }}
+      major-minor: ${{ steps.version.outputs.major-minor }}
+      build-version: ${{ steps.version.outputs.build-version }}
+      casual-version: ${{ steps.version.outputs.casual-version }}
+      casual-release: ${{ steps.version.outputs.casual-release }}
     steps:
-      - name: check out repository casual
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v6
         with:
-          path: 'casual'
           fetch-depth: 0
-
-      - name: retrieve major/minor from branch
-        uses: kaisugi/action-regex-match@v1.0.1
-        id: regex-match
+      - uses: casualcore/casual-version@0.1
+        id: version
         with:
-          text: ${{ github.ref }}
-          regex: '^.*/([0-9.]+)$'
-
-      - name: set major/minor-version
-        id: major_minor
-        run: echo "value=${{ steps.regex-match.outputs.group1 }}" >> $GITHUB_OUTPUT
-
-      - name: set base_version
-        id: base_version
-        run: |
-          cd ${{ github.workspace }}/casual
-          echo "value=$( ${{ github.workspace }}/casual/pipeline/script/version.py ${{ steps.regex-match.outputs.group1 }} ${{ env.build_type}} )" >> $GITHUB_OUTPUT
-
-      - name: normalized branch
-        id: normalized_branch
-        run: echo "value=$( echo ${{ github.ref }} | sed -E -e 's/refs\/heads\/feature\/[0-9.]+\///g' -e 's/-/_/g' -e 's/\//_/g' )" >> $GITHUB_OUTPUT
-
-      - name: set build_version
-        id: build_version
-        run: |
-          echo "value=${{ steps.base_version.outputs.value }}" >> $GITHUB_OUTPUT
-
-      - name: set casual_version
-        id: casual_version
-        run: |
-          echo "value=${{ steps.build_version.outputs.value }}" >> $GITHUB_OUTPUT
-
-      - name: set casual_release
-        id: casual_release
-        run: |
-          echo "value=1" >> $GITHUB_OUTPUT
+          release-type: ${{ env.release-type }}
   
   notification-start:
     runs-on: ubuntu-latest
@@ -79,53 +43,16 @@ jobs:
       DISTRIBUTION: 'ubi'
     steps:
       - name: check out repository casual
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           path: 'casual'
           fetch-depth: 0
 
-      - name: prepare build-script
-        run: |
-          cat << EOD > builder.sh
-          #! /bin/bash
-
-          git config --global --add safe.directory /git/casual/casual
-
-          mkdir /git/casual/casual/results && chmod 777 /git/casual/casual/results
-
-          source /git/casual/casual/pipeline/script/pipeline.env
-
-          export CASUAL_COMMIT_HASH=${{ github.sha }}
-
-          bash /git/casual/casual/pipeline/script/pre/cleanup
-          
-          touch /git/casual/casual.log
-          chmod 777 /git/casual/casual.log
-
-          mkdir -p \${CMAKE_BINARY_DIR}
-          echo "set(CPACK_RPM_PACKAGE_VERSION ${{ needs.calculate-version.outputs.casual_version }})" > \${CMAKE_BINARY_DIR}/version.cmake
-          echo "set(CPACK_RPM_PACKAGE_RELEASE ${{ needs.calculate-version.outputs.casual_release }})" >> \${CMAKE_BINARY_DIR}/version.cmake
-
-          cat \${CMAKE_BINARY_DIR}/version.cmake
-
-          bash /git/casual/casual/pipeline/script/backend/$DISTRIBUTION/build ${{ needs.calculate-version.outputs.build_version }}
-          CODE=$?
-
-          find \${CMAKE_BINARY_DIR} -name 'casual-middleware-*.rpm' -exec cp "{}" /git/casual/casual/results  \;
-          find \${CMAKE_BINARY_DIR} -name 'report.xml' -exec cp "{}" /git/casual/casual/results  \;
-          chmod 777 /git/casual/casual/results/*
-
-          bash /git/casual/casual/pipeline/script/post/cleanup
-
-          exit $CODE
-
-          EOD
-
-          chmod +x builder.sh
-
       - name: Build
+        timeout-minutes: 15
         run: |
-          docker run --rm -v ${{ github.workspace }}:/git/casual:Z -i ${{ env.ubi_image}}:${{ needs.calculate-version.outputs.major_minor }}-cmake
+          find . -name "casual-middleware*.rpm" -delete
+          docker buildx build --progress plain --output=type=local,dest=. --build-arg CASUAL_BUILD_VERSION=${{ needs.calculate-version.outputs.casual-release }} --build-arg CASUAL_VERSION=${{ needs.calculate-version.outputs.casual-version }} --build-arg CASUAL_RELEASE=${{ needs.calculate-version.outputs.casual-release }} -f ./casual/docker/build/ubi8/Dockerfile .
 
       - name: Logpublisher
         if: ${{ failure() || cancelled() }}
@@ -133,16 +60,15 @@ jobs:
           ${{ github.workspace }}/casual/pipeline/script/post/logpublisher ${{ github.workspace }}/casual.log ${DISTRIBUTION}-${{ needs.calculate-version.outputs.build_version }}
 
       - name: Test Report
-        uses: dorny/test-reporter@v2
+        uses: dorny/test-reporter@v3
         if: ${{ success() || failure() }}   # run this step even if previous step failed
         with:
           name: Google Tests - Ubi # Name of the check run which will be created
-          path: ./**/report.xml       # Path to test results
+          path: report.xml       # Path to test results
           reporter: java-junit        # Format of test result
-          working-directory: casual
 
       - name: Save artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: ubi_rpm
           path: ./**/casual-middleware*.rpm
@@ -152,7 +78,7 @@ jobs:
     if: ${{ success() }}
     needs: [calculate-version,build-ubi]
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - name: Bump version and push tag
         id: tag_version
         uses: mathieudutour/github-tag-action@v6.2
@@ -167,7 +93,7 @@ jobs:
     if: ${{ success() }}
     steps:
       - name: Publish ubi
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           name: ubi_rpm
           path: /var/www/release/
@@ -182,12 +108,12 @@ jobs:
     if: ${{ success() }}
     steps:
       - name: check out repository casual
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           path: 'casual'
           fetch-depth: 0
       - name: Download ubi
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           name: ubi_rpm
           path: ${{ github.workspace }}/casual/pipeline/script/image-build/

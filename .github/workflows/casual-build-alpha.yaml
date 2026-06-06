@@ -3,12 +3,9 @@ on:
   push:
     branches:
       - 'feature/**'
-      - '!feature/*/main'
       - 'patch/**'
-      - '!patch/*/main'
 env:
   release-type: alpha
-  ubi_image: casual/ubi8-builder
 
 jobs:
   calculate-version:
@@ -50,49 +47,12 @@ jobs:
         with:
           path: 'casual'
           fetch-depth: 0
-
-      - name: prepare build-script
-        run: |
-          cat << EOD > builder.sh
-          #! /bin/bash
-
-          git config --global --add safe.directory /git/casual/casual
-
-          mkdir /git/casual/casual/results && chmod 777 /git/casual/casual/results
-
-          source /git/casual/casual/pipeline/script/pipeline.env
-
-          export CASUAL_COMMIT_HASH=${{ github.sha }}
-
-          bash /git/casual/casual/pipeline/script/pre/cleanup
-          
-          touch /git/casual/casual.log
-          chmod 777 /git/casual/casual.log
-
-          mkdir -p \${CMAKE_BINARY_DIR}
-          echo "set(CPACK_RPM_PACKAGE_VERSION ${{ needs.calculate-version.outputs.casual-version }})" > \${CMAKE_BINARY_DIR}/version.cmake
-          echo "set(CPACK_RPM_PACKAGE_RELEASE ${{ needs.calculate-version.outputs.casual-release }})" >> \${CMAKE_BINARY_DIR}/version.cmake
-
-          cat \${CMAKE_BINARY_DIR}/version.cmake
-
-          bash /git/casual/casual/pipeline/script/backend/$DISTRIBUTION/build ${{ needs.calculate-version.outputs.build-version }}
-          CODE=$?
-
-          find \${CMAKE_BINARY_DIR} -name 'casual-middleware-*.rpm' -exec cp "{}" /git/casual/casual/results  \;
-          find \${CMAKE_BINARY_DIR} -name 'report.xml' -exec cp "{}" /git/casual/casual/results  \;
-          chmod 777 /git/casual/casual/results/*
-
-          bash /git/casual/casual/pipeline/script/post/cleanup
-
-          exit $CODE
-
-          EOD
-
-          chmod +x builder.sh
-
+ 
       - name: Build
+        timeout-minutes: 15
         run: |
-          docker run --rm -v ${{ github.workspace }}:/git/casual:Z -i ${{ env.ubi_image}}:${{ needs.calculate-version.outputs.major-minor }}-cmake
+          find . -name "casual-middleware*.rpm" -delete
+          docker buildx build --progress plain --output=type=local,dest=. --build-arg CASUAL_BUILD_VERSION=${{ needs.calculate-version.outputs.casual-release }} --build-arg CASUAL_VERSION=${{ needs.calculate-version.outputs.casual-version }} --build-arg CASUAL_RELEASE=${{ needs.calculate-version.outputs.casual-release }} -f ./casual/docker/build/ubi8/Dockerfile .
 
       - name: Logpublisher
         if: ${{ failure() || cancelled() }}
@@ -100,16 +60,15 @@ jobs:
           ${{ github.workspace }}/casual/pipeline/script/post/logpublisher ${{ github.workspace }}/casual.log ${DISTRIBUTION}-${{ needs.calculate-version.outputs.build-version }}
 
       - name: Test Report
-        uses: dorny/test-reporter@v2
+        uses: dorny/test-reporter@v3
         if: ${{ success() || failure() }}    # run this step even if previous step failed
         with:
           name: Google Tests - Ubi # Name of the check run which will be created
-          path: ./**/report.xml       # Path to test results
+          path: report.xml       # Path to test results
           reporter: java-junit        # Format of test result
-          working-directory: casual
 
       - name: Save artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: ubi_rpm
           path: ./**/casual-middleware*.rpm
