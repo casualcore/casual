@@ -132,7 +132,8 @@ namespace casual
          }
 
          inline auto descriptor() const { return m_epoll;}
-         inline auto& events() { return m_events; }
+
+         std::span< ::epoll_event> event_buffer();
 
          const auto& entries() const { return m_entries;}
 

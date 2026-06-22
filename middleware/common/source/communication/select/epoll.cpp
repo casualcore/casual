@@ -225,7 +225,6 @@ namespace casual
             // update the epoll
             auto event = local::crate_event( descriptor, found->event);
             local::update( m_epoll, local::update_op::modify, descriptor, &event);
-         
          }
          else
          {
@@ -234,7 +233,6 @@ namespace casual
             local::update( m_epoll, local::update_op::add, descriptor, &event);
 
             m_entries.push_back( directive::detail::Entry{ .descriptor = descriptor, .event = flag});
-            m_events.resize( m_entries.size());
          }
       }
 
@@ -258,9 +256,15 @@ namespace casual
                // if we have no flags left, remove the entry
                local::update( m_epoll, local::update_op::remove, descriptor);
                m_entries.erase( std::begin( found));
-               m_events.resize( m_entries.size());
             }
          }
+      }
+
+      std::span< ::epoll_event> Directive::event_buffer()
+      {
+         // we only resize the event buffer when select asks for it.
+         m_events.resize( m_entries.size());
+         return m_events;
       }
 
 
@@ -336,8 +340,11 @@ namespace casual
                Trace trace{ "common::communication::select::dispatch::detail::select"};
                log::debug( "directive: ", directive);
 
-               // use the event "buffer"
-               auto& events = directive.events();
+               // use the event "buffer". This is the only place where we potentially resize 
+               // the event buffer. Hence, other stuff can mutate the `Directive` by adding or remove
+               // descriptors, during iteration over the event buffer, without worrying about 
+               // invalidating the buffer.
+               auto events = directive.event_buffer();
 
                auto event_count = local::epoll_wait( 
                   directive.descriptor(),
