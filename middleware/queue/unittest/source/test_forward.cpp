@@ -277,11 +277,12 @@ domain:
                         service: queue/unittest/service
 )");
          auto state = unittest::state();
-
+         
+         // expect the groups to be sorted by alias.
          ASSERT_TRUE( state.forward.groups.size() == 3) << CASUAL_NAMED_VALUE( state.forward.groups);
-         EXPECT_TRUE( state.forward.groups.at( 0).alias == "forward") << CASUAL_NAMED_VALUE( state.forward.groups);
-         EXPECT_TRUE( state.forward.groups.at( 1).alias == "forward.2") << CASUAL_NAMED_VALUE( state.forward.groups);
-         EXPECT_TRUE( state.forward.groups.at( 2).alias == "C") << CASUAL_NAMED_VALUE( state.forward.groups);
+         EXPECT_TRUE( state.forward.groups.at( 0).alias == "C") << CASUAL_NAMED_VALUE( state.forward.groups);
+         EXPECT_TRUE( state.forward.groups.at( 1).alias == "forward") << CASUAL_NAMED_VALUE( state.forward.groups);
+         EXPECT_TRUE( state.forward.groups.at( 2).alias == "forward.2") << CASUAL_NAMED_VALUE( state.forward.groups);
       }
       
 
