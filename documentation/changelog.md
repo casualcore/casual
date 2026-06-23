@@ -1,6 +1,15 @@
 # Changelog
 This is the changelog for `casual` and all changes are listed in this document.
 
+## [1.8.16] - 2026-06-23
+
+### Fixes
+- service: metric event during timeout now contain trace information ([#729](https://github.com/casualcore/casual/issues/729))
+- queue: state service now have deterministic ordering of groups ([#730](https://github.com/casualcore/casual/issues/730))
+- common: only add execution-id to environment during spawn
+- service: SM does not use origin execution-id when sending error reply ([#727](https://github.com/casualcore/casual/issues/727))
+- common: epoll abstraction does not introduce memory corruption ([#684](https://github.com/casualcore/casual/issues/684))
+
 ## [1.8.15] - 2026-05-21
 
 ### Fixes
