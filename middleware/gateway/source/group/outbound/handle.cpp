@@ -178,7 +178,7 @@ namespace casual
                   {
                      namespace detail::send::error
                      {
-                        void reply( State& state, const common::message::service::call::callee::Request& message, strong::execution::span::id parent, code::xatmi code)
+                        void reply( State& state, const common::message::service::call::callee::Request& message, code::xatmi code)
                         {
                            if( flag::contains( message.flags, decltype( message.flags)::no_reply))
                               return;
@@ -197,13 +197,15 @@ namespace casual
 
                            state.multiplex.send( message.process.ipc, reply);
 
-                           // NOTE: the parent span in the message is our current actual span. The provided parent is the one from the caller (was in the message).
+                           // NOTE: since we swapped the spans before: 
+                           //   message.parent.span is our current actual span. 
+                           //   message.span is our parent span from upstream. 
 
                            service::metric( state, reply, 
                               Destination{ 
                                  .span = message.parent.span, 
                                  .service = message.service.name, 
-                                 .parent = { .span = parent, .service = message.parent.service}, 
+                                 .parent = { .span = message.span, .service = message.parent.service}, 
                                  .trid = message.trid,
                                  .start = platform::time::clock::type::now()},
                               { .result = code});
@@ -214,7 +216,7 @@ namespace casual
 
                      namespace detail::create
                      {
-                        auto task( State& state, const common::message::service::call::callee::Request& message, strong::execution::span::id parent, strong::socket::id descriptor)
+                        auto task( State& state, const common::message::service::call::callee::Request& message, strong::socket::id descriptor)
                         {
                            struct Destination
                            {
@@ -226,12 +228,14 @@ namespace casual
                               common::chronology::time_point start;
                            };
 
-                           // NOTE: the parent span in the message is our current actual span. The provided parent is the one from the caller (was in the message).
+                           // NOTE: since we swapped the spans before:
+                           //   message.parent.span is our current actual span.
+                           //   message.span is our parent span from upstream.
 
                            auto shared = std::make_shared< Destination>( Destination{ 
                               .span = message.parent.span, 
                               .service = message.service.name, 
-                              .parent = { .span = parent, .service = message.parent.service},
+                              .parent = { .span = message.span, .service = message.parent.service},
                               .ipc = message.process.ipc, 
                               .trid = message.trid, 
                               .start = platform::time::clock::type::now()});
@@ -273,16 +277,21 @@ namespace casual
                            Trace trace{ "gateway::group::outbound::handle::local::internal::service::call::request"};
                            log::debug( "message: ", message);
 
-                           // create an otel span for the call
-                           const auto span = common::strong::execution::span::id::generate();
-                           const auto parent = std::exchange( message.parent.span, span);
+                           // message.span is the span for this "invocation", hence the parent span for the
+                           // downstream call. We still need to keep the span for ACK later, so we just 
+                           // swap these two spans.
+                           std::swap( message.span, message.parent.span);
+
+                           // now what we need to ack later is:
+                           // span = message.parent.span
+                           // parent.span = message.span
 
                            // Check if we've has been called with the same correlation id before, 
                            // hence we are in a loop between gateways.
                            if( state.tasks.contains( message.correlation))
                            {
-                              log::line( log::category::error, code::casual::invalid_semantics, " a call with the same correlation id is in flight - ", message.correlation, " - action: reply with ", code::xatmi::system   );
-                              detail::send::error::reply( state, message, parent, code::xatmi::system);
+                              log::error( code::casual::invalid_semantics, "a call with the same correlation id is in flight - ", message.correlation, " - action: reply with ", code::xatmi::system   );
+                              detail::send::error::reply( state, message, code::xatmi::system);
                               return;
                            }
 
@@ -292,7 +301,7 @@ namespace casual
                            // we only prepare a reply task and associate the transaction if the call is NOT no_reply
                            if( ! flag::contains( message.flags, decltype( message.flags)::no_reply))
                            {
-                              state.tasks.add( detail::create::task( state, std::as_const( message), parent, connection->descriptor()));
+                              state.tasks.add( detail::create::task( state, std::as_const( message), connection->descriptor()));
                               transaction::associate_and_involve( state, std::as_const( message), connection->descriptor());
                            }
 
@@ -315,7 +324,7 @@ namespace casual
                   {
                      namespace detail::create
                      {
-                        auto task( State& state, common::message::conversation::connect::callee::Request& message, strong::execution::span::id parent, strong::socket::id descriptor)
+                        auto task( State& state, common::message::conversation::connect::callee::Request& message, strong::socket::id descriptor)
                         {
                            struct Shared
                            {
@@ -325,13 +334,16 @@ namespace casual
                               strong::ipc::id ipc;
                               common::chronology::time_point start;
                               common::transaction::ID trid;
-
                            };
+
+                           // NOTE: since we swapped the spans before:
+                           //   message.parent.span is our current actual span.
+                           //   message.span is our parent span from upstream.
 
                            auto shared = std::make_shared< Shared>( Shared{ 
                               .span = message.parent.span, 
                               .service = message.service.name,
-                              .parent = { .span = parent, .service = message.parent.service},
+                              .parent = { .span = message.span, .service = message.parent.service},
                               .ipc = message.process.ipc, 
                               .start = platform::time::clock::type::now(), 
                               .trid = message.trid});
@@ -397,11 +409,16 @@ namespace casual
                            auto connection = state.connections.find_external( descriptor);
                            CASUAL_ASSERT( connection);
 
-                           // create an otel span for the call
-                           const auto span = common::strong::execution::span::id::generate();
-                           const auto parent = std::exchange( message.parent.span, span);
+                           // message.span is the span for this "invocation", hence the parent span for the
+                           // downstream call. We still need to keep the span for ACK later, so we just 
+                           // swap these two spans.
+                           std::swap( message.span, message.parent.span);
 
-                           state.tasks.add( detail::create::task( state, message, parent, connection->descriptor()));
+                           // now what we need to ack later is:
+                           // span = message.parent.span
+                           // parent.span = message.span
+
+                           state.tasks.add( detail::create::task( state, message, connection->descriptor()));
                            transaction::associate_and_involve( state, message, connection->descriptor());
 
                            if( message::protocol::compatible< common::message::conversation::connect::callee::Request>( connection->protocol()))

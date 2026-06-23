@@ -10,6 +10,7 @@
 #include "common/communication/instance.h"
 #include "common/instance.h"
 #include "common/unittest.h"
+#include "common/execution/context.h"
 
 #include "service/protocol/call.h"
 
@@ -108,13 +109,18 @@ namespace casual
       } // concurrent
 
 
-      common::message::service::lookup::Reply lookup( std::string service)
+      common::message::service::lookup::Reply lookup( std::string service, const common::transaction::ID& trid)
       {
          common::Trace trace{ "service::unittest::lookup"};
 
          common::message::service::lookup::Request lookup{ common::process::handle()};
+         lookup.trid = trid;
          lookup.requested = std::move( service);
          lookup.context.semantic = decltype( lookup.context.semantic)::regular;
+         lookup.parent.span = common::execution::context::get().span;
+         lookup.parent.service = common::execution::context::get().service;
+
+         common::log::debug( "lookup: ", lookup);
          
          return common::communication::ipc::call( local::ipc::manager(), lookup);
       }
@@ -134,15 +140,7 @@ namespace casual
       {
          [[nodiscard]] common::strong::correlation::id request( std::string service, platform::binary::type payload, const common::transaction::ID& trid)
          {
-            auto send_lookup = []( auto service, auto& trid){
-               common::message::service::lookup::Request request{ common::process::handle()};
-               request.trid = trid;
-               request.requested = std::move( service);
-               request.context.semantic = decltype( request.context.semantic)::regular;
-               return common::communication::device::blocking::send( local::ipc::manager(), request);
-            };
-            
-            auto lookup = common::communication::ipc::receive< common::message::service::lookup::Reply>( send_lookup( std::move( service), trid));
+            auto lookup = unittest::lookup( std::move( service), trid);
             
             if( lookup.state == decltype( lookup.state)::absent)
                common::code::raise::error( common::code::xatmi::no_entry);
@@ -150,8 +148,8 @@ namespace casual
                common::code::raise::error( common::code::xatmi::timeout);
 
             common::message::service::call::callee::Request message{ common::process::handle()};
-            message.correlation = lookup.correlation;
-            message.service = std::move( lookup.service);
+            // get stuff from lookup-reply (span, deadline, etc
+            message.update( lookup);
             message.trid = trid;
             message.buffer.data = std::move( payload);
             message.buffer.type = common::buffer::type::x_octet;

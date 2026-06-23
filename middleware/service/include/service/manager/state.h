@@ -111,6 +111,8 @@ namespace casual
                common::process::Handle process;
                common::strong::execution::id execution;
                common::strong::correlation::id correlation;
+               common::execution::context::Parent parent;
+               common::strong::execution::span::id span;
                common::transaction::ID trid;
                service::id::type service;
                caller::Semantic semantic = caller::Semantic::reply;
@@ -122,6 +124,8 @@ namespace casual
                   CASUAL_SERIALIZE( process);
                   CASUAL_SERIALIZE( execution);
                   CASUAL_SERIALIZE( correlation);
+                  CASUAL_SERIALIZE( parent);
+                  CASUAL_SERIALIZE( span);
                   CASUAL_SERIALIZE( trid);
                   CASUAL_SERIALIZE( service);
                   CASUAL_SERIALIZE( semantic);
@@ -546,6 +550,30 @@ namespace casual
             };
          } // remove
 
+
+         namespace reservation
+         {
+            template< typename I>
+            struct basic_reservation
+            {
+               I instance;
+               common::strong::execution::span::id span;
+
+               inline explicit operator bool() const noexcept { return common::predicate::boolean( instance);}
+
+               CASUAL_LOG_SERIALIZE(
+                  CASUAL_SERIALIZE( instance);
+                  CASUAL_SERIALIZE( span);
+               )
+            };
+
+            using Sequential = basic_reservation< instance::sequential::id::type>;
+            using Concurrent = basic_reservation< instance::concurrent::id::type>;
+
+            static_assert( sizeof( Sequential) <= 16);
+
+         } // reservation
+
          enum struct Runlevel : short
          {
             running,
@@ -647,13 +675,14 @@ namespace casual
          //! @returns possible reservations of the removed instance
          [[nodiscard]] state::remove::Result remove( common::strong::ipc::id ipc);
 
+
          //! Tries to reserve a sequential instance for the given `service`
          //! @return id of the instance, or 'nil-id' if no idle is found
-         state::instance::sequential::id::type reserve_sequential( state::instance::Caller caller);
+         state::reservation::Sequential reserve_sequential( const common::message::service::lookup::Request& message, state::service::id::type service_id);
             
          //! @return a reserved instance for the given `service` 
          //!   or 'nil-id' if no one is found.
-         state::instance::concurrent::id::type reserve_concurrent( 
+         state::reservation::Concurrent reserve_concurrent( 
             state::service::id::type service,
             std::span< state::instance::concurrent::id::type> preferred);
 

@@ -295,6 +295,7 @@ namespace casual
             std::string note;
 
             inline friend bool operator == ( const Group& lhs, common::strong::process::id rhs) { return lhs.process.pid == rhs;}
+            inline friend bool operator == ( const Group& lhs, std::string_view rhs) { return lhs.alias == rhs;}
 
             CASUAL_CONST_CORRECT_SERIALIZE(
                CASUAL_SERIALIZE( alias);

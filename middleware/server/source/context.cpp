@@ -344,7 +344,7 @@ namespace casual
                   auto start = platform::time::clock::type::now();
 
                   common::execution::context::service::set( message.service.name);
-                  common::execution::context::span::reset();
+                  common::execution::context::span::set( message.span);
                   common::execution::context::parent::service::set( message.parent.service);
                   common::execution::context::parent::span::set( message.parent.span);
 

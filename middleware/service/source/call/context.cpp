@@ -103,13 +103,9 @@ namespace casual
                {
                   common::Trace trace( "service::call::local::prepare::message");
 
-                  common::message::service::call::caller::Request message( std::move( buffer));
-
-                  message.correlation = lookup.correlation;
-                  message.service = lookup.service;
-                  message.deadline = lookup.deadline;
-
-                  message.process = common::process::handle();
+                  common::message::service::call::caller::Request message( std::move( buffer), common::process::handle());
+                  // set stuff from lookup-reply (service, span, deadline, etc)
+                  message.update( lookup); 
                   message.parent.service = common::execution::context::get().service;
                   message.parent.span = common::execution::context::get().span;
 
@@ -173,9 +169,6 @@ namespace casual
 
          // Call the service
          {
-            prepared.message.service = target.service;
-            prepared.message.pending = target.pending;
-
             common::log::debug( "async - message: ", prepared.message);
 
             common::communication::device::blocking::send( target.process.ipc, prepared.message);

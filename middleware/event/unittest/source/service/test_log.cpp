@@ -54,6 +54,27 @@ domain:
                } 
             } // fetch::service
 
+            namespace fetch
+            {
+               auto rows( const auto& file)
+               {
+                  return common::string::split( common::unittest::file::fetch::content( file), '\n');
+               };
+
+               auto splitted_rows( const auto& file)
+               {
+                  return common::algorithm::transform( fetch::rows( file), []( auto& row){ return common::string::split( row, '|');});
+               };
+
+               auto until( const auto& file, platform::size::type count = 1)
+               {
+                  common::unittest::eventually::succeed( [ &file, count]()
+                  {
+                     return std::ssize( local::fetch::rows( file)) >= count;
+                  });
+               }
+   
+            } // fetch
 
          } // <unnamed>
       } // local
@@ -279,20 +300,12 @@ domain:
          // call forward, this does not propagate any span from us.
          EXPECT_TRUE( service::unittest::receive( service::unittest::send::request( "casual/example/forward", payload)) == payload);
 
-         static constexpr auto fetch_rows = []( const auto& file)
-         {
-            return common::string::split( common::unittest::file::fetch::content( file), '\n');
-         };
 
          // make sure we have at least two rows
-         common::unittest::eventually::succeed( [ &log_file]()
-         {
-            return fetch_rows( log_file).size() >= 2;
-         });
+         local::fetch::until( log_file, 2);
 
-         auto rows = fetch_rows( log_file);
+         auto rows = local::fetch::rows( log_file);
          EXPECT_TRUE( rows.size() >= 2) << CASUAL_NAMED_VALUE( rows);
-
          
          static constexpr auto extract_row = []( const auto& rows, std::string_view service) -> std::vector< std::string>
          {
@@ -333,6 +346,73 @@ domain:
             // we should have the forward span as parent
             EXPECT_TRUE( parts.at( 11) == forward_span);
          }
+      }
+
+
+      TEST( event_service_log, call_local_service_a__1ms_timeout__expect__event_log_with_span)
+      {
+         common::unittest::Trace trace;
+
+         auto log_file = common::unittest::file::temporary::name( ".log");
+
+         common::environment::variable::set( "SERVICE_LOG_FILE", log_file.string());
+
+         auto a = domain::unittest::manager( local::configuration::base, R"(
+domain:
+   name: A
+   servers:
+      - path: bin/casual-event-service-log
+        arguments: [ --file, "${SERVICE_LOG_FILE}"]
+        memberships: [ second]
+
+   services:
+      - name: a
+        execution:
+            timeout: 
+               duration: 1ms
+)");
+
+         casual::service::unittest::advertise( { "a"});
+
+         const auto span = common::strong::execution::span::id::generate();
+         const auto trid = common::transaction::id::create();
+
+         {
+            common::execution::context::service::set( "b");
+            common::execution::context::span::set( span);
+         }
+
+         const auto lookup = casual::service::unittest::lookup( "a", trid);
+
+         ASSERT_TRUE( lookup.process == common::process::handle());
+
+         // wait for the log
+         local::fetch::until( log_file, 1);
+
+         auto rows = local::fetch::splitted_rows( log_file);
+
+         ASSERT_TRUE( rows.size() == 1) << CASUAL_NAMED_VALUE( rows);
+
+         auto& row = rows.at( 0);
+
+         // example row:
+         // [a, b, 4824, 607493f9625e43e39e26865cf94322d3, 217fedd20bb84f8189c24bebbcc6c61a:843e3f07e38e418cb307d346892261c3:42:4824, 0, 0, 0, TPETIME, S, 8390e9ac5761551f, a8bc49a3bf676adf, 0]
+
+         EXPECT_TRUE( row.at( 0) == "a");
+         EXPECT_TRUE( row.at( 1) == "b");
+         EXPECT_TRUE( row.at( 2) == common::string::compose( common::process::handle().pid));
+         EXPECT_TRUE( row.at( 3) == common::string::compose( common::execution::context::get().id));
+         EXPECT_TRUE( row.at( 4) == common::string::compose( trid));
+         EXPECT_TRUE( row.at( 5) == "0");
+         EXPECT_TRUE( row.at( 6) == "0");
+         EXPECT_TRUE( row.at( 7) == "0");
+         EXPECT_TRUE( row.at( 8) == "TPETIME");
+         EXPECT_TRUE( row.at( 9) == "S");
+         // service current span, the service gets from SM
+         EXPECT_TRUE( row.at( 10) == common::string::compose( lookup.span));
+         // service parent span (our current span), which we provide to SM
+         EXPECT_TRUE( row.at( 11) == common::string::compose( span));
+         EXPECT_TRUE( row.at( 12) == "0");
       }
 
    } // event

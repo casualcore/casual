@@ -48,7 +48,7 @@ namespace casual
          void unadvertise( std::vector< std::string> services);
       } // concurrent
 
-      common::message::service::lookup::Reply lookup( std::string service);
+      common::message::service::lookup::Reply lookup( std::string service, const common::transaction::ID& trid = {});
 
       namespace send
       {

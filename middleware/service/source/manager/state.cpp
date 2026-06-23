@@ -662,7 +662,8 @@ namespace casual
          return result;
       }
 
-      state::instance::sequential::id::type State::reserve_sequential( state::instance::Caller caller)
+
+      state::reservation::Sequential State::reserve_sequential( const common::message::service::lookup::Request& message, state::service::id::type service_id)
       {
          Trace trace{ "service::manager::State::reserve_sequential"};
 
@@ -672,18 +673,34 @@ namespace casual
                && ! std::ranges::contains( disabled, instance_id);
          };
 
-         auto& service = services[ caller.service];
+         auto transform_caller = [ service_id]( const auto& message, auto span) -> state::instance::Caller
+         {
+            auto semantic = message.no_reply() ? state::instance::caller::Semantic::no_reply : state::instance::caller::Semantic::reply;
+
+            return { 
+               .process = message.process, 
+               .execution = message.execution, 
+               .correlation = message.correlation, 
+               .parent = message.parent,
+               .span = span,
+               .trid = message.trid, 
+               .service = service_id, 
+               .semantic = semantic};
+         };
+
+         auto& service = services[ service_id];
 
          if( auto found = algorithm::find_if( service.instances.sequential(), is_idle))
          {
-            instances.sequential[ *found].reserve( std::move( caller));
-            return *found;
+            auto span = common::strong::execution::span::id::generate();
+            instances.sequential[ *found].reserve( transform_caller( message, span));
+            return { .instance = *found, .span = span};
          }
 
-         return {};
+         return {};         
       }
             
-      state::instance::concurrent::id::type State::reserve_concurrent( 
+      state::reservation::Concurrent State::reserve_concurrent( 
          state::service::id::type service_id,
          std::span< state::instance::concurrent::id::type> preferred)
       {
@@ -692,7 +709,7 @@ namespace casual
          auto& service = services[ service_id];
 
          if( auto instance_id = service.instances.next_concurrent( preferred))
-            return instance_id;
+            return { .instance = instance_id, .span = common::strong::execution::span::id::generate()};
 
          return {};
       }

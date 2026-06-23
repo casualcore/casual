@@ -116,6 +116,8 @@ namespace casual
                      metric.service = state.services[ reservation.caller.service].information.logical_name();
                      metric.process = reservation.callee;
                      metric.trid = reservation.caller.trid;
+                     metric.parent = reservation.caller.parent;
+                     metric.span = reservation.caller.span;
 
                      state.metric.add( std::move( metric));
                      handle::metric::batch::send( state);
@@ -499,27 +501,27 @@ namespace casual
                         state.multiplex.send( message.process.ipc, reply);
                      }
 
-                     void reply( State& state, state::service::id::type service_id, auto instance_id, common::message::service::lookup::Request& message, common::chronology::duration pending)
+                     void reply( State& state, state::service::id::type service_id, const auto& reservation, common::message::service::lookup::Request& message, common::chronology::duration pending)
                      {
                         Trace trace{ "service::manager::handle::local::service::detail::dispatch::lookup::reply"};
-                        common::log::debug( "'reserved' instance: ", instance_id);
+                        common::log::debug( "'reserved' instance: ", reservation.instance);
 
-                        static constexpr bool is_concurrent = std::same_as< state::instance::concurrent::id::type, decltype( instance_id)>;
+                        static constexpr bool is_concurrent = std::same_as< state::instance::concurrent::id::type, decltype( reservation.instance)>;
 
-                        auto destination = [ &state, instance_id]()
+                        auto destination = [ &]()
                         {
                            if constexpr( is_concurrent)
-                              return state.instances.concurrent[ instance_id].process;
+                              return state.instances.concurrent[ reservation.instance].process;
                            else
-                              return state.instances.sequential[ instance_id].process;
+                              return state.instances.sequential[ reservation.instance].process;
                         }();
 
                         auto& service = state.services[ service_id];
 
-                        auto reply = common::message::reverse::type( message);
+                        auto reply = common::message::reverse::type( message, destination);
                         reply.service = service.information;
                         reply.state = decltype( reply.state)::idle;
-                        reply.process = destination;
+                        reply.span = reservation.span;
                         reply.pending = pending;
 
                         if( service.information.name != message.requested)
@@ -541,7 +543,7 @@ namespace casual
                            if( auto entry = state.pending.deadline.find_entry( message.correlation))
                            {
                               entry->service = service_id;
-                              entry->target = instance_id;
+                              entry->target = reservation.instance;
 
                               // give caller the remaining duration of the deadline
                               reply.deadline.remaining = entry->when - now;
@@ -558,7 +560,7 @@ namespace casual
                               auto next = state.pending.deadline.add( {
                                  .when = *deadline,
                                  .correlation = message.correlation,
-                                 .target = instance_id,
+                                 .target = reservation.instance,
                                  .service = service_id});
 
                               if( next)
@@ -639,28 +641,15 @@ namespace casual
                      {
                         Trace trace{ "service::manager::handle::local::service::detail::dispatch::lookup::internal_only"};
 
-                        if( state.services[ service_id].has_sequential())
-                        {
-                           auto get_caller = [ service_id]( const auto& message) -> state::instance::Caller
-                           {
-                              auto semantic = message.no_reply() ? state::instance::caller::Semantic::no_reply : state::instance::caller::Semantic::reply;
+                        if( ! state.services[ service_id].has_sequential())
+                           return false;
 
-                              return { 
-                                 .process = message.process, 
-                                 .execution = message.execution, 
-                                 .correlation = message.correlation, 
-                                 .trid = message.trid, 
-                                 .service = service_id, 
-                                 .semantic = semantic};
-                           };
+                        if( auto reservation = state.reserve_sequential( message, service_id))
+                           dispatch::lookup::reply( state, service_id, reservation, message, pending);
+                        else
+                           dispatch::lookup::pending( state, service_id, std::move( message));
 
-                           if( auto instance_id = state.reserve_sequential( get_caller( message)))
-                              dispatch::lookup::reply( state, service_id, instance_id, message, pending);
-                           else
-                              dispatch::lookup::pending( state, service_id, std::move( message));
-                           return true;
-                        }
-                        return false;
+                        return true;
                      }
 
                      bool external_internal( State& state, state::service::id::type service_id, common::message::service::lookup::Request& message, common::chronology::duration pending)
@@ -672,9 +661,9 @@ namespace casual
 
                         if( ! message.trid)
                         {
-                           if( auto instance_id = state.reserve_concurrent( service_id, {}))
+                           if( auto reservation = state.reserve_concurrent( service_id, {}))
                            {
-                              dispatch::lookup::reply( state, service_id, instance_id, message, pending);
+                              dispatch::lookup::reply( state, service_id, reservation, message, pending);
                               return true;
                            }
                            return false;
@@ -683,25 +672,25 @@ namespace casual
                         // check if the gtrid has associations before
                         if( auto found = common::algorithm::find( state.transaction.associations, message.trid.global()))
                         {
-                           if( auto instance_id = state.reserve_concurrent( service_id, common::range::make( found->second)))
+                           if( auto reservation = state.reserve_concurrent( service_id, common::range::make( found->second)))
                            {
                               // if the "instance" is not associated before, add it.
-                              if( ! common::algorithm::contains( found->second, instance_id))
-                                 found->second.push_back( instance_id);
+                              if( ! common::algorithm::contains( found->second, reservation.instance))
+                                 found->second.push_back( reservation.instance);
                               
-                              dispatch::lookup::reply( state, service_id, instance_id, message, pending);
+                              dispatch::lookup::reply( state, service_id, reservation, message, pending);
                               return true;
                            }
                            return false;
                         }
 
                         // the gtrid is not associated before
-                        if( auto instance_id = state.reserve_concurrent( service_id, {}))
+                        if( auto reservation = state.reserve_concurrent( service_id, {}))
                         {
                            state.transaction.associations.emplace(
-                              message.trid.global(), std::vector< state::instance::concurrent::id::type>{ instance_id});
+                              message.trid.global(), std::vector< state::instance::concurrent::id::type>{ reservation.instance});
 
-                           dispatch::lookup::reply( state, service_id, instance_id, message, pending);
+                           dispatch::lookup::reply( state, service_id, reservation, message, pending);
                            return true;
                         }
 

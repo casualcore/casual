@@ -674,23 +674,22 @@ namespace casual
                            {
                               // if we cant find a pending lookup we assume the lookup is discarded and handle it later
                               if( ! algorithm::find( state.pending.service.lookup_discards, message.correlation))
-                                 log::line( log::category::error, common::code::casual::invalid_semantics, " expected pending service-lookup-discard for correlation: ", message.correlation);
+                                 log::error( common::code::casual::invalid_semantics, "expected pending service-lookup-discard for correlation: ", message.correlation);
 
                               return;
                            }
 
                            if( message.state != decltype( message.state)::idle)
                            {
-                              log::line( log::category::error, "service not callable: ", message.service.name);
+                              log::error( common::code::xatmi::no_entry, "service not callable: ", message.service.name);
                               send::transaction::rollback::request( state, std::move( *pending));
                               return;
                            }
 
-                           message::service::call::caller::Request request{ buffer::payload::Send{ pending->buffer}};
-                           request.process = process::handle();
-                           request.correlation = pending->correlation;
+                           message::service::call::caller::Request request{ buffer::payload::Send{ pending->buffer}, process::handle()};
+                           request.update( message);
+
                            request.trid = pending->trid;
-                           request.service = std::move( message.service);
 
                            state.multiplex.send( message.process.ipc, request);
                            state.pending.service.calls.emplace_back( std::move( *pending), message.process);

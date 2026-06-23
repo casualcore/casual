@@ -278,12 +278,12 @@ namespace casual
 
          // 103 should be prioritized
          {
-            auto instance_id = state.reserve_concurrent( service_id, {});
-            auto process = state.instances.concurrent[ instance_id].process;
+            auto reservation = state.reserve_concurrent( service_id, {});
+            auto process = state.instances.concurrent[ reservation.instance].process;
             EXPECT_TRUE( process.pid == common::strong::process::id{ 103}) << CASUAL_NAMED_VALUE( process);
             
             // expect only 103 to be in the prioritized range
-            EXPECT_TRUE( instance_id == state.reserve_concurrent( service_id, {}));
+            EXPECT_TRUE( reservation.instance == state.reserve_concurrent( service_id, {}).instance);
          }
       }
 
@@ -313,15 +313,13 @@ namespace casual
             // disable the instance
             state.disabled.push_back( instance_id);
 
-            auto caller = state::instance::Caller{
-               .process = state.instances.sequential[ instance_id].process,
-               .correlation = common::strong::correlation::id::generate(),
-               .trid = common::transaction::ID{ common::strong::process::id{ 999}},
-               .service = a_id,
-            };
+            auto lookup = common::message::service::lookup::Request{ common::process::handle()};
+            lookup.correlation = common::strong::correlation::id::generate();
+            lookup.requested = "a";
+            lookup.trid = common::transaction::ID{ common::strong::process::id{ 999}};
 
-            // expect no instance to be reserved
-            EXPECT_FALSE(( state.reserve_sequential( std::move( caller))));
+               // expect no instance to be reserved
+               EXPECT_FALSE(( state.reserve_sequential( lookup, a_id)));
          }
 
 

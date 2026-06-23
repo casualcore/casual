@@ -94,6 +94,8 @@ namespace casual
                using base_type::base_type;
 
                service::call::Service service;
+               // span to be used by callee.
+               strong::execution::span::id span;
                execution::context::Parent parent;
                service::call::Deadline deadline;
 
@@ -106,9 +108,22 @@ namespace casual
 
                duplex::Type duplex{};
 
+               //! update an existing connect-request from a lookup-reply, 
+               //! to get all stuff from the lookup-reply.
+               void update( const service::lookup::Reply& lookup)
+               {
+                  correlation = lookup.correlation;
+                  execution = lookup.execution;
+                  span = lookup.span;
+                  deadline = lookup.deadline;
+                  service = lookup.service;
+                  pending = lookup.pending;
+               }
+
                CASUAL_CONST_CORRECT_SERIALIZE(
                   base_type::serialize( archive);
                   CASUAL_SERIALIZE( service);
+                  CASUAL_SERIALIZE( span);
                   CASUAL_SERIALIZE( parent);
                   CASUAL_SERIALIZE( deadline);
                   CASUAL_SERIALIZE( trid);
@@ -127,6 +142,7 @@ namespace casual
                      : base_request( std::forward< Args>( args)...), buffer( std::move( buffer))
                   {}
                   common::buffer::payload::Send buffer;
+
 
                   CASUAL_CONST_CORRECT_SERIALIZE(
                      base_request::serialize( archive);
