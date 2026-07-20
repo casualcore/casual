@@ -559,7 +559,7 @@ domain:
       {
          common::unittest::Trace trace;
 
-         static constexpr auto configuration = R"(
+         auto domain = local::domain( R"(
 domain: 
    name: forward-domain
 
@@ -603,9 +603,8 @@ domain:
                   -  source: b3
                      target:
                         queue: b1
-)";
+         )");
 
-         auto domain = local::domain( configuration);
 
          casual::service::unittest::advertise( { "queue/unittest/service"});
 
@@ -648,6 +647,17 @@ domain:
             common::communication::device::blocking::send( request.process.ipc, reply);
          }
 
+         // let the ring of death run until b3 has committed 5 messages
+         unittest::fetch::until( []( auto& state)
+         {
+            auto is_b3 = []( auto& forward){ return forward.source == "b3";};
+
+            if( auto found = algorithm::find_if( state.forward.queues, is_b3))
+               return found->metric.commit.count >= 5;
+
+            return false;
+         });
+
          unittest::scale::all::forward::aliases( 0);
 
 
@@ -663,19 +673,21 @@ domain:
          });
 
 
-         // check queue-forwards, there should not be any rollbacks on queue-forwards
+         // check queue-forwards, all should at least have 10 commits
          {
-            auto no_rollback = []( auto& forward)
+            auto at_least_5_commits = []( auto& forward)
             {
-               return forward.metric.rollback.count == 0;
+               return forward.metric.commit.count >= 5;
             };
-            EXPECT_TRUE( common::algorithm::all_of( state.forward.queues, no_rollback)) << CASUAL_NAMED_VALUE( state);
+            EXPECT_TRUE( common::algorithm::all_of( state.forward.queues, at_least_5_commits)) << CASUAL_NAMED_VALUE( state.forward.queues);
          }
 
          // check service-forward
          {
+            auto& service = state.forward.services.at( 0);
             // only one has been committed (since we only allowed one call to this unittest-binary)
-            EXPECT_TRUE( state.forward.services.at( 0).metric.commit.count == 1);
+            EXPECT_TRUE( service.metric.commit.count == 1);
+            // there could be some rollbacks, since there are 4 service-forwards running, and we only replied to one of them.
          }
 
          {

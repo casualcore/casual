@@ -223,6 +223,7 @@ test_casual_queue = make.LinkUnittest( 'unittest/bin/test-casual-queue',
         make.Compile( 'unittest/source/test_queue.cpp'),
         make.Compile( 'unittest/source/api/test_c.cpp'),
         make.Compile( 'unittest/source/test_forward.cpp'),
+        make.Compile( 'unittest/source/forward/test_state.cpp'),
         make.Compile( 'unittest/source/test_example.cpp')
     ],
     [
