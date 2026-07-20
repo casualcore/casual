@@ -303,6 +303,11 @@ namespace casual
          gateway_reverse_inbound_state_request,
          gateway_reverse_inbound_state_reply, 
 
+         // general message to pass within outbound/inbound group to indicate
+         // that a connection is lost.
+         gateway_connection_lost,
+         gateway_connection_reconnect,
+
          // Outbounds
          gateway_outbound_connect,
 
@@ -312,7 +317,6 @@ namespace casual
 
          gateway_outbound_state_request,
          gateway_outbound_state_reply,
-         gateway_outbound_connection_lost,
 
          // reverse outbounds have different state than 'regular' (listeners)
          gateway_reverse_outbound_state_request,

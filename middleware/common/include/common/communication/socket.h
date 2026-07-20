@@ -103,6 +103,8 @@ namespace casual
          void set( socket::option::File option);
          void unset( socket::option::File option);
 
+         inline bool valid() const noexcept { return m_descriptor.valid();}
+
          friend std::ostream& operator << ( std::ostream& out, const Socket& value);
 
          friend bool operator == ( const Socket&, const Socket&) = default;

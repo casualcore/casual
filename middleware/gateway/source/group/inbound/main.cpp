@@ -183,15 +183,12 @@ namespace casual
 
                   namespace connection
                   {
-                     auto lost()
+                     auto reconnect()
                      {
-                        return []( message::inbound::connection::Lost message)
+                        return []( const message::inbound::connection::Reconnect& message)
                         {
-                           Trace trace{ "gateway::group::inbound::local::internal::handle::connection::lost"};
+                           Trace trace{ "gateway::group::inbound::local::internal::handle::connection::reconnect"};
                            log::debug( "message: ", message);
-
-                           // we just log the 'event'
-                           log::line( log::category::information, code::casual::communication_unavailable, " lost connection to domain: ", message.remote);
                         };
                      }
                   } // connection
@@ -207,7 +204,7 @@ namespace casual
                      handle::state::request( state),
                      handle::event::process::exit( state),
                      handle::shutdown::request( state),
-                     handle::connection::lost()
+                     handle::connection::reconnect()
                   };
                }
 
@@ -242,9 +239,9 @@ namespace casual
                   communication::select::dispatch::pump( 
                      local::condition( state),
                      state.directive,
-                     tcp::pending::send::dispatch::create( state, &handle::connection::lost),
+                     tcp::pending::send::dispatch::create( state),
                      ipc::handle::dispatch::create< inbound::Policy>( state, inbound::handle::internal( state)),
-                     tcp::handle::dispatch::create< inbound::Policy>( state, inbound::handle::external( state), &handle::connection::lost),
+                     tcp::handle::dispatch::create< inbound::Policy>( state, inbound::handle::external( state)),
                      tcp::listen::dispatch::create( state, tcp::logical::connect::Bound::in),
                      communication::select::ipc::dispatch::create< inbound::Policy>( state, &management::handler),
                      state.multiplex

@@ -262,7 +262,7 @@ namespace casual
                         if( state.disconnectable( descriptor))
                         {
                            // connection is 'idle', we just 'loose' the connection
-                           handle::connection::lost( state, descriptor);
+                           handle::connection::remove( state, descriptor);
 
                            // we return false to tell the dispatch not to try consume any more messages on
                            // this connection
@@ -538,6 +538,35 @@ namespace casual
                   
                } // event::transaction
 
+               namespace connection
+               {
+                  auto lost( State& state)
+                  {
+                     return [ &state]( const gateway::message::connection::Lost& message)
+                     {
+                        Trace trace{ "gateway::group::inbound::handle::local::management::connection::lost"};
+                        log::debug( "message: ", message);
+
+                        auto information = state.connections.information( message.descriptor);
+                        casual::assertion( information, "failed to find information for descriptor: ", message.descriptor);
+
+                        // fail potential pending tasks (calls and such).
+                        state.tasks.failed( message.descriptor);
+
+                        log::information( message.code, " lost connection to: '", information->domain.name, "' - address: ", information->address);
+
+                        auto reconnect = handle::connection::remove( state, message.descriptor);
+
+
+                        //! we push a reconnect message to our device
+                        //! and let a specialized handler handle the reconnect. It's different between 
+                        //! reverse outbound and regular outbound.
+                        ipc::inbound().push( std::move( reconnect));
+           
+                     };
+                  }
+               } // connection
+
             } // management
 
          } // <unnamed>
@@ -549,7 +578,8 @@ namespace casual
             common::event::listener( 
                handle::local::management::event::transaction::disassociate( state)
             ),
-            local::management::domain::connected( state)
+            local::management::domain::connected( state),
+            local::management::connection::lost( state)
          };
 
       }
@@ -619,9 +649,9 @@ namespace casual
 
       namespace connection
       {
-         message::inbound::connection::Lost lost( State& state, common::strong::socket::id descriptor)
+         message::inbound::connection::Reconnect remove( State& state, common::strong::socket::id descriptor)
          {
-            Trace trace{ "gateway::group::inbound::handle::connection::lost"};
+            Trace trace{ "gateway::group::inbound::handle::connection::remove"};
             log::debug( "descriptor: ", descriptor);
 
             static constexpr auto filter_active_trids = []( auto& state, auto trids)
@@ -682,7 +712,7 @@ namespace casual
                if( message::protocol::compatible< message::domain::disconnect::Request>( connection->protocol()))
                   inbound::tcp::send( state, descriptor, message::domain::disconnect::Request{});
                else
-                  handle::connection::lost( state, descriptor);
+                  handle::connection::remove( state, descriptor);
             }
          }
          
@@ -704,7 +734,7 @@ namespace casual
             auto done = algorithm::container::extract( state.pending.disconnects, algorithm::filter( state.pending.disconnects, connection_done));
 
             for( auto descriptor : done)
-               handle::connection::lost( state, descriptor);
+               handle::connection::remove( state, descriptor);
          }
       }
 
@@ -727,7 +757,7 @@ namespace casual
 
          // 'kill' all sockets, and try to take care of pending stuff. copy - connection::lost mutates external
          for( auto descriptor : state.connections.external_descriptors())
-            handle::connection::lost( state, descriptor);
+            handle::connection::remove( state, descriptor);
       }
       
 

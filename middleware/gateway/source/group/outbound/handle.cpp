@@ -37,12 +37,26 @@ namespace casual
                template< typename M>
                strong::correlation::id send( State& state, strong::socket::id descriptor, M&& message)
                {
-                  return group::tcp::send( state, &connection::lost, descriptor, std::forward< M>( message));
+                  return group::tcp::send( state, descriptor, std::forward< M>( message));
                }
+
             } // tcp
 
             namespace internal
             {
+               template< typename Message>
+               auto basic_task( State& state)
+               {
+                  return [ &state]( Message& message)
+                  {
+                     Trace trace{ "gateway::group::outbound::handle::local::internal::basic_task"};
+                     common::log::debug( "message: ", message);
+
+                     state.tasks( message);
+                     common::log::debug( "state.tasks: ", state.tasks);
+                  };
+               }
+
                namespace precondition
                {
                   bool reply( State& state, strong::socket::id descriptor, auto& message, auto&& create_reply)
@@ -54,7 +68,7 @@ namespace casual
                         return true;
                      }
 
-                     if( algorithm::find( state.disconnecting, descriptor))
+                     if( state.pending.dissociating.contains( descriptor))
                      {
                         log::debug( "connection: ", descriptor, " is in disconnect mode - action: reply with 'default'");
                         state.multiplex.send( message.process.ipc, create_reply( message));
@@ -94,32 +108,61 @@ namespace casual
 
                   namespace resource
                   {  
+                     namespace detail::create
+                     {
+                        auto task( State& state, auto& message, strong::socket::id descriptor)
+                        {
+                           using reply_type = common::message::reverse::type_t< decltype( message)>;
+
+                           struct error_info_t
+                           {
+                              strong::ipc::id ipc;
+                              common::transaction::ID trid;
+                           };
+
+                           auto error_info = error_info_t{ .ipc = message.process.ipc, .trid = message.trid};
+                        
+                           return state.tasks.create_unit( descriptor, message.correlation,
+                           [ &state, ipc = message.process.ipc]( reply_type& message, strong::socket::id descriptor)
+                           {
+                              Trace trace{ "gateway::group::outbound::handle::local::internal::transaction::resource::detail::create::task reply"};
+                              log::debug( "message: ", message);
+
+                              state.multiplex.send( ipc, message);
+                           },
+                           [ &state, error_info = std::move( error_info)]( casual::task::concurrent::message::task::Failed& message, strong::socket::id descriptor)
+                           {
+                              Trace trace{ "gateway::group::outbound::handle::local::internal::transaction::resource::detail::create::task task::Failed"};
+
+                              reply_type reply;
+                              reply.correlation = message.correlation;
+                              reply.trid = error_info.trid;
+                              reply.state = code::xa::resource_fail;
+
+                              state.multiplex.send( error_info.ipc, reply);
+                           });
+                        }
+                        
+                     } // detail::create
+
                      namespace basic
                      {
                         template< typename Message>
                         auto request( State& state)
                         {
-                           return [ &state]( Message& message, strong::ipc::descriptor::id descriptor)
+                           return [&state]( Message& message, strong::ipc::descriptor::id descriptor)
                            {
-                              Trace trace{ "gateway::group::outbound::handle::local::internal::transaction::resource::basic_request"};
+                              Trace trace{ "gateway::group::outbound::handle::local::internal::transaction::resource::basic::request"};
                               log::debug( "message: ", message);
 
                               auto tcp = state.connections.partner( descriptor);
 
-                              // sanity check
-                              if( ! state.pending.transactions.is_associated( message.trid, tcp))
-                                 log::error( code::casual::invalid_semantics, message.type(), " with trid: ", message.trid, " sent to ", tcp, " is not associated before");
-
-                              // add the destination, so we know where to send the reply
-                              state.reply_destination.add( message, tcp);
-
                               tcp::send( state, tcp, message);
+                              state.tasks.add( detail::create::task( state, message, tcp));
                            };
-                        }
+                        }  
                      } // basic
 
-                     //! These messages has the extern branched transaction.
-                     //! @{
                      namespace prepare
                      {
                         auto request = basic::request< common::message::transaction::resource::prepare::Request>;
@@ -132,6 +175,7 @@ namespace casual
                      {
                         auto request = basic::request< common::message::transaction::resource::rollback::Request>;
                      } // rollback
+
                   } // resource
                } // transaction
 
@@ -156,8 +200,8 @@ namespace casual
                      Trace trace{ "gateway::group::outbound::handle::local::internal::service::call::metric"};
 
                      common::message::event::service::Metric metric;
-                     {   
-                        metric.process = common::process::handle();
+                     { 
+                        metric.process = state.connections.process_handle( destination.descriptor);
                         metric.correlation = message.correlation;
                         metric.execution = message.execution;
                         metric.span =  destination.span;
@@ -170,15 +214,15 @@ namespace casual
                         metric.start = destination.start;
                         metric.end = platform::time::clock::type::now();
                      }
-                     state.service_metric.add( std::move( metric));
-                     state.service_metric.maybe_metric( state, &handle::metric::send);
+                     state.metric.add( std::move( metric));
+                     state.metric.maybe_metric( state, &handle::metric::service, &handle::metric::queue);
                   }
 
                   namespace call
                   {
                      namespace detail::send::error
                      {
-                        void reply( State& state, const common::message::service::call::callee::Request& message, code::xatmi code)
+                        void reply( State& state, strong::ipc::descriptor::id descriptor, const common::message::service::call::callee::Request& message, code::xatmi code)
                         {
                            if( flag::contains( message.flags, decltype( message.flags)::no_reply))
                               return;
@@ -188,9 +232,11 @@ namespace casual
                            
                            struct Destination
                            {
+                              strong::ipc::descriptor::id descriptor;
                               strong::execution::span::id span;
                               std::string service;
                               execution::context::Parent parent;
+                              strong::ipc::id ipc;
                               common::transaction::ID trid;
                               common::chronology::time_point start;
                            };
@@ -203,9 +249,11 @@ namespace casual
 
                            service::metric( state, reply, 
                               Destination{ 
+                                 .descriptor = descriptor,
                                  .span = message.parent.span, 
                                  .service = message.service.name, 
                                  .parent = { .span = message.span, .service = message.parent.service}, 
+                                 .ipc = message.process.ipc,
                                  .trid = message.trid,
                                  .start = platform::time::clock::type::now()},
                               { .result = code});
@@ -220,6 +268,7 @@ namespace casual
                         {
                            struct Destination
                            {
+                              strong::socket::id descriptor;
                               strong::execution::span::id span;
                               std::string service;
                               execution::context::Parent parent;
@@ -233,6 +282,7 @@ namespace casual
                            //   message.span is our parent span from upstream.
 
                            auto shared = std::make_shared< Destination>( Destination{ 
+                              .descriptor = descriptor,
                               .span = message.parent.span, 
                               .service = message.service.name, 
                               .parent = { .span = message.span, .service = message.parent.service},
@@ -240,7 +290,7 @@ namespace casual
                               .trid = message.trid, 
                               .start = platform::time::clock::type::now()});
                            
-                           return typename state::task_coordinator_type::unit_type{ descriptor, message.correlation, 
+                           return state.tasks.create_unit( descriptor, message.correlation,
                            [ &state, shared]( common::message::service::call::Reply& message, strong::socket::id descriptor)
                            {
                               Trace trace{ "gateway::group::outbound::handle::local::internal::detail::create::task call::Reply"};
@@ -265,7 +315,7 @@ namespace casual
                               state.multiplex.send( shared->ipc, reply);
 
                               service::metric( state, reply, std::move( *shared), reply.code);
-                           }};
+                           });
                         }
                         
                      } // detail::create
@@ -291,7 +341,7 @@ namespace casual
                            if( state.tasks.contains( message.correlation))
                            {
                               log::error( code::casual::invalid_semantics, "a call with the same correlation id is in flight - ", message.correlation, " - action: reply with ", code::xatmi::system   );
-                              detail::send::error::reply( state, message, code::xatmi::system);
+                              detail::send::error::reply( state, descriptor, message, code::xatmi::system);
                               return;
                            }
 
@@ -314,8 +364,8 @@ namespace casual
 
                         };
                      }
-
                   } // call
+
                } // service
 
                namespace conversation
@@ -328,6 +378,7 @@ namespace casual
                         {
                            struct Shared
                            {
+                              strong::socket::id descriptor;
                               strong::execution::span::id span;
                               std::string service;
                               execution::context::Parent parent;
@@ -341,6 +392,7 @@ namespace casual
                            //   message.span is our parent span from upstream.
 
                            auto shared = std::make_shared< Shared>( Shared{ 
+                              .descriptor = descriptor,
                               .span = message.parent.span, 
                               .service = message.service.name,
                               .parent = { .span = message.span, .service = message.parent.service},
@@ -349,7 +401,7 @@ namespace casual
                               .trid = message.trid});
 
 
-                           return typename state::task_coordinator_type::unit_type{ descriptor, message.correlation, 
+                           return state.tasks.create_unit( descriptor, message.correlation, 
                               [ &state, shared]( common::message::conversation::connect::Reply& message, strong::socket::id descriptor)
                               {
                                  Trace trace{ "gateway::group::outbound::handle::local::internal::conversation::task connect::Reply"};
@@ -369,16 +421,18 @@ namespace casual
 
                                  state.multiplex.send( shared->ipc, message);
 
-                                 // TODO to send _terminated_ in the send message, we break protocol. We need to change this in 1.9
-                                 // For now we check if xatmi code is set to any thing -> terminated.
-                                 if( message.code.result != code::xatmi::absent)
-                                    return task::concurrent::unit::Dispatch::done;
-
                                  // if the send indicate a termination, we make sure to remove this task
                                  //if( message.duplex == decltype( message.duplex)::terminated)
                                  //   return task::concurrent::unit::Dispatch::done;
 
-                                 return task::concurrent::unit::Dispatch::pending;
+                                 // TODO to send _terminated_ in the send message, we break protocol. We need to change this in 1.9
+                                 // For now we check if xatmi code is set to any thing -> terminated -> done
+                                 if( message.code.result == code::xatmi::absent)
+                                    return task::concurrent::unit::Dispatch::pending;
+                                 
+                                 service::metric( state, message, std::move( *shared), message.code);
+
+                                 return task::concurrent::unit::Dispatch::done;
                               },
                               [ &state, shared]( common::message::conversation::Disconnect& message, strong::socket::id descriptor)
                               {
@@ -393,8 +447,7 @@ namespace casual
 
                                  return task::concurrent::unit::Dispatch::done;
                               }
-                              
-                           };
+                           );
                         }
 
                      } // detail::create
@@ -462,6 +515,81 @@ namespace casual
                {
                   namespace discovery
                   {
+                     namespace detail
+                     {
+                        void advertise( State& state, const casual::domain::message::discovery::Reply& message, strong::socket::id descriptor)
+                        {
+                           auto handle = state.connections.process_handle( descriptor);
+                           CASUAL_ASSERT( handle);
+
+                           auto information = state.connections.information( descriptor);
+                           CASUAL_ASSERT( information);
+
+                           if( ! message.content.services.empty())
+                           {
+                              common::message::service::concurrent::Advertise request{ handle};
+                              request.alias = instance::alias();
+                              request.description = information->domain.name;
+                              request.order = state.order;
+                              request.services.add = message.content.services;
+                              
+                              state.multiplex.send( ipc::manager::service(), request);
+                           }
+
+                           if( ! message.content.queues.empty())
+                           {
+                              casual::queue::ipc::message::Advertise request{ handle};
+                              request.alias = instance::alias();
+                              request.description = information->domain.name;
+                              request.order = state.order;
+                              request.queues.add = algorithm::transform( message.content.queues, []( auto& queue)
+                              {
+                                 casual::queue::ipc::message::advertise::Queue result;
+                                 result.name = queue.name;
+                                 result.retry.count = queue.retry.count;
+                                 result.retry.delay = queue.retry.delay;
+                                 result.enable.enqueue = queue.enable.enqueue;
+                                 result.enable.dequeue = queue.enable.dequeue;
+                                 return result;
+                              });
+
+                              state.multiplex.send( ipc::manager::optional::queue(), request);
+                           }
+
+                        }
+                     } // detail
+
+                     namespace detail::create
+                     {
+                        auto task( State& state, const casual::domain::message::discovery::Request& message, strong::socket::id descriptor)
+                        {                        
+                           return state.tasks.create_unit( descriptor, message.correlation,
+                           [ &state, ipc = message.process.ipc]( casual::domain::message::discovery::Reply& message, strong::socket::id descriptor)
+                           {
+                              Trace trace{ "gateway::group::outbound::handle::local::internal::domain::discovery::detail::create::task Reply"};
+                              log::debug( "message: ", message);
+
+                              // increase hops for all services.
+                              for( auto& service : message.content.services)
+                                 ++service.property.hops;
+
+                              detail::advertise( state, message, descriptor);
+
+                              state.multiplex.send( ipc, message);
+                           },
+                           [ &state, ipc = message.process.ipc]( casual::task::concurrent::message::task::Failed& message, strong::socket::id descriptor)
+                           {
+                              Trace trace{ "gateway::group::outbound::handle::local::internal::domain::discovery::detail::create::task task::Failed"};
+
+                              casual::domain::message::discovery::Reply reply;
+                              reply.correlation = message.correlation;
+
+                              state.multiplex.send( ipc, reply);
+                           });
+                        }
+                        
+                     } // detail::create
+
                      auto request( State& state)
                      {
                         return [&state]( casual::domain::message::discovery::Request& message, strong::ipc::descriptor::id descriptor)
@@ -469,14 +597,9 @@ namespace casual
                            Trace trace{ "gateway::group::outbound::handle::local::internal::domain::discover::request"};
                            log::debug( "message: ", message);
 
-                           auto default_reply = []( auto& message){ return common::message::reverse::type( message);};
-
                            auto tcp = state.connections.partner( descriptor);
 
-                           if( internal::precondition::reply( state, tcp, message, default_reply))
-                              return;
-
-                           state.reply_destination.add( message, tcp);
+                           state.tasks.add( detail::create::task( state, message, tcp));
 
                            tcp::send( state, tcp, message);
                         };
@@ -484,6 +607,25 @@ namespace casual
 
                      namespace topology::direct
                      {
+                        namespace detail::create
+                        {
+                           auto task( State& state, casual::domain::message::discovery::Request& message, strong::socket::id descriptor)
+                           {
+                              // note that we don't keep track of any reply destinations, since caller does not expect any.
+                              return state.tasks.create_unit( descriptor, message.correlation,
+                                 [ &state]( casual::domain::message::discovery::Reply& message, strong::socket::id descriptor)
+                                 {
+                                    Trace trace{ "gateway::group::outbound::handle::local::internal::domain::discover::topology::direct::detail::create::task Reply"};
+                                    log::debug( "message: ", message);
+
+                                    // increase hops for all services.
+                                    for( auto& service : message.content.services)
+                                       ++service.property.hops;
+
+                                    discovery::detail::advertise( state, message, descriptor);
+                                 });
+                           }
+                        } // detail::create
 
                         auto explore( State& state)
                         {
@@ -501,15 +643,17 @@ namespace casual
                               if( state.runlevel > decltype( state.runlevel())::running)
                                  return;
 
-                              if( algorithm::find( state.disconnecting, tcp))
+                              if( state.pending.dissociating.contains( tcp))
                                  return;
 
                               casual::domain::message::discovery::Request request;
+                              request.correlation = message.correlation;
                               request.content = std::move( message.content);
                               request.domain = common::domain::identity();
+                              
                               tcp::send( state, tcp, request);
-                           
-                              // note that we don't keep track of any reply destinations, since caller does not expect any.
+                              
+                              state.tasks.add( detail::create::task( state, request, tcp));
                            };
 
                         }
@@ -523,6 +667,14 @@ namespace casual
                {
                   namespace detail
                   {
+                     struct Shared
+                     {
+                        strong::ipc::id destination;
+                        strong::correlation::id correlation;
+                        std::string name;
+                        casual::queue::ipc::message::group::metric::remote::Direction direction;
+                        chronology::time_point start;
+                     };
                   
                      void unadvertise( State& state, strong::socket::id descriptor, std::string queue)
                      {
@@ -537,33 +689,77 @@ namespace casual
                            log::error( code::casual::invalid_semantics, "failed to unadvertise - could not find ipc partner to ", descriptor);
                      }
 
+                     void metric( State& state, const Shared& shared, strong::socket::id descriptor, auto code)
+                     {
+                        Trace trace{ "gateway::group::outbound::handle::local::internal::queue::detail::metric"};
+
+                        auto entry = casual::queue::ipc::message::group::metric::remote::Entry{
+                           .process = state.connections.process_handle( descriptor),
+                           .correlation = shared.correlation,
+                           .queue = shared.name,
+                           .start = shared.start,
+                           .end = platform::time::clock::type::now(),
+                           .code = code,
+                           .direction = shared.direction
+                        };
+
+                        log::debug( "entry: ", entry);
+
+                        state.metric.add( std::move( entry));
+                        state.metric.maybe_metric( state, &handle::metric::service, &handle::metric::queue);
+                     }
+
                      namespace create
                      {
                         auto task( State& state, auto& message, strong::socket::id descriptor)
                         {
                            using reply_type = common::message::reverse::type_t< decltype( message)>;
+
+                           constexpr auto direction = []()
+                           {
+                              if constexpr( std::is_same_v< decltype( message), casual::queue::ipc::message::group::enqueue::Request>)
+                                 return casual::queue::ipc::message::group::metric::remote::Direction::enqueue;
+                              else
+                                 return casual::queue::ipc::message::group::metric::remote::Direction::dequeue;
+                           }();
+
+                           auto shared = std::make_shared< Shared>( Shared{ 
+                              .destination = message.process.ipc,
+                              .correlation = message.correlation,
+                              .name = message.name, 
+                              .direction = direction,
+                              .start = platform::time::clock::type::now(),
+                           });
                         
-                           return typename state::task_coordinator_type::unit_type{ descriptor, message.correlation, 
-                           [ &state, ipc = message.process.ipc, queue_name = message.name]( reply_type& message, strong::socket::id descriptor)
+                           return state.tasks.create_unit( descriptor, message.correlation,
+                           [ &state, shared]( reply_type& message, strong::socket::id descriptor)
                            {
                               Trace trace{ "gateway::group::outbound::handle::local::internal::queue::detail::create::task Reply"};
                               log::debug( "message: ", message);
 
                               // if the reply has code::queue::no_queue, we need to unadvertise the queue.
                               if( message.code == code::queue::no_queue)
-                                 detail::unadvertise( state, descriptor, queue_name);
+                                 detail::unadvertise( state, descriptor, shared->name);
 
-                              state.multiplex.send( ipc, message);
+                              state.multiplex.send( shared->destination, message);
+
+                              detail::metric( state, *shared, descriptor, message.code);
+
                            },
-                           [ &state, ipc = message.process.ipc]( casual::task::concurrent::message::task::Failed& message, strong::socket::id descriptor)
+                           [ &state, shared]( casual::task::concurrent::message::task::Failed& message, strong::socket::id descriptor)
                            {
                               Trace trace{ "gateway::group::outbound::handle::local::internal::queue::detail::create::task task::Failed"};
 
                               reply_type reply;
                               reply.correlation = message.correlation;
+                              reply.code = code::queue::system;
 
-                              state.multiplex.send( ipc, reply);
-                           }};
+                              detail::unadvertise( state, descriptor, shared->name);
+
+                              state.multiplex.send( shared->destination, reply);
+
+                              detail::metric( state, *shared, descriptor, code::queue::system);
+                           });
                         }
                         
                      } // create
@@ -599,8 +795,201 @@ namespace casual
                      auto request = basic::request< casual::queue::ipc::message::group::dequeue::Request>;
                   } // dequeue
                } // queue
+
+               namespace connection::dissociate
+               {
+                  template< typename Message>
+                  auto basic_task( State& state)
+                  {
+                     return [ &state]( Message& message)
+                     {
+                        Trace trace{ "gateway::group::outbound::handle::local::internal::connection::dissociate::basic_task"};
+                        common::log::debug( "message: ", message);
+
+                        state.pending.dissociating( message);
+                        common::log::debug( "state.pending.dissociating: ", state.pending.dissociating);
+                     };
+                  }
+
+                  namespace service
+                  {
+                     auto reply = basic_task< common::message::service::concurrent::instance::disassociate::Reply>;   
+                  } // service
+
+                  namespace queue
+                  {
+                     auto reply = basic_task< casual::queue::ipc::message::external::disassociate::Reply>;
+                  } // queue
+
+                  namespace transaction
+                  {
+                     auto reply = basic_task< common::message::transaction::resource::external::disassociate::Reply>;
+                  } // transaction
+                  
+               } // connection::dissociate
+
                
             } // internal
+
+            namespace disassociate
+            {
+               namespace detail::create
+               {
+                  struct Shared
+                  {
+                     state::disconnect::Directive directive;
+                     bool sm_done = false;
+                     bool qm_done = false;
+                     common::strong::correlation::id correlation;
+                     // possible reply to send back to external inbound
+                     std::optional< gateway::message::domain::disconnect::Reply> reply;
+
+                     bool done() const { return sm_done && qm_done;}
+                  };
+
+                  auto remove_connection( State& state, const Shared& shared, common::strong::socket::id descriptor)
+                  {
+                     Trace trace{ "gateway::group::outbound::handle::local::internal::disassociate::detail::create::remove_connection_if_done"};
+
+                     // is an inbound waiting for a disconnect reply?
+                     if( shared.reply)
+                        tcp::send( state, descriptor, *shared.reply);
+
+                     // we need to send an ipc-destroyed event, so other can disassociate stuff with the ipc
+                     // NOTE: the only thing that needs this right now is TM to get rid of state about our resource.
+                     if( auto handle = state.connections.process_handle( descriptor))
+                        common::event::send( common::message::event::ipc::Destroyed{ handle});
+
+                     {
+                        auto information = state.connections.information( descriptor);
+                        casual::assertion( information, "failed to find information for descriptor: ", descriptor);
+
+                        log::information( "connection to '", information->domain.name, "' closed - address: ", information->address);
+                     }
+
+                     // its safe to remove the connection now, since all managers have disassociated the resource.
+                     auto reconnect = state.extract( descriptor);
+
+                     // NOTE: this should not be needed, since the connection should be "clean".
+                     state.tasks.failed( descriptor);
+
+                     //! if the pending directive is reconnect, we push the reconnect message to our device
+                     //! and let a specialized handler handle the reconnect. It's different between 
+                     //! reverse outbound and regular outbound.
+                     if( shared.directive == state::disconnect::Directive::reconnect)
+                        ipc::inbound().push( std::move( reconnect));
+
+                     return task::concurrent::unit::Dispatch::done;
+                  };
+
+                  auto send_tm( State& state, const Shared& shared, common::strong::socket::id descriptor)
+                  {
+                     if( shared.done())
+                     {   
+                        auto handle = state.connections.process_handle( descriptor);
+                        casual::assertion( handle, "failed to find handle for ", descriptor);
+
+                        common::message::transaction::resource::external::disassociate::Request request{ handle};
+                        request.correlation = shared.correlation;
+                        state.multiplex.send( ipc::manager::transaction(), request);
+                     }
+
+                     // always pending, only TM reply will be done
+                     return task::concurrent::unit::Dispatch::pending;
+                  }
+
+                  auto task( State& state, common::strong::socket::id descriptor, state::disconnect::Directive directive, std::optional< gateway::message::domain::disconnect::Reply> reply)
+                  {
+                     Trace trace{ "gateway::group::outbound::handle::local::internal::disassociate::detail::create::task"};
+
+                     const auto correlation = strong::correlation::id::generate();
+                     const auto handle = state.connections.process_handle( descriptor);
+                     casual::assertion( handle, "failed to find handle for ", descriptor);
+
+                     auto shared = std::make_shared< Shared>( Shared{ .directive = directive});
+                     shared->correlation = correlation;
+                     shared->reply = std::move( reply);
+
+                     // make sure to unregister the connection from discovery, to avoid any new discovery stuff to be sent to this connection.
+                     {
+                        auto device = state.connections.find_internal( descriptor);
+                        casual::assertion( device, "failed to find internal connection for descriptor: ", descriptor);
+
+                        // we register with empty abilities -> unregister
+                        casual::domain::discovery::provider::registration( *device, casual::domain::discovery::provider::Ability::absent);
+                     }
+                     
+                     // SM
+                     {
+                        common::message::service::concurrent::instance::disassociate::Request request{ handle};
+                        request.correlation = correlation;
+                        state.multiplex.send( ipc::manager::service(), request);
+                     }
+                     // QM
+                     {
+                        casual::queue::ipc::message::external::disassociate::Request request{ handle};
+                        request.correlation = correlation;
+                        
+                        if( ! state.multiplex.send( ipc::manager::optional::queue(), request))
+                        {
+                           log::debug( "queue-manager is not on-line");
+                           shared->qm_done = true;
+                        }
+                     }
+                     // TM
+                     // we send the disassociate to TM when we've got reply from SM and potentially QM
+                     // to eliminate the case where SM has pending calls, but the calls hav not arrived to us
+                     // yet. TM could then just send a reply that our resource is disassociated, but will be
+                     // when the calls arrive (same for QM).
+
+
+                     return state.tasks.create_unit( descriptor, correlation, 
+                     [ &state, shared]( const common::message::service::concurrent::instance::disassociate::Reply& message, strong::socket::id descriptor)
+                     {
+                        Trace trace{ "gateway::group::outbound::handle::local::internal::disassociate::detail::create::task service reply"};
+
+                        shared->sm_done = true;
+                        return send_tm( state, *shared, descriptor);
+                     },
+                     [ &state, shared]( const casual::queue::ipc::message::external::disassociate::Reply& message, strong::socket::id descriptor)
+                     {
+                        Trace trace{ "gateway::group::outbound::handle::local::internal::disassociate::detail::create::task queue reply"};
+
+                        shared->qm_done = true;
+                        return send_tm( state, *shared, descriptor);
+                     },
+                     [ &state, shared]( const common::message::transaction::resource::external::disassociate::Reply& message, strong::socket::id descriptor)
+                     {
+                        Trace trace{ "gateway::group::outbound::handle::local::internal::disassociate::detail::create::task transaction reply"};
+
+                        // we're done, remove the connection.
+                        return remove_connection( state, *shared, descriptor);
+                     });
+                  }
+                  
+               } // detail::create
+
+               void connection( State& state, common::strong::socket::id descriptor, state::disconnect::Directive directive, std::optional< gateway::message::domain::disconnect::Reply> reply = {})
+               {
+                  Trace trace{ "gateway::group::outbound::handle::local::internal::disassociate::connection"};
+                  log::debug( "descriptor: ", descriptor);
+
+                  // We could already have a pending disconnect for this descriptor, in that case we don't cancel it again.
+                  // however, we need to reply if present (this should not happen).
+                  if( state.pending.dissociating.contains( descriptor))
+                  {
+                     log::debug( "connection already pending dissociate ", descriptor);
+
+                     if( reply)
+                        tcp::send( state, descriptor, *reply);
+                        
+                     return;
+                  }
+                     
+                  state.pending.dissociating.add( detail::create::task( state, descriptor, directive, std::move( reply)));
+               }
+               
+            } // disassociate
 
             namespace external
             {
@@ -627,8 +1016,7 @@ namespace casual
                         Trace trace{ "gateway::group::outbound::handle::local::external::disconnect::request"};
                         log::debug( "message: ", message);
 
-                        handle::connection::disconnect( state, descriptor);
-                        tcp::send( state, descriptor, common::message::reverse::type( message));
+                        disassociate::connection( state, descriptor, state::disconnect::Directive::reconnect, common::message::reverse::type( message));
                      };
                   }
                   
@@ -729,38 +1117,21 @@ namespace casual
 
                namespace transaction::resource
                {
-                  namespace detail::basic
-                  {
-                     template< typename Message>
-                     auto reply( State& state)
-                     {
-                        return [ &state]( Message& message, strong::socket::id descriptor)
-                        {
-                           Trace trace{ "gateway::group::outbound::handle::local::external::transaction::resource::detail::basic_reply"};
-                           log::debug( "message: ", message);
-
-                           auto destination = state.reply_destination.extract( message.correlation);
-                           state.multiplex.send( destination.ipc, message);
-                        };
-
-                     }                     
-                  } // detail::basic
-
                   namespace prepare
                   {
-                     auto reply = detail::basic::reply< common::message::transaction::resource::prepare::Reply>;
+                     auto reply = external::basic_task< common::message::transaction::resource::prepare::Reply>;
 
                   } // prepare
 
                   namespace commit
                   {
-                     auto reply = detail::basic::reply< common::message::transaction::resource::commit::Reply>;
+                     auto reply = external::basic_task< common::message::transaction::resource::commit::Reply>;
 
                   } // commit
 
                   namespace rollback
                   {
-                     auto reply = detail::basic::reply< common::message::transaction::resource::rollback::Reply>;
+                     auto reply = external::basic_task< common::message::transaction::resource::rollback::Reply>;
                      
                   } // rollback
 
@@ -768,61 +1139,7 @@ namespace casual
 
                namespace domain::discovery
                {
-                  auto reply( State& state)
-                  {
-                     return [ &state]( casual::domain::message::discovery::Reply&& message, strong::socket::id descriptor)
-                     {
-                        Trace trace{ "gateway::group::outbound::handle::local::external::domain::discovery::reply"};
-                        log::debug( "message: ", message);
-
-                        auto handle = state.connections.process_handle( descriptor);
-                        CASUAL_ASSERT( handle);
-
-                        auto information = state.connections.information( descriptor);
-                        CASUAL_ASSERT( information);
-
-                        if( ! message.content.services.empty())
-                        {
-                           // increase hops for all services.
-                           for( auto& service : message.content.services)
-                              ++service.property.hops;
-
-                           common::message::service::concurrent::Advertise request{ handle};
-                           request.alias = instance::alias();
-                           request.description = information->domain.name;
-                           request.order = state.order;
-                           request.services.add = message.content.services;
-                           
-                           state.multiplex.send( ipc::manager::service(), request);
-                        }
-
-                        if( ! message.content.queues.empty())
-                        {
-                           casual::queue::ipc::message::Advertise request{ handle};
-                           request.alias = instance::alias();
-                           request.description = information->domain.name;
-                           request.order = state.order;
-                           request.queues.add = algorithm::transform( message.content.queues, []( auto& queue)
-                           {
-                              casual::queue::ipc::message::advertise::Queue result;
-                              result.name = queue.name;
-                              result.retry.count = queue.retry.count;
-                              result.retry.delay = queue.retry.delay;
-                              result.enable.enqueue = queue.enable.enqueue;
-                              result.enable.dequeue = queue.enable.dequeue;
-                              return result;
-                           });
-
-                           state.multiplex.send( ipc::manager::optional::queue(), request);
-                        }
-
-                        if( auto destination = state.reply_destination.extract( message.correlation))
-                           state.multiplex.send( destination.ipc, message);
-
-                        // if we don't have a destination, we assume the reply was due to topology::direct::Explore                        
-      
-                     };
-                  }
+                  auto reply = basic_task< casual::domain::message::discovery::Reply>;
 
                   namespace v1_3
                   {
@@ -833,10 +1150,9 @@ namespace casual
                            Trace trace{ "gateway::group::outbound::handle::local::external::domain::discovery::v1_3::reply"};
                            log::debug( "message: ", message);
 
-                           discovery::reply( state)( message::protocol::transform::from( std::move( message)), descriptor);
+                           state.tasks( message::protocol::transform::from( std::move( message)));
                         };
                      }
-                     
                   } // v1_3
 
                   namespace topology
@@ -864,22 +1180,9 @@ namespace casual
                } // domain::discovery
             } // external
 
+
             namespace management
             {
-               namespace event::transaction
-               {
-                  auto disassociate( State& state)
-                  {
-                     return [ &state]( const common::message::event::transaction::Disassociate& message)
-                     {
-                        Trace trace{ "gateway::outbound::handle:::event::transaction::disassociate"};
-                        log::debug( "message: ", message);
-
-                        state.pending.transactions.remove( message.gtrid.range());
-                     };
-                  }
-               } // event::transaction
-
                namespace domain
                {
                   auto connected( State& state)
@@ -926,6 +1229,49 @@ namespace casual
                   }
 
                } // domain
+
+               namespace event::transaction
+               {
+                  auto disassociate( State& state)
+                  {
+                     return [ &state]( const common::message::event::transaction::Disassociate& message)
+                     {
+                        Trace trace{ "gateway::outbound::handle:::event::transaction::disassociate"};
+                        log::debug( "message: ", message);
+
+                        state.pending.transactions.remove( message.gtrid.range());
+                     };
+                  }
+               } // event::transaction
+
+               namespace connection
+               {
+                  auto lost( State& state)
+                  {
+                     return [ &state]( const gateway::message::connection::Lost& message)
+                     {
+                        Trace trace{ "gateway::group::outbound::handle::local::internal::connection::lost"};
+                        log::debug( "message: ", message);
+
+                        auto information = state.connections.information( message.descriptor);
+                        casual::assertion( information, "failed to find information for descriptor: ", message.descriptor);
+
+                        // fail potential pending tasks (calls and such).
+                        state.tasks.failed( message.descriptor);
+
+                        if( ! state.pending.dissociating.contains( message.descriptor))
+                        {
+                           log::information( message.code, " lost connection to: '", information->domain.name, "' - address: ", information->address);
+
+                           // we have lost the connection, but we have not disassociated it yet.
+                           // we only need to do this once. But during the first disassociate, we still could
+                           // get ipc messages that will trigger this lost event again.
+                           local::disassociate::connection( state, message.descriptor, state::disconnect::Directive::reconnect);
+                        }
+                        
+                     };
+                  }
+               } // connection
                
             } // management
 
@@ -938,7 +1284,8 @@ namespace casual
             common::event::listener( 
                handle::local::management::event::transaction::disassociate( state)
             ),
-            local::management::domain::connected( state)
+            local::management::domain::connected( state),
+            local::management::connection::lost( state)
          };
 
       }
@@ -969,6 +1316,11 @@ namespace casual
             // discover
             local::internal::domain::discovery::request( state),
             local::internal::domain::discovery::topology::direct::explore( state),
+
+            // connection
+            local::internal::connection::dissociate::service::reply( state),
+            local::internal::connection::dissociate::queue::reply( state),
+            local::internal::connection::dissociate::transaction::reply( state)
          };
       }
 
@@ -1004,66 +1356,16 @@ namespace casual
          };
       }
 
-      void unadvertise( State& state, strong::socket::id descriptor)
-      {
-         Trace trace{ "gateway::group::outbound::handle::unadvertise"};
-         log::debug( "descriptor: ", descriptor);
-
-         auto handle = state.connections.process_handle( descriptor);
-
-         if( ! handle)
-         {
-            log::error( code::casual::internal_correlation, "failed to find ipc for ", descriptor);
-            return;
-         }
-
-         {
-            common::message::service::concurrent::Advertise request{ handle};
-            request.alias = instance::alias();
-            request.directive = decltype( request.directive)::reset;
-            state.multiplex.send( ipc::manager::service(), request);
-         }
-
-         {
-            casual::queue::ipc::message::Advertise request{ handle};
-            request.directive = decltype( request.directive)::reset;
-            if( ! state.multiplex.send( ipc::manager::optional::queue(), request))
-               log::debug( "queue-manager is not on-line");
-         }
-      }
-
+     
       namespace connection
       {
-         message::outbound::connection::Lost lost( State& state, strong::socket::id descriptor)
-         {
-            Trace trace{ "gateway::group::outbound::handle::connection::lost"};
-            log::debug( "descriptor: ", descriptor);
-
-            // might not be necessary since we send an ipc-destroyed event below.
-            handle::unadvertise( state, descriptor);
-
-            // we need to send an ipc-destroyed event, so other can disassociate stuff with the ipc
-            if( auto handle = state.connections.process_handle( descriptor))
-               common::event::send( common::message::event::ipc::Destroyed{ handle});
-
-            state.tasks.failed( descriptor);
-
-            // extract all state associated with the descriptor
-            auto extracted = state.failed( descriptor);
-            log::debug( "extracted: ", extracted);
-
-            return { std::move( extracted.information.configuration), std::move( extracted.information.domain)};
-         }
-
+         
          void disconnect( State& state, common::strong::socket::id descriptor)
          {
             Trace trace{ "gateway::group::outbound::handle::connection::disconnect"};
             log::debug( "descriptor: ", descriptor);
 
-            // unadvertise all associated services and queues, if any.
-            handle::unadvertise( state, descriptor);
-
-            state.disconnecting.push_back( state::Disconnect{ descriptor, state::disconnect::Directive::disconnect});
+            local::disassociate::connection( state, descriptor, state::disconnect::Directive::reconnect);
          }
 
          void remove( State& state, common::strong::socket::id descriptor)
@@ -1071,11 +1373,9 @@ namespace casual
             Trace trace{ "gateway::group::outbound::handle::connection::remove"};
             log::debug( "descriptor: ", descriptor);
 
-            // unadvertise all associated services and queues, if any.
-            handle::unadvertise( state, descriptor);
-
-            state.disconnecting.push_back( state::Disconnect{ descriptor, state::disconnect::Directive::remove});
+            local::disassociate::connection( state, descriptor, state::disconnect::Directive::remove);
          }
+
          
       } // connection
 
@@ -1117,21 +1417,8 @@ namespace casual
       {
          Trace trace{ "gateway::group::outbound::handle::idle"};
 
-         auto is_idle = [ &state]( auto disconnect){ return state.idle( disconnect.descriptor);};
-
-         if( auto range = algorithm::filter( state.disconnecting, is_idle))
-         {
-            // copy the descriptors - connection::lost will modify state.disconnecting
-            for( auto disconnect : algorithm::container::vector::create( range))
-            {
-               auto lost = connection::lost( state, disconnect.descriptor);
-               if( disconnect.directive == state::disconnect::Directive::disconnect)
-                  communication::ipc::inbound::device().push( std::move( lost));
-            }
-         }
-
          // we need to check/send metric, we don't know when we're about to be called again.
-         state.service_metric.force_metric( state, &handle::metric::send);
+         state.metric.force_metric( state, &handle::metric::service, &handle::metric::queue);
       }
 
       void shutdown( State& state)
@@ -1141,10 +1428,10 @@ namespace casual
          state.runlevel = state::Runlevel::shutdown;
 
          for( auto descriptor : state.connections.external_descriptors())
-            handle::connection::disconnect( state, descriptor);
+            handle::connection::remove( state, descriptor);
 
          // send metric for good measure
-         state.service_metric.force_metric( state, &handle::metric::send);
+         state.metric.force_metric( state, &handle::metric::service, &handle::metric::queue);
 
          log::debug( "state: ", state);
       }
@@ -1152,25 +1439,34 @@ namespace casual
       void abort( State& state)
       {
          Trace trace{ "gateway::group::outbound::handle::abort"};
-         log::line( log::category::verbose::error, "abort - state: ", state);
+         log::error( code::casual::abort, "best effort shutdown");
 
          state.runlevel = state::Runlevel::error;
 
          for( auto descriptor : state.connections.external_descriptors())
-            handle::unadvertise( state, descriptor);
+            state.tasks.failed( descriptor);
 
          state.connections.clear( state.directive);
       }
 
       namespace metric
       {
-         void send( State& state, const common::message::event::service::Calls& metric)
+         void service( State& state, const common::message::event::service::Calls& metric)
          {
-            Trace trace{ "gateway::group::outbound::handle::metric::send"};
+            Trace trace{ "gateway::group::outbound::handle::metric::service"};
             log::debug( "metric: ", metric);
 
             state.multiplex.send( ipc::manager::service(), metric);
          }
+
+         void queue( State& state, const queue::ipc::message::group::metric::remote::Entries& metric)
+         {
+            Trace trace{ "gateway::group::outbound::handle::metric::queue"};
+            log::debug( "metric: ", metric);
+
+            state.multiplex.send( ipc::manager::optional::queue(), metric);
+         }
+
       } // metric
 
    } // gateway::group::outbound::handle

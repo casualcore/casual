@@ -68,6 +68,12 @@ namespace casual
                   m_transactions.erase( std::begin( found));
             }
 
+            void Transactions::remove( common::strong::socket::id descriptor)
+            {
+               for( auto& pair : m_transactions)
+                  algorithm::container::erase( pair.second, descriptor);
+            }
+
             bool Transactions::is_associated( const common::transaction::ID& trid, common::strong::socket::id descriptor)
             {
                auto gtrid = trid.global();
@@ -79,24 +85,6 @@ namespace casual
                return false;
             }
 
-            std::vector< common::transaction::global::ID> Transactions::extract( common::strong::socket::id descriptor)
-            {
-               std::vector< common::transaction::global::ID> result;
-
-               algorithm::container::erase_if( m_transactions, [ &result, descriptor]( auto& pair)
-               {
-                  if( auto found = algorithm::find( pair.second, descriptor))
-                  {
-                     result.push_back( pair.first);
-
-                     if( algorithm::container::erase( pair.second, std::begin( found)).empty())
-                        return true;
-                  }
-                  return false;
-               });
-
-               return result;
-            }
 
             bool Transactions::contains( common::strong::socket::id descriptor) const noexcept
             {
@@ -115,7 +103,7 @@ namespace casual
             {
                switch( value)
                {
-                  case Directive::disconnect: return "disconnect";
+                  case Directive::reconnect: return "reconnect";
                   case Directive::remove: return "remove";
                }
                return "<unknown>";
@@ -126,34 +114,28 @@ namespace casual
 
       } // state
 
-      state::extract::Result State::failed( common::strong::socket::id descriptor)
+ 
+      message::outbound::connection::Reconnect State::extract( common::strong::socket::id descriptor)
       {
-         Trace trace{ "gateway::group::outbound::State::failed"};
-         log::debug( "descriptor: ", descriptor);
+         Trace trace{ "gateway::group::outbound::State::extract"};
 
-         // clean the disconnecting state.
-         algorithm::container::erase( disconnecting, descriptor);
+         // remove from transaction cache, if any
+         pending.transactions.remove( descriptor);
 
-         return {
-            connections.extract( directive, descriptor),
-            reply_destination.extract( descriptor),
-            pending.transactions.extract( descriptor)
-         };
-      }
+         auto connection = connections.extract( directive, descriptor);
 
-      bool State::idle( common::strong::socket::id descriptor) const noexcept
-      {
-         Trace trace{ "gateway::group::outbound::State::idle"};
-
-         return ! pending.transactions.contains( descriptor) && ! reply_destination.contains( descriptor) && ! tasks.contains( descriptor);
+         return { std::move( connection.configuration), std::move( connection.domain)};
       }
 
       bool State::done() const
       {
+         Trace trace{ "gateway::group::outbound::State::done"};
+
          if( runlevel <= state::Runlevel::running)
             return false;
 
-         return tasks.empty() && pending.transactions.empty() && reply_destination.empty();
+         // NOTE: We should only need to check pending.dissociating.empty().
+         return pending.dissociating.empty() && tasks.empty() && pending.transactions.empty();
       }
 
    } // gateway::group::outbound

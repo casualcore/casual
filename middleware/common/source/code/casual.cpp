@@ -74,6 +74,7 @@ namespace casual
          {
             case casual::shutdown: return "shutdown";
             case casual::interrupted: return "interrupted";
+            case casual::abort: return "abort";
             case casual::preconditions: return "preconditions";
             case casual::deprecated: return "deprecated";
             case casual::invalid_configuration: return "invalid-configuration";

@@ -178,6 +178,8 @@ namespace casual
             case Type::queue_forward_group_configuration_update_reply: return "queue_forward_group_configuration_update_reply";
             case Type::queue_forward_group_state_request: return "queue_forward_group_state_request";
             case Type::queue_forward_group_state_reply: return "queue_forward_group_state_reply";
+            case Type::gateway_connection_lost: return "gateway_connection_lost";
+            case Type::gateway_connection_reconnect: return "gateway_connection_reconnect";
             case Type::gateway_inbound_connect: return "gateway_inbound_connect";
             case Type::gateway_inbound_configuration_update_request: return "gateway_inbound_configuration_update_request";
             case Type::gateway_inbound_configuration_update_reply: return "gateway_inbound_configuration_update_reply";
@@ -191,7 +193,6 @@ namespace casual
             case Type::gateway_outbound_configuration_update_reply: return "gateway_outbound_configuration_update_reply";
             case Type::gateway_outbound_state_request: return "gateway_outbound_state_request";
             case Type::gateway_outbound_state_reply: return "gateway_outbound_state_reply";
-            case Type::gateway_outbound_connection_lost: return "gateway_outbound_connection_lost";
             case Type::gateway_reverse_outbound_state_request: return "gateway_reverse_outbound_state_request";
             case Type::gateway_reverse_outbound_state_reply: return "gateway_reverse_outbound_state_reply";
             case Type::gateway_domain_connect_request: return "gateway_domain_connect_request";

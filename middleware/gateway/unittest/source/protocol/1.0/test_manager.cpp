@@ -104,6 +104,7 @@ domain:
          // send service lookup
          {
             common::message::service::lookup::Request request{ common::process::handle()}; 
+            request.trid = trid;
             request.requested = "x";
             communication::device::blocking::send( communication::instance::outbound::service::manager::device(), request);
          }
@@ -127,6 +128,7 @@ domain:
             ASSERT_TRUE( reply.state == decltype( reply.state)::idle);
 
             common::message::service::call::callee::Request request{ common::process::handle()};
+            request.correlation = reply.correlation;
             request.service.name = "x";
             request.header.add( { "foo", "bar"});
             request.trid = trid;
@@ -158,6 +160,35 @@ domain:
             auto reply = communication::ipc::receive< common::message::service::call::Reply>();
             ASSERT_TRUE( reply.code.result == code::xatmi::ok);
             EXPECT_TRUE( reply.buffer.data == payload);
+         }
+
+         
+         const auto transaction_correlation = common::strong::correlation::id::generate();
+         
+         // send commit request to transaction manager
+         {
+            common::message::transaction::commit::Request request{ common::process::handle()};
+            request.correlation = transaction_correlation;
+            request.trid = trid;
+            communication::device::blocking::send( communication::instance::outbound::transaction::manager::device(), request);
+         }
+
+         // act as TM in our "virtual" domain and echo the resource commit request
+         {
+            auto request = communication::device::receive< common::message::transaction::resource::commit::Request>( device);
+            EXPECT_TRUE( request.trid == trid);
+            EXPECT_TRUE( common::flag::contains( request.flags, decltype( request.flags)::one_phase));
+
+            auto reply = common::message::reverse::type( request);
+            reply.trid = request.trid;
+
+            communication::device::blocking::send( device, reply);
+         }
+
+         // receive the commit reply from TM
+         {
+            auto reply = communication::ipc::receive< common::message::transaction::commit::Reply>( transaction_correlation);
+            EXPECT_TRUE( reply.trid == trid);
          }
       }
 

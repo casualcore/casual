@@ -192,26 +192,12 @@ namespace casual
          //! @return true if the state is ready to 'terminate'
          bool done() const noexcept;
 
-
          state::extract::Result extract( common::strong::socket::id connection);
 
          //! @returns a reply message to state `request` that is filled with what's possible
+         //!   defined below.
          template< typename M>
-         auto reply( M&& request) const noexcept
-         {
-            auto reply = connections.reply( request);
-
-            // update disconnect informaiton, if any
-            for( auto socket : pending.disconnects)
-               if( auto found = common::algorithm::find( reply.state.connections, socket))
-                  found->runlevel = decltype( found->runlevel)::disconnecting;
-
-            reply.state.alias = alias;
-            reply.state.note = note;
-            reply.state.limit = limit;
-
-            return reply;
-         }
+         auto reply( M&& request) const noexcept;
 
          CASUAL_LOG_SERIALIZE( 
             CASUAL_SERIALIZE( runlevel);
@@ -224,6 +210,23 @@ namespace casual
             CASUAL_SERIALIZE( note);
          )
       };
+
+      template< typename M>
+      auto State::reply( M&& request) const noexcept
+      {
+         auto reply = connections.reply( request);
+
+         // update disconnect informaiton, if any
+         for( auto socket : pending.disconnects)
+            if( auto found = common::algorithm::find( reply.state.connections, socket))
+               found->runlevel = decltype( found->runlevel)::disconnecting;
+
+         reply.state.alias = alias;
+         reply.state.note = note;
+         reply.state.limit = limit;
+
+         return reply;
+      }
 
    } // gateway::group::inbound
 } // casual

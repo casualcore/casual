@@ -26,8 +26,8 @@ namespace casual
    namespace gateway::group::tcp
    {
 
-      template< typename S, typename LC, typename M>
-      common::strong::correlation::id send( S& state, LC&& lost_callback, common::strong::socket::id descriptor, M&& message)
+      template< typename S, typename M>
+      common::strong::correlation::id send( S& state, common::strong::socket::id descriptor, M&& message)
       {
          if( auto connection = state.connections.find_external( descriptor))
          {
@@ -39,19 +39,24 @@ namespace casual
             {
                const auto error = common::exception::capture();
 
-               auto lost = lost_callback( state, descriptor);
+               auto information = casual::assertion( state.connections.information( descriptor), "failed to find information for descriptor: ", descriptor);
 
                if( error.code() != common::code::casual::communication_unavailable)
-                  common::log::line( common::log::category::error, error, " send failed to remote: ", lost.remote, " - action: remove connection");
+                  common::log::error( error, "send failed to remote: ", information->domain, " - action: remove connection");
+
+               // remove the descriptor from the directive, so 'select' does not trigger for this
+               // descriptor any more (it probably will not, but just to be sure).
+               // invalidate the descriptor -> impossible to send any more messages on this connection.
+               connection->invalidate( state.directive);
 
                // we 'lost' the connection in some way - we put a connection::Lost on our own ipc-device, and handle it
                // later (and differently depending on if we're inbound, outbound, 'regular' or 'reversed')
-               common::communication::ipc::inbound::device().push( std::move( lost));
+               common::communication::ipc::inbound::device().push( message::connection::Lost{ descriptor, error.code()});
             }
          }
          else
          {
-            common::log::line( common::log::category::error, common::code::casual::internal_correlation, " tcp::send -  failed to correlate descriptor: ", descriptor, " for message type: ", message.type());
+            common::log::error( common::code::casual::internal_correlation, "tcp::send - failed to correlate descriptor: ", descriptor, " for message type: ", message.type());
             common::log::line( common::log::category::verbose::error, "state: ", state);
          }
 
@@ -89,6 +94,14 @@ namespace casual
             return common::communication::device::non::blocking::next( m_device);
          }
 
+         inline bool valid() const noexcept { return m_device.connector().socket().valid();};
+
+         inline void invalidate( common::communication::select::Directive& directive)
+         {
+            directive.remove( descriptor());
+            m_device = {};
+         }
+
          inline auto protocol() const noexcept { return m_protocol;}
          inline void protocol( message::protocol::Version protocol) noexcept { m_protocol = protocol;}
 
@@ -108,18 +121,37 @@ namespace casual
 
       namespace connection
       {
+         namespace information
+         {
+            struct Address
+            {
+               common::communication::tcp::Address host;
+               common::communication::tcp::Address peer;
+
+               CASUAL_LOG_SERIALIZE(
+                  CASUAL_SERIALIZE( host);
+                  CASUAL_SERIALIZE( peer);
+               )
+            };
+            
+         } // information
+
          template< typename Configuration>
          struct Information
          {
             Information( common::strong::socket::id descriptor,
                common::domain::Identity domain,
                Configuration configuration)
-               : descriptor{ descriptor}, domain{ std::move( domain)}, configuration{ std::move( configuration)}
+               : descriptor{ descriptor}, domain{ std::move( domain)}, configuration{ std::move( configuration)},
+                  address{ 
+                     .host = common::communication::tcp::socket::address::host( descriptor), 
+                     .peer = common::communication::tcp::socket::address::peer( descriptor)}
             {}
 
             common::strong::socket::id descriptor;
             common::domain::Identity domain;
             Configuration configuration;
+            information::Address address;
             common::chronology::time_point created = platform::time::clock::type::now();
 
             inline friend bool operator == ( const Information& lhs, common::strong::socket::id rhs) { return lhs.descriptor == rhs;} 
@@ -129,6 +161,7 @@ namespace casual
                CASUAL_SERIALIZE( descriptor);
                CASUAL_SERIALIZE( domain);
                CASUAL_SERIALIZE( configuration);
+               CASUAL_SERIALIZE( address);
                CASUAL_SERIALIZE( created);
             )
          };
@@ -137,8 +170,8 @@ namespace casual
 
       namespace detail::handle::communication
       {
-         template< typename State, typename Lost>
-         void exception( State& state, common::strong::socket::id descriptor, Lost lost) noexcept
+         template< typename State>
+         void exception( State& state, common::strong::socket::id descriptor) noexcept
          {
             try
             {
@@ -152,34 +185,30 @@ namespace casual
                if( error.code() != code::casual::communication_unavailable)
                {
                   auto information = casual::assertion( state.connections.information( descriptor), "failed to find information for descriptor: ", descriptor);
-                  log::line( log::category::error, "failed to communicate with domain: ", information->domain, ", configured address: ", information->configuration.address, " - error: ", error);
+                  log::error( error, "failed to communicate with domain: ", information->domain, ", configured address: ", information->configuration.address, " - error: ", error);
                }
 
+               // remove the descriptor from the directive, so 'select' does not trigger for this
+               // descriptor any more (it probably will not, but just to be sure).
+               // invalidate the descriptor -> impossible to send any more messages on this connection.
+               auto connection = state.connections.find_external( descriptor);
+               casual::assertion( connection, "failed to find connection for descriptor: ", descriptor);
+               
+               connection->invalidate( state.directive);
+
                // we 'lost' the connection in some way - we put a connection::Lost on our own ipc-device, and handle it
-               // later (and differently depending on if we're 'regular' or 'reversed')
-               //
-               // NOTE: lost functor might throw, and we have noexcept. If we fail to execute lost and handle the lost connection
-               // properly there's no point in going on, we have a broken state in some way. We still catch and log the
-               // error to help find potential future errors in lost (it should not throw).
-               // TODO: Make sure lost is noexcept (compile time) and force the responsibility to "where it belongs"?
-               try
-               {
-                  common::communication::ipc::inbound::device().push( lost( state, descriptor));
-               }
-               catch( ...)
-               {
-                  casual::terminate( "failed to handle lost connection for descriptor: ", descriptor, " - error: ", exception::capture());
-               }
+               // later (and differently depending on if we're inbound, outbound, 'regular' or 'reversed')
+               common::communication::ipc::inbound::device().push( message::connection::Lost{ descriptor, error.code()});
             }
          }
       } // detail::handle::communication
 
       namespace handle::dispatch
       {
-         template< typename Policy, typename State, typename Handler, typename Lost>
-         auto create( State& state, Handler handler, Lost lost)
+         template< typename Policy, typename State, typename Handler>
+         auto create( State& state, Handler handler)
          {
-            return [ &state, handler = std::move( handler), lost = std::move( lost)]( common::strong::file::descriptor::id fd, common::communication::select::tag::read) mutable
+            return [ &state, handler = std::move( handler)]( common::strong::file::descriptor::id fd, common::communication::select::tag::read) mutable
             {
                // we know the descriptor is a socket descriptor, we convert.
                auto descriptor = common::strong::socket::id{ fd};
@@ -196,7 +225,7 @@ namespace casual
                   }
                   catch( ...)
                   {
-                     detail::handle::communication::exception( state, descriptor, lost);
+                     detail::handle::communication::exception( state, descriptor);
                   }
                   return true;
                }
@@ -207,10 +236,10 @@ namespace casual
 
       namespace pending::send::dispatch
       { 
-         template< typename State, typename Lost>
-         auto create( State& state, Lost lost)
+         template< typename State>
+         auto create( State& state)
          {  
-            return [ &state, lost = std::move( lost)]( common::strong::file::descriptor::id fd, common::communication::select::tag::write) noexcept
+            return [ &state]( common::strong::file::descriptor::id fd, common::communication::select::tag::write) noexcept
             {
                Trace trace{ "gateway::group::tcp::pending::send::dispatch"};
 
@@ -225,7 +254,7 @@ namespace casual
                   }
                   catch( ...)
                   {
-                     detail::handle::communication::exception( state, descriptor, lost);
+                     detail::handle::communication::exception( state, descriptor);
                   }
                   return true;
                }

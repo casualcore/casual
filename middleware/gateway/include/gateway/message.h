@@ -170,7 +170,7 @@ namespace casual
          {
             Address address;
             connection::Runlevel runlevel{};
-            common::strong::file::descriptor::id descriptor;
+            common::strong::socket::id descriptor;
             common::domain::Identity domain;
             message::protocol::Version protocol{};
             Configuration configuration;
@@ -216,6 +216,48 @@ namespace casual
          };
          
       } // state
+
+      namespace connection
+      {
+         using base_lost = common::message::basic_message< common::message::Type::gateway_connection_lost>;
+         struct Lost : base_lost
+         {
+            Lost() = default;
+            Lost( common::strong::socket::id descriptor, std::error_code code)
+               : descriptor{ descriptor}, code{ code} 
+            {}
+
+            common::strong::socket::id descriptor;
+            std::error_code code;
+
+            CASUAL_CONST_CORRECT_SERIALIZE(
+               base_lost::serialize( archive);
+               CASUAL_SERIALIZE( descriptor);
+               CASUAL_SERIALIZE( code);
+            )
+         };
+
+         using base_reconnect = common::message::basic_message< common::message::Type::gateway_connection_reconnect>;
+
+         template< typename Configuration>
+         struct basic_reconnect : base_reconnect
+         {
+            basic_reconnect() = default;
+            basic_reconnect( Configuration configuration, common::domain::Identity remote)
+               : configuration{ std::move( configuration)}, remote{ std::move( remote)} {}
+
+            Configuration configuration;
+            common::domain::Identity remote;
+
+            CASUAL_CONST_CORRECT_SERIALIZE(
+               base_reconnect::serialize( archive);
+               CASUAL_SERIALIZE( configuration);
+               CASUAL_SERIALIZE( remote);
+            )
+
+         };
+
+      } // connection
 
       namespace inbound
       {
@@ -327,22 +369,7 @@ namespace casual
 
          namespace connection
          {
-            using base_lost = common::message::basic_message< common::message::Type::gateway_inbound_connection_lost>;
-            struct Lost : base_lost
-            {
-               Lost() = default;
-               Lost( casual::configuration::model::gateway::inbound::Connection configuration, common::domain::Identity remote)
-                  : configuration{ std::move( configuration)}, remote{ std::move( remote)} {}
-
-               casual::configuration::model::gateway::inbound::Connection configuration;
-               common::domain::Identity remote;
-
-               CASUAL_CONST_CORRECT_SERIALIZE(
-                  base_lost::serialize( archive);
-                  CASUAL_SERIALIZE( configuration);
-                  CASUAL_SERIALIZE( remote);
-               )
-            };
+            using Reconnect = message::connection::basic_reconnect< casual::configuration::model::gateway::inbound::Connection>;
             
          } // connection
 
@@ -533,22 +560,7 @@ namespace casual
 
          namespace connection
          {
-            using base_lost = common::message::basic_message< common::message::Type::gateway_outbound_connection_lost>;
-            struct Lost : base_lost
-            {
-               Lost() = default;
-               Lost( casual::configuration::model::gateway::outbound::Connection configuration, common::domain::Identity remote)
-                  : configuration{ std::move( configuration)}, remote{ std::move( remote)} {}
-
-               casual::configuration::model::gateway::outbound::Connection configuration;
-               common::domain::Identity remote;
-
-               CASUAL_CONST_CORRECT_SERIALIZE(
-                  base_lost::serialize( archive);
-                  CASUAL_SERIALIZE( configuration);
-                  CASUAL_SERIALIZE( remote);
-               )
-            };
+            using Reconnect = message::connection::basic_reconnect< casual::configuration::model::gateway::outbound::Connection>;
             
          } // connection
          

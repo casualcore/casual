@@ -46,7 +46,6 @@ namespace casual
 
       namespace state
       {
-         using task_coordinator_type = task::concurrent::Coordinator< common::strong::socket::id>;
 
          enum struct Runlevel : short
          {
@@ -57,41 +56,52 @@ namespace casual
          std::string_view description( Runlevel value);
 
 
-        namespace service
-        {
-            struct Metric
+         struct Metric
+         {
+            void add( common::message::event::service::Metric&& metric)
             {
-               void add( common::message::event::service::Metric&& metric)
+               m_service.metrics.push_back( std::move( metric));
+            }
+
+            void add( queue::ipc::message::group::metric::remote::Entry&& entry)
+            {
+               m_queue.entries.push_back( std::move( entry));
+            }
+
+            //! "force" metric callback if there are metric to send
+            template< typename SM, typename QM>
+            void force_metric( State& state, SM sm_callback, QM qm_callback)
+            {
+               if( ! m_service.metrics.empty())
                {
-                  m_metric.metrics.push_back( std::move( metric));
+                  sm_callback( state, m_service);
+                  m_service.metrics.clear();
                }
 
-               //! "force" metric callback if there are metric to send
-               template< typename CB>
-               void force_metric( State& state, CB callback)
+               if( ! m_queue.entries.empty())
                {
-                  if( m_metric.metrics.empty())
-                     return;
-
-                  callback( state, m_metric);
-                  m_metric.metrics.clear();
+                  qm_callback( state, m_queue);
+                  m_queue.entries.clear();
                }
+            }
 
-               template< typename CB>
-               void maybe_metric( State& state, CB callback)
-               {
-                  if( m_metric.metrics.size() >= platform::batch::gateway::metrics)
-                     force_metric( state, callback);
-               }
+            template< typename SM, typename QM>
+            void maybe_metric( State& state, SM sm_callback, QM qm_callback)
+            {
+               if( m_service.metrics.size() >= platform::batch::gateway::metrics || m_queue.entries.size() >= platform::batch::gateway::metrics)
+                  force_metric( state, sm_callback, qm_callback);
+            }
 
-               CASUAL_LOG_SERIALIZE(
-                  CASUAL_SERIALIZE( m_metric);
-               )
+            CASUAL_LOG_SERIALIZE(
+               CASUAL_SERIALIZE( m_service);
+               CASUAL_SERIALIZE( m_queue);
+            )
 
-            private:
-               common::message::event::service::Calls m_metric{ common::process::handle()};
-            };
-        } // service
+         private:
+            common::message::event::service::Calls m_service{ common::process::handle()};
+            queue::ipc::message::group::metric::remote::Entries m_queue;
+         };
+
 
          namespace pending
          {
@@ -100,10 +110,9 @@ namespace casual
                bool associate( const common::transaction::ID& trid, common::strong::socket::id descriptor);
                void remove( const common::transaction::ID& trid, common::strong::socket::id descriptor);
                void remove( common::transaction::global::id::range gtrid);
+               void remove( common::strong::socket::id descriptor);
 
                bool is_associated( const common::transaction::ID& trid, common::strong::socket::id descriptor);
-
-               std::vector< common::transaction::global::ID> extract( common::strong::socket::id descriptor);
 
                bool contains( common::strong::socket::id descriptor) const noexcept;
 
@@ -200,47 +209,17 @@ namespace casual
 
          } // reply
 
-         namespace extract
-         {
-            struct Result
-            {
-               group::tcp::connection::Information< casual::configuration::model::gateway::outbound::Connection> information;
-               std::vector< reply::destination::Entry> destinations;
-               std::vector< common::transaction::global::ID> gtrids;
-
-               inline bool empty() const noexcept { return destinations.empty() && gtrids.empty();}
-
-               CASUAL_LOG_SERIALIZE( 
-                 CASUAL_SERIALIZE( information);
-                 CASUAL_SERIALIZE( destinations);
-                 CASUAL_SERIALIZE( gtrids);
-               )
-            };
-         } // extract
 
          namespace disconnect
          {
             enum struct Directive : short
             {
-               disconnect,
+               reconnect,
                remove,
             };
             std::string_view description( Directive value);
             
          } // disconnect
-
-         struct Disconnect
-         {
-            common::strong::socket::id descriptor;
-            disconnect::Directive directive;
-            
-            inline friend bool operator == ( const Disconnect& lhs, common::strong::socket::id rhs) { return lhs.descriptor == rhs;}
-
-            CASUAL_LOG_SERIALIZE( 
-               CASUAL_SERIALIZE( directive);
-               CASUAL_SERIALIZE( descriptor);
-            )
-         };
 
       } // state
 
@@ -254,85 +233,88 @@ namespace casual
          group::connection::Holder< casual::configuration::model::gateway::outbound::Connection> connections;
          std::vector< casual::configuration::model::gateway::outbound::Connection> disabled_connections;
 
-         state::task_coordinator_type tasks;
+         //! holds task for all ongoing requests.
+         task::concurrent::Coordinator< common::strong::socket::id> tasks;
          
-         state::reply::Destination reply_destination;
-         state::service::Metric service_metric;
+         state::Metric metric;
 
-         
          struct
          {
             state::pending::Transactions transactions;
 
+            // holds pending connection disassociate tasks. We need to keep these separate from the tasks,
+            // since we need to be able to check if a connection is in the process of being disassociated.
+            task::concurrent::Coordinator< common::strong::socket::id> dissociating;
+            
             CASUAL_LOG_SERIALIZE( 
                CASUAL_SERIALIZE( transactions);
+               CASUAL_SERIALIZE( dissociating);
             )
 
          } pending;
 
 
-         //! holds all connections that has been requested to disconnect.
-         std::vector< state::Disconnect> disconnecting;
-
          std::string alias;
          platform::size::type order{};
 
-         //! `descriptor? has failed, @returns "all" extracted state associated with the `descriptor`
-         state::extract::Result failed( common::strong::socket::id descriptor); 
+         //! removes all state associated with the connection and @returns a reconnect message
+         //!  to potentially use for reconnecting the connection.
+         message::outbound::connection::Reconnect extract( common::strong::socket::id descriptor);
 
-         //! @returns true if the `descriptor` does not have any thing "in-flight"
-         bool idle( common::strong::socket::id descriptor) const noexcept;
 
          bool done() const;
 
-         //! @returns a reply message to state `request` that is filled with what's possible
+         //! @returns a reply message to state `request` that is filled with what's possible.
+         //!    defined below.
          template< typename M>
-         auto reply( M&& request) const noexcept
-         {
-            auto reply = connections.reply( request);
-
-            // update disconnect informaiton, if any
-            for( auto& disconnect : disconnecting)
-               if( auto found = common::algorithm::find( reply.state.connections, disconnect.descriptor))
-                  found->runlevel = decltype( found->runlevel)::disconnecting;
-
-            reply.state.alias = alias;
-            reply.state.order = order;
-
-            // pending
-            reply.state.pending.tasks = common::algorithm::transform( tasks.tasks(), []( auto& task)
-            {
-               message::outbound::state::pending::Task result;
-               result.correlation = task.correlation();
-               result.connection = task.key();
-               result.message_types = task.types();
-               return result;
-            });
-
-            reply.state.pending.transactions = common::algorithm::transform( pending.transactions.transactions(), []( auto& pair)
-            {
-               return message::outbound::state::pending::Transaction{
-                  pair.first,
-                  pair.second
-               };
-            });
-
-            return reply;
-         }
+         auto reply( M&& request) const noexcept;
          
          CASUAL_LOG_SERIALIZE( 
             CASUAL_SERIALIZE( runlevel);
             CASUAL_SERIALIZE( directive);
             CASUAL_SERIALIZE( connections);
-            CASUAL_SERIALIZE( reply_destination);
             CASUAL_SERIALIZE( tasks);
             CASUAL_SERIALIZE( pending);
-            CASUAL_SERIALIZE( service_metric);
-            CASUAL_SERIALIZE( disconnecting);
+            CASUAL_SERIALIZE( metric);
             CASUAL_SERIALIZE( alias);
             CASUAL_SERIALIZE( order);
          )
       };
+
+
+      template< typename M>
+      auto State::reply( M&& request) const noexcept
+      {
+         auto reply = connections.reply( request);
+
+         // update disconnect informaiton, if any
+         for( auto& connection : reply.state.connections)
+            if( pending.dissociating.contains( connection.descriptor))
+               connection.runlevel = decltype( connection.runlevel)::disconnecting;
+
+         reply.state.alias = alias;
+         reply.state.order = order;
+
+         // pending
+         reply.state.pending.tasks = common::algorithm::transform( tasks.tasks(), []( auto& task)
+         {
+            message::outbound::state::pending::Task result;
+            result.correlation = task.correlation();
+            result.connection = task.key();
+            result.message_types = task.types();
+            return result;
+         });
+
+         reply.state.pending.transactions = common::algorithm::transform( pending.transactions.transactions(), []( auto& pair)
+         {
+            return message::outbound::state::pending::Transaction{
+               pair.first,
+               pair.second
+            };
+         });
+
+         return reply;
+      }
 
    } // gateway::group::outbound
 } // casual
