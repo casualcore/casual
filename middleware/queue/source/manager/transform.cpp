@@ -162,7 +162,12 @@ namespace casual
 
             auto transform_remote_domains = []( const auto& remote)
             {
-               return admin::model::remote::Domain{ remote.alias, remote.process, remote.order, remote.description};
+               return admin::model::remote::Domain{ 
+                  .alias = remote.alias, 
+                  .process = remote.process, 
+                  .order = remote.order, 
+                  .description = remote.description,
+                  .reservations = remote.reservations};
             };
 
             algorithm::transform( state.remotes, std::back_inserter( result.remote.domains), transform_remote_domains);

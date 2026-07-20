@@ -44,6 +44,19 @@ namespace casual
       {
          namespace
          {
+            void possible_reserve_remote( State& state, const casual::queue::manager::state::Queue& queue, const strong::correlation::id& correlation)
+            {
+               Trace trace{ "queue::manager::handle::local::lookup::detail::dispatch::lookup::possible_reserve_remote"};
+
+               if( ! queue.remote())
+                  return;
+
+               if( auto found = algorithm::find( state.remotes, queue.process.ipc))
+               {
+                  found->reserve( correlation);
+                  log::debug( "found remote: ", *found);
+               }
+            }
 
             namespace pending::lookups
             {
@@ -65,12 +78,17 @@ namespace casual
                         reply.process = queue->process;
                         reply.order = queue->order;
 
-                        return predicate::boolean( state.multiplex.send( lookup.process.ipc, reply));
+                        if( state.multiplex.send( lookup.process.ipc, reply))
+                           possible_reserve_remote( state, *queue, lookup.correlation);
+                        else
+                           log::debug( "failed to send reply for pending lookup: ", lookup, " - action: assume caller has died");
+                     
+                        return true;
                      }
                      return false;
                   };
 
-                  algorithm::container::trim( state.pending.lookups, algorithm::remove_if( state.pending.lookups, lookup_replied));
+                  algorithm::container::erase_if( state.pending.lookups, lookup_replied);
                }
 
                void discard( State& state)
@@ -94,8 +112,7 @@ namespace casual
             } // pending::lookups
 
             namespace event
-            {
-               
+            {  
                namespace dead
                {
                   auto process( State& state)
@@ -114,15 +131,16 @@ namespace casual
                   {
                      return [ &state]( const common::message::event::ipc::Destroyed& event)
                      {
-                        Trace trace{ "queue::manager::handle::local::event::dead::process"};
+                        Trace trace{ "queue::manager::handle::local::event::dead::ipc"};
                         common::log::debug( "event: ", event);
 
-                        state.remove_queues( event.process.ipc);
+                        state.remove( event.process.ipc);
+
                      };
                   }
-               } // process
+               } // dead
                
-            } // dead
+            } // event
 
             namespace shutdown
             {  
@@ -208,13 +226,17 @@ namespace casual
                      return false;
                   }
 
+
                   bool internal_external( State& state, queue::ipc::message::lookup::Request& message)
                   {
                      Trace trace{ "queue::manager::local::handle::lookup::detail::dispatch::lookup::internal_external"};
 
                      if( auto queue = state.queue( message.name, message.context.action))
                      {
+                        common::log::debug( "found queue: ", *queue);
+
                         dispatch::lookup::reply( state, *queue, message);
+                        possible_reserve_remote( state, *queue, message.correlation);
                         return true;
                      }
 
@@ -275,14 +297,66 @@ namespace casual
                            state.pending.lookups.erase( std::begin( found));
                         }
                         else
+                        {
                            reply.state = decltype( reply.state)::replied;
+                        }
 
+                        // check remote instances.
+                        if( auto found = algorithm::find( state.remotes, message.correlation))
+                        {
+                           if( found->unreserve( message.correlation))
+                           {
+                              // the remote instance is idle, we check if there are pending disassociation requests for the instance.
+                              if( auto disassociation = algorithm::find( state.pending.disassociation, found->process.ipc))
+                              {
+                                 auto request = algorithm::container::extract( state.pending.disassociation, std::begin( disassociation));
+                                 state.multiplex.send( found->process.ipc, common::message::reverse::type( request));
+                              }
+                           }
+                        }
+                    
                         state.multiplex.send( message.process.ipc, reply);
                      };
                   }
                } // discard
 
             } // lookup
+
+            namespace metric
+            {
+               auto remote( State& state)
+               {
+                  return [&state]( const queue::ipc::message::group::metric::remote::Entries& message)
+                  {
+                     Trace trace{ "queue::manager::handle::local::metric::remote"};
+                     log::debug( "message: ", message);
+
+                     static auto check_disassociation = []( State& state, auto& ipc)
+                     {
+                        if( auto found = algorithm::find( state.pending.disassociation, ipc))
+                        {
+                           auto request = algorithm::container::extract( state.pending.disassociation, std::begin( found));
+                           state.multiplex.send( ipc, common::message::reverse::type( request));
+                        }
+                     };
+
+                     auto unreserve_remote = [ &state]( auto& entry)
+                     {
+                        if( auto found = algorithm::find( state.remotes, entry.process.ipc))
+                        {
+                           log::debug( "remote: ", *found);
+
+                           if( found->unreserve( entry.correlation))
+                              check_disassociation( state, entry.process.ipc);
+                        }
+                     };
+
+                     // unreserve all the remote instances that have sent metrics
+                     std::ranges::for_each( message.entries, unreserve_remote);
+                  };
+               }
+               
+            } // metric
 
             namespace group
             {
@@ -422,6 +496,32 @@ namespace casual
                   pending::lookups::check( state);
                }; 
             }
+
+            namespace external::dissociation
+            {
+               auto request( State& state)
+               {
+                  return [&state]( queue::ipc::message::external::disassociate::Request& message)
+                  {
+                     Trace trace{ "queue::manager::handle::local::external::dissociation::request"};
+                     log::debug( "message: ", message);
+
+                     // unadvertise all the queues associated with the instance.
+                     state.remove_queues( message.process.ipc); 
+
+                     if( auto found = algorithm::find( state.remotes, message.process.ipc); found && ! found->reservations.empty())
+                     {
+                        log::debug( "remote has reservations: ", *found);
+                        state.pending.disassociation.push_back( std::move( message));
+                     }
+                     else
+                     {
+                        state.multiplex.send( message.process.ipc, common::message::reverse::type( message));
+                     }
+                     
+                  };
+               }
+            } // external::dissociation
 
             namespace domain::discover
             {
@@ -655,6 +755,8 @@ namespace casual
             handle::local::lookup::request( state),
             handle::local::lookup::discard::request( state),
             handle::local::advertise( state),
+            handle::local::metric::remote( state),
+            handle::local::external::dissociation::request( state),
             handle::local::domain::discover::lookup::request( state),
             handle::local::domain::discover::api::reply( state),
             handle::local::domain::discover::fetch::known::request( state),

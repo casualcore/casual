@@ -72,6 +72,7 @@ namespace casual
                   request.name = lookup.name();
 
                   auto group = lookup();
+                  request.correlation = group.correlation;
 
                   if( ! group.process.ipc)
                      common::code::raise::error( common::code::queue::no_queue, "failed to lookup queue: ", lookup.name());
@@ -95,6 +96,7 @@ namespace casual
                   auto request = []( auto& lookup, auto& selector, auto& trid, auto block)
                   {
                      ipc::message::group::dequeue::Request request{ common::process::handle()};
+                     request.correlation = lookup.correlation;
                      request.trid = trid;
                      request.queue = lookup.queue;
                      request.block = block;

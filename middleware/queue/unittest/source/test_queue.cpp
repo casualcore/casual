@@ -117,6 +117,17 @@ domain:
                return domain( configuration::queue);
             }
 
+            auto lookup( std::string name)
+            {           
+               ipc::message::lookup::Request request;
+               request.process = common::process::handle();
+               request.name = std::move( name);
+
+               return common::communication::ipc::call( 
+                  common::communication::instance::outbound::queue::manager::device(), 
+                  request);
+            }
+
          } // <unnamed>
 
       } // local
@@ -2315,8 +2326,70 @@ domain:
             EXPECT_TRUE( state.forward.groups.size() == 0) << CASUAL_NAMED_VALUE( state.forward.groups);
 
          }
-
       }
 
+
+      TEST( casual_queue, advertise_remote_queue_a__lookup_a__expect_remote_reserved__send_disassociate_request__send_metric__expect_remote_unreserved__expect_disassociate_reply)
+      {
+         common::unittest::Trace trace;
+
+         auto a = local::domain( R"(
+domain:
+   name: A
+         )");
+
+         unittest::advertise::remote( { "a"});
+
+         // lookup up 'a'
+         auto lookup = local::lookup( "a");
+            
+         EXPECT_TRUE( lookup.process  == common::process::handle());
+         EXPECT_TRUE( lookup.remote());
+
+         // expect remote to be reserved
+         {
+            auto state = unittest::state();
+            EXPECT_TRUE( state.remote.domains.at( 0).reservations.size() == 1) << CASUAL_NAMED_VALUE( state.remote.domains);
+            EXPECT_TRUE( state.remote.domains.at( 0).reservations.at( 0) == lookup.correlation) << CASUAL_NAMED_VALUE( state.remote.domains);
+         }
+
+         // send disassociate request
+         {
+            ipc::message::external::disassociate::Request message;
+            message.process = common::process::handle();
+            message.correlation = lookup.correlation;
+
+            common::communication::device::blocking::send( common::communication::instance::outbound::queue::manager::device(), message);
+         }
+
+         // send metric
+         {
+            ipc::message::group::metric::remote::Entries message;
+            message.entries.push_back( ipc::message::group::metric::remote::Entry{
+               .process = common::process::handle(),
+               .correlation = lookup.correlation,
+               .queue = "a",
+               .start = platform::time::clock::type::now(),
+               .end = platform::time::clock::type::now(),
+               .code = common::code::queue::ok,
+               .direction = ipc::message::group::metric::remote::Direction::enqueue
+            });
+
+            common::communication::device::blocking::send( common::communication::instance::outbound::queue::manager::device(), message);
+         }
+
+         // expect remote to be unreserved
+         {
+            auto state = unittest::state();
+            EXPECT_TRUE( state.remote.domains.at( 0).reservations.size() == 0) << CASUAL_NAMED_VALUE( state.remote.domains);
+         }
+
+         // expect disassociate reply
+         {
+            auto reply = common::communication::ipc::receive< ipc::message::external::disassociate::Reply>();
+            EXPECT_TRUE( reply.correlation == lookup.correlation) << CASUAL_NAMED_VALUE( reply);
+         }
+      }
+      
    } // queue
 } // casual

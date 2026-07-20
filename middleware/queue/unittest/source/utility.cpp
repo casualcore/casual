@@ -14,6 +14,7 @@
 #include "service/unittest/utility.h"
 
 #include "common/unittest.h"
+#include "common/communication/instance.h"
 
 namespace casual
 {
@@ -25,6 +26,36 @@ namespace casual
          return casual::service::protocol::binary::Call{}( queue::manager::admin::service::name::state).extract< manager::admin::model::State>();
       }
 
+
+      namespace advertise
+      {
+         void remote( std::vector< std::string> queues, const common::process::Handle& process)
+         {
+            auto transform_queue = []( auto& name )
+            {
+               queue::ipc::message::advertise::Queue result;
+               result.name = name;
+               return result;
+            };
+
+            ipc::message::Advertise message;
+            message.process = process;
+            message.order = 1;
+            message.queues.add = common::algorithm::transform( queues, transform_queue);
+            message.directive = decltype( message.directive)::update;
+            message.alias = "foo";
+
+
+            common::communication::device::blocking::send( 
+               common::communication::instance::outbound::queue::manager::device(), message);  
+         }
+
+         void remote( std::vector< std::string> queues)
+         {
+            remote( std::move( queues), common::process::handle());
+         }
+
+      } // advertise
 
       std::vector< manager::admin::model::Message> messages( const std::string& queue)
       {

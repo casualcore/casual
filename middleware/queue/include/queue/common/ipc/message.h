@@ -271,6 +271,13 @@ namespace casual
          } // discard
       } // lookup
 
+      namespace external::disassociate
+      {
+         using Request = common::message::basic_request< common::message::Type::queue_manager_external_disassociate_request>;
+         using Reply = common::message::basic_message< common::message::Type::queue_manager_external_disassociate_reply>;
+         
+      } // external::disassociate
+
       struct Attributes : common::compare::Equality< Attributes>
       {
          std::string properties;
@@ -396,6 +403,60 @@ namespace casual
                using Reply = common::message::basic_reply< common::message::Type::queue_group_metric_reset_reply>;
                
             } // reset
+
+            namespace remote
+            {
+               
+               enum struct Direction : short
+               {
+                  enqueue,
+                  dequeue
+               };
+               inline constexpr std::string_view description( Direction value) noexcept
+               {
+                  switch( value)
+                  {
+                     case Direction::enqueue: return "enqueue";
+                     case Direction::dequeue: return "dequeue";
+                  }
+                  return "<unknown>";
+               }
+
+               struct Entry
+               {
+                  common::process::Handle process;
+                  common::strong::correlation::id correlation;
+                  std::string queue;
+                  common::chronology::time_point start{};
+                  common::chronology::time_point end{};
+                  common::code::queue code{};
+                  Direction direction{};
+
+                  CASUAL_CONST_CORRECT_SERIALIZE(
+                     CASUAL_SERIALIZE( process);
+                     CASUAL_SERIALIZE( correlation);
+                     CASUAL_SERIALIZE( queue);
+                     CASUAL_SERIALIZE( start);
+                     CASUAL_SERIALIZE( end);
+                     CASUAL_SERIALIZE( code);
+                     CASUAL_SERIALIZE( direction);
+                  )
+               };
+
+               using base_entries = common::message::basic_message< common::message::Type::queue_group_metric_remote_entries>;
+               struct Entries : base_entries
+               {
+                  using base_entries::base_entries;
+
+                  std::vector< Entry> entries;
+
+                  CASUAL_CONST_CORRECT_SERIALIZE(
+                     base_entries::serialize( archive);
+                     CASUAL_SERIALIZE( entries);
+                  )
+               };
+
+            } // remote
             
          } // metric
 
@@ -1014,7 +1075,9 @@ namespace casual
                   )
                };
             } // recovery
+
          } // message
+
       } // group
 
       namespace forward::group
@@ -1197,6 +1260,9 @@ namespace casual
 
       template<>
       struct type_traits< casual::queue::ipc::message::lookup::discard::Request> : detail::type< casual::queue::ipc::message::lookup::discard::Reply> {};
+
+      template<>
+      struct type_traits< casual::queue::ipc::message::external::disassociate::Request> : detail::type< casual::queue::ipc::message::external::disassociate::Reply> {};
 
 
       template<>

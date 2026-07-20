@@ -235,6 +235,9 @@ namespace casual
          queue_manager_queue_lookup_discard_request,
          queue_manager_queue_lookup_discard_reply,
 
+         queue_manager_external_disassociate_request,
+         queue_manager_external_disassociate_reply,
+
          // pinned messages
          queue_group_enqueue_request  = 6100,
          queue_group_enqueue_reply_v1_2 = 6101,
@@ -270,6 +273,7 @@ namespace casual
 
          queue_group_metric_reset_request = QUEUE_BASE + 360,
          queue_group_metric_reset_reply,
+         queue_group_metric_remote_entries,
 
          queue_forward_group_connect = QUEUE_BASE + 400,
          queue_forward_group_configuration_update_request,

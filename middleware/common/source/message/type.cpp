@@ -137,6 +137,8 @@ namespace casual
             case Type::queue_manager_queue_lookup_reply: return "queue_manager_queue_lookup_reply";
             case Type::queue_manager_queue_lookup_discard_request: return "queue_manager_queue_lookup_discard_request";
             case Type::queue_manager_queue_lookup_discard_reply: return "queue_manager_queue_lookup_discard_reply";
+            case Type::queue_manager_external_disassociate_request: return "queue_manager_external_disassociate_request";
+            case Type::queue_manager_external_disassociate_reply: return "queue_manager_external_disassociate_reply";
             case Type::queue_group_enqueue_request: return "queue_group_enqueue_request";
             case Type::queue_group_enqueue_reply: return "queue_group_enqueue_reply";
             case Type::queue_group_enqueue_reply_v1_2: return "queue_group_enqueue_reply_v1_2";
@@ -168,6 +170,7 @@ namespace casual
             case Type::queue_group_queue_clear_reply: return "queue_group_queue_clear_reply";
             case Type::queue_group_metric_reset_request: return "queue_group_metric_reset_request";
             case Type::queue_group_metric_reset_reply: return "queue_group_metric_reset_reply";
+            case Type::queue_group_metric_remote_entries: return "queue_group_metric_remote_entries";
             case Type::queue_forward_group_connect: return "queue_forward_group_connect";
             case Type::queue_forward_group_configuration_update_request: return "queue_forward_group_configuration_update_request";
             case Type::queue_forward_group_configuration_update_reply: return "queue_forward_group_configuration_update_reply";

@@ -21,6 +21,11 @@ namespace casual
          constexpr auto until = common::unittest::fetch::until( &unittest::state);
       } // fetch
 
+      namespace advertise
+      {
+         void remote( std::vector< std::string> queues);
+      } // advertise
+
       std::vector< manager::admin::model::Message> messages( const std::string& queue);
 
       namespace scale

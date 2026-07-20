@@ -61,6 +61,7 @@ namespace casual
             common::process::Handle process;
             platform::size::type order = 0;
             std::string description;
+            std::vector< common::strong::correlation::id> reservations;
 
             friend bool operator == ( const Domain& lhs, common::process::compare_equal_to_handle auto rhs) { return lhs.process == rhs;}
 
@@ -69,6 +70,7 @@ namespace casual
                CASUAL_SERIALIZE( process);
                CASUAL_SERIALIZE( order);
                CASUAL_SERIALIZE( description);
+               CASUAL_SERIALIZE( reservations);
             )
          };
 
