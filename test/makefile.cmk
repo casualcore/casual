@@ -65,6 +65,7 @@ make.Install( [ target], dsl.paths().install + '/test/bin')
 unittest_object = [
     make.Compile( 'unittest/source/test_configuration.cpp'),
     make.Compile( 'unittest/source/test_domain.cpp'),
+    make.Compile( 'unittest/source/test_discovery.cpp'),
     make.Compile( 'unittest/source/xatmi/test_call.cpp'),
     make.Compile( 'unittest/source/xatmi/test_start.cpp'),
     make.Compile( 'unittest/source/test_transaction.cpp'),

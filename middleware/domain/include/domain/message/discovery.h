@@ -399,6 +399,7 @@ namespace casual
          {
             enum struct Ability : std::uint16_t
             {
+               absent = 0,
                discover = 1,
                lookup = 2,
                fetch_known = 4,
@@ -412,6 +413,7 @@ namespace casual
             {
                switch( value)
                {
+                  case Ability::absent: return "absent";
                   case Ability::discover: return "discover";
                   case Ability::lookup: return "lookup";
                   case Ability::fetch_known: return "fetch_known";
