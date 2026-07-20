@@ -175,7 +175,19 @@ namespace casual
 
                      return result;
                   };
-               }
+               };
+               auto disassociate()
+               {
+                  return []( auto& value)
+                  {
+                     admin::model::pending::Disassociate result;
+
+                     result.resource = value.resource;
+                     result.correlation = value.correlation;
+
+                     return result;
+                  };
+               };
 
                auto reply()
                {
@@ -240,6 +252,7 @@ namespace casual
          common::algorithm::transform( state.transactions, result.transactions, local::transaction());
 
          common::algorithm::transform( state.pending.requests, result.pending.requests, local::pending::request());
+         common::algorithm::transform( state.pending.disassociate, result.pending.disassociate, local::pending::disassociate());
          common::algorithm::transform( state.persistent.replies, result.pending.persistent.replies, local::pending::reply());
          common::algorithm::transform( state.stale, result.stale, local::transaction());
 

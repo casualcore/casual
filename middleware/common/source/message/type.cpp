@@ -125,6 +125,8 @@ namespace casual
             case Type::transaction_resource_involved_reply: return "transaction_resource_involved_reply";
             case Type::transaction_external_resource_instance: return "transaction_external_resource_instance";
             case Type::transaction_external_resource_involved: return "transaction_external_resource_involved";
+            case Type::transaction_external_resource_disassociate_request: return "transaction_external_resource_disassociate_request";
+            case Type::transaction_external_resource_disassociate_reply: return "transaction_external_resource_disassociate_reply";
             case Type::transaction_resource_id_request: return "transaction_resource_id_request";
             case Type::transaction_resource_id_reply: return "transaction_resource_id_reply";
             case Type::transaction_inbound_branch_request: return "transaction_inbound_branch_request";

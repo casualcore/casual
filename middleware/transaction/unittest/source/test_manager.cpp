@@ -117,9 +117,9 @@ domain:
             namespace send
             {
                template< typename M>
-               void tm( M&& message)
+               auto tm( M&& message)
                {
-                  common::communication::device::blocking::send(
+                  return common::communication::device::blocking::send(
                         common::communication::instance::outbound::transaction::manager::device(), message);
                }
             } // send
@@ -2028,15 +2028,19 @@ domain:
       {
          namespace
          {
+            void involve_resource( auto& resource, auto& trid)
+            {
+               common::message::transaction::resource::external::Involved message;
+               message.process = resource.process;
+               message.trid = trid;
+               local::send::tm( message);
+
+            };
+
             void involve_resources( auto& resources, auto& trid)
             {
                for( auto& resource : resources)
-               {
-                  common::message::transaction::resource::external::Involved message;
-                  message.process = resource.process;
-                  message.trid = trid;
-                  local::send::tm( message);
-               }
+                  involve_resource( resource, trid);
             };
 
             void handle_rollback_request( auto& resources)
@@ -2164,6 +2168,88 @@ domain:
             auto state = unittest::state();
             EXPECT_TRUE( state.resources.at( 0).instances.at( 0).metrics.resource.count == 1); // xa_rollback
          }
+      }
+
+      TEST( transaction_manager, resource_disassociate__resource_not_involved___expect_direct_reply)
+      {
+         common::unittest::Trace trace;
+
+         auto domain = local::domain( local::configuration::system, local::configuration::base);
+
+         auto resource = local::involved::Process();
+
+
+         // send disassociate message
+         {
+            common::message::transaction::resource::external::disassociate::Request message{ resource.process};
+            auto correlation = local::send::tm( message);
+
+
+            auto reply = common::communication::device::receive< common::message::transaction::resource::external::disassociate::Reply>( resource.inbound);
+            EXPECT_TRUE( reply.correlation == correlation);
+         }
+      }
+
+      TEST( transaction_manager, resource_disassociate__resource_involved___expect_reply_after_rollback)
+      {
+         common::unittest::Trace trace;
+
+         auto domain = local::domain( local::configuration::system, local::configuration::base);
+
+         auto resources = std::array{ local::involved::Process()};
+
+         const auto trid = common::transaction::id::create( common::process::id());
+         auto disassociate_correlation = common::strong::correlation::id::generate();
+
+         local::involve_resources( resources, trid);
+
+
+         // send disassociate message
+         {
+            common::message::transaction::resource::external::disassociate::Request message{ resources.at( 0).process};
+            disassociate_correlation = local::send::tm( message);
+         }
+
+         // send rollback message
+         {
+            common::message::transaction::rollback::Request message{ common::process::handle()};
+            message.trid = trid;
+            local::send::tm( message);
+         }
+
+         // check state that we've got pending association for the resource
+         {
+            auto state = unittest::state();
+            EXPECT_TRUE( state.transactions.size() == 1);
+            EXPECT_TRUE( state.transactions.at( 0).branches.size() == 1);
+            EXPECT_TRUE( state.transactions.at( 0).branches.at( 0).resources.size() == 1);
+
+            EXPECT_TRUE( state.pending.disassociate.at( 0).correlation == disassociate_correlation);
+         }
+
+         // handle the first ongoing rollback request
+         local::handle_rollback_request( resources);
+
+         // receive rollback reply
+         {
+            auto reply = common::communication::device::receive< common::message::transaction::rollback::Reply>( common::communication::ipc::inbound::device());
+            EXPECT_TRUE( reply.trid == trid);
+            EXPECT_TRUE( reply.state == decltype( reply.state)::ok);
+         }
+
+         // expect disassociate reply after rollback
+         {
+            auto reply = common::communication::device::receive< common::message::transaction::resource::external::disassociate::Reply>( resources.at( 0).inbound);
+            EXPECT_TRUE( reply.correlation == disassociate_correlation);
+         }
+
+
+         // check state that we've got no pending association for the resource
+         {
+            auto state = unittest::state();
+            EXPECT_TRUE( state.pending.disassociate.empty());
+         }
+         
       }
    
    } // transaction

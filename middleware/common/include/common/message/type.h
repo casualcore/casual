@@ -215,6 +215,9 @@ namespace casual
          transaction_external_resource_instance,
          transaction_external_resource_involved,
 
+         transaction_external_resource_disassociate_request,
+         transaction_external_resource_disassociate_reply,
+
          transaction_resource_id_request = TRANSACTION_BASE + 500,
          transaction_resource_id_reply,
 

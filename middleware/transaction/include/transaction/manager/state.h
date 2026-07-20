@@ -168,7 +168,6 @@ namespace casual
                struct Instance
                {
                   common::process::Handle process;
-                  //! RM id
                   common::strong::resource::id id;
                   std::string alias;
                   std::string description;
@@ -278,6 +277,12 @@ namespace casual
             }
 
             platform::size::type resource_count() const noexcept;
+
+            //! @return true if the resource is associated with any branch, false otherwise.
+            bool associated( common::strong::resource::id resource) const;
+
+            //! @return a vector of all resources associated with the transaction
+            std::vector< common::strong::resource::id> associated() const;
             
             //! removes all branches that has no resources associated. 
             //! used only when the prepare/commit/rollback starts
@@ -312,7 +317,7 @@ namespace casual
 
             common::process::Handle owner;
 
-            //! the time this TIM knows about the transaction
+            //! the time this TM knows about the transaction
             common::chronology::time_point known;
             common::chronology::time_point deadline;
 
@@ -385,8 +390,25 @@ namespace casual
                CASUAL_SERIALIZE( replies);
                CASUAL_SERIALIZE( log);
             )
-
          };
+
+         namespace pending
+         {
+            struct Disassociate
+            {
+               common::strong::resource::id resource;
+               common::strong::correlation::id correlation;
+
+               inline friend bool operator == ( const Disassociate& lhs, const common::strong::resource::id& rhs) { return lhs.resource == rhs;}
+
+               CASUAL_LOG_SERIALIZE(
+                  CASUAL_SERIALIZE( resource);
+                  CASUAL_SERIALIZE( correlation);
+               )
+
+            };
+            
+         } // pending
 
          struct Pending
          {
@@ -397,9 +419,13 @@ namespace casual
             //! pending rollback from user when we're already in the process of rolling back, due to potential stale transaction.
             std::vector< common::message::transaction::rollback::Request> rollbacks;
 
+            //! pending disassociate from external resources. 
+            std::vector< state::pending::Disassociate> disassociate;
+
             CASUAL_LOG_SERIALIZE(
                CASUAL_SERIALIZE( requests);
                CASUAL_SERIALIZE( rollbacks);
+               CASUAL_SERIALIZE( disassociate);
             )
          };
 
@@ -492,12 +518,16 @@ namespace casual
 
          const state::resource::external::Instance& get_external( common::strong::resource::id rm) const;
          const state::resource::external::Instance* find_external( common::strong::resource::id rm) const noexcept;
+         common::strong::resource::id find_external( common::strong::ipc::id ipc) const noexcept;
+
+         //! @return true if the resource is associated with any transaction, false otherwise.
+         bool associated( common::strong::resource::id rm) const;
 
          common::message::transaction::configuration::alias::Reply configuration(
             const common::message::transaction::configuration::alias::Request& request);
 
          casual::configuration::model::transaction::Model configuration() const;
-
+         
 
          CASUAL_LOG_SERIALIZE(
             CASUAL_SERIALIZE( multiplex);

@@ -109,7 +109,7 @@ namespace casual
             return configuration::system::get();
          };
 
-         state.system.configuration =  get_system( std::move( model.system));
+         state.system.configuration = get_system( std::move( model.system));
 
          state.resources = local::resources( model.transaction.resources, state.system.configuration.resources);
             

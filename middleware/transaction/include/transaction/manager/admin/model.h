@@ -161,7 +161,6 @@ namespace casual
 
       namespace pending
       {
-
          struct Request
          {
             common::strong::resource::id resource;
@@ -187,6 +186,17 @@ namespace casual
                CASUAL_SERIALIZE( destination);
                CASUAL_SERIALIZE( correlation);
                CASUAL_SERIALIZE( type);
+            )
+         };
+
+         struct Disassociate
+         {
+            common::strong::resource::id resource;
+            common::strong::correlation::id correlation;
+
+            CASUAL_CONST_CORRECT_SERIALIZE(
+               CASUAL_SERIALIZE( resource);
+               CASUAL_SERIALIZE( correlation);
             )
          };
 
@@ -327,10 +337,12 @@ namespace casual
             } persistent;
 
             std::vector< pending::Request> requests;
+            std::vector< pending::Disassociate> disassociate;
 
             CASUAL_CONST_CORRECT_SERIALIZE(
                CASUAL_SERIALIZE( persistent);
                CASUAL_SERIALIZE( requests);
+               CASUAL_SERIALIZE( disassociate);
             )
 
          } pending;
