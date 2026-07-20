@@ -72,6 +72,8 @@ namespace casual
             case Type::service_reply_v4: return "service_reply_v4";
             case Type::service_acknowledge: return "service_acknowledge";
             case Type::service_concurrent_advertise: return "service_concurrent_advertise";
+            case Type::service_concurrent_instance_disassociate_request: return "service_concurrent_instance_disassociate_request";
+            case Type::service_concurrent_instance_disassociate_reply: return "service_concurrent_instance_disassociate_reply";
             case Type::conversation_connect_request: return "conversation_connect_request";
             case Type::conversation_connect_request_v2: return "conversation_connect_request_v2";
             case Type::conversation_connect_reply: return "conversation_connect_reply";

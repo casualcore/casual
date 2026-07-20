@@ -270,8 +270,8 @@ domain:
 
             // sm should only have pending deadline for the first lookup.
             auto state = casual::service::unittest::state();
-            EXPECT_TRUE( state.deadlines.size() == 1) << CASUAL_NAMED_VALUE( state.deadlines);
-            EXPECT_TRUE( state.deadlines.at( 0).service == "a") << CASUAL_NAMED_VALUE( state.deadlines);
+            EXPECT_TRUE( state.pending.deadlines.size() == 1) << CASUAL_NAMED_VALUE( state.pending.deadlines);
+            EXPECT_TRUE( state.pending.deadlines.at( 0).service == "a") << CASUAL_NAMED_VALUE( state.pending.deadlines);
          }
 
          // send ack for lookup_a
@@ -294,10 +294,10 @@ domain:
 
             const auto now = common::chronology::time_point::clock::now();
 
-            EXPECT_TRUE( state.deadlines.size() == 1) << CASUAL_NAMED_VALUE( state.deadlines);
-            EXPECT_TRUE( state.deadlines.at( 0).service == "b") << CASUAL_NAMED_VALUE( state.deadlines);
-            EXPECT_TRUE( state.deadlines.at( 0).when <= now + std::chrono::seconds{ 10}) << CASUAL_NAMED_VALUE( state.deadlines);
-            EXPECT_TRUE( state.deadlines.at( 0).when >= now + std::chrono::seconds{ 9}) << CASUAL_NAMED_VALUE( state.deadlines);
+            EXPECT_TRUE( state.pending.deadlines.size() == 1) << CASUAL_NAMED_VALUE( state.pending.deadlines);
+            EXPECT_TRUE( state.pending.deadlines.at( 0).service == "b") << CASUAL_NAMED_VALUE( state.pending.deadlines);
+            EXPECT_TRUE( state.pending.deadlines.at( 0).when <= now + std::chrono::seconds{ 10}) << CASUAL_NAMED_VALUE( state.pending.deadlines);
+            EXPECT_TRUE( state.pending.deadlines.at( 0).when >= now + std::chrono::seconds{ 9}) << CASUAL_NAMED_VALUE( state.pending.deadlines);
 
             // send ack for b call for good measure.
             service::unittest::send::ack( request);
@@ -306,8 +306,8 @@ domain:
          // some sanity check to make sure we don't have any pending deadlines in SM after the call is acked.
          {
             auto state = casual::service::unittest::state();
-            EXPECT_TRUE( state.deadlines.empty()) << CASUAL_NAMED_VALUE( state.deadlines);
-            EXPECT_TRUE( state.pending.empty()) << CASUAL_NAMED_VALUE( state.pending);
+            EXPECT_TRUE( state.pending.deadlines.empty()) << CASUAL_NAMED_VALUE( state.pending.deadlines);
+            EXPECT_TRUE( state.pending.requests.empty()) << CASUAL_NAMED_VALUE( state.pending.requests);
          }
 
       }

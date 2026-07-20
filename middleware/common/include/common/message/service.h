@@ -212,7 +212,6 @@ namespace casual
                enum struct Directive
                {
                   update,   //! regular update
-                  reset,    //! remove all previous associated services for the 'device'
                   instance, //! instance (order) only 
                };
 
@@ -221,7 +220,6 @@ namespace casual
                   switch( value)
                   {
                      case Directive::update: return "update";
-                     case Directive::reset: return "reset";
                      case Directive::instance: return "instance";
                   }
                   return "<unknown>";
@@ -732,6 +730,13 @@ namespace casual
             
          } // call
 
+         namespace concurrent::instance::disassociate
+         {
+            using Request = basic_request< message::Type::service_concurrent_instance_disassociate_request>;
+            using Reply = basic_message< message::Type::service_concurrent_instance_disassociate_reply>;
+            
+         } // concurrent::instance::disassociate
+
       } // service
 
       namespace reverse
@@ -744,13 +749,16 @@ namespace casual
          struct type_traits< service::lookup::discard::Request> : detail::type< service::lookup::discard::Reply> {};
 
          template<>
-         struct type_traits< service::call::callee::Request> : detail::type<  service::call::Reply> {};
+         struct type_traits< service::call::callee::Request> : detail::type< service::call::Reply> {};
 
          template<>
-         struct type_traits< service::call::caller::Request> : detail::type<  service::call::Reply> {};
+         struct type_traits< service::call::caller::Request> : detail::type< service::call::Reply> {};
 
          template<>
-         struct type_traits< service::call::v1_2::callee::Request> : detail::type<  service::call::v1_2::Reply> {};
+         struct type_traits< service::call::v1_2::callee::Request> : detail::type< service::call::v1_2::Reply> {};
+
+         template<>
+         struct type_traits< service::concurrent::instance::disassociate::Request> : detail::type< service::concurrent::instance::disassociate::Reply> {};
 
       } // reverse
 

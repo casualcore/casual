@@ -89,6 +89,12 @@ namespace casual
                return std::nullopt;
             }
          } // non::blocking
+
+         void discard( lookup::Reply&& lookup)
+         {
+            local::discard( lookup.correlation);
+         }
+
   
       } // lookup
 

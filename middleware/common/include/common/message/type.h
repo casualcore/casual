@@ -119,6 +119,8 @@ namespace casual
          service_acknowledge,
 
          service_concurrent_advertise,
+         service_concurrent_instance_disassociate_request,
+         service_concurrent_instance_disassociate_reply,
 
          // The following cant be used.
          // 3200

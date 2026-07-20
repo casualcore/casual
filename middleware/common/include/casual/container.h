@@ -233,6 +233,15 @@ namespace casual
                callback( pair.second, pair.first, m_index[ pair.second]);
          }
 
+         bool for_while( auto callback)
+         {
+            for( auto& pair : m_lookup)
+               if( callback( pair.second, pair.first, m_index[ pair.second]))
+                  return true;
+
+            return false;
+         }
+
          void for_each( auto callback) const
          {
             for( auto& pair : m_lookup)

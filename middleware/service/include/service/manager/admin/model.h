@@ -67,10 +67,12 @@ namespace casual
          struct Concurrent : Base
          {
             std::string description;
+            std::vector< common::strong::correlation::id> reservations;
 
             CASUAL_CONST_CORRECT_SERIALIZE(
                Base::serialize( archive);
                CASUAL_SERIALIZE( description);
+               CASUAL_SERIALIZE( reservations);
             )
          };
 
@@ -210,18 +212,40 @@ namespace casual
                CASUAL_SERIALIZE( service);
             )
          };
+
+         struct Request
+         {
+            std::string requested;
+            common::process::Handle process;
+
+            CASUAL_CONST_CORRECT_SERIALIZE(
+               CASUAL_SERIALIZE( requested);
+               CASUAL_SERIALIZE( process);
+            )
+         };
+
+         struct Disassociate
+         {
+            common::process::Handle process;
+
+            CASUAL_CONST_CORRECT_SERIALIZE(
+               CASUAL_SERIALIZE( process);
+            )
+         };
          
       } // pending
 
-      //! TODO this should be moved to pending::Request
+
       struct Pending
       {
-         std::string requested;
-         common::process::Handle process;
+         std::vector< pending::Request> requests;
+         std::vector< pending::Deadline> deadlines;
+         std::vector< pending::Disassociate> disassociation;
 
          CASUAL_CONST_CORRECT_SERIALIZE(
-            CASUAL_SERIALIZE( requested);
-            CASUAL_SERIALIZE( process);
+            CASUAL_SERIALIZE( requests);
+            CASUAL_SERIALIZE( deadlines);
+            CASUAL_SERIALIZE( disassociation);
          )
       };
 
@@ -274,9 +298,7 @@ namespace casual
 
          std::vector< Service> services;
          
-         // TODO should be pending.deadlines and pending.requests
-         std::vector< Pending> pending;
-         std::vector< pending::Deadline> deadlines;
+         Pending pending;
 
          std::vector< Route> routes;
          std::vector< Reservation> reservations;
@@ -285,7 +307,6 @@ namespace casual
             CASUAL_SERIALIZE( instances);
             CASUAL_SERIALIZE( services);
             CASUAL_SERIALIZE( pending);
-            CASUAL_SERIALIZE( deadlines);
             CASUAL_SERIALIZE( routes);
             CASUAL_SERIALIZE( reservations);
          )

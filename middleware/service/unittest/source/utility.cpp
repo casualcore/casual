@@ -87,9 +87,9 @@ namespace casual
 
       namespace concurrent
       {
-         void advertise( std::vector< std::string> services)
+         void advertise( std::vector< std::string> services, const common::process::Handle& handle)
          {
-            common::message::service::concurrent::Advertise message{ common::process::handle()};
+            common::message::service::concurrent::Advertise message{ handle};
             message.alias = common::instance::alias();
             message.services.add = common::algorithm::transform( services, []( auto& service)
             {
@@ -97,6 +97,13 @@ namespace casual
             });
 
             common::communication::device::blocking::send( local::ipc::manager(), message);
+
+
+         }
+
+         void advertise( std::vector< std::string> services)
+         {
+            advertise( services, common::process::handle());
          }
 
          void unadvertise( std::vector< std::string> services)

@@ -35,6 +35,9 @@ namespace casual
             std::optional< lookup::Reply> reply( Lookup& lookup);
 
          } // non::blocking
+
+         //! discard the lookup
+         void discard( lookup::Reply&& lookup);
                
       } // lookup
 
