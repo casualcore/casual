@@ -6,7 +6,6 @@ add_library(casual-tools-common STATIC)
 
 target_sources(casual-tools-common
   PRIVATE
-    source/common.cpp
     source/build/setting.cpp
     source/service/describe/invoke.cpp
 )
@@ -164,6 +163,7 @@ target_link_directories(casual-build-resource-proxy PRIVATE
 
 target_link_libraries(casual-build-resource-proxy PRIVATE
   casual-tools-common
+  casual-tools-build-task
   casual-common
   casual-configuration
 )

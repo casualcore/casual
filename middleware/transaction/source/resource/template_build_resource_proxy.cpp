@@ -8,12 +8,7 @@
 #include "casual/transaction/resource/proxy/server.h"
 #include <xa.h>
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
-extern struct xa_switch_t casual_mockup_xa_switch_static;
-
+extern "C" struct xa_switch_t casual_mockup_xa_switch_static;
 
 int main( int argc, const char** argv)
 {
@@ -34,13 +29,7 @@ int main( int argc, const char** argv)
    // Start the server
    */
    return casual_start_resource_proxy( &serverArguments);
-
 }
-
-
-#ifdef __cplusplus
-}
-#endif
 
 
 

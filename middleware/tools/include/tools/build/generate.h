@@ -15,24 +15,17 @@
 
 namespace casual
 {
-   namespace tools
+   namespace tools::build::generate
    {
-      namespace build
-      {
-         namespace generate
-         {
-            
-            //! generates the server main source file content
-            void server( std::ostream& out, 
-               const std::vector< model::Resource>& resources, 
-               const std::vector< model::Service>& services);
+      //! generates the server main source file content
+      void server( std::ostream& out, 
+         const std::vector< model::Resource>& resources, 
+         const std::vector< model::Service>& services);
 
 
-            void executable( std::ostream& out, 
-               const std::vector< model::Resource>& resources, 
-               const std::string& entrypoint);
+      void executable( std::ostream& out, 
+         const std::vector< model::Resource>& resources, 
+         const std::string& entrypoint);
 
-         } // generate
-      } // build
-   } // tools
+   } // tools::build::generate
 } // casual

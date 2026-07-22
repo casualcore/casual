@@ -5,6 +5,12 @@
 //!
 
 #include "tools/common.h"
+#include "tools/build/setting.h"
+#include "tools/build/transform.h"
+#include "tools/build/model.h"
+#include "tools/build/generate.h"
+#include "tools/build/task.h"
+
 
 #include "casual/argument.h"
 #include "common/environment.h"
@@ -30,22 +36,64 @@
 
 namespace casual
 {
-   namespace tools
+   namespace tools::build::resource::proxy
    {
-      namespace build
+      namespace local
       {
-         namespace resource
+         namespace
          {
-            namespace proxy
-            {
-               namespace local
-               {
-                  namespace
-                  {
 
-                     void generate( std::ostream& out, const configuration::model::system::Resource& resource)
-                     {
-                        out << license::c << R"(
+            struct Settings 
+            {
+               setting::Mandatory directive;
+
+               struct 
+               {
+                  std::string key;
+               } resource;
+
+
+               CASUAL_LOG_SERIALIZE(
+                  CASUAL_SERIALIZE( directive);
+                  CASUAL_SERIALIZE( resource.key);
+               )
+            };
+
+
+            struct State
+            {
+               std::vector< model::Resource> resources;
+            };
+
+            namespace transform
+            {
+               auto state( const Settings& settings)
+               {
+                  auto system = settings.directive.system.configuration.empty() ?
+                     configuration::system::get() : configuration::system::get( settings.directive.system.configuration);
+
+
+                  State result;
+
+                  result.resources = build::transform::resources( 
+                     { settings.resource.key}, // raw keys from command line
+                     system);
+
+                  return result;
+               };
+
+            } // transform
+
+            void generate( const common::file::scoped::Path& path, const local::State& state)
+            {
+               if( state.resources.size() != 1)
+                  common::code::raise::error( common::code::casual::invalid_argument, "expected exactly one resource, got: ", state.resources.size());
+
+               auto& resource = state.resources.front();
+
+               std::ofstream out{ path};
+
+               out << license::c << R"(
 
 #include <casual/transaction/resource/proxy/server.h>
 #include <xa.h>
@@ -56,9 +104,13 @@ extern "C" {
 
 )";
 
-                        // Declare the xa_strut                     
-                        out << "extern struct xa_switch_t " << resource.xa_struct_name << ";";
-                        out << R"(
+               // Declare the xa_strut                     
+               out << "extern struct xa_switch_t " << resource.xa_struct_name << ";";
+               out << R"(
+
+#ifdef __cplusplus
+}
+#endif
 
 int main( int argc, const char** argv)
 {
@@ -66,9 +118,9 @@ int main( int argc, const char** argv)
    struct casual_xa_switch_mapping xa_mapping[] = {
 )";
 
-                        out << R"(      { ")" << resource.key << R"(", &)" << resource.xa_struct_name << "},";
+               out << R"(      { ")" << resource.key << R"(", &)" << resource.xa_struct_name << "},";
 
-                        out << R"(
+               out << R"(
       { 0, 0} /* null ending */
    };
 
@@ -83,174 +135,106 @@ int main( int argc, const char** argv)
    return casual_start_resource_proxy( &serverArguments);
 }
 
-#ifdef __cplusplus
-}
-#endif
-
 )";
 
-                        // make sure we flush
-                        out << std::flush;
-                     }
+               // make sure we flush
+               out << std::flush;
+            }
+ 
+            void build( const common::file::scoped::Path& path, Settings settings)
+            {
+               verbose::log( settings, "build resource proxy");
+               common::log::debug( "path: ", path);
 
-                     struct Settings
+               auto state = local::transform::state( settings);
+
+               local::generate( path, state);
+               verbose::log( settings, "generated source file: ", path);
+
+               if( settings.directive.use_defaults)
+               {
+                  // add "known" dependencies
+                  common::algorithm::append_unique_value( "casual-xatmi", settings.directive.libraries);
+                  common::algorithm::append_unique_value( "casual-resource-proxy-server", settings.directive.libraries);
+
+                  auto append = []( const auto& path, auto& target)
+                  {
+                     if( std::filesystem::exists( path))
+                        common::algorithm::append_unique_value( path.string(), target);
+                  };
+
+                  if( auto home = common::environment::variable::get< std::filesystem::path>( common::environment::variable::name::directory::install))
+                  {
+                     append( *home / "include", settings.directive.paths.include);
+                     append( *home / "lib", settings.directive.paths.library);
+                  }
+
+                  // add resource stuff
+                  common::algorithm::append_unique( build::transform::libraries( state.resources), settings.directive.libraries);
+                  common::algorithm::append_unique( build::transform::paths::include( state.resources), settings.directive.paths.include);
+                  common::algorithm::append_unique( build::transform::paths::library( state.resources), settings.directive.paths.library);
+               }
+
+               build::task( path, settings.directive);
+            }
+
+            namespace source
+            {
+               common::file::scoped::Path file( const Settings& settings)
+               {
+                  if( settings.directive.source.file.empty())
+                     return { common::file::name::unique( "rm_proxy_", ".cpp")};
+                  
+                  return { settings.directive.source.file};
+               }
+            } // source
+
+            void main( int argc, const char** argv)
+            {
+               Settings settings;
+
+               {
+                  auto bind_append = []( std::vector< std::string>& option)
+                  {
+                     return [ &option]( std::vector< std::string> value)
                      {
-
-                        std::string output;
-                        std::string key;
-
-                        struct
-                        {
-                           std::string link;
-                           std::string compile = "-O3";
-
-                           CASUAL_CONST_CORRECT_SERIALIZE
-                           (
-                              CASUAL_SERIALIZE( link);
-                              CASUAL_SERIALIZE( compile);
-                           )
-
-                        } directives;
-
-                        std::string compiler = "g++";
-                        bool verbose = false;
-                        bool keep_source = false;
-
-                        struct
-                        {
-                           std::string system;
-                        } files;
-
-
-
-                        CASUAL_LOG_SERIALIZE(
-                           CASUAL_SERIALIZE( output);
-                           CASUAL_SERIALIZE( key);
-                           CASUAL_SERIALIZE( directives);
-                           CASUAL_SERIALIZE( compiler);
-                           CASUAL_SERIALIZE( verbose);
-                           CASUAL_SERIALIZE( keep_source);
-                           CASUAL_SERIALIZE( files.system);
-
-                        )
+                        common::algorithm::container::append( std::move( value), option);
                      };
+                  };
 
+                  auto outcome = argument::parse( "builds a resource proxy", 
+                     common::algorithm::container::compose(
+                        build::setting::mandatory::options( settings.directive),
+                        argument::Option( std::tie( settings.resource.key), {{ "-r", "--resource-key"}, { "-k"}}, "key of the resource"),
 
+                        // deprecated options
+                        argument::Option( bind_append( settings.directive.directives), { {}, { "-c", "--compile-directives"}}, "additional compile directives"),
+                        argument::Option( bind_append( settings.directive.directives), { {}, { "-l", "--link-directives"}}, "additional link directives"),
+                        argument::Option( std::tie( settings.directive.source.keep), { {}, { "-s", "--keep-source"}}, "keep the generated source file")
+                     ), argc, argv);
 
-                     void build( const std::filesystem::path& file, const configuration::model::system::Resource& resource, const Settings& settings)
-                     {
-                        trace::Exit log( "build resource proxy", settings.verbose);
+                  if( outcome != argument::Outcome::parsed)
+                     return;
+               }
 
-                        // Compile and link
-                        std::vector< std::string> arguments{ file, "-o", settings.output};
+               verbose::log( settings, CASUAL_NAMED_VALUE( settings));
 
-                        common::algorithm::container::append( common::string::adjacent::split( settings.directives.compile), arguments);
-                        common::algorithm::container::append( common::string::adjacent::split( settings.directives.link), arguments);
+               // Generate file
+               common::file::scoped::Path path = local::source::file( settings);
+               
+               // make sure we keep the file if user has requested it
+               auto path_keep_scope = common::execute::scope( [keep = settings.directive.source.keep, &path]()
+               { 
+                  if( keep)
+                     path.release();
+               });
 
+               local::build( path, std::move( settings));
+            }
 
-                        for( auto& include_path : resource.paths.include)
-                           arguments.emplace_back( "-I" + common::environment::expand( include_path));
-
-                        // Add casual-paths, that we know will be needed
-                        arguments.emplace_back( common::environment::expand( "-I${CASUAL_HOME}/include"));
-
-                        for( auto& lib_path : resource.paths.library)
-                           arguments.emplace_back( "-L" + common::environment::expand( lib_path));
-
-                        // Add casual-paths, that we know will be needed
-                        arguments.emplace_back( common::environment::expand( "-L${CASUAL_HOME}/lib"));
-
-
-                        for( auto& lib : resource.libraries)
-                           arguments.emplace_back( "-l" + lib);
-
-                        // Add casual-lib, that we know will be needed
-                        arguments.emplace_back( "-lcasual-resource-proxy-server");
-
-
-                        if( settings.verbose)
-                           std::clog << settings.compiler << " " << common::string::join( arguments, " ") << '\n';
-
-                        {
-                           trace::Exit log( "execute " + settings.compiler, settings.verbose);
-                           auto capture = common::process::execute( settings.compiler, arguments);
-
-                           if( ! capture)
-                              common::code::raise::error( common::code::casual::invalid_argument, "failed to build proxy - capture: ", capture);
-                        }
-                     }
-
-
-                     configuration::model::system::Resource configuration( const Settings& settings)
-                     {
-                        trace::Exit log( "read resource properties configuration", settings.verbose);
-
-                        auto system = settings.files.system.empty() ?
-                              configuration::system::get() : configuration::system::get( settings.files.system);
-
-                        if( auto found = common::algorithm::find( system.resources, settings.key))
-                           return *found;
-
-                        common::code::raise::error( common::code::casual::invalid_argument, "resource-key: ", settings.key, " not found");
-                     }
-
-                     void main( int argc, const char** argv)
-                     {
-                        Settings settings;
-
-                        {
-                           using namespace argument;
-
-                           parse( "builds a resource proxy", {
-                              Option( std::tie( settings.output), {{ "-o", "--output"}}, "name of the resulting resource proxy"),
-                              Option( std::tie( settings.key), {{ "-k", "--resource-key"}}, "key of the resource"),
-                              Option( std::tie( settings.compiler), {{ "-c", "--compiler"}}, "compiler to use"),
-
-                              Option( std::tie( settings.directives.compile), {{ "-c", "--compile-directives"}}, "additional compile directives"),
-                              Option( std::tie( settings.directives.link), {{ "-l", "--link-directives"}}, "additional link directives"),
-
-                              Option( std::tie( settings.files.system), {{ "--system-configuration"}, { "-p", "--properties-file"}}, "path to system configuration file"),
-                              Option( std::tie( settings.verbose), {{ "-v", "--verbose"}}, "verbose output"),
-                              Option( std::tie( settings.keep_source), {{ "-s", "--keep-source"}}, "keep the generated source file")
-                           }, argc, argv);
-
-                           if( settings.verbose)
-                              common::log::line( std::cout, CASUAL_NAMED_VALUE( settings));
-                        }
-
-                        auto xa_switch = local::configuration( settings);
-
-                        if( settings.verbose)
-                           common::log::line( std::cout, '\n', CASUAL_NAMED_VALUE( xa_switch));
-
-                        if( settings.output.empty())
-                           settings.output = xa_switch.server;
-
-                        // Generate file
-                        common::file::scoped::Path path( common::file::name::unique( "rm_proxy_", ".cpp"));
-                        
-                        // make sure we keep the file if user has requested it
-                        auto path_keep_scope = common::execute::scope( [keep = settings.keep_source, &path]()
-                        { 
-                           if( keep)
-                              path.release();
-                        });
-
-                        {
-                           std::ofstream file( path);
-                           trace::Exit log( "generate file: " + path.string(), settings.verbose);
-
-                           local::generate( file, xa_switch);
-                        }
-
-                        build( path, xa_switch, settings);
-                     }
-                  } // <unnamed>
-               } // local
-            } // proxy
-         } // resource
-      } // build
-   } // tools
+         } // <unnamed>
+      } // local
+   } // tools::build::resource::proxy
 } // casual
 
 int main( int argc, const char** argv)

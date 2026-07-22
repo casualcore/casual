@@ -66,7 +66,7 @@ system:
       } // local
 
 
-      TEST( administration_executable_server, building_resource_with_configuration_file)
+      TEST( administration_build_executable, building_resource_with_configuration_file)
       {
          common::unittest::Trace trace;
 
@@ -86,7 +86,7 @@ executable:
          auto object_file = local::compile_executable();
 
          auto capture = administration::unittest::cli::command::execute(
-            local::build_executable_path, " --definition ", configuration, " --output ", output, 
+            local::build_executable_path, " --verbose --definition ", configuration, " --output ", output, 
             " --system-configuration ", system, 
             " --build-directives ", object_file, " -O3 -I ${CMAKE_SOURCE_DIR}/middleware/xatmi/include -L ${CMAKE_BINARY_DIR}/middleware/xatmi/bin");
 

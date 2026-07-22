@@ -44,19 +44,28 @@ namespace casual
                struct
                {
                   std::string definition;
-               } executable;
-               
 
-               friend void validate( const Settings& settings)
-               {
-                  auto raise_if_empty = []( const auto& value, auto error)
-                  {
-                     if( value.empty())
-                        code::raise::error( code::casual::invalid_argument, error);
-                  };
-                  raise_if_empty( settings.executable.definition, "no definition file provided");
-               }
+                  CASUAL_LOG_SERIALIZE(
+                     CASUAL_SERIALIZE( definition);
+                  )
+
+               } executable;
+
+               CASUAL_LOG_SERIALIZE(
+                  CASUAL_SERIALIZE( directive);
+                  CASUAL_SERIALIZE( executable);
+               )
             };
+
+            void validate( const Settings& settings)
+            {
+               auto raise_if_empty = []( const auto& value, auto error)
+               {
+                  if( value.empty())
+                     code::raise::error( code::casual::invalid_argument, error);
+               };
+               raise_if_empty( settings.executable.definition, "no definition file provided");
+            }
 
             struct State
             {
@@ -124,6 +133,8 @@ namespace casual
                
                generate( path, state);
 
+               verbose::log( settings, "generated source file: ", path);
+
  
                if( settings.directive.use_defaults)
                {
@@ -168,6 +179,8 @@ namespace casual
                }
 
                validate( settings);
+
+               verbose::log( settings, "settings: ", settings);
 
                build( std::move( settings));
             }

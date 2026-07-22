@@ -32,7 +32,7 @@
 namespace casual
 {
    using namespace common;
-   namespace tools::build
+   namespace tools::build::server
 {
       namespace local
       {
@@ -45,22 +45,50 @@ namespace casual
                struct 
                {
                      std::vector< std::string> names;
+
                   struct 
                   {
                      std::string mode;
+
+                     CASUAL_LOG_SERIALIZE(
+                        CASUAL_SERIALIZE( mode);
+                     )
+
                   } transaction;
+
+                  CASUAL_LOG_SERIALIZE(
+                     CASUAL_SERIALIZE( names);
+                     CASUAL_SERIALIZE( transaction);
+                  )
+
                } service;
 
                struct
                {
                   std::filesystem::path definition;
+
+                  CASUAL_LOG_SERIALIZE(
+                     CASUAL_SERIALIZE( definition);
+                  )
+
                } server;
 
                struct 
                {
                   std::vector< std::string> keys;
+
+                  CASUAL_LOG_SERIALIZE(
+                     CASUAL_SERIALIZE( keys);
+                  )
+
                } resource;
 
+               CASUAL_LOG_SERIALIZE(
+                  CASUAL_SERIALIZE( directive);
+                  CASUAL_SERIALIZE( service);
+                  CASUAL_SERIALIZE( server);
+                  CASUAL_SERIALIZE( resource);
+               )
             };
 
             namespace service
@@ -158,12 +186,12 @@ namespace casual
 
             void build( const common::file::scoped::Path& path, Settings settings)
             {
-               trace::Exit exit( "build server", settings.directive.verbose);
-
-               common::log::debug( "path: ", path);
+               verbose::log( settings, "build server");
 
                auto state = local::transform::state( settings);
                local::generate( path, state);
+
+               verbose::log( settings, "generated source file: ", path);
                
                if( settings.directive.use_defaults)
                {
@@ -208,20 +236,11 @@ namespace casual
                Settings settings;
 
                {
-                  trace::Exit log( "parse arguments", false);
-
-                  auto mandatory = build::setting::mandatory::options( settings.directive);
-
-                  for( auto & option : mandatory)
-                  {
-                     log::debug( "mandatory option: ", option.names().active(), " - ", option.names().deprecated());
-                  }
-
                   auto outcome = argument::parse( "builds a casual xatmi server", common::algorithm::container::compose( 
                      local::option::server_definition( settings),
-                     mandatory,
+                     build::setting::mandatory::options( settings.directive),
                      argument::Option( service::argument( settings.service.names), {{ "-s", "--service"}}, "service names")( argument::cardinality::any()),
-                     argument::Option( argument::option::one::many( settings.resource.keys), {{ "-r", "--resource-keys"}}, "key of the resource")( argument::cardinality::any()),
+                     argument::Option( argument::option::one::many( settings.resource.keys), {{ "-r", "--resource-keys"}}, "key of the resources")( argument::cardinality::any()),
                      argument::Option( std::tie( settings.service.transaction.mode), complete::transaction::mode(), {{ "--default-transaction-mode"}}, "the transaction mode for services specified with --service|-s")
                   ), argc, argv);
 
@@ -229,7 +248,8 @@ namespace casual
                      return;
                }
 
-               // Generate file
+               verbose::log( settings, "settings: ", settings);
+
                auto source = local::source::file( settings);
                
                auto source_keep = common::execute::scope( [keep = settings.directive.source.keep, &source]()
@@ -244,13 +264,13 @@ namespace casual
          } // <unnamed>
       } // local
 
-   } // tools::build
+   } // tools::build::server
 } // casual
 
 int main( int argc, const char** argv)
 {
    return casual::common::exception::main::cli::guard( [=]()
    {
-      casual::tools::build::local::main( argc, argv);
+      casual::tools::build::server::local::main( argc, argv);
    });
 }

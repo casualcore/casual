@@ -43,11 +43,7 @@ if (APPLE)
         -Wno-unused-parameter
         -Wno-missing-declarations
         -Wno-noexcept-type
-        -Wno-implicit-fallthrough
         -Wno-missing-field-initializers
-        -Wno-unused-variable
-        -Wno-deprecated-literal-operator
-        -Wno-main
     )
 else()
     add_compile_options(

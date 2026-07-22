@@ -95,7 +95,7 @@ system:
          constexpr auto services = "a,b,c,d";
          
          auto capture = administration::unittest::cli::command::execute(
-            local::build_server_path, " --service ", services, " --output ", output.string(), 
+            local::build_server_path, " --verbose --service ", services, " --output ", output.string(), 
             " --system-configuration ", system.string(), 
             " --resource-keys rm-mockup",
             " --build-directives ", object_file, " -O3 -I ${CMAKE_SOURCE_DIR}/middleware/xatmi/include -L ${CMAKE_BINARY_DIR}/middleware/xatmi/bin");

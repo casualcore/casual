@@ -9,10 +9,9 @@
 
 #include "service/protocol/call.h"
 
-
-
 #include "casual/header.h"
 
+#include "common/log.h"
 
 namespace casual
 {
