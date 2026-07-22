@@ -12,7 +12,6 @@
 #include "common/move.h"
 #include "common/algorithm/compare.h"
 #include "common/functional.h"
-#include "common/thread.h"
 #include "common/execute.h"
 
 
@@ -134,63 +133,52 @@ namespace casual
 
       } // mask
 
-      namespace thread
+      
+      namespace scope
       {
-         //! Send signal to thread
-         void send( std::thread& thread, code::signal signal);
-
-         //! Send signal to thread
-         void send( common::thread::native::type thread, code::signal signal);
-
-         //! Send signal to current thread
-         void send( code::signal signal);
-
-         namespace scope
+         //! Resets the signal mask on destruction
+         struct Reset
          {
-            //! Resets the signal mask on destruction
-            struct Reset
-            {
-               Reset( signal::Set mask);
-               ~Reset();
+            Reset( signal::Set mask);
+            ~Reset();
 
-               Reset( Reset&&) = default;
-               Reset& operator = ( Reset&&) = default;
+            Reset( Reset&&) = default;
+            Reset& operator = ( Reset&&) = default;
 
-               const signal::Set& previous() const;
+            const signal::Set& previous() const;
 
-            private:
-               signal::Set m_mask;
-               move::Active m_active;
-            };
+         private:
+            signal::Set m_mask;
+            move::Active m_active;
+         };
 
-            //! Sets the signal mask, and
+         //! Sets the signal mask, and
+         //! resets original on destruction
+         struct Mask : Reset
+         {
+            Mask( signal::Set mask);
+         };
+
+
+         struct Block : Reset
+         {
+            //! Blocks all signals on construction, and
             //! resets original on destruction
-            struct Mask : Reset
-            {
-               Mask( signal::Set mask);
-            };
+            Block();
 
+            //! Adds @p mask to the current blocking mask,
+            //! @param mask to be added to the blocking set
+            Block( signal::Set mask);
 
-            struct Block : Reset
-            {
-               //! Blocks all signals on construction, and
-               //! resets original on destruction
-               Block();
+         };
 
-               //! Adds @p mask to the current blocking mask,
-               //! @param mask to be added to the blocking set
-               Block( signal::Set mask);
-
-            };
-
-            struct Unblock : Reset
-            {
-               //! remove @p mask from the current blocking mask,
-               //! @param mask to be removed from the blocking set
-               Unblock( signal::Set mask);
-            };
-         } // scope
-      } // thread
+         struct Unblock : Reset
+         {
+            //! remove @p mask from the current blocking mask,
+            //! @param mask to be removed from the blocking set
+            Unblock( signal::Set mask);
+         };
+      } // scope
 
 
       namespace callback

@@ -135,25 +135,28 @@ namespace casual
 
       namespace eventually
       {
-         //! tries to fulfill the predicate until it returns true or we have 
+         
+         //! tries to fulfill the predicate until it returns 'true' or we have
          //! reached 2k tries and a total time of ~16s -> an exception is raised.
          //! This should be enough for "all" the systems we're building casual on.
+         //! @param predicate a callable that returns a value convertible to bool
+         //! @return the value returned by predicate when it returns a value convertible to true
+         //! @throws code::casual::invalid_semantics if predicate never returns 'true'
          template< typename P>
-         auto succeed( P predicate)
+         auto succeed( P predicate) -> decltype( predicate())
          {
             constexpr auto total_count = 2000;
             auto count = total_count;
 
             while( --count > 0)
             {
-               if( predicate())
-                  return;
+               if( auto result = predicate())
+                  return result;
 
                common::process::sleep( std::chrono::milliseconds{ 8});
             }
 
-            if( count == 0)
-               code::raise::error( code::casual::invalid_semantics, "unittest::eventually failed to fulfill the predicate after ", total_count, " tries");
+            code::raise::error( code::casual::invalid_semantics, "unittest::eventually failed to fulfill the predicate after ", total_count, " tries");
          }  
          
       } // eventually

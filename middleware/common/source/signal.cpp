@@ -461,60 +461,28 @@ namespace casual
 
       } // mask
 
-      namespace thread
+      namespace scope
       {
-         void send( std::thread& thread, code::signal signal)
-         {
-            log::debug( "signal::thread::send thread: ", thread.get_id(), " signal: ", signal);
+         Reset::Reset( signal::Set mask) : m_mask( std::move( mask)) {}
 
-            send( thread.native_handle(), signal);
+         Reset::~Reset()
+         {
+            if( m_active)
+               mask::set( m_mask);
          }
 
-         void send( common::thread::native::type thread, code::signal signal)
+         const signal::Set& Reset::previous() const
          {
-            if( pthread_kill( thread, 0) == 0)
-            {
-               if( pthread_kill( thread, std::to_underlying( signal)) != 0)
-                     log::line( log::category::error, "failed to send signal - ", signal, " -> thread: ", thread, " - error: " , code::system::last::error());
-            }
+            return m_mask;
          }
 
-         void send( code::signal signal)
-         {
-            log::debug( "signal::thread::send current thread - signal: ", signal);
-            send( common::thread::native::current(), signal);
-         }
+         Mask::Mask( signal::Set mask) : Reset( mask::set( mask)) {}
 
+         Block::Block() : Reset( mask::block()) {}
+         Block::Block( signal::Set mask) : Reset( mask::block( mask)) {}
+         Unblock::Unblock( signal::Set mask) : Reset( mask::unblock( mask)) {}
 
-         namespace scope
-         {
-            Reset::Reset( signal::Set mask) : m_mask( std::move( mask)) {}
-
-            Reset::~Reset()
-            {
-               if( m_active)
-                  mask::set( m_mask);
-            }
-
-            const signal::Set& Reset::previous() const
-            {
-               return m_mask;
-            }
-
-
-
-            Mask::Mask( signal::Set mask) : Reset( mask::set( mask)) {}
-
-            Block::Block() : Reset( mask::block()) {}
-            Block::Block( signal::Set mask) : Reset( mask::block( mask)) {}
-            Unblock::Unblock( signal::Set mask) : Reset( mask::unblock( mask)) {}
-
-         } // scope
-
-      } // thread
+      } // scope
 
    } // common::signal
 } // casual
-
-
-

@@ -159,7 +159,7 @@ namespace casual
          using namespace common;
 
          // we don't want to be interrupted during the connect phase.
-         common::signal::thread::scope::Block block;
+         common::signal::scope::Block block;
 
          auto try_connect = [ &state]( auto& prospect)
          {

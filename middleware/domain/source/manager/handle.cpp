@@ -122,7 +122,7 @@ namespace casual
                   if( auto shutdownable = executable.shutdownable())
                   {
                      // We only want child signals
-                     signal::thread::scope::Mask mask{ signal::set::filled( code::signal::child)};
+                     signal::scope::Mask mask{ signal::set::filled( code::signal::child)};
 
                      auto pids = algorithm::transform( range::reverse( shutdownable), []( const auto& i)
                      {
@@ -382,7 +382,7 @@ namespace casual
             log::debug( "processes: ", processes);
             
             // We only want child signals
-            signal::thread::scope::Mask mask{ signal::set::filled( code::signal::child)};
+            signal::scope::Mask mask{ signal::set::filled( code::signal::child)};
 
             // We need to correlate with the service-manager, if it's up
 
@@ -689,7 +689,7 @@ namespace casual
                         if( message.state.deceased())
                         {
                            // We don't want to handle any signals in this task
-                           signal::thread::scope::Block block;
+                           signal::scope::Block block;
 
                            auto alias = get_alias( state)( message.state.pid);
 

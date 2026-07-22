@@ -60,7 +60,7 @@ namespace casual
                advertise.alias = common::instance::alias();
                advertise.services.add = common::algorithm::transform( services, transform_service);
 
-               common::signal::thread::scope::Mask block{ 
+               common::signal::scope::Mask block{ 
                   common::signal::set::filled( common::code::signal::terminate, common::code::signal::interrupt)};
 
                common::communication::device::blocking::send( 

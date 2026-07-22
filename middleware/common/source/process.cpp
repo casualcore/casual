@@ -497,7 +497,7 @@ namespace casual
                   Trace trace{ "process::local::wait"};
 
                   // we block all signals but the _shutdown_
-                  signal::thread::scope::Mask block{ signal::set::filled( code::signal::terminate, code::signal::interrupt)};
+                  signal::scope::Mask block{ signal::set::filled( code::signal::terminate, code::signal::interrupt)};
 
                   lifetime::Exit exit;
 

@@ -356,7 +356,7 @@ namespace casual
          common::unittest::Trace trace;
 
          // We don't want any sig-child
-         signal::thread::scope::Block block{ { code::signal::child}};
+         signal::scope::Block block{ { code::signal::child}};
 
 
          auto pids = algorithm::generate_n< 30>( []()

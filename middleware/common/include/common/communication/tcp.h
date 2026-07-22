@@ -113,6 +113,10 @@ namespace casual
 
          Socket operator() () const;
 
+         CASUAL_LOG_SERIALIZE(
+            CASUAL_SERIALIZE_NAME( m_listener, "listener");
+         )
+
       private:
          Socket m_listener;
       };

@@ -146,7 +146,7 @@ namespace casual
                Trace trace{ "communication::instance::local::connect"};
                log::debug( "message: ", message);
 
-               signal::thread::scope::Mask block{ signal::set::filled( code::signal::terminate, code::signal::interrupt)};
+               signal::scope::Mask block{ signal::set::filled( code::signal::terminate, code::signal::interrupt)};
 
                auto directive = communication::ipc::call( outbound::domain::manager::device(), message).directive;
 

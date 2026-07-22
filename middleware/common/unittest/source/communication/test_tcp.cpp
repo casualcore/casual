@@ -5,7 +5,6 @@
 //!
 
 #include "common/unittest.h"
-#include "common/unittest/thread.h"
 
 #include "common/communication/tcp.h"
 #include "common/exception/capture.h"
@@ -21,49 +20,31 @@ namespace casual
       {
          namespace
          {
-            void simple_server( tcp::Address address)
-            {
-               try
-               {
-                  tcp::Listener listener{ std::move( address)};
-
-                  std::vector< Socket> connections;
-
-                  while( true)
-                  {
-                     connections.push_back( listener());
-
-                     log::debug( "connections: ", connections);
-                  }
-               }
-               catch( ...)
-               {
-                  exception::sink();
-               }
-            }
-
-            template< typename T>
-            bool boolean( T&& value)
-            {
-               return static_cast< bool>( value);
-            }
-
-
             tcp::Address address()
             {
-               static long port = 23666;
+               static long port = 7010;
                return { string::compose(  "127.0.0.1:", ++port)};
             }
 
             Socket connect( tcp::Address address)
             {
-               while( true)
+               return unittest::eventually::succeed( [ address = std::move( address)]()
                {
-                  if( auto socket = tcp::connect( address))
-                     return socket;
+                  return tcp::connect( address);
+               });
+            }
 
-                  process::sleep( std::chrono::milliseconds{ 1});
-               }
+            auto spawn_tcp_server( const tcp::Address& address)
+            {
+               auto path = "${CMAKE_BINARY_DIR}/middleware/common/bin/unittest_tcp_server";
+
+               auto pid = common::process::spawn( path, { "--listen", address});
+
+               return execute::scope( [pid]()
+               {
+                  signal::send( pid, code::signal::terminate);
+                  process::wait( pid);
+               });
             }
 
          } // <unnamed>
@@ -110,12 +91,11 @@ namespace casual
          common::unittest::Trace trace;
 
          const auto address = local::address();
-
-         unittest::Thread server{ &local::simple_server, address};
+         auto server_scope = local::spawn_tcp_server( address);
 
          auto socket = local::connect( address);
 
-         EXPECT_TRUE( local::boolean( socket));
+         EXPECT_TRUE( socket);
       }
 
 
@@ -124,8 +104,7 @@ namespace casual
          common::unittest::Trace trace;
 
          const auto address = local::address();
-
-         unittest::Thread server{ &local::simple_server, address};
+         auto server_scope = local::spawn_tcp_server( address);
 
          std::vector< Socket> connections;
 
@@ -134,68 +113,16 @@ namespace casual
          });
 
          for( auto& socket : connections)
-            EXPECT_TRUE( local::boolean( socket)) << trace.compose( "socket: ", socket);
+            EXPECT_TRUE( socket) << trace.compose( "socket: ", socket);
       }
-
-      namespace local
-      {
-         namespace
-         {
-            namespace echo
-            {
-               void worker( Socket&& socket)
-               {
-                  try
-                  {
-                     tcp::Duplex tcp{ std::move( socket)};
-                  
-                     while( true)
-                     {
-                        if( auto complete = device::blocking::next( tcp))
-                        {
-                           // we need to set the offset to 0.
-                           complete.offset = 0;
-                           device::blocking::send( tcp, std::move( complete));
-                        }
-                     }
-                  }
-                  catch( ...)
-                  {
-                     log::debug( exception::capture());
-                  }
-
-               }
-
-               void server( tcp::Address address)
-               {
-                  std::vector< unittest::Thread> workers;
-
-                  try
-                  {
-                     tcp::Listener listener{ std::move( address)};
-
-                     while( true)
-                        workers.emplace_back( &echo::worker, listener());
-                  }
-                  catch( ...)
-                  {
-                     log::debug( exception::capture());
-                  }
-               }
-
-            } // echo
-         } // <unnamed>
-      } // local
-
 
       TEST( common_communication_tcp, echo_server_port__connect_to_port__expect_connection)
       {
          common::unittest::Trace trace;
 
-         const auto address = local::address();
-
-         unittest::Thread server{ &local::echo::server, address};
-
+         auto const address = local::address();
+         auto server_scope = local::spawn_tcp_server( address);
+      
          auto socket = local::connect( address);
          EXPECT_TRUE( socket);
 
@@ -223,15 +150,15 @@ namespace casual
             EXPECT_TRUE( complete.type() == common::message::Type::process_lookup_request);
             EXPECT_TRUE( complete.payload == payload) << "complete: " << complete;
          }
+
       }
 
       TEST( common_communication_tcp, echo_server_port__10_connect_to_port__expect_echo_from_10)
       {
          common::unittest::Trace trace;
 
-         const auto address = local::address();
-
-         unittest::Thread server{ &local::echo::server, address};
+         auto const address = local::address();
+         auto server_scope = local::spawn_tcp_server( address);
 
          auto connections = algorithm::generate_n< 10>( [&address]()
          {
@@ -272,11 +199,9 @@ namespace casual
          common::unittest::Trace trace;
 
          const auto address = local::address();
-
-         unittest::Thread server{ &local::echo::server, address};
+         auto server_scope = local::spawn_tcp_server( address);
 
          tcp::Duplex tcp{ local::connect( address)};
-
 
          auto send = [&](){
             common::message::service::lookup::Request message;
@@ -286,9 +211,7 @@ namespace casual
             return device::blocking::send( tcp, message);
          };
 
-
          auto correlation = send();
-
 
          // receive (the echo)
          {
@@ -307,8 +230,7 @@ namespace casual
          common::unittest::Trace trace;
 
          const auto address = local::address();
-
-         unittest::Thread server{ &local::echo::server, address};
+         auto server_scope = local::spawn_tcp_server( address);
 
          tcp::Duplex tcp{ local::connect( address)};
 
@@ -331,8 +253,7 @@ namespace casual
          common::unittest::Trace trace;
 
          const auto address = local::address();
-
-         unittest::Thread server{ &local::echo::server, address};
+         auto server_scope = local::spawn_tcp_server( address);
 
          tcp::Duplex tcp{ local::connect( address)};
 
@@ -355,8 +276,7 @@ namespace casual
          common::unittest::Trace trace;
 
          const auto address = local::address();
-
-         unittest::Thread server{ &local::echo::server, address};
+         auto server_scope = local::spawn_tcp_server( address);
 
          tcp::Duplex tcp{ local::connect( address)};
 
@@ -380,8 +300,7 @@ namespace casual
          common::unittest::Trace trace;
 
          const auto address = local::address();
-
-         unittest::Thread server{ &local::echo::server, address};
+         auto server_scope = local::spawn_tcp_server( address);
 
          tcp::Duplex tcp{ local::connect( address)};
 

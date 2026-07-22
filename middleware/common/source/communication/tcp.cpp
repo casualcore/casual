@@ -228,7 +228,7 @@ namespace casual
                   Trace trace( "common::communication::tcp::local::socket::connect");
 
                   // We block all signals while we're doing one connect attempt
-                  //common::signal::thread::scope::Block block;
+                  //common::signal::scope::Block block;
 
                   return create( address, []( Socket socket, const addrinfo& info) 
                      -> std::variant< Socket, non::blocking::Pending, std::system_error>
@@ -265,7 +265,7 @@ namespace casual
                   Trace trace( "common::communication::tcp::local::socket::bind");
 
                   // We block all signals while we're trying to set up a listener...
-                  //common::signal::thread::scope::Block block;
+                  //common::signal::scope::Block block;
 
                   constexpr auto flags = Flag::address_config | Flag::passive;
 

@@ -31,7 +31,7 @@ namespace casual
                   template< typename M>
                   void domain( const M& request, const std::vector< message::Type>& types)
                   {
-                     signal::thread::scope::Mask block{ signal::set::filled( code::signal::terminate, code::signal::interrupt)};
+                     signal::scope::Mask block{ signal::set::filled( code::signal::terminate, code::signal::interrupt)};
 
                      if( algorithm::find_if( types, []( message::Type type){
                         return type >= message::Type::EVENT_DOMAIN_BASE && type < message::Type::EVENT_DOMAIN_BASE_END;}))
@@ -45,7 +45,7 @@ namespace casual
                   template< typename M>
                   void service( const M& request, const std::vector< message::Type>& types)
                   {
-                     signal::thread::scope::Mask block{ signal::set::filled( code::signal::terminate, code::signal::interrupt)};
+                     signal::scope::Mask block{ signal::set::filled( code::signal::terminate, code::signal::interrupt)};
 
                      if( algorithm::find_if( types, []( message::Type type){
                         return type >= message::Type::EVENT_SERVICE_BASE && type < message::Type::EVENT_SERVICE_BASE_END;}))

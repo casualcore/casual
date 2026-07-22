@@ -66,7 +66,6 @@ target_sources(casual-common
     source/chronology.cpp
     source/process.cpp
     source/instance.cpp
-    source/thread.cpp
     source/domain.cpp
     source/execution/context.cpp
     source/network/byteorder.cpp
@@ -137,7 +136,6 @@ target_sources(casual-unittest
     source/unittest.cpp
     source/unittest/file.cpp
     source/unittest/log.cpp
-    source/unittest/thread.cpp
     source/unittest/eventually/send.cpp
 )
 
@@ -157,6 +155,27 @@ target_link_libraries(casual-unittest PRIVATE
   pugixml::pugixml
   gtest::gtest
 )
+
+add_executable( unittest_tcp_server)
+
+target_sources( unittest_tcp_server
+   PRIVATE
+     unittest/source/communication/tcp/server/main.cpp
+)
+
+target_include_directories(unittest_tcp_server PRIVATE
+  $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+  $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/../xatmi/include>
+)
+
+target_link_directories(unittest_tcp_server PRIVATE
+  $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}/../common/bin>
+)
+
+target_link_libraries(unittest_tcp_server PRIVATE
+  casual-common
+)
+
 
 
 add_executable(simple_process)

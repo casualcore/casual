@@ -359,7 +359,7 @@ namespace casual
          static auto flush( D& device, platform::size::type count, traits::priority::tag< 1>) -> decltype( policy::non::blocking(device), void())
          {
             // We don't want to handle any signals while we're flushing
-            signal::thread::scope::Block block;
+            signal::scope::Block block;
 
             while( count-- > 0 && device.next( common::message::Type::flush_ipc, policy::non::blocking( device)))
                ; // no op

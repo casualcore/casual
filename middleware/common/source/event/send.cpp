@@ -32,7 +32,7 @@ namespace casual
             Trace trace{ "common::domain::event::detail::send"};
 
             // We block all signals but SIG_INT
-            signal::thread::scope::Mask block{ signal::set::filled( code::signal::interrupt)};
+            signal::scope::Mask block{ signal::set::filled( code::signal::interrupt)};
 
             communication::device::blocking::optional::send( local::domain_device(), complete);
          }
@@ -52,7 +52,7 @@ namespace casual
                log::line( log::category::error, code, ' ', message);
 
                // We block all signals but SIG_INT
-               signal::thread::scope::Mask block{ signal::set::filled( code::signal::interrupt)};
+               signal::scope::Mask block{ signal::set::filled( code::signal::interrupt)};
 
                message::event::Error error{ process::handle()};
                error.code = code;

@@ -99,7 +99,7 @@ namespace casual
          EXPECT_NO_THROW( signal::dispatch());
 
          {
-            signal::thread::scope::Block block;
+            signal::scope::Block block;
 
             signal::send( process::id(), TestFixture::get_signal());
 
@@ -124,7 +124,7 @@ namespace casual
          {
             signal::send( process::id(), TestFixture::get_signal());
 
-            signal::thread::scope::Block block;
+            signal::scope::Block block;
 
             EXPECT_NO_THROW(
             {
@@ -143,7 +143,7 @@ namespace casual
          EXPECT_NO_THROW( signal::dispatch());
 
          {
-            signal::thread::scope::Block block( { TestFixture::get_signal()});
+            signal::scope::Block block( { TestFixture::get_signal()});
 
             signal::send( process::id(), TestFixture::get_signal());
 
@@ -167,7 +167,7 @@ namespace casual
          {
             signal::send( process::id(), TestFixture::get_signal());
 
-            signal::thread::scope::Block block( { TestFixture::get_signal()});
+            signal::scope::Block block( { TestFixture::get_signal()});
 
             EXPECT_NO_THROW(
             {

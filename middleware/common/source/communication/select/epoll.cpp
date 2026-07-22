@@ -109,7 +109,7 @@ namespace casual
                Trace trace{ "common::communication::select::local::epoll_wait"};
 
                // block all signals
-               signal::thread::scope::Block block;
+               signal::scope::Block block;
 
                // check if we've got signals before the block.
                if( signal::pending( block.previous()))
@@ -372,7 +372,7 @@ namespace casual
                }
 
                // block all signals
-               signal::thread::scope::Block block;
+               signal::scope::Block block;
 
                // check if we've got signals before the block.
                signal::dispatch( block.previous());

@@ -26,7 +26,7 @@ namespace casual
             void send( const common::process::Handle& destination, M&& message)
             {
                // We ignore signals
-               signal::thread::scope::Mask mask{ signal::set::filled( code::signal::terminate, code::signal::interrupt)};
+               signal::scope::Mask mask{ signal::set::filled( code::signal::terminate, code::signal::interrupt)};
 
                communication::device::blocking::optional::send( destination.ipc, message);
             }

@@ -100,7 +100,7 @@ namespace casual
                   });
 
                   // We block child so users can spawn stuff without actions/errors from casual
-                  common::signal::thread::scope::Block block( { common::code::signal::child});
+                  common::signal::scope::Block block( { common::code::signal::child});
 
                   casual::server::internal::start(
                      transform::arguments( argument),
