@@ -275,11 +275,8 @@ domain:
 
          const auto trid = common::transaction::id::create();
          const auto timepoint = common::chronology::time_point::clock::now();
-         const auto execution = common::strong::execution::id::generate();
          const auto parent_service = std::string{ "parent-service"};
          const auto parent_span = std::string{ "parent-span"};
-         const auto deadline = std::chrono::seconds{ 42};
-         const auto pending = std::chrono::milliseconds{ 7};
          const auto payload = common::buffer::Payload{
             .type = "X_OCTET/",
             .data = common::unittest::random::binary( 10),

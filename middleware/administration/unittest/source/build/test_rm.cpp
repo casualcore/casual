@@ -42,7 +42,7 @@ system:
          auto build_rm_path = "${CMAKE_BINARY_DIR}/middleware/tools/bin/casual-build-resource-proxy";
          
          auto capture = administration::unittest::cli::command::execute(
-            build_rm_path, " --output ", output.string(), " --resource-key rm-mockup --system-configuration ", system.string(), " --compile-directives -O3");
+            build_rm_path, " --verbose --output ", output.string(), " --resource-key rm-mockup --system-configuration ", system.string(), " --compile-directives -O3");
 
          EXPECT_TRUE( capture) << CASUAL_NAMED_VALUE( capture);
 

@@ -29,6 +29,13 @@ namespace casual
          const std::vector< std::string>& keys,
          const configuration::model::system::Model& system);
 
+      inline std::vector< model::Resource> resources( 
+         const std::vector< std::string>& keys,
+         const configuration::model::system::Model& system)
+      {
+         return resources( std::vector< configuration::build::model::Resource>{}, keys, system);         
+      }
+
 
       inline std::vector< model::Resource> resources( 
          const configuration::build::server::Model& model, 

@@ -20,106 +20,97 @@
 namespace casual
 {
    using namespace common;
-   namespace tools
+   namespace tools::build::server::generate
    {
-      namespace build
+
+      namespace local
       {
-         namespace server
+         namespace
          {
-            namespace generate
+            struct Settings
             {
-               namespace local
+               struct
                {
-                  namespace
-                  {
-                     struct Settings
-                     {
-                        struct
-                        {
-                           std::string definition;
-                        } server;
+                  std::string definition;
+               } server;
 
-                        struct
-                        {
-                           std::string system;
-                        } files;
+               struct
+               {
+                  std::string system;
+               } files;
 
-                        std::string output;
-                     };
+               std::string output;
+            };
 
-                     struct State
-                     {
-                        std::vector< model::Service> services;
-                        std::vector< model::Resource> resources;
-                     };
+            struct State
+            {
+               std::vector< model::Service> services;
+               std::vector< model::Resource> resources;
+            };
 
 
-                     namespace transform
-                     {
-                        auto state( const Settings& settings)
-                        {
-                           Trace trace{ "tools::build::server::generate::local::transform::state"};
+            namespace transform
+            {
+               auto state( const Settings& settings)
+               {
+                  Trace trace{ "tools::build::server::generate::local::transform::state"};
 
-                           auto system = settings.files.system.empty() ?
-                              configuration::system::get() : configuration::system::get( settings.files.system);
+                  auto system = settings.files.system.empty() ?
+                     configuration::system::get() : configuration::system::get( settings.files.system);
 
-                           auto definition = configuration::build::model::load::server( settings.server.definition);
+                  auto definition = configuration::build::model::load::server( settings.server.definition);
 
-                           State result;
+                  State result;
 
-                           result.resources = build::transform::resources( 
-                              definition,
-                              {}, // no raw keys
-                              system);
+                  result.resources = build::transform::resources( 
+                     definition,
+                     {}, // no raw keys
+                     system);
 
-                           result.services = build::transform::services( 
-                              definition,
-                              {}, 
-                              {});
+                  result.services = build::transform::services( 
+                     definition,
+                     {}, 
+                     {});
 
-                           return result;
-                        };
+                  return result;
+               };
 
-                     } // transform
+            } // transform
 
-                     void generate( const Settings& settings)
-                     {
-                        Trace trace{ "tools::build::server::generate::local::generate"};
-                        
-                        auto state = transform::state( settings);
+            void generate( const Settings& settings)
+            {
+               Trace trace{ "tools::build::server::generate::local::generate"};
+               
+               auto state = transform::state( settings);
 
-                        if( settings.output.empty())
-                           build::generate::server( std::cout, state.resources, state.services);
-                        else
-                        {
-                           std::ofstream out{ settings.output};
-                           build::generate::server( std::cout, state.resources, state.services);
-                        }
-                     }
-                     
-                     void main(int argc, const char** argv)
-                     {
-                        Settings settings;
+               if( settings.output.empty())
+                  build::generate::server( std::cout, state.resources, state.services);
+               else
+               {
+                  std::ofstream out{ settings.output};
+                  build::generate::server( out, state.resources, state.services);
+               }
+            }
+            
+            void main(int argc, const char** argv)
+            {
+               Settings settings;
 
-                        using namespace casual::argument;
-                        auto outcome = parse( "generates a server 'main' source file", {
-                           Option( std::tie( settings.server.definition), {{ "-d", "--definition"}}, "path to server definition file")( argument::cardinality::one()),
-                           Option( std::tie( settings.server.definition), {{ "-o", "--output"}}, "output file name - if not provided 'stdout' will be used"),
-                           Option( std::tie( settings.files.system), {{ "--system-configuration"}, { "-p", "--properties-file"}}, "path to system configuration file"),
-                        }, argc, argv);
+               auto outcome = argument::parse( "generates a server 'main' source file", {
+                  argument::Option( std::tie( settings.server.definition), {{ "-d", "--definition"}}, "path to server definition file")( argument::cardinality::one()),
+                  argument::Option( std::tie( settings.output), {{ "-o", "--output"}}, "output file name - if not provided 'stdout' will be used"),
+                  argument::Option( std::tie( settings.files.system), {{ "--system-configuration"}, { "-p", "--properties-file"}}, "path to system configuration file"),
+               }, argc, argv);
 
-                        if( outcome != argument::Outcome::parsed)
-                           return;
+               if( outcome != argument::Outcome::parsed)
+                  return;
 
-                        local::generate( std::move( settings));
-                     }
-                  } // <unnamed>
-               } // local
-            } // generate
-         } // server
+               local::generate( std::move( settings));
+            }
+         } // <unnamed>
+      } // local
 
-      } // build
-   } // tools 
+   } // tools::build::server::generate
 } // casual
 
 

@@ -7,86 +7,84 @@
 #include "tools/build/generate.h"
 #include "tools/common.h"
 
+#include "common/log.h"
+
 namespace casual
 {
    using namespace common;
-   namespace tools
+   namespace tools::build::generate
    {
-      namespace build
+
+      namespace local
       {
-         namespace generate
+         namespace
          {
-            namespace local
+            struct callbacks
             {
-               namespace
+               using function_type = std::function< void( std::ostream&)>;
+               std::vector< function_type> top;
+               std::vector< function_type> before_main;
+               std::vector< function_type> inside_main;
+               std::vector< function_type> after_main;
+            };
+            auto before_main( const std::vector< model::Resource>& resources)
+            {
+               return [&resources]( std::ostream& out)
                {
-                  struct callbacks
-                  {
-                     using function_type = std::function< void( std::ostream&)>;
-                     std::vector< function_type> top;
-                     std::vector< function_type> before_main;
-                     std::vector< function_type> inside_main;
-                     std::vector< function_type> after_main;
-                  };
-                  auto before_main( const std::vector< model::Resource>& resources)
-                  {
-                     return [&resources]( std::ostream& out)
-                     {
-                        out << "\n";
+                  out << "\n";
 
-                        // Declare the xa_struts
-                        for( auto& rm : resources)
-                        {
-                           out << "extern struct xa_switch_t " << rm.xa_struct_name << ";" << '\n';
-                        }
-                     };
+                  // Declare the xa_struts
+                  for( auto& rm : resources)
+                  {
+                     out << "extern struct xa_switch_t " << rm.xa_struct_name << ";" << '\n';
                   }
+               };
+            }
 
-                  auto before_main( const std::vector< model::Service>& services)
+            auto before_main( const std::vector< model::Service>& services)
+            {
+               return [&services]( std::ostream& out)
+               {
+                  out << "\n";
+
+                  // declare services
+                  for( auto& service : services)
                   {
-                     return [&services]( std::ostream& out)
-                     {
-                        out << "\n";
-
-                        // declare services
-                        for( auto& service : services)
-                        {
-                           out << "extern void " << service.function << "( TPSVCINFO *context);" << '\n';
-                        }
-                     };
+                     out << "extern void " << service.function << "( TPSVCINFO *context);" << '\n';
                   }
+               };
+            }
                   
-                  auto inside_main( const std::vector< model::Resource>& resources)
-                  {
-                     return [&resources]( std::ostream& out)
-                     {
-                        out << R"(
+            auto inside_main( const std::vector< model::Resource>& resources)
+            {
+               return [&resources]( std::ostream& out)
+               {
+                  out << R"(
    struct casual_xa_switch_map xa_mapping[] = {)";
 
-                        for( auto& rm : resources)
-                        {
-                           out << R"(
+                  for( auto& rm : resources)
+                  {
+                  out << R"(
       { ")" << rm.key <<  R"(", ")" << rm.name <<  R"(", &)" << rm.xa_struct_name << "},";
-                        }
-
-                        out << R"(
-      { 0, 0, 0} /* null ending */
-   };
-                     )";
-                        
-                     };
                   }
 
-                  auto inside_main( const std::vector< model::Service>& services)
-                  {
-                     return [&services]( std::ostream& out)
-                     {
-                        out << R"(
+                  out << R"(
+      { 0, 0, 0} /* null ending */
+   };
+                  )";     
+               };
+            }
+
+            auto inside_main( const std::vector< model::Service>& services)
+            {
+               return [&services]( std::ostream& out)
+               {
+                  out << R"(
      struct casual_service_definition service_mapping[] = {)";
 
                   for( auto& service : services)
                   {
-                     out << R"(
+                  out << R"(
       {&)" << service.function << R"(, ")" << service.name << R"(", ")" << service.category << R"(", )" << std::to_underlying( service.transaction) << R"(, )" << common::service::visibility::build::transform( service.visibility) << "},";
                   }
 
@@ -96,14 +94,14 @@ namespace casual
                         
                         )";
 
-                     };
-                  }
+               };
+            }
 
-                  auto inside_main_start_server()
-                  {
-                     return []( std::ostream& out)
-                     {
-                        out << R"(
+            auto inside_main_start_server()
+            {
+               return []( std::ostream& out)
+               {
+                  out << R"(
 
    struct casual_server_arguments_v2 arguments = {
          service_mapping,
@@ -117,47 +115,47 @@ namespace casual
    return casual_run_server_v2( &arguments);
 )";
 
-                     };
-                  }
+               };
+            }
 
-                  auto text( std::string_view text)
-                  {
-                     return [ text]( std::ostream& out)
-                     {
-                        out << text;
-                     };
-                  }
-
-                  void main_stream( std::ostream& out, const local::callbacks& callback)
-                  {
-                     auto invoke = [&out]( auto& f){ f( out);};
-
-                     out << license::c << '\n';
-
-                     algorithm::for_each( callback.top, invoke);
-                     algorithm::for_each( callback.before_main, invoke);
-
-                     out << "\n\nint main( int argc, char** argv)\n{\n";
-
-                     algorithm::for_each( callback.inside_main, invoke);
-
-                     out << "\n}\n";
-
-                     algorithm::for_each( callback.after_main, invoke);
-                  }
-                  
-               } // <unnamed>
-            } // local
-
-
-             void server( std::ostream& out, 
-               const std::vector< model::Resource>& resources, 
-               const std::vector< model::Service>& services)
+            auto text( std::string_view text)
             {
-                Trace trace{ "tools::build::generate::server"};
+               return [ text]( std::ostream& out)
+               {
+                  out << text;
+               };
+            }
 
-                local::callbacks callback;
-                callback.top.emplace_back( local::text( R"(   
+            void main_stream( std::ostream& out, const local::callbacks& callback)
+            {
+               auto invoke = [&out]( auto& f){ f( out);};
+
+               out << license::c << '\n';
+
+               algorithm::for_each( callback.top, invoke);
+               algorithm::for_each( callback.before_main, invoke);
+
+               out << "\n\nint main( int argc, char** argv)\n{\n";
+
+               algorithm::for_each( callback.inside_main, invoke);
+
+               out << "\n}\n";
+
+               algorithm::for_each( callback.after_main, invoke);
+            }
+            
+         } // <unnamed>
+      } // local
+
+
+         void server( std::ostream& out, 
+         const std::vector< model::Resource>& resources, 
+         const std::vector< model::Service>& services)
+      {
+            Trace trace{ "tools::build::generate::server"};
+
+            local::callbacks callback;
+            callback.top.emplace_back( local::text( R"(   
 #include <casual/xatmi.h>
 #include <casual/xatmi/server.h>
 
@@ -166,36 +164,36 @@ extern "C" {
 #endif
 
 )"
-               ));
+         ));
 
-               // before main
-               callback.before_main.emplace_back( local::before_main( resources));
-               callback.before_main.emplace_back( local::before_main( services));
-
-               // inside main
-               callback.inside_main.emplace_back( local::inside_main( resources));
-               callback.inside_main.emplace_back( local::inside_main( services));
-               callback.inside_main.emplace_back( local::inside_main_start_server());
-
-               callback.after_main.emplace_back( local::text( R"(
+         // before main
+         callback.before_main.emplace_back( local::before_main( resources));
+         callback.before_main.emplace_back( local::before_main( services));
+         callback.before_main.emplace_back( local::text( R"(
 #ifdef __cplusplus
 }
 #endif
 
 )"
-               ));
+         ));
 
-               local::main_stream( out, callback);
-            }
+         // inside main
+         callback.inside_main.emplace_back( local::inside_main( resources));
+         callback.inside_main.emplace_back( local::inside_main( services));
+         callback.inside_main.emplace_back( local::inside_main_start_server());
 
-            void executable( std::ostream& out, 
-               const std::vector< model::Resource>& resources, 
-               const std::string& entrypoint)
-            {
-                Trace trace{ "tools::build::generate::executable"};
 
-                local::callbacks callback;
-                callback.top.emplace_back( local::text( R"(   
+         local::main_stream( out, callback);
+      }
+
+      void executable( std::ostream& out, 
+         const std::vector< model::Resource>& resources, 
+         const std::string& entrypoint)
+      {
+            Trace trace{ "tools::build::generate::executable"};
+
+            local::callbacks callback;
+            callback.top.emplace_back( local::text( R"(   
 #include <casual/xatmi/executable.h>
 
 #ifdef __cplusplus
@@ -203,20 +201,27 @@ extern "C" {
 #endif
 
 )"
-               ));
+         ));
 
-               // before main
-               callback.before_main.emplace_back( local::before_main( resources));
-               callback.before_main.emplace_back( [&entrypoint]( std::ostream& out)
-               {
-                  out << "extern int " << entrypoint << "( int, char**);" << '\n';
-               });
+         // before main
+         callback.before_main.emplace_back( local::before_main( resources));
+         callback.before_main.emplace_back( [&entrypoint]( std::ostream& out)
+         {
+            out << "extern int " << entrypoint << "( int, char**);" << '\n';
+         });
 
-               // inside main
-               callback.inside_main.emplace_back( local::inside_main( resources));
-               callback.inside_main.emplace_back( [&entrypoint]( std::ostream& out)
-               {
-                  out << R"(
+         callback.before_main.emplace_back( local::text( R"(
+#ifdef __cplusplus
+}
+#endif
+
+)"));
+
+         // inside main
+         callback.inside_main.emplace_back( local::inside_main( resources));
+         callback.inside_main.emplace_back( [&entrypoint]( std::ostream& out)
+         {
+            out << R"(
 
    struct casual_executable_arguments arguments = {
          )";
@@ -228,21 +233,10 @@ extern "C" {
 
    return casual_run_executable( &arguments);
 )";
-               });
+         });
 
-               callback.after_main.emplace_back( local::text( R"(
-#ifdef __cplusplus
-}
-#endif
-
-)"
-               ));
-
-               local::main_stream( out, callback);
-            }
-
-
-         } // generate
-      } // build
-   } // tools
+         local::main_stream( out, callback);
+      }
+      
+   } // tools::build::generate
 } // casual

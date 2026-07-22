@@ -87,9 +87,8 @@ namespace casual
          {
             auto size = memory::size( value);
             auto first = std::begin( source) + offset;
-            auto last = std::end( source);
 
-            assert( std::distance( first, last) >=  size);
+            assert( std::distance( first, std::end( source)) >=  size);
 
             std::memcpy( &value, &(*first), size);
 
