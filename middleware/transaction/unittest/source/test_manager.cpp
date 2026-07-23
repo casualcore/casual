@@ -742,11 +742,7 @@ domain:
          {
             namespace involved
             {
-               struct Resource 
-               {
-                  common::communication::ipc::inbound::Device inbound;
-                  common::process::Handle process() const { return { common::process::id(), inbound.connector().handle().ipc()};}
-               };
+               using Resource = common::unittest::Instance;
 
             } // involved
          } // <unnamed>
@@ -802,15 +798,15 @@ domain:
 
          auto involve_external = []( auto& resource, auto& trid)
          {
-            common::message::transaction::resource::external::Involved message{ resource.process()};
+            common::message::transaction::resource::external::Involved message{ resource.handle()};
             message.trid = trid;
             local::send::tm( message);
          };
 
          auto reply_to_tm = []< typename M>( auto& resource, M)
          {
-            auto request = common::communication::device::receive< M>( resource.inbound);
-            auto reply = common::message::reverse::type( request, resource.process());
+            auto request = common::communication::device::receive< M>( resource.device);
+            auto reply = common::message::reverse::type( request, resource.handle());
             reply.resource = request.resource;
             reply.trid = request.trid;
             local::send::tm( reply);
@@ -834,7 +830,7 @@ domain:
 
          // r2 has failed
          {
-            local::send::tm( common::message::event::ipc::Destroyed{ r2.process()});
+            local::send::tm( common::message::event::ipc::Destroyed{ r2.handle()});
          }
 
          // we expect rollback to r1
@@ -1145,18 +1141,7 @@ domain:
          {
             namespace involved
             {
-               auto next()
-               {
-                  int global{};
-                  return common::strong::process::id{ ++global};
-               }
-
-               struct Process 
-               {
-                  common::communication::ipc::inbound::Device inbound;
-                  common::process::Handle process{ next(), inbound.connector().handle().ipc()};
-               };
-
+               using Process = common::unittest::Instance;
 
             } // involved
          } // <unnamed>
@@ -1180,10 +1165,10 @@ domain:
             common::message::transaction::resource::external::Involved message;
             message.trid = trid;
 
-            message.process = rm1.process;
+            message.process = rm1.handle();
             local::send::tm( message);
 
-            message.process = rm2.process;
+            message.process = rm2.handle();
             local::send::tm( message);
          }
 
@@ -1202,7 +1187,7 @@ domain:
 
                common::message::transaction::resource::prepare::Request message;
 
-               common::communication::device::blocking::receive( involved.inbound, message);
+               common::communication::device::blocking::receive( involved.device, message);
 
                EXPECT_TRUE( message.trid == trid);
                EXPECT_TRUE( message.flags == common::flag::xa::Flag::no_flags);
@@ -1237,7 +1222,7 @@ domain:
 
                common::message::transaction::resource::commit::Request message;
 
-               common::communication::device::blocking::receive( involved.inbound, message);
+               common::communication::device::blocking::receive( involved.device, message);
 
                EXPECT_TRUE( message.trid == trid);
                EXPECT_TRUE( message.flags == common::flag::xa::Flag::no_flags);
@@ -1282,10 +1267,10 @@ domain:
             common::message::transaction::resource::external::Involved message;
             message.trid = trid;
 
-            message.process = rm1.process;
+            message.process = rm1.handle();
             local::send::tm( message);
 
-            message.process = rm2.process;
+            message.process = rm2.handle();
             local::send::tm( message);
          }
 
@@ -1305,7 +1290,7 @@ domain:
 
                common::message::transaction::resource::prepare::Request message;
 
-               common::communication::device::blocking::receive( involved.inbound, message);
+               common::communication::device::blocking::receive( involved.device, message);
 
                EXPECT_TRUE( message.trid == trid);
                EXPECT_TRUE( message.flags == common::flag::xa::Flag::no_flags);
@@ -1350,10 +1335,10 @@ domain:
             common::message::transaction::resource::external::Involved message;
             message.trid = trid;
 
-            message.process = rm1.process;
+            message.process = rm1.handle();
             local::send::tm( message);
 
-            message.process = rm2.process;
+            message.process = rm2.handle();
             local::send::tm( message);
          }
 
@@ -1374,7 +1359,7 @@ domain:
             {
                common::message::transaction::resource::prepare::Request message;
 
-               common::communication::device::blocking::receive( involved.inbound, message);
+               common::communication::device::blocking::receive( involved.device, message);
 
                EXPECT_TRUE( message.trid == trid);
                EXPECT_TRUE( message.flags == common::flag::xa::Flag::no_flags);
@@ -1397,7 +1382,7 @@ domain:
             {
                common::message::transaction::resource::commit::Request message;
 
-               common::communication::device::blocking::receive( involved.inbound, message);
+               common::communication::device::blocking::receive( involved.device, message);
 
                EXPECT_TRUE( message.trid == trid);
                EXPECT_TRUE( message.flags == common::flag::xa::Flag::no_flags);
@@ -1441,10 +1426,10 @@ domain:
             common::message::transaction::resource::external::Involved message;
             message.trid = trid;
 
-            message.process = rm1.process;
+            message.process = rm1.handle();
             local::send::tm( message);
 
-            message.process = rm2.process;
+            message.process = rm2.handle();
             local::send::tm( message);
          }
 
@@ -1465,7 +1450,7 @@ domain:
 
                common::message::transaction::resource::prepare::Request message;
 
-               common::communication::device::blocking::receive( involved.inbound, message);
+               common::communication::device::blocking::receive( involved.device, message);
 
                EXPECT_TRUE( message.trid == trid);
                EXPECT_TRUE( message.flags == common::flag::xa::Flag::no_flags);
@@ -1488,7 +1473,7 @@ domain:
 
                common::message::transaction::resource::rollback::Request message;
 
-               common::communication::device::blocking::receive( involved.inbound, message);
+               common::communication::device::blocking::receive( involved.device, message);
 
                EXPECT_TRUE( message.trid == trid);
                EXPECT_TRUE( message.flags == common::flag::xa::Flag::no_flags);
@@ -1785,11 +1770,11 @@ domain:
          {
             common::message::transaction::resource::external::Involved message;
             
-            message.process = rm1.process;
+            message.process = rm1.handle();
             message.trid = trid;
             local::send::tm( message);
 
-            message.process = rm2.process;
+            message.process = rm2.handle();
             message.trid = branch;
             local::send::tm( message);
          }
@@ -1807,7 +1792,7 @@ domain:
          // and sends a resource::prepare::Reply xa::ok back to transaction manager
          {
             common::message::transaction::resource::prepare::Request message;
-            common::communication::device::blocking::receive( rm1.inbound, message);
+            common::communication::device::blocking::receive( rm1.device, message);
 
             auto reply = common::message::reverse::type( message);
 
@@ -1821,7 +1806,7 @@ domain:
          {
             // resource 2 (outbound) receives a resource::prepare::Request from transaction manager
             common::message::transaction::resource::prepare::Request message;
-            common::communication::device::blocking::receive( rm2.inbound, message);
+            common::communication::device::blocking::receive( rm2.device, message);
 
             // act as another domains transaction manager that got a resource::prepare::Request
             // and send a resource::commit::Request (one-phase-optimization) to the first transaction manager
@@ -1878,11 +1863,11 @@ domain:
          {
             common::message::transaction::resource::external::Involved message;
             
-            message.process = rm1.process;
+            message.process = rm1.handle();
             message.trid = trid;
             local::send::tm( message);
 
-            message.process = rm2.process;
+            message.process = rm2.handle();
             message.trid = branch;
             local::send::tm( message);
          }
@@ -1900,7 +1885,7 @@ domain:
          // and sends a resource::prepare::Reply xa::ok back to transaction manager
          {
             common::message::transaction::resource::prepare::Request message;
-            common::communication::device::blocking::receive( rm1.inbound, message);
+            common::communication::device::blocking::receive( rm1.device, message);
 
             auto reply = common::message::reverse::type( message);
 
@@ -1914,7 +1899,7 @@ domain:
          {
             // resource 2 (outbound) receives a resource::prepare::Request from transaction manager
             common::message::transaction::resource::prepare::Request message;
-            common::communication::device::blocking::receive( rm2.inbound, message);
+            common::communication::device::blocking::receive( rm2.device, message);
 
             // act as another domains transaction manager that got a resource::prepare::Request
             // and send a resource::prepare::Request to the first transaction manager
@@ -1968,7 +1953,7 @@ domain:
          {
             common::message::transaction::resource::external::Involved message;
             
-            message.process = rm1.process;
+            message.process = rm1.handle();
             message.trid = trid;
             local::send::tm( message);
          }
@@ -1985,7 +1970,7 @@ domain:
          {
             // resource 1 (outbound) receives a resource::commit::Request from transaction manager
             common::message::transaction::resource::commit::Request message;
-            common::communication::device::blocking::receive( rm1.inbound, message);
+            common::communication::device::blocking::receive( rm1.device, message);
 
             // act as another domains transaction manager that got a resource::prepare::Request
             // and send a resource::prepare::Request to the first transaction manager
@@ -2033,7 +2018,7 @@ domain:
                for( auto& resource : resources)
                {
                   common::message::transaction::resource::external::Involved message;
-                  message.process = resource.process;
+                  message.process = resource.handle();
                   message.trid = trid;
                   local::send::tm( message);
                }
@@ -2043,7 +2028,7 @@ domain:
             {
                for( auto& resource : resources)
                {
-                  auto request = common::unittest::fetch::message::until< common::message::transaction::resource::rollback::Request>( resource.inbound);
+                  auto request = common::unittest::fetch::message::until< common::message::transaction::resource::rollback::Request>( resource.device);
                   auto reply = common::message::reverse::type( request);
                   reply.trid = request.trid;
                   reply.resource = request.resource;

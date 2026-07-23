@@ -1810,17 +1810,13 @@ domain:
             EXPECT_TRUE( state.grandchildren.empty());
          }
 
-         struct
-         {
-            communication::ipc::inbound::Device device;
-            process::Handle handle = { strong::process::id{ process::id().value() - 1}, device.connector().handle().ipc()};
-         } grandchild;
+         auto grandchild = common::unittest::Instance{ strong::process::id{ process::id().value() - 1}};
 
 
          // Connect to dm
          {
             auto request = common::message::domain::process::connect::Request{};
-            request.information.handle = grandchild.handle;
+            request.information.handle = grandchild.handle();
             communication::device::blocking::send( communication::instance::outbound::domain::manager::device(), request);
 
             auto state = local::call::state();
@@ -1830,7 +1826,7 @@ domain:
          // We fake our own death
          {
             message::event::process::Exit event;
-            event.state.pid = grandchild.handle.pid;
+            event.state.pid = grandchild.handle().pid;
             event.state.reason = decltype( event.state.reason)::exited;
             communication::device::blocking::send( communication::instance::outbound::domain::manager::device(), event);
          }
@@ -1848,16 +1844,12 @@ domain:
 )");
 
 
-         struct
-         {
-            communication::ipc::inbound::Device device;
-            process::Handle handle = { strong::process::id{ process::id().value() - 1}, device.connector().handle().ipc()};
-         } grandchild;
+         auto grandchild = common::unittest::Instance{ strong::process::id{ process::id().value() - 1}};
 
          // Connect to dm
          {
             auto request = common::message::domain::process::connect::Request{};
-            request.information.handle = grandchild.handle;
+            request.information.handle = grandchild.handle();
             request.information.alias = local::grandchild::expected::alias;
             request.information.path = local::grandchild::expected::path;
             communication::device::blocking::send( communication::instance::outbound::domain::manager::device(), request);
@@ -1865,7 +1857,7 @@ domain:
 
          auto request = message::domain::process::information::Request{ process::handle()};
          // We lookup the grandchild...
-         request.handles.push_back( grandchild.handle);
+         request.handles.push_back( grandchild.handle());
          // ...and the DM itself...
          request.handles.push_back( domain.handle());
          // ...as well as a non-existent pid.
@@ -1875,7 +1867,7 @@ domain:
 
          // The invalid pid should not be included in the response since it's not a real process
          EXPECT_TRUE( processes.size() == 2) << CASUAL_NAMED_VALUE( processes);
-         EXPECT_TRUE( algorithm::includes( processes, std::vector{ grandchild.handle.pid, domain.handle().pid}));
+         EXPECT_TRUE( algorithm::includes( processes, std::vector{ grandchild.handle().pid, domain.handle().pid}));
 
          auto find_process = []( const auto& processes, const auto& handle)
          {
@@ -1883,7 +1875,7 @@ domain:
          };
 
          {
-            auto process = find_process( processes, grandchild.handle);
+            auto process = find_process( processes, grandchild.handle());
             ASSERT_TRUE( process) << CASUAL_NAMED_VALUE( processes);
             EXPECT_TRUE( process->alias == local::grandchild::expected::alias) << process->alias;
             EXPECT_TRUE( process->path == local::grandchild::expected::path) << process->path;

@@ -595,7 +595,7 @@ domain:
 
          const auto correlation = casual::service::unittest::send::request( "b", data);
 
-         auto loop_device = communication::ipc::inbound::Device{};
+         auto loop_device = common::unittest::Instance{};
 
          trace.line( "receive the call and send call to outbound to simulate a _gateway loop_");
          auto request = communication::ipc::receive< common::message::service::call::callee::Request>( correlation);
@@ -604,7 +604,7 @@ domain:
          trace.line( "emulate loop - later we should receive an error reply");
          {
             auto loop_request = request;
-            loop_request.process = common::process::Handle{ common::process::id(), loop_device.connector().handle().ipc()};
+            loop_request.process = loop_device.handle();
             communication::device::blocking::send( outbound_connection_ipc, loop_request);
          }
          
@@ -616,7 +616,7 @@ domain:
          
          trace.line( "receive the error reply");
          {
-            auto reply = communication::device::receive< common::message::service::call::Reply>( loop_device, correlation);
+            auto reply = communication::device::receive< common::message::service::call::Reply>( loop_device.device, correlation);
             EXPECT_TRUE( reply.code.result == decltype( reply.code.result)::system) << CASUAL_NAMED_VALUE( reply.code);
          }
 

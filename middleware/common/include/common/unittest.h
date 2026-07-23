@@ -53,6 +53,23 @@ namespace casual
          unittest::Message size( platform::size::type size);
          
       } // message::transport
+
+      //! Helper abstraction to emulate an 'instance' of a process. 
+      //! Easier to use than inbound::Device by itself.
+      struct Instance
+      {
+         inline Instance( strong::process::id pid)
+            : pid{ pid}
+         {}
+
+         inline Instance() : Instance{ process::id()}
+         {} 
+
+         inline process::Handle handle() const { return process::Handle{ pid, device.connector().handle().ipc()};}
+
+         communication::ipc::inbound::Device device;
+         strong::process::id pid;
+      };
       
 
       namespace random
