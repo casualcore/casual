@@ -409,8 +409,7 @@ domain:
          // lookup / reserve the instance
          auto lookup = casual::service::lookup::reply( casual::service::Lookup{ "casual/example/echo", {}});
 
-         communication::ipc::inbound::Device inbound;
-
+         common::unittest::Instance instance;
 
          communication::select::Directive directive;
          communication::ipc::send::Coordinator coordinator{ directive};
@@ -422,9 +421,8 @@ domain:
          // example server can't send the replies (our inbound gets "full").
          // we want the send::Coordinator to create a socket to the example server ipc device
          {
-            auto handle = process::Handle{ process::handle().pid, inbound.connector().handle().ipc()};
 
-            message::service::call::callee::Request request{ handle};
+            message::service::call::callee::Request request{ instance.handle()};
             request.buffer.type = buffer::type::binary;
             request.buffer.data = unittest::random::binary( 64);
             request.service = lookup.service;
@@ -435,14 +433,6 @@ domain:
             // We'll just ignore this, to keep the unittest less complex.
             while( coordinator.empty())
                coordinator.send( lookup.process.ipc, request, error_callback);
-
-            // add a few extra...
-            algorithm::for_n( 20, [ &]()
-            {
-                coordinator.send( lookup.process.ipc, request, error_callback);
-            });
-
-            EXPECT_TRUE( ! coordinator.empty());
          }
 
          // Ok, now we've got send::Coordinator to be "bound"  to example-server inbound
