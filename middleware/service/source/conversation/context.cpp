@@ -154,24 +154,18 @@ namespace casual
                   // conversation_disconnect is the result of an initiator
                   // disconnect.
 
-                  common::message::conversation::callee::Send inp_message;
-                  std::vector<common::message::Type> types{
-                     inp_message.type(),
+                  constexpr auto types = std::array{ 
+                     common::message::conversation::callee::Send::type(),
                      common::message::Type::conversation_disconnect,
                      common::message::Type::service_reply};
 
-                  // Buffer for serialized messages
-                  decltype( common::communication::device::non::blocking::next(
-                        common::communication::ipc::inbound::device(),
-                        types,
-                        value.correlation)) complete_msg;
                   // non-blocking tprecv...
-                  complete_msg = common::communication::device::non::blocking::next(
+                  auto complete = common::communication::device::non::blocking::next(
                      common::communication::ipc::inbound::device(),
                      types,
                      value.correlation);
 
-                  switch (complete_msg.type())
+                  switch( complete.type())
                   {
                   case common::message::Type::absent_message:
                      // no message, this is the "normal" scenario
@@ -181,13 +175,13 @@ namespace casual
                      {
                         // tpreturn by the subordinate when not in control
                         // Need to generate TPEV_SVCFAIL or TPEV_SVCERR
-                        common::serialize::native::complete( complete_msg, inp_message);
-                        using Result = decltype( inp_message.code.result);
-                        switch( inp_message.code.result)
+                        auto message = common::serialize::native::complete< common::message::conversation::callee::Send>( complete);
+                        using Result = decltype( message.code.result);
+                        switch( message.code.result)
                         {
                            case Result::service_fail:
                               result.event = decltype( result.event)::service_fail;
-                              result.user = inp_message.code.user;
+                              result.user = message.code.user;
                               break;
                            case Result::service_error:
                               result.event = decltype( result.event)::service_error;
@@ -195,11 +189,12 @@ namespace casual
                            default:
                               // Anything else is abnormal in this situation and should not happen.
                               common::log::error(
-                                       common::code::casual::internal_unexpected_value,
-                                       " message type: ", complete_msg.type(),
-                                       " with unexpected code.result: ",
-                                       inp_message.code.result,
-                                       " handled as service_error");
+                                 common::code::casual::internal_unexpected_value,
+                                 "message type: ", message.type(),
+                                 " with unexpected code.result: ",
+                                 message.code.result,
+                                 " handled as service_error");
+
                               result.event = decltype( result.event)::service_error;
                               break;
                         }
@@ -228,7 +223,7 @@ namespace casual
                      // a disconnect. (Treat as disconnect in subordinate and
                      // TPEV_SVCERR in initiator?)
                      common::log::error( common::code::casual::internal_unexpected_value,
-                        " message type: ", complete_msg.type(),
+                        "message type: ", complete.type(),
                         " not expected - action: treated as disconnect");
                      throw exception::conversation::Event{ Event::disconnect};
                      break;
