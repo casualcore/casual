@@ -35,24 +35,7 @@ namespace casual
                return communication::instance::outbound::detail::optional::Device{ discovery::instance::identity};
             }
 
-            struct Provider
-            {
-               Provider( strong::process::id pid)
-                  : process{ pid, device.connector().handle().ipc()}
-               {};
-
-               Provider() : Provider{ process::id()}
-               {}
-               
-               communication::ipc::inbound::Device device;
-               process::Handle process;
-
-               CASUAL_LOG_SERIALIZE(
-                  CASUAL_SERIALIZE( device);
-                  CASUAL_SERIALIZE( process);
-               )
-            };
-
+            using Provider = common::unittest::Instance;
 
          } // <unnamed>
       } // local
@@ -800,7 +783,7 @@ domain:
 
          // send request with s1, s2, q1, q2
          {
-            message::discovery::Request request{ caller.process};
+            message::discovery::Request request{ caller.handle()};
             request.directive = decltype( request.directive)::forward;
             request.content.services = { "s1", "s2"};
             request.content.queues = { "q1", "q2"};
@@ -809,7 +792,7 @@ domain:
 
             // reply as "service/queue manager"
             lookup_reply_resources();
-         };
+         }
 
          // reply as "gateway manager"
          {

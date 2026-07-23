@@ -1396,8 +1396,8 @@ domain:
 )");
 
          // a fake process that advertises some arbitrary service
-         auto callee_inbound = common::communication::ipc::inbound::Device{};
-         auto callee = common::process::Handle{ common::strong::process::id{ -5}, callee_inbound.connector().handle().ipc()};
+         auto callee_inbound = common::unittest::Instance{ common::strong::process::id{ -5}};
+         auto callee = callee_inbound.handle();
          service::unittest::advertise( { "a"}, callee);
 
          // reserve the service
@@ -1459,8 +1459,8 @@ domain:
 )");
 
          // a fake process that advertises some arbitrary service
-         auto callee_inbound = common::communication::ipc::inbound::Device{};
-         auto callee = common::process::Handle{ common::strong::process::id{ -5}, callee_inbound.connector().handle().ipc()};
+         auto callee_inbound = common::unittest::Instance{ common::strong::process::id{ -5}};
+         auto callee = callee_inbound.handle();
          service::unittest::advertise( { "a"}, callee);
 
          auto reserve_a = []()
@@ -1501,9 +1501,7 @@ domain:
          {
             auto advertise( const std::vector< std::string>& services, auto& device)
             {
-               common::message::service::concurrent::Advertise message;
-               message.process.pid = common::process::id();
-               message.process.ipc = device.connector().handle().ipc();
+               common::message::service::concurrent::Advertise message{ device.handle()};
 
                for( auto& service : services)
                {
@@ -1537,7 +1535,7 @@ domain:
 
          auto domain = local::domain();
 
-         std::array< common::communication::ipc::inbound::Device, 10> devices;
+         std::array< common::unittest::Instance, 10> devices;
 
          common::algorithm::for_each( devices, [ &services]( auto& device)
          {
