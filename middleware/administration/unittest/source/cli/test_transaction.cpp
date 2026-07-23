@@ -273,13 +273,18 @@ domain:
          instances: 4
 
 )");
+         // wait until we have all 4 instances of example-resource-server up'n running
+         casual::service::unittest::fetch::until( 
+            casual::service::unittest::fetch::predicate::instances( "casual/example/resource/echo", 4));  
 
          // do 2 asynchronous calls to casual/example/resource/nested/calls/A that will start a transaction (auto)
-         // call casual/example/resource/echo -> distributed transaction. TM will do the 2pc (one involved resource -> one-phase-commit-optimisation),
+         // call casual/example/resource/echo -> distributed transaction. TM will do the 2pc (one involved 
+         // resource -> one-phase-commit-optimisation),
          // and we should get pending request to resource-proxy since we only got one instance.
-         auto correlations = common::array::make( 
+         auto correlations = std::array{ 
             casual::service::unittest::send::request( "casual/example/resource/nested/calls/A", common::unittest::random::binary( 512)),
-            casual::service::unittest::send::request( "casual/example/resource/nested/calls/A", common::unittest::random::binary( 512)));
+            casual::service::unittest::send::request( "casual/example/resource/nested/calls/A", common::unittest::random::binary( 512))};
+         
 
          // collect and discard replies
          algorithm::for_each( correlations, []( auto& correlation)
@@ -310,8 +315,9 @@ example-resource-server  L-1  rm-mockup  --sleep-commit 20ms  -           0     
          EXPECT_TRUE( string::from< double>( first.at( 8)) >= 0.02); // min
          EXPECT_TRUE( string::from< double>( first.at( 9)) >= 0.02); // max
          EXPECT_TRUE( string::from< double>( first.at( 10)) >= 0.02); // avg
-         EXPECT_TRUE( string::from< long>( first.at( 11)) == 1); // P
-         EXPECT_TRUE( string::from< double>( first.at( 12)) > 0.01); // PAT should be close to 0.02 but
+         EXPECT_TRUE( string::from< long>( first.at( 11)) == 1) << CASUAL_NAMED_VALUE( first); // P
+         // PAT should be close to 0.02 but on slow system it can be lower.
+         EXPECT_TRUE( string::from< double>( first.at( 12)) > 0.009) << CASUAL_NAMED_VALUE( first); 
          EXPECT_TRUE( string::from< long>( first.at( 13)) == 1); // #, should be 1 since we only have one instance
       }
 
