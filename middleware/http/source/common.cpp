@@ -92,27 +92,38 @@ namespace casual
             {
                namespace
                {
+                  const std::array mapping
+                  {
+                     std::pair{ common::buffer::type::x_octet, protocol::x_octet},
+                     std::pair{ common::buffer::type::binary, protocol::binary},
+                     std::pair{ common::buffer::type::json, protocol::json},
+                     std::pair{ common::buffer::type::yaml, protocol::yaml},
+                     std::pair{ common::buffer::type::toml, protocol::toml},
+                     std::pair{ common::buffer::type::xml, protocol::xml},
+                     std::pair{ casual::buffer::field::key, protocol::field},
+                     std::pair{ casual::buffer::order::key, protocol::order},
+                     std::pair{ casual::buffer::string::key, protocol::string},
+                     std::pair{ common::buffer::type::null, protocol::null},
+                  };
+
                   constexpr std::size_t buffer_type = 0;
                   constexpr std::size_t content_type = 1;
 
                   template< std::size_t key_index, std::size_t value_index>
                   auto find( const auto& key) -> std::string_view
                   {
-                     static const std::array mapping
-                     {
-                        std::pair{ common::buffer::type::x_octet, protocol::x_octet},
-                        std::pair{ common::buffer::type::binary, protocol::binary},
-                        std::pair{ common::buffer::type::json, protocol::json},
-                        std::pair{ common::buffer::type::yaml, protocol::yaml},
-                        std::pair{ common::buffer::type::toml, protocol::toml},
-                        std::pair{ common::buffer::type::xml, protocol::xml},
-                        std::pair{ casual::buffer::field::key, protocol::field},
-                        std::pair{ casual::buffer::order::key, protocol::order},
-                        std::pair{ casual::buffer::string::key, protocol::string},
-                        std::pair{ common::buffer::type::null, protocol::null},
-                     };
-
                      auto result = std::ranges::find( mapping, key, [] ( const auto& value) -> decltype(auto) { return std::get< key_index>( value);});
+
+                     if( result != std::end( mapping))
+                        return std::get< value_index>( *result);
+                     else
+                        return {};
+                  }
+
+                  template< std::size_t key_index, std::size_t value_index>
+                  auto scan( const auto& lhs) -> std::string_view
+                  {
+                     auto result = std::ranges::find_if( mapping, [&] ( const auto& value) -> decltype(auto) { return wild::match( lhs, std::get< key_index>( value));});
 
                      if( result != std::end( mapping))
                         return std::get< value_index>( *result);
@@ -135,6 +146,39 @@ namespace casual
                   return local::find< local::buffer_type, local::content_type>( buffer);
                }
             } // to
+
+            namespace wild
+            {
+               bool match( std::string_view lhs, std::string_view rhs)
+               {
+                  auto split = []( std::string_view value)
+                  {
+                     return value
+                        | std::views::split( '/')
+                        | std::views::transform( []( auto part){ return std::string_view{ part};})
+                        | std::ranges::to<std::vector>();
+                  };
+
+                  return std::ranges::equal( split( lhs), split( rhs), []( std::string_view lhs, std::string_view rhs )
+                     {
+                        return lhs == rhs || lhs == "*" || rhs == "*";
+                     });
+               }
+
+               namespace to
+               {
+                  std::string_view buffer( std::string_view content)
+                  {
+                     return local::scan< local::content_type, local::buffer_type>( content);
+                  }
+
+                  std::string_view content( std::string_view buffer)
+                  {
+                     return local::scan< local::buffer_type, local::content_type>( buffer);
+                  }
+               }// to
+            } // wild
+
          } // convert
       } // protocol
 

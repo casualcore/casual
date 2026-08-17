@@ -13,13 +13,12 @@
 #include "common/communication/instance.h"
 #include "common/code/category.h"
 
-
 namespace casual
 {
-   using namespace common;
-
    namespace http::inbound::call
    { 
+      using namespace common;
+
       namespace local
       {
          namespace
@@ -32,36 +31,59 @@ namespace casual
             namespace buffer
             {
                //! @returns string pieces (views) owned by the caller
-               auto type( const casual::Header& header) -> std::vector< std::string_view>
+               auto type( const casual::header::Fields& fields) -> std::string_view
                {
-                  auto content = algorithm::find( header.fields, "content-type");
+                  //
+                  // HTTP behaviour is normally to allow different content-type than what is accepted 
+                  //
+                  // ... but currently in casual, the source and target buffer need to be of the same
+                  // type and thus we must make sure that any possible content-type is among accepted
 
-                  if( auto accept = algorithm::find( header.fields, "accept"))
+                  auto content = fields.find( "content-type");
+
+                  // only consider the first possible header field
+                  if( auto accept = fields.find( "accept"))
                   {
                      auto accepts = 
                         accept->value() |
-                        std::views::split(',') | 
+                        std::views::split( ',') | 
                         std::views::transform( []( auto type){ return std::string_view{ common::string::trim( type)};});
                      
                      if( content)
                      {
-                        if( algorithm::find( accepts, content->value()))
-                           return { content->value()};
-
-                        // HTTP behaviour is normally to allow different content-type than what is accepted 
-                        // ... but currently, the source and target buffer need to be of the same type
-                        return {};
+                        if( std::ranges::any_of( accepts, [&content]( auto accept){ return protocol::convert::wild::match( content->value(), accept);}))
+                           return protocol::convert::to::buffer( content->value());
                      }
+                     else
+                     {
+                        auto rank = []( std::string_view value)
+                        {
+                           auto parts =
+                              value
+                              | std::views::split( '/')
+                              | std::views::transform( []( auto part){ return std::string_view{ part};});
 
-                     return accepts | std::ranges::to< std::vector>();
+                           return std::ranges::count( parts, "*"sv);
+                        };                     
+
+                        // order them with the most significant first
+                        auto ranges = accepts | std::ranges::to< std::vector>();
+                        std::ranges::stable_sort( ranges, [&rank]( auto lhs, auto rhs){ return rank( lhs) < rank( rhs);});
+                        // find potential matching buffer-type
+                        auto target = ranges | std::views::transform( []( auto value){ return protocol::convert::wild::to::buffer( value);});
+                        auto result = std::ranges::find_if( target, [] ( auto value) { return ! value.empty();});
+                        
+                        if(result != std::end( target)) 
+                           return *result;
+                     }
+                  }
+                  else
+                  {
+                     if( content)
+                        return protocol::convert::to::buffer( content->value());
                   }
 
-                  if( content)
-                     return { content->value()};
-
-                  // HTTP behaviour is normally to assume '*/*' if no content-type is given
-                  // ... but currently, the buffer type must be explicit
-                  return {};
+                  [[unlikely]] return {};
                }
 
             } // buffer
@@ -410,14 +432,12 @@ namespace casual
       {
          auto type( const casual::Header& header) -> std::string_view
          {
-            auto source = local::buffer::type( header);
-            auto target = source | std::views::transform( []( auto value){ return protocol::convert::to::buffer( value);});
-            auto result = std::ranges::find_if( target, [] ( auto value) { return ! value.empty();});
-            
-            if(result != std::end( target)) 
-               return *result;
+            auto result = local::buffer::type( header.fields);
 
+            if( result.empty()) 
             common::code::raise::error( code::not_acceptable, "invalid or missing 'content-type'/'accept' headers");
+
+            return result;
          }
       } // buffer
 
