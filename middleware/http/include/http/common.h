@@ -80,6 +80,18 @@ namespace casual
                std::string_view content( std::string_view buffer);
                std::string_view buffer( std::string_view content);
             } // to
+
+            namespace wild
+            {
+               bool match( std::string_view lhs, std::string_view rhs);
+
+               namespace to
+               {
+                  std::string_view content( std::string_view buffer);
+                  std::string_view buffer( std::string_view content);
+               } // to
+            } // wild
+
          } // convert
       } //protocol
 

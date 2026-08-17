@@ -401,13 +401,71 @@ domain:
          EXPECT_TRUE( call::buffer::type( header) == ".json/") << call::buffer::type( header);
       }
 
+      TEST( http_inbound_call_buffer_type, wildcard_accept_and_content_type__expect_buffer)
+      {
+         casual::Header header{ .fields = {{
+            { "Accept", "*/*"},
+            { "Content-Type", "application/json"},
+         }}};
+
+         EXPECT_TRUE( call::buffer::type( header) == ".json/") << call::buffer::type( header);
+      }
+
+      TEST( http_inbound_call_buffer_type, type_wildcard_accept_and_content_type__expect_buffer)
+      {
+         casual::Header header{ .fields = {{
+            { "Accept", "application/*"},
+            { "Content-Type", "application/json"},
+         }}};
+
+         EXPECT_TRUE( call::buffer::type( header) == ".json/") << call::buffer::type( header);
+      }
+
+      TEST( http_inbound_call_buffer_type, type_wildcard_accept_and_different_content_type__expect_exception)
+      {
+         casual::Header header{ .fields = {{
+            { "Accept", "text/*"},
+            { "Content-Type", "application/json"},
+         }}};
+
+         EXPECT_THROW({
+            call::buffer::type( header);
+         }, std::system_error);
+      }
+
+      TEST( http_inbound_call_buffer_type, wildcard_accept_without_content_type__expect_success)
+      {
+         casual::Header header{ .fields = {{
+            { "Accept", "*/*"},
+         }}};
+
+         EXPECT_NO_THROW( call::buffer::type( header));
+      }
+
+      TEST( http_inbound_call_buffer_type, type_wildcard_accept_without_content_type__expect_success)
+      {
+         casual::Header header{ .fields = {{
+            { "Accept", "application/*"},
+         }}};
+
+         EXPECT_NO_THROW( call::buffer::type( header));
+      }
+
+      TEST( http_inbound_call_buffer_type, explicit_accept_with_type_wildcard_without_content_type__expect_buffer)
+      {
+         casual::Header header{ .fields = {{
+            { "Accept", "application/*, application/json"},
+         }}};
+
+         EXPECT_TRUE( call::buffer::type( header) == ".json/") << call::buffer::type( header);
+      }
+
       TEST( http_inbound_call_buffer_type, different_accept_and_content_type__expect_exception)
       {
-         const Header header{
-            .fields = { { 
-               { "Accept", "application/toml, application/yaml"}, 
-               { "Content-Type", "application/json"}}}
-         };
+         const Header header{ .fields = { { 
+            { "Accept", "application/toml, application/yaml"}, 
+            { "Content-Type", "application/json"},
+         }}};
 
          EXPECT_THROW({
             call::buffer::type( header);
@@ -416,11 +474,10 @@ domain:
 
       TEST( http_inbound_call_buffer_type, intersect_content_and_accept_type__expect_buffer)
       {
-         const Header header{
-            .fields = { { 
+         const Header header{ .fields = { { 
                { "Accept", "application/toml, application/json, application/yaml"}, 
-               { "Content-Type", "application/json"}}}
-         };
+               { "Content-Type", "application/json"},
+         }}};
 
          EXPECT_TRUE( call::buffer::type( header) == ".json/") << call::buffer::type( header);
       }
