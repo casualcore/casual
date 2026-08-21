@@ -22,7 +22,7 @@ obj/
 bin/
 
 # Build files
-build/
+/build/
 *.pyc
 *.log
 /Debug/

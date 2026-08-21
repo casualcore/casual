@@ -13,11 +13,26 @@ queue [0..1]
       -lq, --list-queues [0..1]
            list information of all queues in current domain
 
+         SUB OPTIONS:
+
+            -a, --all [0..1]
+                 include hidden queues
+
       -lz, --list-zombies [0..1]
            list information of all zombie queues in current domain
 
+         SUB OPTIONS:
+
+            -a, --all [0..1]
+                 include hidden zombie queues
+
       -lqi, --list-queue-instances [0..1]
            list instances for all queues, including external instances
+
+         SUB OPTIONS:
+
+            -a, --all [0..1]
+                 include hidden queue instances
 
       -lg, --list-groups [0..1]
            list information of all groups in current domain

@@ -37,31 +37,19 @@ namespace casual
                common::code::raise::error( common::code::casual::invalid_argument, "CMAKE_BINARY_DIR is not set");
             }
 
-            auto compose_path( std::string_view name)
+            auto compose_source_path( std::string_view name)
+            {
+               return local::source_root() / "middleware" / "tools" / "documentation" / "build" / "cli" / name;
+            }
+
+            auto compose_binary_path( std::string_view name)
             {
                return local::binary_root() / "middleware" / "tools" / "bin" / name;
             } 
 
-            auto executable_path()
-            {
-               return compose_path( "casual-build-executable");
-            }
-
-            auto server_path()
-            {
-               return compose_path( "casual-build-server");
-            }
-
-            std::vector< common::environment::Variable> environment()
-            {
-               return { 
-                  //common::string::compose( "PATH=", common::environment::expand( "${CMAKE_BINARY_DIR}/middleware/tools/bin:${PATH}"))
-               };
-            }
-
             auto execute_help( const std::filesystem::path& path)
             {
-               auto capture = common::process::execute( path, { "--color", "false", "--help"}, environment());
+               auto capture = common::process::execute( path, { "--color", "false", "--help"});
 
                if( ! capture)
                   common::code::raise::error( common::code::casual::invalid_argument, "failed to execute ", path);
@@ -71,6 +59,10 @@ namespace casual
 
             auto generate_documentation( const std::filesystem::path& output, const std::filesystem::path& executable)
             {
+               common::Trace trace{ "tools::documentation::build::local::generate_documentation"};
+               common::log::debug( "executable: ", executable);
+               common::log::debug( "output: ", output);
+
                std::ofstream out{ output, std::ios::trunc};
 
                if( ! out)
@@ -97,13 +89,16 @@ namespace casual
       void main( int argc, const char** argv)
       {
          local::generate_documentation( 
-            local::source_root() / "middleware" / "tools" / "documentation" / "build" / "casual-build-executable.development.md",
-            local::executable_path());
+            local::compose_source_path( "casual-build-executable.development.md"),
+            local::compose_binary_path( "casual-build-executable"));
 
          local::generate_documentation( 
-            local::source_root() / "middleware" / "tools" / "documentation" / "build" / "casual-build-server.development.md",
-            local::server_path());
+            local::compose_source_path( "casual-build-server.development.md"),
+            local::compose_binary_path( "casual-build-server"));
 
+         local::generate_documentation(
+            local::compose_source_path( "casual-build-resource-proxy.development.md"),
+            local::compose_binary_path( "casual-build-resource-proxy"));
       }
 
    } // tools::documentation::build

@@ -36,4 +36,9 @@ host# casual --help queue --list-queues
         last:
            the timestamp of the newest message on the queue, or has been on the queue if the queue is empty.
 
+   SUB OPTIONS:
+
+      -a, --all [0..1]
+           include hidden queues
+
 ```

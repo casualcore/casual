@@ -1,7 +1,9 @@
 # configuration system
 
-System wide configuration, that is not bound to a particular domain. Contains configuration that is used when
-building servers, executable, transaction resource proxies. 
+System wide configuration, that is not bound to a particular domain. Contains configuration 
+that is used when building servers, executable, transaction resource proxies.
+The configuration is also needed at runtime by the transaction manager to know which 
+resource proxies to delegate _prepare, commit, rollback_ to.
 
 ## system.resource.Paths _(structure)_
 
@@ -21,7 +23,7 @@ key : `string`            | user supplied _key_ of the resource, used to correla
 xa_struct_name : `string` | the name of the `xa` struct for the particular resource implementation 
 server : `string`         | name of the _resource proxy server_ that `transaction manager` delegates _prepare, commit, rollback_ to.
 [libraries : `[string]`]  | libraries that is used link with the resource _build time_ 
-[paths : `Path`]          | include and library paths, during _build time_
+[paths : `Paths`]         | include and library paths, during _build time_
 
 ## Examples
 

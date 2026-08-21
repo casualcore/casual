@@ -5,7 +5,7 @@
 //!
 
 #include "tools/common.h"
-#include "tools/build/setting.h"
+#include "tools/build/settings.h"
 #include "tools/build/transform.h"
 #include "tools/build/model.h"
 #include "tools/build/generate.h"
@@ -45,17 +45,12 @@ namespace casual
 
             struct Settings 
             {
-               setting::Mandatory directive;
-
-               struct 
-               {
-                  std::string key;
-               } resource;
-
+               build::Settings directive;
+               build::settings::Resource resource;
 
                CASUAL_LOG_SERIALIZE(
                   CASUAL_SERIALIZE( directive);
-                  CASUAL_SERIALIZE( resource.key);
+                  CASUAL_SERIALIZE( resource);
                )
             };
 
@@ -69,14 +64,12 @@ namespace casual
             {
                auto state( const Settings& settings)
                {
-                  auto system = settings.directive.system.configuration.empty() ?
-                     configuration::system::get() : configuration::system::get( settings.directive.system.configuration);
-
+                  auto system = build::settings::system( settings.directive);
 
                   State result;
 
                   result.resources = build::transform::resources( 
-                     { settings.resource.key}, // raw keys from command line
+                     settings.resource.keys,
                      system);
 
                   return result;
@@ -84,14 +77,12 @@ namespace casual
 
             } // transform
 
-            void generate( const common::file::scoped::Path& path, const local::State& state)
+            void generate( std::ostream& out, const local::State& state)
             {
                if( state.resources.size() != 1)
                   common::code::raise::error( common::code::casual::invalid_argument, "expected exactly one resource, got: ", state.resources.size());
 
                auto& resource = state.resources.front();
-
-               std::ofstream out{ path};
 
                out << license::c << R"(
 
@@ -141,16 +132,11 @@ int main( int argc, const char** argv)
                out << std::flush;
             }
  
-            void build( const common::file::scoped::Path& path, Settings settings)
+            void build( const State& state, const std::filesystem::path& source, Settings settings)
             {
                verbose::log( settings, "build resource proxy");
-               common::log::debug( "path: ", path);
-
-               auto state = local::transform::state( settings);
-
-               local::generate( path, state);
-               verbose::log( settings, "generated source file: ", path);
-
+               common::log::debug( "source", source);
+               
                if( settings.directive.use_defaults)
                {
                   // add "known" dependencies
@@ -175,7 +161,7 @@ int main( int argc, const char** argv)
                   common::algorithm::append_unique( build::transform::paths::library( state.resources), settings.directive.paths.library);
                }
 
-               build::task( path, settings.directive);
+               build::task( source, settings.directive);
             }
 
             namespace source
@@ -204,8 +190,8 @@ int main( int argc, const char** argv)
 
                   auto outcome = argument::parse( "builds a resource proxy", 
                      common::algorithm::container::compose(
-                        build::setting::mandatory::options( settings.directive),
-                        argument::Option( std::tie( settings.resource.key), {{ "-r", "--resource-key"}, { "-k"}}, "key of the resource"),
+                        build::settings::resource::key::option( settings.resource),
+                        build::settings::options( settings.directive),
 
                         // deprecated options
                         argument::Option( bind_append( settings.directive.directives), { {}, { "-c", "--compile-directives"}}, "additional compile directives"),
@@ -219,17 +205,25 @@ int main( int argc, const char** argv)
 
                verbose::log( settings, CASUAL_NAMED_VALUE( settings));
 
-               // Generate file
-               common::file::scoped::Path path = local::source::file( settings);
-               
-               // make sure we keep the file if user has requested it
-               auto path_keep_scope = common::execute::scope( [keep = settings.directive.source.keep, &path]()
-               { 
-                  if( keep)
-                     path.release();
-               });
+               auto state = local::transform::state( settings);
 
-               local::build( path, std::move( settings));
+               if( settings.directive.only_generate)
+               {
+                  local::generate( std::cout, state);
+                  return;
+               }
+
+               // Generate source file
+               auto source = local::source::file( settings);
+               auto source_guard = tools::source::keep::guard( settings, source);
+
+               {
+                  std::ofstream out{ source};
+                  local::generate( out, state);
+                  verbose::log( settings, "generated source file: ", source);
+               }
+
+               local::build( state, source, std::move( settings));
             }
 
          } // <unnamed>

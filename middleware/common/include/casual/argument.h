@@ -687,6 +687,15 @@ namespace casual
                return detail::many( std::forward< T>( dispatch));
             }
 
+            template< typename T>
+            auto append( std::vector< T>& values)
+            {
+               return [ &values]( T value)
+               {
+                  values.push_back( std::move( value));
+               };
+            }
+
          } // one
 
       } // option

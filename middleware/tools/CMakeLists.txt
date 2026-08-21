@@ -6,7 +6,7 @@ add_library(casual-tools-common STATIC)
 
 target_sources(casual-tools-common
   PRIVATE
-    source/build/setting.cpp
+    source/build/settings.cpp
     source/service/describe/invoke.cpp
 )
 
@@ -68,38 +68,6 @@ target_link_directories(casual-build-server PRIVATE
 target_link_libraries(casual-build-server PRIVATE
   casual-tools-common
   casual-tools-build-task
-  casual-common
-  casual-configuration
-)
-
-
-add_executable(casual-build-server-generate)
-
-target_sources(casual-build-server-generate
-  PRIVATE
-    source/build/server/generate/main.cpp
-)
-
-target_include_directories(casual-build-server-generate PRIVATE
-  $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
-  $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/../common/include>
-  $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/../xatmi/include>
-  $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/../configuration/include>
-  $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/../server/include>
-  $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/../service/include>
-  $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/../transaction/include>
-)
-
-target_link_directories(casual-build-server-generate PRIVATE
-  $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}/../tools/bin>
-  $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}/../buffer/bin>
-  $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}/../common/bin>
-  $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}/../configuration/bin>
-)
-
-target_link_libraries(casual-build-server-generate PRIVATE
-  casual-tools-build-task
-  casual-tools-common
   casual-common
   casual-configuration
 )
@@ -251,7 +219,6 @@ target_link_libraries(casual-tools-service-cli PRIVATE
 install(
     TARGETS
       casual-build-server
-      casual-build-server-generate
       casual-build-executable
       casual-build-resource-proxy
     DESTINATION
@@ -272,4 +239,50 @@ install(
     DESTINATION
       lib
 )
+
+# Generate documentation
+
+
+add_executable( casual-tools-documentation)
+
+target_sources( casual-tools-documentation 
+  PRIVATE
+    source/documentation/build.cpp
+)
+
+target_include_directories( casual-tools-documentation PRIVATE
+  $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+  $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/../common/include>
+  $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/../xatmi/include>
+  #$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/../configuration/include>
+  $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/../transaction/include>
+)
+
+target_link_directories( casual-tools-documentation PRIVATE
+  $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}/../common/bin>
+  #$<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}/../configuration/bin>
+)
+
+target_link_libraries( casual-tools-documentation PRIVATE
+  casual-tools-common
+  casual-tools-build-task
+  casual-common
+  #casual-configuration
+)
+
+
+add_custom_target(documentation-tools
+    #COMMAND echo "Generating documentation for buffer"
+    COMMAND
+      $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}>/bin/casual-tools-documentation 
+    VERBATIM
+    DEPENDS
+      casual-tools-documentation
+      casual-build-resource-proxy
+      casual-build-server
+      casual-build-executable
+
+)
+
+
 

@@ -46,7 +46,7 @@ We use a _server-definition-file_ to define the server in it's services. We name
 server:
 
   resources:
-      # key of the resource (defined in resource-properties)
+      # key of the resource (defined in system.resources)
     - key: rm-mockup
       # a logical name that this server will use to get the proper runtime configuration.
       # it's probably a good idea to have names like <resource-type>/<application>, ex: db/my-application
@@ -91,27 +91,6 @@ $ nm advanced-server
                  U _tpsvrinit
                  U dyld_stub_binder
 ``` 
-
-### custom
-
-`casual-build-server` assumes _gcc/g++_ option compatibility for defaults. If you use another compiler you can
-opt to **not** use the default include/library-paths and so on.
-
-**Note:** you need to provide all paths, libraries etc.
-
-```bash
-$ casual-build-server --no-defaults --output advanced-server --definition example.server.yaml --build-directives echo.cpp <all other stuff your compiler needs>
-```
-
-### casual-build-server-generate
-
-`casual-build-server-generate` only generate the _intermediate main file_, that has the 'magic' to bootstrap a `casual` server.
-
-```bash
-$ casual-build-server-generate --output your-name-on-the-source-file.cpp --definition example.server.yaml
-```
-
-This might be easier to use, depending och your build system.
 
 ## options
 
