@@ -8,6 +8,7 @@
 #pragma once
 
 #include "common/log/line.h"
+#include "common/execute.h"
 
 #include <iostream>
 
@@ -46,6 +47,18 @@ namespace casual
             }
          }
       } // verbose
+
+      namespace source::keep
+      {
+         auto guard( const auto& settings, auto& path)
+         {
+            return common::execute::scope( [ keep = settings.directive.source.keep, &path]()
+            { 
+               if( keep)
+                  path.release();
+            });
+         }
+      } // source::keep
 
    } // tools
 } // casual

@@ -6,7 +6,7 @@
 
 #include "tools/common.h"
 #include "tools/build/task.h"
-#include "tools/build/setting.h"
+#include "tools/build/settings.h"
 #include "tools/build/generate.h"
 #include "tools/build/transform.h"
 
@@ -40,7 +40,7 @@ namespace casual
          {
             struct Settings
             {
-               setting::Mandatory directive;
+               build::Settings directive;
 
                struct 
                {
@@ -73,15 +73,8 @@ namespace casual
 
                } server;
 
-               struct 
-               {
-                  std::vector< std::string> keys;
-
-                  CASUAL_LOG_SERIALIZE(
-                     CASUAL_SERIALIZE( keys);
-                  )
-
-               } resource;
+ 
+               build::settings::Resource resource;
 
                CASUAL_LOG_SERIALIZE(
                   CASUAL_SERIALIZE( directive);
@@ -142,8 +135,7 @@ namespace casual
                {
                   Trace trace{ "tools::build::local::transform::state"};
 
-                  auto system = settings.directive.system.configuration.empty() ?
-                     configuration::system::get() : configuration::system::get( settings.directive.system.configuration);
+                  auto system = build::settings::system( settings.directive);
 
                   auto definition = settings.server.definition.empty() ? 
                      decltype( configuration::build::model::load::server( {})){} : configuration::build::model::load::server( settings.server.definition);
@@ -178,20 +170,11 @@ namespace casual
                }
             } // source
 
-            void generate( const common::file::scoped::Path& path, const local::State& state)
-            {
-               std::ofstream out{ path};
-               generate::server( out, state.resources, state.services);
-            }
-
-            void build( const common::file::scoped::Path& path, Settings settings)
+            void build( const State& state, const std::filesystem::path& source, Settings settings)
             {
                verbose::log( settings, "build server");
 
-               auto state = local::transform::state( settings);
-               local::generate( path, state);
-
-               verbose::log( settings, "generated source file: ", path);
+               verbose::log( settings, "generated source file: ", source);
                
                if( settings.directive.use_defaults)
                {
@@ -216,7 +199,7 @@ namespace casual
                   algorithm::append_unique( build::transform::paths::library( state.resources), settings.directive.paths.library);
                }
 
-               build::task( path, settings.directive);
+               build::task( source, settings.directive);
             }
 
             namespace option
@@ -238,10 +221,10 @@ namespace casual
                {
                   auto outcome = argument::parse( "builds a casual xatmi server", common::algorithm::container::compose( 
                      local::option::server_definition( settings),
-                     build::setting::mandatory::options( settings.directive),
                      argument::Option( service::argument( settings.service.names), {{ "-s", "--service"}}, "service names")( argument::cardinality::any()),
-                     argument::Option( argument::option::one::many( settings.resource.keys), {{ "-r", "--resource-keys"}}, "key of the resources")( argument::cardinality::any()),
-                     argument::Option( std::tie( settings.service.transaction.mode), complete::transaction::mode(), {{ "--default-transaction-mode"}}, "the transaction mode for services specified with --service|-s")
+                     build::settings::resource::key::option( settings.resource)( argument::cardinality::any()),
+                     argument::Option( std::tie( settings.service.transaction.mode), complete::transaction::mode(), {{ "--default-transaction-mode"}}, "the transaction mode for services specified with --service|-s"),
+                     build::settings::options( settings.directive)
                   ), argc, argv);
 
                   if( outcome != argument::Outcome::parsed)
@@ -250,15 +233,26 @@ namespace casual
 
                verbose::log( settings, "settings: ", settings);
 
-               auto source = local::source::file( settings);
-               
-               auto source_keep = common::execute::scope( [keep = settings.directive.source.keep, &source]()
-               { 
-                  if( keep)
-                     source.release();
-               });
+               auto state = local::transform::state( settings);
 
-               build( source, std::move( settings));
+               if( settings.directive.only_generate)
+               {
+                  generate::server( std::cout, state.resources, state.services);
+                  return;
+               }
+
+               // generate source file
+
+               auto source = local::source::file( settings);
+               auto source_guard = tools::source::keep::guard( settings, source);
+
+               {
+                  std::ofstream out{ source};
+                  generate::server( out, state.resources, state.services);
+                  verbose::log( settings, "generated source file: ", source);
+               }
+               
+               local::build( state, source, std::move( settings));
             }        
 
          } // <unnamed>

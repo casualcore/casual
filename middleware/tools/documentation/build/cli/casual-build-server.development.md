@@ -18,6 +18,15 @@ OPTIONS
    -d, --definition [0..1]  (<value>) [1]
         path to server definition file
 
+   -s, --service [0..*]  (<value>) [1..*]
+        service names
+
+   -r, --resource-key [0..*]  (<value>) [1]
+        key of the resource
+
+   --default-transaction-mode [0..1]  (automatic, join, none, atomic) [1]
+        the transaction mode for services specified with --service|-s
+
    -o, --output [0..1]  (<value>) [1]
         name of binary to be built
 
@@ -27,8 +36,8 @@ OPTIONS
    -f, --build-directives [0..*]  (<value>) [1..*]
         additional compile and link directives
 
-   --system-configuration [0..1]  (<value>) [1]
-        path to system configuration file
+   --system-configuration [0..1]  (<value>) [0..*]
+        globs to system configuration files
 
    --no-defaults [0..1]
         do not add any default compiler/link directives
@@ -41,17 +50,14 @@ OPTIONS
    -k, --keep [0..1]
         keep the intermediate source file
 
+   --only-generate [0..1]
+        only generate the source file to stdout, do not build
+        
+        Generates the source file to stdout and does not build the binary.
+        Useful for full build control. 
+
    -v, --verbose [0..1]
         verbose output
-
-   -s, --service [0..*]  (<value>) [1..*]
-        service names
-
-   -r, --resource-keys [0..*]  (<value>) [1..*]
-        key of the resource
-
-   --default-transaction-mode [0..1]  (automatic, join, none, atomic) [1]
-        the transaction mode for services specified with --service|-s
 
    --help [0..1]  (<value>) [0..*]
         shows this help information

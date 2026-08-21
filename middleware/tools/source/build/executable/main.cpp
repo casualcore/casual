@@ -6,7 +6,7 @@
 
 #include "tools/build/task.h"
 #include "tools/build/generate.h"
-#include "tools/build/setting.h"
+#include "tools/build/settings.h"
 #include "tools/build/model.h"
 #include "tools/build/transform.h"
 #include "tools/common.h"
@@ -39,7 +39,7 @@ namespace casual
             struct Settings
             {
 
-               setting::Mandatory directive;
+               build::Settings directive;
 
                struct
                {
@@ -78,8 +78,7 @@ namespace casual
             {
                auto state( const Settings& settings)
                {
-                  auto system = settings.directive.system.configuration.empty() ?
-                     configuration::system::get() : configuration::system::get( settings.directive.system.configuration);
+                  auto system = build::settings::system( settings.directive);
 
                   auto definition = configuration::build::model::load::executable( settings.executable.definition);
 
@@ -108,33 +107,10 @@ namespace casual
                }
             } // source
 
-            void generate( const common::file::scoped::Path& path, const local::State& state)
-            {
-               Trace trace{ "tools::build::executable::local::generate"};
 
-               std::ofstream out{ path};
-               generate::executable( out, state.resources, state.entrypoint);
-            }
-
-            void build( Settings settings)
+            void build( const State& state, const std::filesystem::path& source, Settings settings)
             {
                Trace trace{ "tools::build::executable::local::build"};
-
-               auto state = local::transform::state( settings);
-
-               auto path = source::file( settings);
-
-               auto source_keep = common::execute::scope( [ &path, keep = settings.directive.source.keep]()
-               { 
-                  if( keep)
-                     path.release();
-               });
-               
-               
-               generate( path, state);
-
-               verbose::log( settings, "generated source file: ", path);
-
  
                if( settings.directive.use_defaults)
                {
@@ -160,7 +136,7 @@ namespace casual
                   algorithm::append_unique( build::transform::paths::library( state.resources), settings.directive.paths.library);
                }
 
-               build::task( path, settings.directive);
+               build::task( source, settings.directive);
             }
 
             
@@ -171,7 +147,7 @@ namespace casual
                {
                   auto outcome = argument::parse( "builds a casual executable",  common::algorithm::container::compose( 
                      argument::Option{ std::tie( settings.executable.definition), {{ "-d", "--definition"}}, "path of the definition file"},
-                     build::setting::mandatory::options( settings.directive)
+                     build::settings::options( settings.directive)
                   ), argc, argv);
 
                   if( outcome != argument::Outcome::parsed)
@@ -182,7 +158,25 @@ namespace casual
 
                verbose::log( settings, "settings: ", settings);
 
-               build( std::move( settings));
+               auto state = local::transform::state( settings);
+
+               if( settings.directive.only_generate)
+               {
+                  generate::executable( std::cout, state.resources, state.entrypoint);
+                  return;
+               }
+
+               // generate source file
+               auto source = local::source::file( settings);
+               auto source_guard = tools::source::keep::guard( settings, source);
+
+               {
+                  std::ofstream out{ source};
+                  generate::executable( out, state.resources, state.entrypoint);
+                  verbose::log( settings, "generated source file: ", source);
+               }
+
+               local::build( state, source, std::move( settings));
             }
          } // <unnamed>
       } // local

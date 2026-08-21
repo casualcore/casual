@@ -27,8 +27,8 @@ OPTIONS
    -f, --build-directives [0..*]  (<value>) [1..*]
         additional compile and link directives
 
-   --system-configuration [0..1]  (<value>) [1]
-        path to system configuration file
+   --system-configuration [0..1]  (<value>) [0..*]
+        globs to system configuration files
 
    --no-defaults [0..1]
         do not add any default compiler/link directives
@@ -40,6 +40,12 @@ OPTIONS
 
    -k, --keep [0..1]
         keep the intermediate source file
+
+   --only-generate [0..1]
+        only generate the source file to stdout, do not build
+        
+        Generates the source file to stdout and does not build the binary.
+        Useful for full build control. 
 
    -v, --verbose [0..1]
         verbose output

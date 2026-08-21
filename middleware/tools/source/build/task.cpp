@@ -42,7 +42,7 @@ namespace casual
          } // <unnamed>
       } // local
 
-      void task( const std::filesystem::path& input, const setting::Mandatory& directive)
+      void task( const std::filesystem::path& input, const Settings& directive)
       {
          verbose::log( directive, "start build task on: ", input);
 

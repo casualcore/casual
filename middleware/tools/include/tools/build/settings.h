@@ -10,16 +10,19 @@
 #include "common/algorithm/container.h"
 #include "common/string.h"
 
+#include "configuration/model.h"
+
 #include "casual/argument.h"
 
 #include <string>
 #include <vector>
+#include <filesystem>
 
 namespace casual
 {
-   namespace tools::build::setting
+   namespace tools::build
    {
-      namespace mandatory
+      namespace settings
       {
          struct Paths
          {
@@ -45,37 +48,43 @@ namespace casual
 
          struct System
          {
-            std::string configuration;
+            std::vector< std::string> globs;
 
             CASUAL_LOG_SERIALIZE(
-               CASUAL_SERIALIZE( configuration);
+               CASUAL_SERIALIZE( globs);
+            )
+         };
+
+         struct Resource
+         {
+            std::vector< std::string> keys;
+
+            CASUAL_LOG_SERIALIZE(
+               CASUAL_SERIALIZE( keys);
             )
          };
          
-      } // mandatory
+      } // settings
 
-      struct Mandatory
+      struct Settings
       {
-
          std::string compiler = "g++";
          std::string output;
 
          // compile & link directives
          std::vector< std::string> directives;
-
          std::vector< std::string> libraries;
+         settings::Paths paths;
+         settings::Source source;
+         settings::System system;
 
-         mandatory::Paths paths;
-
-         mandatory::Source source;
-
-         mandatory::System system;
-
+         bool only_generate = false;
          bool verbose = false;
          bool use_defaults = true;
+         
 
 
-         friend void validate( const Mandatory& settings);
+         friend void validate( const Settings& settings);
 
          CASUAL_LOG_SERIALIZE(
             CASUAL_SERIALIZE( compiler);
@@ -85,13 +94,14 @@ namespace casual
             CASUAL_SERIALIZE( paths);
             CASUAL_SERIALIZE( source);
             CASUAL_SERIALIZE( system);
+            CASUAL_SERIALIZE( only_generate);
             CASUAL_SERIALIZE( verbose);
             CASUAL_SERIALIZE( use_defaults);
          )
 
       };
 
-      namespace mandatory
+      namespace settings
       {
          //! splits values on space and appends to target
          inline auto split( std::vector< std::string>& target)
@@ -107,10 +117,23 @@ namespace casual
             };
          }
 
-         std::vector< argument::Option> options( Mandatory& mandatory);
-      } // mandatory
+
+         std::vector< argument::Option> options( Settings& settings);
+
+         namespace resource::key
+         {
+            argument::Option option( settings::Resource& resource);
+         } // resource::key
+
+
+         //! returns a system model based on the settings. 
+         //! If no system paths are provided, environment variable is used to 
+         //! try to locate the default system configuration.
+         configuration::model::system::Model system( const Settings& settings);
+
+      } // settings
 
       
-   } // tools::build::setting
+   } // tools::build
    
 } // casual
