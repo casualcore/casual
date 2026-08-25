@@ -1,6 +1,13 @@
 # Changelog
 This is the changelog for `casual` and all changes are listed in this document.
 
+## [1.8.17] - 2026-08-24
+
+### Fixes
+- gateway: outbound safely removes connection. Eliminates glitch when lookup is done just before 
+    the unadvertise services/queues is done -> caller might write a message to a _dead_ ipc socket. 
+    ([#735](https://github.com/casualcore/casual/issues/735))
+
 ## [1.8.16] - 2026-06-23
 
 ### Fixes
