@@ -109,7 +109,10 @@ namespace casual
             struct Caller
             {
                common::process::Handle process;
+               common::strong::execution::id execution;
                common::strong::correlation::id correlation;
+               common::execution::context::Parent parent;
+               common::strong::execution::span::id span;
                common::transaction::ID trid;
                service::id::type service;
                caller::Semantic semantic = caller::Semantic::reply;
@@ -119,7 +122,10 @@ namespace casual
 
                CASUAL_LOG_SERIALIZE(
                   CASUAL_SERIALIZE( process);
+                  CASUAL_SERIALIZE( execution);
                   CASUAL_SERIALIZE( correlation);
+                  CASUAL_SERIALIZE( parent);
+                  CASUAL_SERIALIZE( span);
                   CASUAL_SERIALIZE( trid);
                   CASUAL_SERIALIZE( service);
                   CASUAL_SERIALIZE( semantic);
@@ -207,8 +213,14 @@ namespace casual
             {      
                using base_instance::base_instance;
 
+               std::vector< common::strong::correlation::id> reservations;
                platform::size::type order{};
                std::string description;
+
+               void reserve( const common::strong::correlation::id& correlation);
+               bool unreserve( const common::strong::correlation::id& correlation);
+               
+               inline bool idle() const noexcept { return reservations.empty();}
                
                friend bool operator < ( const Concurrent& lhs, const Concurrent& rhs);
 
@@ -216,8 +228,8 @@ namespace casual
                   base_instance::serialize( archive);
                   CASUAL_SERIALIZE( order);
                   CASUAL_SERIALIZE( description);
+                  CASUAL_SERIALIZE( reservations);
                )
-
             };
 
          } // instance
@@ -544,6 +556,41 @@ namespace casual
             };
          } // remove
 
+
+         namespace reservation
+         {
+            template< typename I>
+            struct basic_reservation
+            {
+               I instance;
+               common::strong::execution::span::id span;
+
+               inline explicit operator bool() const noexcept { return common::predicate::boolean( instance);}
+
+               CASUAL_LOG_SERIALIZE(
+                  CASUAL_SERIALIZE( instance);
+                  CASUAL_SERIALIZE( span);
+               )
+            };
+
+            using Sequential = basic_reservation< instance::sequential::id::type>;
+            using Concurrent = basic_reservation< instance::concurrent::id::type>;
+
+            static_assert( sizeof( Sequential) <= 16);
+
+         } // reservation
+
+         struct Disabled
+         {
+            std::vector< instance::sequential::id::type> sequential;
+            std::vector< instance::concurrent::id::type> concurrent;
+
+            CASUAL_LOG_SERIALIZE(
+               CASUAL_SERIALIZE( sequential);
+               CASUAL_SERIALIZE( concurrent);
+            )
+         };
+
          enum struct Runlevel : short
          {
             running,
@@ -573,11 +620,13 @@ namespace casual
             state::service::pending::Deadline deadline;
             std::vector< state::service::pending::Lookup> lookups;
             common::message::coordinate::fan::Out< common::message::service::call::ACK, common::strong::process::id> shutdown;
+            std::vector< common::message::service::concurrent::instance::disassociate::Request> disassociation;
             
             CASUAL_LOG_SERIALIZE(
                CASUAL_SERIALIZE( deadline);
                CASUAL_SERIALIZE( lookups);
                CASUAL_SERIALIZE( shutdown);
+               CASUAL_SERIALIZE( disassociation);
             )
          } pending;
 
@@ -623,7 +672,7 @@ namespace casual
 
          //! instances that is in "shutdown" mode. We just keep track of them here
          //! until they're gone to prevent advertising new services and such
-         std::vector< state::instance::sequential::id::type> disabled;
+         state::Disabled disabled;
 
          //! holds all the routes, for services that has routes
          std::map< std::string, std::vector< std::string>> routes;
@@ -645,17 +694,23 @@ namespace casual
          //! @returns possible reservations of the removed instance
          [[nodiscard]] state::remove::Result remove( common::strong::ipc::id ipc);
 
+
          //! Tries to reserve a sequential instance for the given `service`
          //! @return id of the instance, or 'nil-id' if no idle is found
-         state::instance::sequential::id::type reserve_sequential( state::instance::Caller caller);
+         state::reservation::Sequential reserve_sequential( const common::message::service::lookup::Request& message, state::service::id::type service_id);
             
          //! @return a reserved instance for the given `service` 
          //!   or 'nil-id' if no one is found.
-         state::instance::concurrent::id::type reserve_concurrent( 
+         state::reservation::Concurrent reserve_concurrent( 
             state::service::id::type service,
+            const common::strong::correlation::id& correlation,
             std::span< state::instance::concurrent::id::type> preferred);
 
          void unreserve( state::instance::sequential::id::type instance, const common::message::event::service::Metric& metric);
+
+         //! unreserve the concurrent instance. @returns a disassociate reply if the instance had a pending disassociation and
+         //! this unreserve is the last one to unreserve the instance. 
+         auto unreserve( state::instance::concurrent::id::type instance, const common::message::event::service::Metric& metric) -> std::optional< common::message::service::concurrent::instance::disassociate::Reply>;
 
 
          struct prepare_shutdown_result
@@ -691,8 +746,16 @@ namespace casual
          [[nodiscard]] std::vector< state::service::pending::Lookup> update( common::message::service::concurrent::Advertise&& message);
          //! @}
 
+         //! unadvertise all services for the given `instance`. 
+         //!   note: concurrent instances can't have any pending lookups and such. 
+         void unadvertise( state::instance::concurrent::id::type instance);
+
          //! @returns the previously associated "instances" to the `gtrid`, if any.
          std::vector< state::instance::concurrent::id::type> disassociate( common::transaction::global::id::range gtrid);
+
+         //! unadvertise all services for the given `instance`. @returns a disassociate reply if the 
+         //! instance is idle, otherwise the disassociate request is held until the instance is idle and the reply is sent then. 
+         auto disassociate( const common::message::service::concurrent::instance::disassociate::Request& message) -> std::optional< common::message::service::concurrent::instance::disassociate::Reply>;
 
          //! Resets metrics for the provided services, if empty all metrics are reset.
          //! @param services

@@ -119,6 +119,8 @@ namespace casual
          service_acknowledge,
 
          service_concurrent_advertise,
+         service_concurrent_instance_disassociate_request,
+         service_concurrent_instance_disassociate_reply,
 
          // The following cant be used.
          // 3200
@@ -216,6 +218,9 @@ namespace casual
          transaction_external_resource_instance,
          transaction_external_resource_involved,
 
+         transaction_external_resource_disassociate_request,
+         transaction_external_resource_disassociate_reply,
+
          transaction_resource_id_request = TRANSACTION_BASE + 500,
          transaction_resource_id_reply,
 
@@ -235,6 +240,9 @@ namespace casual
          queue_manager_queue_lookup_reply,
          queue_manager_queue_lookup_discard_request,
          queue_manager_queue_lookup_discard_reply,
+
+         queue_manager_external_disassociate_request,
+         queue_manager_external_disassociate_reply,
 
          // pinned messages
          queue_group_enqueue_request_v1_5  = 6100,
@@ -274,6 +282,7 @@ namespace casual
 
          queue_group_metric_reset_request = QUEUE_BASE + 360,
          queue_group_metric_reset_reply,
+         queue_group_metric_remote_entries,
 
          queue_forward_group_connect = QUEUE_BASE + 400,
          queue_forward_group_configuration_update_request,
@@ -306,6 +315,11 @@ namespace casual
          gateway_reverse_inbound_state_request,
          gateway_reverse_inbound_state_reply, 
 
+         // general message to pass within outbound/inbound group to indicate
+         // that a connection is lost.
+         gateway_connection_lost,
+         gateway_connection_reconnect,
+
          // Outbounds
          gateway_outbound_connect,
 
@@ -315,7 +329,6 @@ namespace casual
 
          gateway_outbound_state_request,
          gateway_outbound_state_reply,
-         gateway_outbound_connection_lost,
 
          // reverse outbounds have different state than 'regular' (listeners)
          gateway_reverse_outbound_state_request,

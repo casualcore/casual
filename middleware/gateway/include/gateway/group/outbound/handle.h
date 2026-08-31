@@ -28,13 +28,6 @@ namespace casual
 
       namespace connection
       {
-         //! send error replies to all pending in-flight messages that is associated with the connection
-         //! removes all state associated with the connection.
-         message::outbound::connection::Lost lost( State& state, common::strong::socket::id descriptor);
-
-         //! unadvertise all associated resources to descriptor, mark the connection as 'disconnecting'
-         void disconnect( State& state, common::strong::socket::id descriptor);
-
          //! unadvertise all associated resources to descriptor, mark the connection as 'disconnecting' and 'remove'
          void remove( State& state, common::strong::socket::id descriptor);
          
@@ -58,7 +51,11 @@ namespace casual
 
       namespace metric
       {
-         void send( State& state, const common::message::event::service::Calls& metric);
+         //! send metric to service manager
+         void service( State& state, const common::message::event::service::Calls& metric);
+
+         //! send metric to queue manager
+         void queue( State& state, const queue::ipc::message::group::metric::remote::Entries& metric);
       } // metric
 
 

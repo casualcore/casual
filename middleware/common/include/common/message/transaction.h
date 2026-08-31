@@ -391,6 +391,14 @@ namespace casual
                }
             } // involved
 
+            namespace disassociate
+            {
+               //! Message that is sent by external resources to deregister
+               //! them self to TM, so they can safely exit when they get the reply. 
+               using Request = message::basic_request< message::Type::transaction_external_resource_disassociate_request>;
+               using Reply = message::basic_reply< message::Type::transaction_external_resource_disassociate_reply>;
+            } // disassociate
+
          } // external
       } // resource
 
@@ -477,6 +485,10 @@ namespace casual
 
       template<>
       struct type_traits< transaction::active::Request> : detail::type< transaction::active::Reply> {};
+      
+      template<>
+      struct type_traits< transaction::resource::external::disassociate::Request> : detail::type< transaction::resource::external::disassociate::Reply> {};
+
 
    } // common::message::reverse
 } // casual

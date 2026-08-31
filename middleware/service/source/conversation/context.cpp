@@ -305,8 +305,8 @@ namespace casual
          // The service exists. prepare the request
          auto message = local::prepare::message< common::message::conversation::connect::caller::Request>( value, std::move( buffer), common::process::handle());
          {
-            message.service = target.service;
-            message.deadline = target.deadline;
+            // set stuff from lookup-reply (service, span, deadline, etc
+            message.update( target);
             message.parent.span = common::execution::context::get().span;
             message.parent.service = common::execution::context::get().service;
             message.duplex = local::duplex::invert( value.duplex);
@@ -326,7 +326,7 @@ namespace casual
 
             ack.execution = message.execution;
             ack.metric.execution = message.execution;
-            ack.metric.span = common::strong::execution::span::id::generate();
+            ack.metric.span = message.span;
             ack.metric.service = service;
             ack.metric.parent = message.parent;
             ack.metric.process = common::process::handle();

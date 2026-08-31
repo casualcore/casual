@@ -276,15 +276,137 @@ namespace casual
 
          ASSERT_TRUE( service_id);
 
+         const auto correlation = common::strong::correlation::id::generate();
+
          // 103 should be prioritized
          {
-            auto instance_id = state.reserve_concurrent( service_id, {});
-            auto process = state.instances.concurrent[ instance_id].process;
+            auto reservation = state.reserve_concurrent( service_id, correlation, {});
+            auto process = state.instances.concurrent[ reservation.instance].process;
             EXPECT_TRUE( process.pid == common::strong::process::id{ 103}) << CASUAL_NAMED_VALUE( process);
             
             // expect only 103 to be in the prioritized range
-            EXPECT_TRUE( instance_id == state.reserve_concurrent( service_id, {}));
+            EXPECT_TRUE( reservation.instance == state.reserve_concurrent( service_id, correlation, {}).instance);
          }
+      }
+
+      TEST( service_manager_state, concurrent_dissociate__expect_reply_if_idle)
+      {
+         common::unittest::Trace trace;
+
+         auto create_advertise = []( common::strong::ipc::id ipc)
+         {
+            common::message::service::concurrent::Advertise result;
+            result.process.pid = common::process::id();
+            result.process.ipc = ipc;
+            {
+               auto& service = result.services.add.emplace_back();
+               service.name = "a";
+            }
+            return result;
+         };
+
+         auto busy_instance = common::strong::ipc::id::generate();
+         auto idle_instance = common::strong::ipc::id::generate();
+
+         manager::State state;
+
+         std::ignore = state.update( create_advertise( busy_instance));
+
+         auto service_id = state.services.lookup( "a");
+         ASSERT_TRUE( service_id);
+
+         auto correlations = common::algorithm::generate_n( 4, [](){ return common::strong::correlation::id::generate();});
+
+         auto reservations = common::algorithm::transform( correlations, [&]( auto correlation)
+         {
+            return state.reserve_concurrent( service_id, correlation, {}).instance;
+         });
+
+         std::ignore = state.update( create_advertise( idle_instance));
+
+         // check busy
+         {
+            auto instance_id = state.instances.concurrent.lookup( busy_instance);
+            ASSERT_TRUE( instance_id);
+            EXPECT_FALSE( state.instances.concurrent[ instance_id].idle());
+         }
+
+         // check idle
+         {
+            auto instance_id = state.instances.concurrent.lookup( idle_instance);
+            ASSERT_TRUE( instance_id);
+            EXPECT_TRUE( state.instances.concurrent[ instance_id].idle());
+         }
+
+
+         // disassociate idle
+         {
+            common::message::service::concurrent::instance::disassociate::Request message;
+            message.process.ipc = idle_instance;
+            // we expect a reply, since the instance is idle.
+            auto reply = state.disassociate( message);
+            EXPECT_TRUE( reply) << CASUAL_NAMED_VALUE( state);
+
+            EXPECT_TRUE( state.pending.disassociation.empty()) << CASUAL_NAMED_VALUE( state.pending.disassociation);
+         }
+
+         // disassociate busy
+         {
+            common::message::service::concurrent::instance::disassociate::Request message;
+            message.process.ipc = busy_instance;
+            // we expect no reply, since the instance is busy.
+            auto reply = state.disassociate( message);
+            EXPECT_FALSE( reply);
+
+            EXPECT_TRUE( ! state.pending.disassociation.empty()) << CASUAL_NAMED_VALUE( state.pending.disassociation);
+         }
+
+         // disassociate unknown
+         {
+            common::message::service::concurrent::instance::disassociate::Request message;
+            message.process.ipc = common::strong::ipc::id::generate();
+            // will error-log, but we should still get a reply.
+            auto reply = state.disassociate( message);
+            EXPECT_TRUE( reply);
+         }
+
+         // unreserve busy, the first 3 correlations -> should not give us a disassociate reply, since the instance is still busy.
+         for( auto correlation : std::views::take( correlations, 3))
+         {
+            auto instance_id = state.instances.concurrent.lookup( busy_instance);
+            ASSERT_TRUE( instance_id);
+
+            auto reply = state.unreserve( instance_id, common::message::event::service::Metric{ 
+               .service = "a", 
+               .process = common::process::Handle{ common::process::id(), busy_instance},
+               .correlation = correlation
+            });
+            
+            EXPECT_FALSE( reply) << CASUAL_NAMED_VALUE( state);
+         }
+         
+         // the last metric should give us a disassociate reply, since the instance is now idle.
+         {
+            auto instance_id = state.instances.concurrent.lookup( busy_instance);
+            ASSERT_TRUE( instance_id);
+
+            auto reply = state.unreserve( instance_id, common::message::event::service::Metric{ 
+               .service = "a", 
+               .process = common::process::Handle{ common::process::id(), busy_instance},
+               .correlation = correlations.back()
+            });
+            
+            EXPECT_TRUE( reply) << CASUAL_NAMED_VALUE( state);
+         }
+
+         // check that the state is clean, no pending disassociation and the instance is idle.
+         {
+            auto instance_id = state.instances.concurrent.lookup( busy_instance);
+            ASSERT_TRUE( instance_id);
+            EXPECT_TRUE( state.instances.concurrent[ instance_id].idle());
+            EXPECT_TRUE( state.pending.disassociation.empty()) << CASUAL_NAMED_VALUE( state.pending.disassociation);
+         }
+
       }
 
       TEST( service_manager_state, disable_instance__reserve_instance__expect_no_instance_reserved)
@@ -311,20 +433,16 @@ namespace casual
             EXPECT_TRUE( state.instances.sequential[ instance_id].service( a_id));
             
             // disable the instance
-            state.disabled.push_back( instance_id);
+            state.disabled.sequential.push_back( instance_id);
 
-            auto caller = state::instance::Caller{
-               .process = state.instances.sequential[ instance_id].process,
-               .correlation = common::strong::correlation::id::generate(),
-               .trid = common::transaction::ID{ common::strong::process::id{ 999}},
-               .service = a_id,
-            };
+            auto lookup = common::message::service::lookup::Request{ common::process::handle()};
+            lookup.correlation = common::strong::correlation::id::generate();
+            lookup.requested = "a";
+            lookup.trid = common::transaction::ID{ common::strong::process::id{ 999}};
 
-            // expect no instance to be reserved
-            EXPECT_FALSE(( state.reserve_sequential( std::move( caller))));
+               // expect no instance to be reserved
+               EXPECT_FALSE(( state.reserve_sequential( lookup, a_id)));
          }
-
-
       }
 
    } // service::manager

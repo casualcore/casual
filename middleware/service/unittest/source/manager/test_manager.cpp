@@ -119,6 +119,18 @@ domain:
                   std::forward< M>( message));
             }
 
+            namespace concurrent
+            {
+               struct Instance
+               {
+                  common::communication::ipc::inbound::Device device;
+
+                  auto process() const { return common::process::Handle( common::process::id(), device.connector().handle().ipc());}
+
+               };
+               
+            } // concurrent
+
 
          } // <unnamed>
       } // local
@@ -338,9 +350,18 @@ domain:
          auto service = service::lookup::reply( service::Lookup{ "a", {}});
          ASSERT_TRUE( ! service.absent());
 
+         // we send a ping message to SM to change its execution-id
+         {
+            common::message::server::ping::Request message{ common::process::handle()};
+            message.execution = common::strong::execution::id::generate();
+            common::communication::ipc::call( common::communication::instance::outbound::service::manager::device(), message);
+
+         }
+
          auto reply = common::communication::ipc::receive< common::message::service::call::Reply>();
 
          EXPECT_TRUE( reply.code.result == decltype( reply.code.result)::timeout);
+         EXPECT_TRUE( reply.execution == service.execution);
 
          auto event = common::communication::ipc::receive< common::message::event::process::Assassination>();
 
@@ -816,7 +837,7 @@ domain:
          // check service manager state, expect our self to be reserved, from our self
          {
             auto state = unittest::state();
-            EXPECT_TRUE( state.pending.size() == 0) << CASUAL_NAMED_VALUE( state.pending);
+            EXPECT_TRUE( state.pending.requests.size() == 0) << CASUAL_NAMED_VALUE( state.pending.requests);
 
             // we should have two reservation, the state call and the lookup
             EXPECT_TRUE( state.reservations.size() == 2) << CASUAL_NAMED_VALUE( state.reservations);
@@ -968,7 +989,7 @@ domain:
          // we expect no deadlines
          {
             auto state = unittest::state();
-            EXPECT_TRUE( state.deadlines.empty()) << CASUAL_NAMED_VALUE( state.deadlines);
+            EXPECT_TRUE( state.pending.deadlines.empty()) << CASUAL_NAMED_VALUE( state.pending.deadlines);
          }
       }
 
@@ -1051,8 +1072,8 @@ domain:
          {
             // we expect no pending and no deadlines
             auto state = unittest::state();
-            EXPECT_TRUE( state.pending.empty()) << CASUAL_NAMED_VALUE( state.pending);
-            EXPECT_TRUE( state.deadlines.empty()) << CASUAL_NAMED_VALUE( state.deadlines);
+            EXPECT_TRUE( state.pending.requests.empty()) << CASUAL_NAMED_VALUE( state.pending.requests);
+            EXPECT_TRUE( state.pending.deadlines.empty()) << CASUAL_NAMED_VALUE( state.pending.deadlines);
          }
       }
 
@@ -1441,7 +1462,7 @@ domain:
          // expect no deadlines left
          {
             auto state = unittest::state();
-            EXPECT_TRUE( state.deadlines.empty()) << CASUAL_NAMED_VALUE( state.deadlines);
+            EXPECT_TRUE( state.pending.deadlines.empty()) << CASUAL_NAMED_VALUE( state.pending.deadlines);
          }
       }
 
@@ -1491,7 +1512,7 @@ domain:
          // expect no deadlines left
          {
             auto state = unittest::state();
-            EXPECT_TRUE( state.deadlines.empty()) << CASUAL_NAMED_VALUE( state.deadlines);
+            EXPECT_TRUE( state.pending.deadlines.empty()) << CASUAL_NAMED_VALUE( state.pending.deadlines);
          }
       }   
 
@@ -1619,13 +1640,13 @@ domain:
             };
 
             auto state = unittest::state();
-            EXPECT_TRUE( state.deadlines.size() ==2);
-            EXPECT_TRUE( std::ranges::any_of( state.deadlines, has_service( "a"))) << CASUAL_NAMED_VALUE( state.deadlines); 
-            EXPECT_TRUE( std::ranges::any_of( state.deadlines, has_service( "b"))) << CASUAL_NAMED_VALUE( state.deadlines); 
+            EXPECT_TRUE( state.pending.deadlines.size() ==2);
+            EXPECT_TRUE( std::ranges::any_of( state.pending.deadlines, has_service( "a"))) << CASUAL_NAMED_VALUE( state.pending.deadlines); 
+            EXPECT_TRUE( std::ranges::any_of( state.pending.deadlines, has_service( "b"))) << CASUAL_NAMED_VALUE( state.pending.deadlines); 
 
             // expect one pending for 'b'
-            EXPECT_TRUE( state.pending.size() == 1);
-            EXPECT_TRUE( state.pending.at( 0).requested == "b");
+            EXPECT_TRUE( state.pending.requests.size() == 1);
+            EXPECT_TRUE( state.pending.requests.at( 0).requested == "b");
          }
 
          // send ack for the first lookup, this should remove deadline for the first lookup, 
@@ -1634,14 +1655,170 @@ domain:
             unittest::send::ack( lookup_a_reply);
 
             auto state = unittest::state();
-            EXPECT_TRUE( state.deadlines.size() == 1);
-            EXPECT_TRUE( state.deadlines.at( 0).service == "b");
-            EXPECT_TRUE( state.deadlines.at( 0).target == common::process::handle());
+            EXPECT_TRUE( state.pending.deadlines.size() == 1);
+            EXPECT_TRUE( state.pending.deadlines.at( 0).service == "b");
+            EXPECT_TRUE( state.pending.deadlines.at( 0).target == common::process::handle());
 
          }
-
-
       }
 
+      TEST( service_manager, advertise_concurrent_a_b__2_instances__reserve_instance_1__disassociate_request_both_instances__expect_reply_when_idle)
+      {
+         common::unittest::Trace trace;
+
+         auto domain = local::domain( R"(
+domain:
+   name: A
+      )");
+         
+
+         local::concurrent::Instance busy_device;
+         local::concurrent::Instance idle_device;
+
+         unittest::concurrent::advertise( { "busy"},  busy_device.process());
+         unittest::concurrent::advertise( { "idle"}, idle_device.process());
+
+         
+         // reserve the busy instance
+         auto correlations = common::algorithm::generate_n( 2, [&]()
+         {
+            auto service = service::lookup::reply( service::Lookup{ "busy", {}});
+            EXPECT_TRUE( service.state == decltype( service.state)::idle);
+            return service.correlation;
+         });
+
+         // send disassociate request for idle -> expect reply immediately
+         {
+            common::message::service::concurrent::instance::disassociate::Request request{ idle_device.process()};
+            request.correlation = common::strong::correlation::id::generate();
+
+            auto reply = common::communication::device::call( 
+               common::communication::instance::outbound::service::manager::device(),
+               request,
+               idle_device.device);
+
+            EXPECT_TRUE( reply.correlation == request.correlation);
+         }
+
+         // service idle should be absent
+         {
+            auto lookup = service::Lookup{ "idle", {}};
+            EXPECT_CODE( service::lookup::reply( std::move( lookup)), common::code::xatmi::no_entry);
+         }
+
+         auto busy_disassociate_correlation = common::strong::correlation::id::generate();
+
+         // send disassociate request for busy -> expect reply when idle
+         {
+            common::message::service::concurrent::instance::disassociate::Request request{ busy_device.process()};
+            request.correlation = busy_disassociate_correlation;
+
+            common::communication::device::blocking::send( 
+               common::communication::instance::outbound::service::manager::device(),
+               request);
+
+            // we should not get a reply yet, since the instance is busy
+            {
+               auto reply = common::communication::ipc::non::blocking::receive< common::message::service::concurrent::instance::disassociate::Reply>();
+               EXPECT_TRUE( ! reply) << CASUAL_NAMED_VALUE( *reply);
+            }
+         }
+
+         auto create_metric_event = []( auto& instance, auto& correlation)
+         {
+            common::message::event::service::Calls event{ instance.process()};
+            event.metrics.push_back( { 
+               .service = "busy",
+               .process = instance.process(),
+               .correlation = correlation,
+               .code = { .result = common::code::xatmi::ok }
+            });
+            
+            return event;
+         };
+
+         // send ack for the busy instance, this should make the disassociate reply to be sent
+         {
+            common::communication::device::blocking::send( 
+               common::communication::instance::outbound::service::manager::device(),
+               create_metric_event( busy_device, correlations.at( 0)));
+
+            common::communication::device::blocking::send( 
+               common::communication::instance::outbound::service::manager::device(),
+               create_metric_event( busy_device, correlations.at( 1)));
+
+            auto reply = common::communication::device::receive< common::message::service::concurrent::instance::disassociate::Reply>( busy_device.device);
+            EXPECT_TRUE( reply.correlation == busy_disassociate_correlation) << CASUAL_NAMED_VALUE( reply);
+         }
+      }
+
+      TEST( service_manager, advertise_concurrent_instances__reserve_instance___disassociate_instance__lookup_forget___expect_disassociate_reply)
+      {
+         common::unittest::Trace trace;
+
+         auto domain = local::domain( R"(
+domain:
+   name: A
+      )");
+         
+         local::concurrent::Instance instance;
+         unittest::concurrent::advertise( { "a"}, instance.process());
+
+         auto lookup = service::lookup::reply( service::Lookup{ "a", {}});
+
+         const auto disassociate_correlation = common::strong::correlation::id::generate();
+         
+         // send disassociate request for instance. 
+         {
+            common::message::service::concurrent::instance::disassociate::Request request{ instance.process()};
+            request.correlation = disassociate_correlation;
+
+            common::communication::device::blocking::send( 
+               common::communication::instance::outbound::service::manager::device(),
+               request);
+
+            // we should not get a reply yet, since the instance is busy
+            {
+               auto reply = common::communication::ipc::non::blocking::receive< common::message::service::concurrent::instance::disassociate::Reply>();
+               EXPECT_TRUE( ! reply) << CASUAL_NAMED_VALUE( *reply);
+            }
+         }
+
+         // check state that the instance is not idle, since we have a pending disassociate request
+         {
+            auto state = unittest::state();
+            ASSERT_TRUE( state.instances.concurrent.size() == 1);
+            EXPECT_TRUE( state.instances.concurrent.at( 0).process == instance.process());
+            EXPECT_TRUE( state.instances.concurrent.at( 0).reservations.size() == 1) << CASUAL_NAMED_VALUE( state.instances.concurrent);
+            EXPECT_TRUE( state.instances.concurrent.at( 0).reservations.at( 0) == lookup.correlation) << CASUAL_NAMED_VALUE( state.instances.concurrent);
+         }
+
+         // send lookup forget
+         {
+            common::message::service::lookup::discard::Request request{ common::process::handle()};
+            request.correlation = lookup.correlation;
+            request.reply = false;
+
+            common::communication::device::blocking::send( 
+               common::communication::instance::outbound::service::manager::device(),
+               request);
+         }
+
+         // we should get a disassociate reply now, since the lookup is forgotten
+         {
+            auto reply = common::communication::device::receive< common::message::service::concurrent::instance::disassociate::Reply>( instance.device);
+            EXPECT_TRUE( reply.correlation == disassociate_correlation) << CASUAL_NAMED_VALUE( reply);
+         }
+
+         // check state that the instance is idle
+         {
+            auto state = unittest::state();
+            ASSERT_TRUE( state.instances.concurrent.size() == 1);
+            EXPECT_TRUE( state.instances.concurrent.at( 0).process == instance.process());
+            EXPECT_TRUE( state.instances.concurrent.at( 0).reservations.empty()) << CASUAL_NAMED_VALUE( state.instances.concurrent);
+         }
+
+      }
+      
    } // service
 } // casual

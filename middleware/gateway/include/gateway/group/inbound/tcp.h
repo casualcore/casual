@@ -18,7 +18,7 @@ namespace casual
       template< typename M>
       common::strong::correlation::id send( State& state, common::strong::socket::id descriptor, M&& message)
       {
-         return group::tcp::send( state, &handle::connection::lost, descriptor, std::forward< M>( message));
+         return group::tcp::send( state, descriptor, std::forward< M>( message));
       }
 
    } // gateway::group::inbound::tcp

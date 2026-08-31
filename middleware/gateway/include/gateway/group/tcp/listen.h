@@ -189,7 +189,7 @@ namespace casual
                // we need the socket to not block in 'accept'
                listener.socket.set( communication::socket::option::File::no_block);
 
-               log::information( "started listening on: ", listener.configuration.address);
+               log::information( "listening on: ", listener.configuration.address);
             }
             catch( ...)
             {

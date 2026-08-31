@@ -72,12 +72,14 @@ namespace casual
             case Type::service_reply_v4: return "service_reply_v4";
             case Type::service_acknowledge: return "service_acknowledge";
             case Type::service_concurrent_advertise: return "service_concurrent_advertise";
+            case Type::service_concurrent_instance_disassociate_request: return "service_concurrent_instance_disassociate_request";
+            case Type::service_concurrent_instance_disassociate_reply: return "service_concurrent_instance_disassociate_reply";
+            case Type::conversation_connect_request: return "conversation_connect_request";
             case Type::conversation_connect_request_v5: return "conversation_connect_request_v5";
             case Type::conversation_connect_request_v2: return "conversation_connect_request_v2";
             case Type::conversation_connect_reply: return "conversation_connect_reply";
             case Type::conversation_send_v5: return "conversation_send_v5";
             case Type::conversation_disconnect: return "conversation_disconnect";
-            case Type::conversation_connect_request: return "conversation_connect_request";
             case Type::conversation_send: return "conversation_send";
             case Type::event_subscription_begin: return "event_subscription_begin";
             case Type::event_subscription_end: return "event_subscription_end";
@@ -125,6 +127,8 @@ namespace casual
             case Type::transaction_resource_involved_reply: return "transaction_resource_involved_reply";
             case Type::transaction_external_resource_instance: return "transaction_external_resource_instance";
             case Type::transaction_external_resource_involved: return "transaction_external_resource_involved";
+            case Type::transaction_external_resource_disassociate_request: return "transaction_external_resource_disassociate_request";
+            case Type::transaction_external_resource_disassociate_reply: return "transaction_external_resource_disassociate_reply";
             case Type::transaction_resource_id_request: return "transaction_resource_id_request";
             case Type::transaction_resource_id_reply: return "transaction_resource_id_reply";
             case Type::transaction_inbound_branch_request: return "transaction_inbound_branch_request";
@@ -137,6 +141,8 @@ namespace casual
             case Type::queue_manager_queue_lookup_reply: return "queue_manager_queue_lookup_reply";
             case Type::queue_manager_queue_lookup_discard_request: return "queue_manager_queue_lookup_discard_request";
             case Type::queue_manager_queue_lookup_discard_reply: return "queue_manager_queue_lookup_discard_reply";
+            case Type::queue_manager_external_disassociate_request: return "queue_manager_external_disassociate_request";
+            case Type::queue_manager_external_disassociate_reply: return "queue_manager_external_disassociate_reply";
             case Type::queue_group_enqueue_request: return "queue_group_enqueue_request";
             case Type::queue_group_enqueue_request_v1_5: return "queue_group_enqueue_request_v1_5";
             case Type::queue_group_enqueue_reply: return "queue_group_enqueue_reply";
@@ -170,6 +176,7 @@ namespace casual
             case Type::queue_group_queue_clear_reply: return "queue_group_queue_clear_reply";
             case Type::queue_group_metric_reset_request: return "queue_group_metric_reset_request";
             case Type::queue_group_metric_reset_reply: return "queue_group_metric_reset_reply";
+            case Type::queue_group_metric_remote_entries: return "queue_group_metric_remote_entries";
             case Type::queue_forward_group_connect: return "queue_forward_group_connect";
             case Type::queue_forward_group_configuration_update_request: return "queue_forward_group_configuration_update_request";
             case Type::queue_forward_group_configuration_update_reply: return "queue_forward_group_configuration_update_reply";
@@ -180,6 +187,8 @@ namespace casual
             case Type::queue_fanout_group_configuration_update_reply: return "queue_fanout_group_configuration_update_reply";
             case Type::queue_fanout_group_state_request: return "queue_fanout_group_state_request";
             case Type::queue_fanout_group_state_reply: return "queue_fanout_group_state_reply";
+            case Type::gateway_connection_lost: return "gateway_connection_lost";
+            case Type::gateway_connection_reconnect: return "gateway_connection_reconnect";
             case Type::gateway_inbound_connect: return "gateway_inbound_connect";
             case Type::gateway_inbound_configuration_update_request: return "gateway_inbound_configuration_update_request";
             case Type::gateway_inbound_configuration_update_reply: return "gateway_inbound_configuration_update_reply";
@@ -193,7 +202,6 @@ namespace casual
             case Type::gateway_outbound_configuration_update_reply: return "gateway_outbound_configuration_update_reply";
             case Type::gateway_outbound_state_request: return "gateway_outbound_state_request";
             case Type::gateway_outbound_state_reply: return "gateway_outbound_state_reply";
-            case Type::gateway_outbound_connection_lost: return "gateway_outbound_connection_lost";
             case Type::gateway_reverse_outbound_state_request: return "gateway_reverse_outbound_state_request";
             case Type::gateway_reverse_outbound_state_reply: return "gateway_reverse_outbound_state_reply";
             case Type::gateway_domain_connect_request: return "gateway_domain_connect_request";

@@ -3837,13 +3837,14 @@ domain:
             {
                EXPECT_TRUE( reply->state == decltype( reply->state)::idle);
 
+               // discard the lookup, to 'unreserve' the service
+               casual::service::lookup::discard( std::move( *reply));
+
                return true;
             }
 
             return false;
          });
-
-
       }
 
    } // test

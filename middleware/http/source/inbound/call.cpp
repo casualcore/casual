@@ -121,10 +121,13 @@ namespace casual
 
             namespace send
             {
-               auto lookup( const communication::ipc::inbound::Device& ipc, const std::string& service)
+               auto lookup( const communication::ipc::inbound::Device& ipc, const message::service::call::callee::Request& request)
                {
                   message::service::lookup::Request lookup{ local::handle( ipc)};
-                  lookup.requested = service;
+                  lookup.requested = request.service.name;
+                  lookup.correlation = request.correlation;
+                  lookup.execution = request.execution;
+                  lookup.parent = request.parent;
                   return communication::device::blocking::send( communication::instance::outbound::service::manager::device(), lookup);
                }
 
@@ -147,10 +150,10 @@ namespace casual
                         common::code::raise::error( common::code::xatmi::timeout, "timeout during lookup of service: ", lookup.service.name);
                      case Enum::idle:
                      {
+                        
                         request.process = local::handle( ipc);
-                        request.service = lookup.service;
-                        request.pending = lookup.pending;
-                        request.correlation = lookup.correlation;
+                        // get stuff from lookup-reply (span, deadline, etc)
+                        request.update( lookup); 
 
                         communication::device::blocking::send( lookup.process.ipc, request);
                         break;
@@ -165,7 +168,7 @@ namespace casual
                basic_caller( communication::ipc::inbound::Device ipc, Request request)
                   :  m_ipc{ std::move( ipc)}, 
                      m_request{ Policy::transform( std::move( request))}, 
-                     m_correlation{ send::lookup( m_ipc, m_request->service.name)}
+                     m_correlation{ send::lookup( m_ipc, *m_request)}
                {}
 
                ~basic_caller()

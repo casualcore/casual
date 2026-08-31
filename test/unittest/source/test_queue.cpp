@@ -61,13 +61,22 @@ domain:
                return casual::domain::unittest::manager( local::configuration::base, std::forward< Cs>( configurations)...);
             }
 
-            template< typename C>
-            auto lookup( std::string name, C context)
+            // lookup queue, if 'reserved' discard the lookup (unreserve the queue)
+            auto lookup_and_discard( std::string name, auto context)
             {
                casual::queue::ipc::message::lookup::Request request{ process::handle()};
                request.context = std::move( context);
                request.name = std::move( name);
-               return communication::ipc::call( communication::instance::outbound::queue::manager::device(), request);
+               auto result = communication::ipc::call( communication::instance::outbound::queue::manager::device(), request);
+
+               if( result)
+               {
+                  casual::queue::ipc::message::lookup::discard::Request discard{ process::handle()};
+                  discard.correlation = result.correlation;
+                  std::ignore = communication::ipc::call( communication::instance::outbound::queue::manager::device(), discard);
+               }
+
+               return result;
             }
 
 
@@ -139,7 +148,7 @@ domain:
          {
             casual::queue::ipc::message::lookup::request::Context context;
             context.requester = decltype( context.requester)::internal;
-            auto reply = local::lookup( "b1", context);
+            auto reply = local::lookup_and_discard( "b1", context);
             EXPECT_TRUE( reply);
          }
 
@@ -147,22 +156,22 @@ domain:
          {
             casual::queue::ipc::message::lookup::request::Context context;
             context.requester = decltype( context.requester)::external;
-            // remote service - absent
-            EXPECT_TRUE( ! local::lookup( "b1", context));
-            // local service
-            EXPECT_TRUE( local::lookup( "a1", context)); 
+            // remote queue - absent
+            EXPECT_TRUE( ! local::lookup_and_discard( "b1", context));
+            // local queue
+            EXPECT_TRUE( local::lookup_and_discard( "a1", context)); 
          }
 
          // external-discovery
          {
             casual::queue::ipc::message::lookup::request::Context context;
             context.requester = decltype( context.requester)::external_discovery;
-            // remote service - already discovered 
-            EXPECT_TRUE( local::lookup( "b1", context));
-            // remote service - not discovered
-            EXPECT_TRUE( ! local::lookup( "b2", context));
-            // local service
-            EXPECT_TRUE( local::lookup( "a1", context));
+            // remote queue - already discovered 
+            EXPECT_TRUE( local::lookup_and_discard( "b1", context));
+            // remote queue - not discovered
+            EXPECT_TRUE( ! local::lookup_and_discard( "b2", context));
+            // local queue
+            EXPECT_TRUE( local::lookup_and_discard( "a1", context));
          }
 
       }

@@ -21,34 +21,48 @@ namespace casual
       {
          namespace
          {
-            auto pending()
+            namespace pending
             {
-               return []( auto& value)
+               auto request()
                {
-                  manager::admin::model::Pending result;
-                  result.process = value.request.process;
-                  result.requested = value.request.requested;
-                  return result;
-               };
-            };
-
-            auto deadlines( const manager::State& state)
-            {
-               return [ &state]( const auto& entry)
-               {
-                  auto result = manager::admin::model::pending::Deadline{
-                     .when = entry.when
+                  return []( auto& value)
+                  {
+                     return manager::admin::model::pending::Request{
+                        .requested = value.request.requested,
+                        .process = value.request.process,
+                     };
                   };
-
-                  if( state.instances.sequential.contains( entry.target))
-                     result.target = state.instances.sequential[ entry.target].process;
-
-                  if( state.services.contains( entry.service))
-                     result.service = state.services[ entry.service].information.name;
-
-                  return result;
                };
-            }
+
+               auto deadlines( const manager::State& state)
+               {
+                  return [ &state]( const auto& entry)
+                  {
+                     auto result = manager::admin::model::pending::Deadline{
+                        .when = entry.when
+                     };
+
+                     if( state.instances.sequential.contains( entry.target))
+                        result.target = state.instances.sequential[ entry.target].process;
+
+                     if( state.services.contains( entry.service))
+                        result.service = state.services[ entry.service].information.name;
+
+                     return result;
+                  };
+               }
+
+               auto disassociate()
+               {
+                  return []( auto& value)
+                  {
+                     return manager::admin::model::pending::Disassociate{
+                        .process = value.process
+                     };
+                  };
+               };
+
+            } // pending
 
             void services( const manager::State& state, auto& target)
             {
@@ -149,6 +163,7 @@ namespace casual
                   {
                      admin::model::instance::Concurrent result;
                      result.process = instance.process;
+                     result.reservations = instance.reservations;
                      result.alias = instance.alias;
                      result.description = instance.description;
                      return result;
@@ -180,8 +195,9 @@ namespace casual
 
          local::services( state, result.services);
 
-         common::algorithm::transform( state.pending.lookups, result.pending, local::pending());
-         common::algorithm::transform( state.pending.deadline.entries(), result.deadlines, local::deadlines( state));
+         common::algorithm::transform( state.pending.lookups, result.pending.requests, local::pending::request());
+         common::algorithm::transform( state.pending.deadline.entries(), result.pending.deadlines, local::pending::deadlines( state));
+         common::algorithm::transform( state.pending.disassociation, result.pending.disassociation, local::pending::disassociate());
 
          common::algorithm::for_each( state.routes, [&result]( auto& pair)
          {

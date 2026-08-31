@@ -26,6 +26,8 @@ namespace casual
 
             admin::model::State result;
 
+            auto alias_less_than = []( const auto& lhs, const auto& rhs){ return lhs.alias < rhs.alias;};
+
             // groups
             for( auto& group : groups)
             {
@@ -68,14 +70,15 @@ namespace casual
                algorithm::transform_if( group.queues, 
                   std::back_inserter( result.queues), 
                   transform_queue,
-                  [&group]( auto& queue){ return !algorithm::find( group.zombies, queue.id);});
+                  [ &group]( auto& queue){ return ! algorithm::find( group.zombies, queue.id);});
  
                algorithm::transform_if( group.queues, 
                   std::back_inserter( result.zombies), 
                   transform_queue,
-                  [&group]( auto& queue){ return algorithm::find( group.zombies, queue.id);});
- 
+                  [ &group]( auto& queue){ return algorithm::find( group.zombies, queue.id);});
             }
+
+            std::ranges::sort( result.groups, alias_less_than);
             
             
             // forward
@@ -188,6 +191,8 @@ namespace casual
                algorithm::transform( fanout.queues, std::back_inserter( result.fanout.queues), transform_queue);
             }
 
+            std::ranges::sort( result.forward.groups, alias_less_than);
+
             // find remote queues and add to model
             for( auto& queue : state.queues)
             {
@@ -201,9 +206,16 @@ namespace casual
                });
             }
 
+            // remotes
+
             auto transform_remote_domains = []( const auto& remote)
             {
-               return admin::model::remote::Domain{ remote.alias, remote.process, remote.order, remote.description};
+               return admin::model::remote::Domain{ 
+                  .alias = remote.alias, 
+                  .process = remote.process, 
+                  .order = remote.order, 
+                  .description = remote.description,
+                  .reservations = remote.reservations};
             };
 
             algorithm::transform( state.remotes, std::back_inserter( result.remote.domains), transform_remote_domains);

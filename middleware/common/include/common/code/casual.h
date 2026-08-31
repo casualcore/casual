@@ -22,6 +22,7 @@ namespace casual
             //ok = 0,
             shutdown = 1,
             interrupted,
+            abort,
 
             preconditions,
             deprecated,

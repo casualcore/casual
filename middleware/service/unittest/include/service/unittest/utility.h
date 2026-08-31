@@ -44,11 +44,13 @@ namespace casual
          //! advertise concurrent/remote `services` to service-manager as current process
          void advertise( std::vector< std::string> services);
 
+         void advertise( std::vector< std::string> services, const common::process::Handle& handle);
+
          //! unadvertise concurrent/remote `services` to service-manager as current process
          void unadvertise( std::vector< std::string> services);
       } // concurrent
 
-      common::message::service::lookup::Reply lookup( std::string service);
+      common::message::service::lookup::Reply lookup( std::string service, const common::transaction::ID& trid = {});
 
       namespace send
       {

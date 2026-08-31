@@ -89,6 +89,12 @@ namespace casual
                return std::nullopt;
             }
          } // non::blocking
+
+         void discard( lookup::Reply&& lookup)
+         {
+            local::discard( lookup.correlation);
+         }
+
   
       } // lookup
 
@@ -99,6 +105,9 @@ namespace casual
 
          common::message::service::lookup::Request request{ common::process::handle()};
          request.requested = m_service;
+         // our current span and service is the parent for the callee.
+         request.parent.service = common::execution::context::get().service;
+         request.parent.span = common::execution::context::get().span;
          request.context = context;
          request.trid = trid;
          request.deadline = std::move( deadline);

@@ -201,6 +201,45 @@ namespace casual
 
                namespace remove
                {
+                  namespace detail
+                  {
+                     void check_disassociation( State& state, const state::Transaction& transaction)
+                     {
+                        Trace trace{ "transaction::manager::handle::local::detail::remove::detail::check_disassociation"};
+
+                        // this is the happy path.
+                        if( state.pending.disassociate.empty())
+                           return;
+
+                        auto associated = transaction.associated();
+
+                        auto send_reply_if_disassociated = [ &state, &associated]( auto& disassociate)
+                        {
+                           if( ! std::ranges::contains( associated, disassociate.resource))
+                              return false;
+
+                           if( state.associated( disassociate.resource))
+                              return false;
+
+                     
+                           common::log::debug( "resource: ", disassociate.resource, " is no longer associated with any transaction - send disassociate reply");
+
+                           auto external = state.find_external( disassociate.resource);
+                           casual::assertion( external, "failed to find external resource proxy: ", disassociate.resource);
+                           
+                           common::message::transaction::resource::external::disassociate::Reply reply;
+                           reply.correlation = disassociate.correlation;
+                           state.multiplex.send( external->process.ipc, reply);
+
+                           return true;
+                        };
+
+                        common::algorithm::container::erase_if( state.pending.disassociate, send_reply_if_disassociated);
+
+                     }
+                     
+                  } // detail
+
                   void transaction( State& state, common::transaction::global::id::range global)
                   {
                      Trace trace{ "transaction::manager::handle::local::detail::remove::transaction"};
@@ -210,13 +249,14 @@ namespace casual
                      if( auto found = common::algorithm::find( state.transactions, global))
                      {
                         common::log::debug( "remove: ", *found);
+                        auto extracted = common::algorithm::container::extract( state.transactions, std::begin( found));
+
+                        detail::check_disassociation( state, extracted);
 
                         // other "managers" might have state associated with the transaction, send an event
                         // to help them get rid of it.
                         common::message::event::transaction::Disassociate event{ common::process::handle()};
                         event.gtrid = common::transaction::global::ID{ global};
-
-                        common::algorithm::container::erase( state.transactions, std::begin( found));
 
                         common::event::send( state.multiplex, event);
                      }
@@ -933,8 +973,8 @@ namespace casual
 
                         if( transaction.stage == state::transaction::Stage::involved)
                         {
-                           common::log::debug( "transaction: ", transaction);
                            transaction.involve( message.trid, id);
+                           common::log::debug( "transaction: ", transaction);
                         }
                         else if( transaction.stage == state::transaction::Stage::rollback)
                         {
@@ -1106,6 +1146,41 @@ namespace casual
                         };
                      }
                   } // rollback
+
+                  namespace dissociate
+                  {
+                     auto request( State& state)
+                     {
+                        return [ &state]( const common::message::transaction::resource::external::disassociate::Request& message)
+                        {
+                           Trace trace{ "transaction::manager::handle::local::resource::external::disassociate::request"};
+                           common::log::debug( "message: ", message);
+
+                           auto rm = state.find_external( message.process.ipc);
+
+                           if( ! rm)
+                           {
+                              common::log::debug( "failed to find external resource for: ", message.process);
+                              state.multiplex.send( message.process.ipc, common::message::reverse::type( message));
+                              return;
+                           }
+
+                           if( state.associated( rm))
+                           {
+                              state.pending.disassociate.push_back( state::pending::Disassociate{ 
+                                 .resource = rm, 
+                                 .correlation = message.correlation});
+                           }
+                           else
+                           {
+                              // we can dissociate immediately
+                              state.multiplex.send( message.process.ipc, common::message::reverse::type( message));
+                           }
+
+                        };
+                     }
+                  } // dissociate
+
                } // external
 
 
@@ -1499,6 +1574,7 @@ namespace casual
             local::resource::external::prepare::request( state),
             local::resource::external::commit::request( state),
             local::resource::external::rollback::request( state),
+            local::resource::external::dissociate::request( state),
             local::inbound::branch::request( state),
             local::active::request( state),
             local::potential::stale( state),

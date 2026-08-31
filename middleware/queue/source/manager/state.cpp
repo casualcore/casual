@@ -36,6 +36,19 @@ namespace casual
             }  
          } // entity
 
+         void Remote::reserve( const common::strong::correlation::id& correlation)
+         {
+            reservations.push_back( correlation);
+         }
+
+         bool Remote::unreserve( const common::strong::correlation::id& correlation)
+         {
+            if( auto found = algorithm::find( reservations, correlation))
+               return algorithm::container::erase( reservations, std::begin( found)).empty();
+
+            return false;
+         }
+
          std::string_view description( Runlevel value)
          {
             switch( value)
@@ -185,6 +198,16 @@ namespace casual
          algorithm::container::erase( remotes, pid);
       }
 
+      void State::remove( common::strong::ipc::id ipc)
+      {
+         Trace trace{ "queue::manager::State::remove"};
+
+         remove_queues( ipc);
+
+         algorithm::container::erase( pending.lookups, ipc);
+         algorithm::container::erase( remotes, ipc);
+      }
+
       void State::update( queue::ipc::message::Advertise& message)
       {
          Trace trace{ "queue::manager::State::update"};
@@ -224,7 +247,11 @@ namespace casual
 
          // make sure we've got the instance
          if( ! common::algorithm::find( remotes, message.process))
-            remotes.push_back( state::Remote{ message.process, order, message.alias, message.description});
+            remotes.push_back( state::Remote{ 
+               .process = message.process, 
+               .order = order,
+               .alias = message.alias,
+               .description = message.description});
 
          auto add_queue = [&]( auto& queue)
          {

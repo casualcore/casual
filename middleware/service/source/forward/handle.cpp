@@ -69,8 +69,12 @@ namespace casual
                            // We consume the request regardless
 
                            auto request = algorithm::container::extract( state.pending, std::begin( found));
-                           request.service = message.service;
-                           request.deadline = message.deadline;
+                            
+                           // update the request with stuff from lookup-reply (span, deadline, etc)
+                           request.update( message);
+
+                            // If the service is idle, we can just forward the request. 
+                            // If not, we'll reply to the caller with an error, as we don't want to deal with pending requests in this forwarder.
 
                            using Enum = decltype( message.state);
                            switch( message.state)

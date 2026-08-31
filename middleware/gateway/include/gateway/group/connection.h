@@ -54,10 +54,6 @@ namespace casual
             
             auto tcp_descriptor = connector.socket.descriptor();
 
-            common::log::line( common::log::category::information, "connection established to domain: '", message.domain.name, 
-               "' - host: ", common::communication::tcp::socket::address::host( connector.socket),
-               ", peer: ", common::communication::tcp::socket::address::peer( connector.socket));
-
             {
                common::communication::ipc::inbound::Device inbound;
                auto ipc_descriptor = inbound.descriptor();
@@ -70,9 +66,15 @@ namespace casual
 
             {
                m_external.emplace( tcp_descriptor, tcp::Connection{ std::move( connector.socket), message.version});
-               m_information.emplace_back( tcp_descriptor, message.domain, std::move( connector.configuration));
                
                directive.read_add( tcp_descriptor);
+            }
+
+            {
+               const auto& information = m_information.emplace_back( tcp_descriptor, message.domain, std::move( connector.configuration));
+
+               common::log::information( "connection established to: '", information.domain.name, "' - address: ", information.address);
+
             }
 
             return common::range::back( m_mapping);

@@ -1436,12 +1436,12 @@ output columns:
                struct State
                {
                   casual::cli::pipe::done::Scope done;
-                  queue::ipc::message::lookup::Reply destination;
+                  std::string queue;
                   common::transaction::ID current;
 
                   CASUAL_LOG_SERIALIZE(
                      CASUAL_SERIALIZE( done);
-                     CASUAL_SERIALIZE( destination);
+                     CASUAL_SERIALIZE( queue);
                      CASUAL_SERIALIZE( current);
                   )
                };
@@ -1458,20 +1458,23 @@ output columns:
                      log::debug( "message: ", message);
                      log::debug( "state: ", state);
 
-                     auto request = local::transform::enqueue( std::move( message));
+                     auto lookup = lookup::queue( state.queue, queue::Lookup::Action::enqueue);
+                     log::debug( "lookup: ", lookup);
 
-                     request.name = state.destination.name;
-                     request.queue = state.destination.queue;
+                     auto request = local::transform::enqueue( std::move( message));
+                     request.correlation = lookup.correlation;
+                     request.name = lookup.name;
+                     request.queue = lookup.queue;
                      // use the explict transaction regardless.
                      request.trid = state.current;
 
+                     auto reply = communication::ipc::call( lookup.process.ipc, request);
 
-                     auto reply = communication::ipc::call( state.destination.process.ipc, request);
+                     if( reply.code != common::code::queue::ok)
+                        code::raise::error( reply.code, "enqueue failed");
+
                      casual::cli::message::queue::message::ID id;
                      id.id = reply.id;
-
-                     if( ! id.id)
-                        code::raise::error( reply.code, "enqueue failed");
                      
                      casual::cli::pipe::forward::message( id);
                   };
@@ -1483,8 +1486,7 @@ output columns:
                   {
                      Trace trace{ "queue::local::enqueue::invoke"};
 
-                     pipe::State state;
-                     state.destination = lookup::queue( queue, queue::Lookup::Action::enqueue);
+                     pipe::State state{ .queue = std::move( queue)};
 
                      auto handler = casual::cli::message::dispatch::create( 
                         casual::cli::pipe::forward::handle::defaults(),
@@ -1546,9 +1548,12 @@ Examples:
                   Trace trace{ "queue::local::dequeue::action"};
                   log::debug( "state: ", state);
 
+                  auto lookup = lookup::queue( state.queue, queue::Lookup::Action::dequeue);
+
                   ipc::message::group::dequeue::Request request{ process::handle()};
-                  request.name = state.destination.name;
-                  request.queue = state.destination.queue;
+                  request.correlation = lookup.correlation;
+                  request.name = lookup.name;
+                  request.queue = lookup.queue;
                   request.trid = state.current;
 
                   if( id)
@@ -1556,7 +1561,7 @@ Examples:
 
                   log::debug( "request: ", request);
 
-                  if( auto reply = communication::ipc::call( state.destination.process.ipc, request))
+                  if( auto reply = communication::ipc::call( lookup.process.ipc, request))
                   {
                      log::debug( "reply: ", reply);
                      
@@ -1577,8 +1582,9 @@ Examples:
                   {
                      Trace trace{ "queue::local::dequeue::invoke"};
 
-                     pipe::State state;
-                     state.destination = lookup::queue( queue, queue::Lookup::Action::enqueue);
+                     auto state = pipe::State{
+                        .queue = std::move( queue)
+                     };
 
                      auto handler = casual::cli::message::dispatch::create(
                         casual::cli::pipe::forward::handle::defaults(),
@@ -1653,8 +1659,7 @@ Examples:
                   {
                      Trace trace{ "queue::local::consume::invoke"};
 
-                     pipe::State state;
-                     state.destination = lookup::queue( queue, queue::Lookup::Action::enqueue);
+                     pipe::State state{ .queue = std::move( queue)};
 
                      auto handler = casual::cli::message::dispatch::create(
                         casual::cli::pipe::forward::handle::defaults(),

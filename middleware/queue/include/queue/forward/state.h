@@ -57,35 +57,22 @@ namespace casual
 
             struct Source
             {
-               common::strong::queue::id id;
                std::string queue;
-               common::process::Handle process;
-
-               inline explicit operator bool () const { return id && process;}
-               inline void invalidate() noexcept 
-               {
-                  id = {};
-                  process = {};
-               }
-
-               friend inline bool operator == ( const Source& lhs, common::strong::queue::id id) { return lhs.id == id;}
-               friend inline bool operator == ( const Source& lhs, common::process::compare_equal_to_handle auto rhs) { return lhs.process == rhs;}
 
                CASUAL_LOG_SERIALIZE(
-                  CASUAL_SERIALIZE( id);
                   CASUAL_SERIALIZE( queue);
-                  CASUAL_SERIALIZE( process);
                )
             };
 
             namespace queue
             {
-               struct Target : Source
+               struct Target 
                {
+                  std::string queue;
                   common::chronology::duration delay{};
 
                   CASUAL_LOG_SERIALIZE(
-                     Source::serialize( archive);
+                     CASUAL_SERIALIZE( queue);
                      CASUAL_SERIALIZE( delay);
                   )
                };
@@ -95,18 +82,26 @@ namespace casual
             {
                platform::size::type configured{};
                platform::size::type running{};
+               bool enabled = true;
+
+               //! increment and decrement running instances
+               Instances& operator++();
+               Instances& operator--();
 
                //! @returns how many concurrent that are missing before we
                //! reach the configured...
                inline platform::size::type missing() const 
                { 
-                  if( configured < running)
+                  if( ! enabled || configured < running)
                      return 0;
                   return configured - running;
                }
 
                inline platform::size::type surplus() const
                {
+                  if( ! enabled)
+                     return running;
+
                   if( configured > running)
                      return 0;
                   return running - configured;
@@ -118,6 +113,7 @@ namespace casual
                CASUAL_LOG_SERIALIZE(
                   CASUAL_SERIALIZE( configured);
                   CASUAL_SERIALIZE( running);
+                  CASUAL_SERIALIZE( enabled);
                )
             };
 
@@ -169,26 +165,9 @@ namespace casual
 
                std::string alias;
                std::string note;
-               bool enabled = true;
 
-               //! increment and decrement running instances
-               Service& operator++();
-               Service& operator--();
-
-               void invalidate() noexcept;
-
-               inline bool valid_queues() const noexcept { return source && ( ! reply || *reply);}
-               inline void invalidate_queues() noexcept
-               { 
-                  source.invalidate();
-                  if( reply)
-                     reply->invalidate();
-               }
-
-               inline bool valid() const noexcept { return valid_queues();}
 
                inline friend bool operator == ( const Service& lhs, forward::id rhs) { return lhs.id == rhs;}
-               inline friend bool operator == ( const Service& lhs, common::process::compare_equal_to_handle auto rhs) { return lhs.source.process == rhs || lhs.reply == rhs;}
 
                CASUAL_LOG_SERIALIZE(
                   CASUAL_SERIALIZE( id);
@@ -199,7 +178,6 @@ namespace casual
                   CASUAL_SERIALIZE( instances);
                   CASUAL_SERIALIZE( metric);
                   CASUAL_SERIALIZE( selector);
-                  CASUAL_SERIALIZE( enabled);
                )
             };
 
@@ -216,24 +194,8 @@ namespace casual
 
                std::string alias;
                std::string note;
-               bool enabled = true;
-
-               //! increment and decrement running instances
-               Queue& operator++();
-               Queue& operator--();
-
-               void invalidate() noexcept;
-               inline void invalidate_queues() noexcept
-               { 
-                  source.invalidate();
-                  target.invalidate();
-               }
-
-               inline bool valid_queues() const noexcept { return source && target;}
-               inline bool valid() const noexcept { return valid_queues();}
 
                inline friend bool operator == ( const Queue& lhs, forward::id rhs) { return lhs.id == rhs;}
-               inline friend bool operator == ( const Queue& lhs, common::process::compare_equal_to_handle auto rhs) { return lhs.source.process == rhs || lhs.target.process == rhs;}
 
                CASUAL_LOG_SERIALIZE(
                   CASUAL_SERIALIZE( id);
@@ -243,7 +205,6 @@ namespace casual
                   CASUAL_SERIALIZE( instances);
                   CASUAL_SERIALIZE( metric);
                   CASUAL_SERIALIZE( selector);
-                  CASUAL_SERIALIZE( enabled);
                )
             };
 
@@ -277,23 +238,56 @@ namespace casual
 
             namespace queue
             {
-               struct Lookup : base
+               namespace source
                {
-               };
+                  struct Lookup : base
+                  {
+                  };
+                  
+               } // source
+               
+               namespace target
+               {
+                  struct Lookup : transaction_base
+                  {
+                     common::buffer::Payload buffer;
+
+                     //! possible delay for the upcoming enqueued message. 
+                     common::chronology::duration delay{};
+
+                     CASUAL_LOG_SERIALIZE(
+                        transaction_base::serialize( archive);
+                        CASUAL_SERIALIZE( buffer);
+                        CASUAL_SERIALIZE( delay);
+                     )
+                  };
+
+                  namespace lookup
+                  {
+                     struct Discard : transaction_base
+                     {
+                     };
+                  }
+                  
+               } // target
 
             } // queue
 
             struct Dequeue : transaction_base
             {
+               //! if we need to cancel the blocking dequeue.
+               common::strong::ipc::id ipc;
+
+               CASUAL_LOG_SERIALIZE(
+                  transaction_base::serialize( archive);
+                  CASUAL_SERIALIZE( ipc);
+               )
             };
 
             namespace service
             {
                struct Lookup : transaction_base
                {
-                  Lookup() = default;
-                  Lookup( const transaction_base& other) : transaction_base{ other} {}
-
                   common::buffer::Payload payload;
 
                   CASUAL_LOG_SERIALIZE(
@@ -306,17 +300,11 @@ namespace casual
                {
                   struct Discard : transaction_base
                   {
-                     Discard() = default;
-                     Discard( transaction_base&& other) : transaction_base{ std::move( other)} {}
                   };
                }
 
                struct Call : transaction_base
                {
-                  Call() = default;
-                  Call( const transaction_base& other, common::process::Handle target)
-                     : transaction_base{ other}, target{ target} {}
-
                   common::process::Handle target{};
 
                   inline friend bool operator == ( const Call& lhs, common::process::compare_equal_to_handle auto rhs) { return lhs.target == rhs;}
@@ -333,21 +321,15 @@ namespace casual
             {
                struct Rollback : transaction_base
                {
-                  Rollback() = default;
-                  Rollback( const transaction_base& other) : transaction_base{ other} {} 
                };
 
                struct Commit : transaction_base
                {
-                  Commit() = default;
-                  Commit( const transaction_base& other) : transaction_base{ other} {}
                };
             } // transaction
 
             struct Enqueue : transaction_base
             {
-               Enqueue() = default;
-               Enqueue( const transaction_base& other) : transaction_base{ other} {}
             };
 
          } // pending
@@ -369,25 +351,36 @@ namespace casual
          {
             struct
             {
-               std::vector< state::pending::queue::Lookup> lookups;
+               struct
+               {
+                  //! these are blocking lookups, and the start of the 'flow' for a forward.
+                  std::vector< state::pending::queue::source::Lookup> source;
+                  //! blocking lookups for the target queues.
+                  std::vector< state::pending::queue::target::Lookup> target;
+
+                  CASUAL_LOG_SERIALIZE(
+                     CASUAL_SERIALIZE( source);
+                     CASUAL_SERIALIZE( target);
+                  )
+
+               } lookup;
 
                CASUAL_LOG_SERIALIZE(
-                  CASUAL_SERIALIZE( lookups);
+                  CASUAL_SERIALIZE( lookup);
                )
 
             } queue;
 
             std::vector< state::pending::Dequeue> dequeues;
 
+
             struct
             {
                std::vector< state::pending::service::Lookup> lookups;
-               std::vector< state::pending::service::lookup::Discard> lookup_discards;
                std::vector< state::pending::service::Call> calls;
 
                CASUAL_LOG_SERIALIZE(
                   CASUAL_SERIALIZE( lookups);
-                  CASUAL_SERIALIZE( lookup_discards);
                   CASUAL_SERIALIZE( calls);
                )
 
@@ -407,6 +400,40 @@ namespace casual
                )
 
             } transaction;
+
+            struct
+            {
+               struct
+               {
+                  struct
+                  {
+                     std::vector< state::pending::queue::source::Lookup> source;
+                     std::vector< state::pending::queue::target::lookup::Discard> target;
+
+                     CASUAL_LOG_SERIALIZE(
+                        CASUAL_SERIALIZE( source);
+                        CASUAL_SERIALIZE( target);
+                     )
+
+                  } queue;
+
+                  std::vector< state::pending::service::lookup::Discard> service;
+
+                  CASUAL_LOG_SERIALIZE(
+                     CASUAL_SERIALIZE( queue);
+                     CASUAL_SERIALIZE( service);
+                  )
+
+               } lookup;
+
+               std::vector< state::pending::Dequeue> dequeues;
+
+               CASUAL_LOG_SERIALIZE(
+                  CASUAL_SERIALIZE( lookup);
+                  CASUAL_SERIALIZE( dequeues);
+               )
+
+            } discard;
             
             CASUAL_LOG_SERIALIZE(
                CASUAL_SERIALIZE( queue);
@@ -414,6 +441,7 @@ namespace casual
                CASUAL_SERIALIZE( service);
                CASUAL_SERIALIZE( enqueues);
                CASUAL_SERIALIZE( transaction);
+               CASUAL_SERIALIZE( discard);
             )
          };
 

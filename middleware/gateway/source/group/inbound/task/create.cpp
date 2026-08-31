@@ -249,12 +249,15 @@ namespace casual
                   {
                      Trace trace{ "gateway::group::inbound::task::create::service::call lookup::Reply"};
 
+                     // update the message with stuff from lookup-reply (span, deadline, etc)
+                     shared->message.update( reply);
+
                      switch( reply.state)
                      {
                         using Enum = decltype( reply.state);
                         case Enum::idle:
                         {
-                           shared->lookup = std::move( reply);
+                           shared->lookup = std::move( reply);  
 
                            // If the call wasn't in transaction, or we've branched the trid already.
                            // If the call failed, we've "sent" the reply, 
@@ -374,6 +377,9 @@ namespace casual
                   [ &state, shared]( common::message::service::lookup::Reply& reply, strong::socket::id descriptor) mutable
                   {
                      Trace trace{ "gateway::group::inbound::task::create::local::handle_conversation lookup::Reply"};
+
+                     // update the message with stuff from lookup-reply (span, deadline, etc)
+                     shared->message.update( reply); 
 
                      switch( reply.state)
                      {

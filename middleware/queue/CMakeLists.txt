@@ -248,6 +248,7 @@ target_sources(test-casual-queue
     unittest/source/api/test_c.cpp
     unittest/source/test_forward.cpp
     unittest/source/test_fanout.cpp
+    unittest/source/forward/test_state.cpp
     unittest/source/test_example.cpp
 )
 

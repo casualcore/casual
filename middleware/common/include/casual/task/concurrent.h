@@ -229,6 +229,13 @@ namespace casual
          inline auto& tasks() const noexcept { return m_units;}
          inline auto empty() const noexcept { return m_units.empty();}
 
+         //! A helper to create a task-unit.
+         template< typename... Ts>
+         inline static auto create_unit( Ts&&... ts) -> unit_type
+         {
+            return unit_type{ std::forward< Ts>( ts)...};
+         }
+
          CASUAL_LOG_SERIALIZE(
             CASUAL_SERIALIZE( m_units);
          )

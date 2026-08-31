@@ -84,7 +84,7 @@ namespace casual
 
                   if( state.runlevel == decltype( state.runlevel())::running)
                   {
-                     log::line( log::category::information, "try to reconnect: '", configuration.address, "'");
+                     log::information( "reconnecting to: '", configuration.address, "'");
                      state.connect.prospects.emplace_back( std::move( configuration));
                      external::connect( state);
                   }
@@ -224,17 +224,16 @@ namespace casual
 
                   namespace connection
                   {
-                     auto lost( State& state)
+                     auto reconnect( State& state)
                      {
-                        return [&state]( message::outbound::connection::Lost message)
+                        return [&state]( message::outbound::connection::Reconnect message)
                         {
-                           Trace trace{ "gateway::group::outbound::local::internal::handle::connection::lost"};
+                           Trace trace{ "gateway::group::outbound::local::internal::handle::connection::reconnect"};
                            log::debug( "message: ", message);
 
                            if( state.runlevel > outbound::state::Runlevel::running)
                               return;
 
-                           log::line( log::category::information, code::casual::communication_unavailable, " lost connection to domain: ", message.remote);
                            external::reconnect( state, std::move( message.configuration));
                         };
                      }
@@ -252,7 +251,7 @@ namespace casual
                      handle::event::process::exit( state),
                      handle::shutdown::request( state),
                      handle::timeout( state),
-                     handle::connection::lost( state));
+                     handle::connection::reconnect( state));
                }
 
             } // management
@@ -300,8 +299,8 @@ namespace casual
                communication::select::dispatch::pump( 
                   local::condition( state),
                   state.directive,
-                  tcp::handle::dispatch::create< outbound::Policy>( state, outbound::handle::external( state), &handle::connection::lost),
-                  tcp::pending::send::dispatch::create( state, &handle::connection::lost),
+                  tcp::handle::dispatch::create< outbound::Policy>( state, outbound::handle::external( state)),
+                  tcp::pending::send::dispatch::create( state),
                   ipc::handle::dispatch::create< outbound::Policy>( state, outbound::handle::internal( state)),
                   communication::select::ipc::dispatch::create< outbound::Policy>( state, &management::handler),
                   // takes care of multiplexing connects

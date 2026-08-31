@@ -29,66 +29,18 @@ namespace casual
 
          namespace forward
          {
-            Service& Service::operator++()
+            Instances& Instances::operator++()
             {
-               ++instances.running;
+               ++running;
                return *this;
             }
 
-            Service& Service::operator--()
+            Instances& Instances::operator--()
             {
-               assert( instances.running > 0);
-               --instances.running;
-
-               if( instances.absent())
-               {
-                  source.process = {};
-                  if( reply)
-                     reply.value().process = {};
-               }
+               assert( running > 0);
+               --running;
 
                return *this;
-            }
-
-            void Service::invalidate() noexcept
-            {
-               log::debug( "invalidate: ", *this);
-
-               instances.running = 0;
-               source.process = {};
-
-               if( reply)
-                  reply.value().process = {};
-            }
-
-            Queue& Queue::operator++()
-            {
-               ++instances.running;
-               return *this;
-            }
-
-            Queue& Queue::operator--()
-            {
-               assert( instances.running > 0);
-               --instances.running;
-
-               if( instances.absent())
-               {
-                  source.process = {};
-                  target.process = {};
-               }
-
-               return *this;
-            }
-
-            void Queue::invalidate() noexcept
-            {
-               log::debug( "invalidate: ", *this);
-
-               instances.running = 0;
-               source.process = {};
-             
-               target.process = {};
             }
 
          } // forward
@@ -96,20 +48,13 @@ namespace casual
 
       bool State::done() const noexcept
       {
+         if( runlevel <= state::Runlevel::running)
+            return false;
+
          auto absent = []( auto& forward){ return forward.instances.absent();};
 
-         return runlevel > state::Runlevel::running
-            && algorithm::all_of( forward.services, absent)
+         return algorithm::all_of( forward.services, absent)
             && algorithm::all_of( forward.queues, absent);
-      }
-
-      void State::invalidate( const std::vector< state::forward::id>& ids) noexcept
-      {
-         Trace trace{ "queue::forward::State::remove"};
-         log::debug( "ids: ", ids);
-
-         for( auto id : ids)
-            forward_apply( id, []( auto& forward){ forward.invalidate();});
       }
 
       state::forward::Service* State::forward_service( state::forward::id id) noexcept

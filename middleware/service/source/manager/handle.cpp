@@ -100,7 +100,10 @@ namespace casual
 
                   common::message::service::call::Reply message;
                   message.correlation = reservation.caller.correlation;
+                  message.execution = reservation.caller.execution;
                   message.code.result = code; 
+
+                  common::log::debug( "reply: ", message);
 
                   state.multiplex.send( reservation.caller.process.ipc, std::move( message));
 
@@ -108,10 +111,13 @@ namespace casual
                   {
                      common::message::event::service::Metric metric;
                      metric.code.result = code;
+                     metric.execution = reservation.caller.execution;
                      metric.correlation = reservation.caller.correlation;
                      metric.service = state.services[ reservation.caller.service].information.logical_name();
                      metric.process = reservation.callee;
                      metric.trid = reservation.caller.trid;
+                     metric.parent = reservation.caller.parent;
+                     metric.span = reservation.caller.span;
 
                      state.metric.add( std::move( metric));
                      handle::metric::batch::send( state);
@@ -164,7 +170,7 @@ namespace casual
 
          auto handle_timeout = [&state]( auto& entry)
          {
-            auto order_assassination = []( State& state, auto& entry, auto instance_id)
+            auto order_assassination = []( State& state, auto& entry, auto instance_id, auto execution)
             {
                auto& service = state.services[ entry.service];
 
@@ -177,10 +183,12 @@ namespace casual
                // Hence, we need to know so we don't reserve instances that we know are going to
                // get killed.
                if( common::service::execution::timeout::contract::fatal( contract))
-                  state.disabled.push_back( instance_id);
+                  state.disabled.sequential.push_back( instance_id);
 
                // send event, at least domain-manager want's to know...
                common::message::event::process::Assassination event{ common::process::handle()};
+               event.correlation = entry.correlation;
+               event.execution = execution;
                event.target = state.instances.sequential[ instance_id].process.pid;
                event.contract = contract;
                event.announcement = announcement;
@@ -216,7 +224,7 @@ namespace casual
                   if( caller.semantic == state::instance::caller::Semantic::reply)
                      local::error::reply( state, { .caller = caller, .callee = instance.process}, common::code::xatmi::timeout);
                   
-                  order_assassination( state, entry, entry.target);
+                  order_assassination( state, entry, entry.target, caller.execution);
                }
                else
                {
@@ -423,8 +431,19 @@ namespace casual
                         Trace trace{ "service::manager::handle::service::concurrent::metric"};
                         common::log::debug( "message: ", message);
 
-                        for( auto& metric : message.metrics)
-                           state.services.metric( metric.service).update( metric);
+                        auto unreserve = [ &state]( auto& metric)
+                        {
+                           if( auto instance_id = state.instances.concurrent.lookup( metric.process.ipc))
+                           {                           
+                              if( auto disassociate_reply = state.unreserve( instance_id, metric))
+                              {
+                                 common::log::debug( "disassociate_reply: ", *disassociate_reply);
+                                 state.multiplex.send( metric.process.ipc, std::move( *disassociate_reply));
+                              }
+                           }
+                        };
+
+                        std::ranges::for_each( message.metrics, unreserve);
 
                         if( state.events)
                         {
@@ -433,6 +452,24 @@ namespace casual
                         }
                      };
                   }
+
+                  namespace instance::disassociate
+                  {
+                     auto request( State& state)
+                     {
+                        return [ &state]( const common::message::service::concurrent::instance::disassociate::Request& message)
+                        {
+                           Trace trace{ "service::manager::handle::service::concurrent::instance::disassociate"};
+                           common::log::debug( "message: ", message);
+
+                           if( auto reply = state.disassociate( message))
+                              state.multiplex.send( message.process.ipc, std::move( *reply));
+
+                        };
+                     };
+                     
+                  } // instance::disassociate
+
                } // concurrent
 
                namespace detail
@@ -493,27 +530,27 @@ namespace casual
                         state.multiplex.send( message.process.ipc, reply);
                      }
 
-                     void reply( State& state, state::service::id::type service_id, auto instance_id, common::message::service::lookup::Request& message, common::chronology::duration pending)
+                     void reply( State& state, state::service::id::type service_id, const auto& reservation, common::message::service::lookup::Request& message, common::chronology::duration pending)
                      {
                         Trace trace{ "service::manager::handle::local::service::detail::dispatch::lookup::reply"};
-                        common::log::debug( "'reserved' instance: ", instance_id);
+                        common::log::debug( "'reserved' instance: ", reservation.instance);
 
-                        static constexpr bool is_concurrent = std::same_as< state::instance::concurrent::id::type, decltype( instance_id)>;
+                        static constexpr bool is_concurrent = std::same_as< state::instance::concurrent::id::type, decltype( reservation.instance)>;
 
-                        auto destination = [ &state, instance_id]()
+                        auto destination = [ &]()
                         {
                            if constexpr( is_concurrent)
-                              return state.instances.concurrent[ instance_id].process;
+                              return state.instances.concurrent[ reservation.instance].process;
                            else
-                              return state.instances.sequential[ instance_id].process;
+                              return state.instances.sequential[ reservation.instance].process;
                         }();
 
                         auto& service = state.services[ service_id];
 
-                        auto reply = common::message::reverse::type( message);
+                        auto reply = common::message::reverse::type( message, destination);
                         reply.service = service.information;
                         reply.state = decltype( reply.state)::idle;
-                        reply.process = destination;
+                        reply.span = reservation.span;
                         reply.pending = pending;
 
                         if( service.information.name != message.requested)
@@ -535,7 +572,7 @@ namespace casual
                            if( auto entry = state.pending.deadline.find_entry( message.correlation))
                            {
                               entry->service = service_id;
-                              entry->target = instance_id;
+                              entry->target = reservation.instance;
 
                               // give caller the remaining duration of the deadline
                               reply.deadline.remaining = entry->when - now;
@@ -552,7 +589,7 @@ namespace casual
                               auto next = state.pending.deadline.add( {
                                  .when = *deadline,
                                  .correlation = message.correlation,
-                                 .target = instance_id,
+                                 .target = reservation.instance,
                                  .service = service_id});
 
                               if( next)
@@ -633,22 +670,15 @@ namespace casual
                      {
                         Trace trace{ "service::manager::handle::local::service::detail::dispatch::lookup::internal_only"};
 
-                        if( state.services[ service_id].has_sequential())
-                        {
-                           auto get_caller = [ service_id]( const auto& message) -> state::instance::Caller
-                           {
-                              auto semantic = message.no_reply() ? state::instance::caller::Semantic::no_reply : state::instance::caller::Semantic::reply;
+                        if( ! state.services[ service_id].has_sequential())
+                           return false;
 
-                              return { .process = message.process, .correlation = message.correlation, .trid = message.trid, .service = service_id, .semantic = semantic};
-                           };
+                        if( auto reservation = state.reserve_sequential( message, service_id))
+                           dispatch::lookup::reply( state, service_id, reservation, message, pending);
+                        else
+                           dispatch::lookup::pending( state, service_id, std::move( message));
 
-                           if( auto instance_id = state.reserve_sequential( get_caller( message)))
-                              dispatch::lookup::reply( state, service_id, instance_id, message, pending);
-                           else
-                              dispatch::lookup::pending( state, service_id, std::move( message));
-                           return true;
-                        }
-                        return false;
+                        return true;
                      }
 
                      bool external_internal( State& state, state::service::id::type service_id, common::message::service::lookup::Request& message, common::chronology::duration pending)
@@ -660,9 +690,9 @@ namespace casual
 
                         if( ! message.trid)
                         {
-                           if( auto instance_id = state.reserve_concurrent( service_id, {}))
+                           if( auto reservation = state.reserve_concurrent( service_id, message.correlation, {}))
                            {
-                              dispatch::lookup::reply( state, service_id, instance_id, message, pending);
+                              dispatch::lookup::reply( state, service_id, reservation, message, pending);
                               return true;
                            }
                            return false;
@@ -671,25 +701,25 @@ namespace casual
                         // check if the gtrid has associations before
                         if( auto found = common::algorithm::find( state.transaction.associations, message.trid.global()))
                         {
-                           if( auto instance_id = state.reserve_concurrent( service_id, common::range::make( found->second)))
+                           if( auto reservation = state.reserve_concurrent( service_id, message.correlation, common::range::make( found->second)))
                            {
                               // if the "instance" is not associated before, add it.
-                              if( ! common::algorithm::contains( found->second, instance_id))
-                                 found->second.push_back( instance_id);
+                              if( ! common::algorithm::contains( found->second, reservation.instance))
+                                 found->second.push_back( reservation.instance);
                               
-                              dispatch::lookup::reply( state, service_id, instance_id, message, pending);
+                              dispatch::lookup::reply( state, service_id, reservation, message, pending);
                               return true;
                            }
                            return false;
                         }
 
                         // the gtrid is not associated before
-                        if( auto instance_id = state.reserve_concurrent( service_id, {}))
+                        if( auto reservation = state.reserve_concurrent( service_id, message.correlation, {}))
                         {
                            state.transaction.associations.emplace(
-                              message.trid.global(), std::vector< state::instance::concurrent::id::type>{ instance_id});
+                              message.trid.global(), std::vector< state::instance::concurrent::id::type>{ reservation.instance});
 
-                           dispatch::lookup::reply( state, service_id, instance_id, message, pending);
+                           dispatch::lookup::reply( state, service_id, reservation, message, pending);
                            return true;
                         }
 
@@ -780,16 +810,42 @@ namespace casual
                         {
                            common::log::debug( "failed to find pending to discard - check if we have reserved the service already");
 
-                           // we need to go through all sequential instances.
-
-                           state.instances.sequential.for_each( [ correlation = message.correlation ]( auto id, auto& ipc, auto& instance)
+                           auto discard_sequential = [ correlation = message.correlation]( auto id, auto& ipc, auto& instance)
                            {
                               if( ! instance.idle() && instance.caller().correlation == correlation)
                               {
                                  common::log::debug( "found reserved instance: ", instance);
                                  instance.discard();
+                                 return true;
                               }
-                           });
+                              return false;
+                           };
+
+                           auto discard_concurrent = [ &state, correlation = message.correlation]( auto id, auto& ipc, auto& instance)
+                           {
+                              if( ! instance.unreserve( correlation))
+                                 return false;
+
+                              common::log::debug( "unreserved concurrent instance: ", instance);
+
+                              if( instance.idle())
+                              {   
+                                 // the removed instance is now idle. Check if we have a pending disassociation for this instance,
+                                 // if so, we send reply to the caller that we have disassociated the instance.
+                                 if( auto found = common::algorithm::find( state.pending.disassociation, ipc))
+                                 {
+                                    auto request = common::algorithm::container::extract( state.pending.disassociation, std::begin( found));
+                                    state.multiplex.send( request.process.ipc, common::message::reverse::type( request));
+                                 }
+                              }
+
+                              return true;
+                           };
+
+                           if( ! state.instances.sequential.for_while( discard_sequential))
+                              if( ! state.instances.concurrent.for_while( discard_concurrent))
+                                 common::log::debug( "failed to find reserved instance for correlation: ", message.correlation);
+
 
                            // regardless, we assume we've already replied.
                            reply.state = decltype( reply.state)::replied;
@@ -914,7 +970,7 @@ namespace casual
                            });
 
                            // we add busy instances to disabled to prevent them for doing stuff other than exit
-                           common::algorithm::container::append( busy, state.disabled);
+                           common::algorithm::container::append( busy, state.disabled.sequential);
 
                            auto callback = [ 
                               &state,
@@ -1106,7 +1162,7 @@ namespace casual
 
                   state.unreserve( instance_id, message.metric);
 
-                  if( auto found = common::algorithm::find( state.disabled, instance_id))
+                  if( auto found = common::algorithm::find( state.disabled.sequential, instance_id))
                   {
                      // we let the shutdown task take care of it.
                      state.pending.shutdown( message);
@@ -1210,7 +1266,9 @@ namespace casual
             handle::local::service::lookup( state),
             handle::local::service::discard::lookup( state),
             handle::local::service::concurrent::advertise( state),
+            handle::local::service::concurrent::instance::disassociate::request( state),
             handle::local::service::concurrent::metric( state),
+
             handle::local::ack( state),
             handle::local::event::subscription::begin( state),
             handle::local::event::subscription::end( state),

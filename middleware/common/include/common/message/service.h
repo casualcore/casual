@@ -215,7 +215,6 @@ namespace casual
                enum struct Directive
                {
                   update,   //! regular update
-                  reset,    //! remove all previous associated services for the 'device'
                   instance, //! instance (order) only 
                };
 
@@ -224,7 +223,6 @@ namespace casual
                   switch( value)
                   {
                      case Directive::update: return "update";
-                     case Directive::reset: return "reset";
                      case Directive::instance: return "instance";
                   }
                   return "<unknown>";
@@ -342,6 +340,7 @@ namespace casual
 
                std::string requested;
                request::Context context;
+               execution::context::Parent parent;
                common::transaction::ID trid;
                std::optional< chronology::time_point> deadline{};
 
@@ -355,6 +354,7 @@ namespace casual
                   base_request::serialize( archive);
                   CASUAL_SERIALIZE( requested);
                   CASUAL_SERIALIZE( context);
+                  CASUAL_SERIALIZE( parent);
                   CASUAL_SERIALIZE( trid);
                   CASUAL_SERIALIZE( deadline);
                )
@@ -391,6 +391,8 @@ namespace casual
                call::Deadline deadline;
                //! represent how long this request was pending (busy);
                chronology::duration pending{};
+               // span to be used for the callee
+               common::strong::execution::span::id span;
                reply::State state = reply::State::idle;
                
                inline bool absent() const { return state == reply::State::absent;}
@@ -400,6 +402,7 @@ namespace casual
                   CASUAL_SERIALIZE( service);
                   CASUAL_SERIALIZE( deadline);
                   CASUAL_SERIALIZE( pending);
+                  CASUAL_SERIALIZE( span);
                   CASUAL_SERIALIZE( state);
                )
             };
@@ -603,6 +606,8 @@ namespace casual
                using base_type = message::basic_request< message::Type::service_call>;
                using base_type::base_type;
 
+               // span to be used by callee.
+               strong::execution::span::id span;
                execution::context::Parent parent;
                service::call::Service service;
                service::call::Deadline deadline;
@@ -614,8 +619,21 @@ namespace casual
                //! metrics
                chronology::duration pending{};
 
+               // update an existing caller::Request from a lookup::Reply, to get all stuff from the
+               // lookup-reply.
+               inline void update( const service::lookup::Reply& lookup)
+               {
+                  correlation = lookup.correlation;
+                  execution = lookup.execution; 
+                  span = lookup.span;
+                  service = lookup.service;
+                  deadline = lookup.deadline;
+                  pending = lookup.pending;
+               }
+
                CASUAL_CONST_CORRECT_SERIALIZE(
                   base_type::serialize( archive);
+                  CASUAL_SERIALIZE( span);
                   CASUAL_SERIALIZE( parent);
                   CASUAL_SERIALIZE( service);
                   CASUAL_SERIALIZE( deadline);
@@ -642,6 +660,7 @@ namespace casual
                      CASUAL_SERIALIZE( buffer);
                   )
                };
+
 
             } // caller
 
@@ -693,6 +712,13 @@ namespace casual
             
          } // call
 
+         namespace concurrent::instance::disassociate
+         {
+            using Request = basic_request< message::Type::service_concurrent_instance_disassociate_request>;
+            using Reply = basic_message< message::Type::service_concurrent_instance_disassociate_reply>;
+            
+         } // concurrent::instance::disassociate
+
       } // service
 
       namespace reverse
@@ -705,13 +731,16 @@ namespace casual
          struct type_traits< service::lookup::discard::Request> : detail::type< service::lookup::discard::Reply> {};
 
          template<>
-         struct type_traits< service::call::callee::Request> : detail::type<  service::call::Reply> {};
+         struct type_traits< service::call::callee::Request> : detail::type< service::call::Reply> {};
 
          template<>
-         struct type_traits< service::call::caller::Request> : detail::type<  service::call::Reply> {};
+         struct type_traits< service::call::caller::Request> : detail::type< service::call::Reply> {};
 
          template<>
-         struct type_traits< service::call::v1_2::callee::Request> : detail::type<  service::call::v1_2::Reply> {};
+         struct type_traits< service::call::v1_2::callee::Request> : detail::type< service::call::v1_2::Reply> {};
+
+         template<>
+         struct type_traits< service::concurrent::instance::disassociate::Request> : detail::type< service::concurrent::instance::disassociate::Reply> {};
 
       } // reverse
 

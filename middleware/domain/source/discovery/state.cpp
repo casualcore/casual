@@ -31,12 +31,21 @@ namespace casual
             
          void Providers::registration( const message::discovery::api::provider::registration::Request& message)
          {
-            // we only add 'new' processes
-            if( algorithm::find( m_providers, message.process.ipc))
-               return;
-
-            m_providers.emplace_back( message.abilities, message.process);
-
+            
+            if( auto found = algorithm::find( m_providers, message.process.ipc))
+            {
+               if( common::flag::empty( message.abilities))
+               {
+                  common::log::debug( "removing provider: ", *found);
+                  algorithm::container::erase( m_providers, std::begin( found));
+               }
+               
+               // we don't update already registered providers.
+            }
+            else if( ! common::flag::empty( message.abilities))
+            {
+               m_providers.emplace_back( message.abilities, message.process);
+            }
          }
 
          Providers::const_range_type Providers::filter( provider::Ability abilities) noexcept

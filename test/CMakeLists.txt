@@ -62,6 +62,7 @@ target_sources(test-casual
   PRIVATE
     unittest/source/test_configuration.cpp
     unittest/source/test_domain.cpp
+    unittest/source/test_discovery.cpp
     unittest/source/xatmi/test_call.cpp
     unittest/source/xatmi/test_start.cpp
     unittest/source/test_transaction.cpp

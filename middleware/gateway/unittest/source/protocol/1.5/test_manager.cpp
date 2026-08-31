@@ -11,12 +11,15 @@
 
 #include "common/message/transaction.h"
 #include "common/communication/tcp.h"
+#include "common/communication/instance.h"
 
 #include "domain/unittest/manager.h"
 
 #include "service/unittest/utility.h"
 
 #include "queue/common/ipc/message.h"
+
+#include "transaction/unittest/utility.h"
 
 
 namespace casual
@@ -58,6 +61,19 @@ domain:
             {
                return casual::domain::unittest::manager( configuration::servers, std::forward< C>( configurations)...);
             }
+
+            namespace transaction
+            {
+               auto send_commit( const common::transaction::ID& trid)
+               {
+                  common::message::transaction::commit::Request request{ common::process::handle()};
+                  request.trid = trid;
+
+                  return common::communication::device::blocking::send( 
+                     communication::instance::outbound::transaction::manager::device(), request);
+               }
+               
+            } // transaction
            
          } // <unnamed>
       } // local
@@ -373,6 +389,23 @@ domain:
             EXPECT_TRUE( reply.message->payload.data == payload.data) << CASUAL_NAMED_VALUE( reply.message->payload.data.size());
          }
 
+         // commit the transaction
+         {
+            local::transaction::send_commit( trid);
+
+            // act as TM and reply with ok
+            {
+               auto request = common::communication::device::receive< common::message::transaction::resource::commit::Request>( device);
+               auto reply = common::message::reverse::type( request);
+               reply.trid = request.trid;
+               reply.state = common::code::xa::ok;
+               common::communication::device::blocking::send( device, reply);
+            }
+
+            // receive reply from TM for good measure
+            auto reply = common::communication::ipc::receive< common::message::transaction::commit::Reply>();
+            EXPECT_TRUE( reply.state == decltype( reply.state)::ok) << CASUAL_NAMED_VALUE( reply);
+         }
       }
 
       TEST( gateway_protocol_1_5_manager, outbound_conversation_connect__no_headers)
@@ -404,19 +437,23 @@ domain:
          // to directly interact with the outbound.
          auto outbound_ipc = state.connections.at( 0).ipc;
 
+         const auto trid = common::transaction::id::create();
+         const auto span = common::strong::execution::span::id::generate();
+
 
          // send discovery connect directly to outbound
-         const auto origin_request = []()
+         const auto origin_request = [ &trid, &span]()
          {
             common::message::conversation::connect::callee::Request request{ common::process::handle()};
             request.duplex = decltype( request.duplex)::send;
             request.execution = common::strong::execution::id::generate();
             request.service.name = "a";
             request.service.requested = "b";
+            request.span = span;
             request.parent.service = "q";
             request.parent.span = common::strong::execution::span::id::generate();
             request.deadline.remaining = std::chrono::seconds{ 42};
-            request.trid = common::transaction::id::create();
+            request.trid = trid;
             request.pending = std::chrono::milliseconds{ 7};
             request.buffer = common::buffer::Payload{
                .type = "X_OCTET/",
@@ -441,9 +478,8 @@ domain:
             // only service.name is propagated between domains.
             EXPECT_TRUE( message.service.name == origin_request.service.name) << CASUAL_NAMED_VALUE( message.service) << " vs " << CASUAL_NAMED_VALUE( origin_request.service);
             EXPECT_TRUE( message.parent.service == origin_request.parent.service) << CASUAL_NAMED_VALUE( message.parent.service);
-            // there's a new span created over the outbound.
-            EXPECT_TRUE( message.parent.span);
-            EXPECT_TRUE( message.parent.span != origin_request.parent.span) << CASUAL_NAMED_VALUE( message.parent.span) << " vs " << CASUAL_NAMED_VALUE( origin_request.parent.span);
+            // parent should be the origin span
+            EXPECT_TRUE( message.parent.span == span) << CASUAL_NAMED_VALUE( message.parent);
             ASSERT_TRUE( message.deadline.remaining);
             EXPECT_TRUE( message.deadline == origin_request.deadline) << CASUAL_NAMED_VALUE( message.deadline);
             EXPECT_TRUE( message.trid == origin_request.trid) << CASUAL_NAMED_VALUE( message.trid);
@@ -465,6 +501,24 @@ domain:
          {
             auto reply = common::communication::ipc::receive< common::message::conversation::connect::Reply>( correlation);
             EXPECT_TRUE( reply.code.result == code::xatmi::ok) << CASUAL_NAMED_VALUE( reply.code);
+         }
+
+         // commit the transaction
+         {
+            local::transaction::send_commit( trid);
+
+            // act as TM and reply with ok
+            {
+               auto request = common::communication::device::receive< common::message::transaction::resource::commit::Request>( device);
+               auto reply = common::message::reverse::type( request);
+               reply.trid = request.trid;
+               reply.state = common::code::xa::ok;
+               common::communication::device::blocking::send( device, reply);
+            }
+
+            // receive reply from TM for good measure
+            auto reply = common::communication::ipc::receive< common::message::transaction::commit::Reply>();
+            EXPECT_TRUE( reply.state == decltype( reply.state)::ok) << CASUAL_NAMED_VALUE( reply);
          }
 
       }

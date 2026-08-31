@@ -92,18 +92,24 @@ namespace casual
          struct Remote
          {
             common::process::Handle process;
+            std::vector< common::strong::correlation::id> reservations;
             platform::size::type order{};
             std::string alias;
             std::string description;
 
+            void reserve( const common::strong::correlation::id& correlation);
+            bool unreserve( const common::strong::correlation::id& correlation);
+
             inline friend bool operator == ( const Remote& lhs, common::process::compare_equal_to_handle auto rhs) { return lhs.process == rhs;}
+            inline friend bool operator == ( const Remote& lhs, const common::strong::correlation::id& rhs) { return std::ranges::contains( lhs.reservations, rhs);}
 
             CASUAL_LOG_SERIALIZE(
                CASUAL_SERIALIZE( process);
+               CASUAL_SERIALIZE( reservations);
                CASUAL_SERIALIZE( order);
                CASUAL_SERIALIZE( alias);
                CASUAL_SERIALIZE( description);
-            )
+            )            
          };
 
       
@@ -164,9 +170,11 @@ namespace casual
          struct
          {
             std::deque< ipc::message::lookup::Request> lookups;
+            std::vector< ipc::message::external::disassociate::Request> disassociation;
 
             CASUAL_LOG_SERIALIZE(
                CASUAL_SERIALIZE( lookups);
+               CASUAL_SERIALIZE( disassociation);
             )
          } pending;
          
@@ -213,10 +221,11 @@ namespace casual
          void remove_queues( common::strong::process::id pid);
          void remove_queues( common::strong::ipc::id ipc);
 
-         //! Removes the process (group/gateway) and all queues associated with the process
-         //!
-         //! @param pid process id
+         //! Removes all associated state with the process.
          void remove( common::strong::process::id pid);
+
+         //! Removes all associated state with the ipc.
+         void remove( common::strong::ipc::id ipc);
 
          //! return true if no forwards and queues are running
          bool done() const;

@@ -97,6 +97,21 @@ namespace casual
                algorithm::container::erase( m_services, service);
             }
 
+            void Concurrent::reserve( const common::strong::correlation::id& correlation)
+            {
+               reservations.push_back( correlation);
+            }
+
+            bool Concurrent::unreserve( const common::strong::correlation::id& correlation)
+            {
+               if( auto found = algorithm::find( reservations, correlation))
+               {
+                  algorithm::container::erase( reservations, std::begin( found));
+                  return true;
+               }
+               return false;
+            }
+
             bool operator < ( const Concurrent& lhs, const Concurrent& rhs)
             {
                return lhs.order < rhs.order;
@@ -618,7 +633,7 @@ namespace casual
                      }
 
                      state.instances.sequential.erase( id);
-                     std::erase( state.disabled, id);
+                     std::erase( state.disabled.sequential, id);
                   }
                }
 
@@ -662,29 +677,47 @@ namespace casual
          return result;
       }
 
-      state::instance::sequential::id::type State::reserve_sequential( state::instance::Caller caller)
+
+      state::reservation::Sequential State::reserve_sequential( const common::message::service::lookup::Request& message, state::service::id::type service_id)
       {
          Trace trace{ "service::manager::State::reserve_sequential"};
 
          auto is_idle = [ &]( auto instance_id)
          {
             return instances.sequential[ instance_id].idle()
-               && ! std::ranges::contains( disabled, instance_id);
+               && ! std::ranges::contains( disabled.sequential, instance_id);
          };
 
-         auto& service = services[ caller.service];
+         auto transform_caller = [ service_id]( const auto& message, auto span) -> state::instance::Caller
+         {
+            auto semantic = message.no_reply() ? state::instance::caller::Semantic::no_reply : state::instance::caller::Semantic::reply;
+
+            return { 
+               .process = message.process, 
+               .execution = message.execution, 
+               .correlation = message.correlation, 
+               .parent = message.parent,
+               .span = span,
+               .trid = message.trid, 
+               .service = service_id, 
+               .semantic = semantic};
+         };
+
+         auto& service = services[ service_id];
 
          if( auto found = algorithm::find_if( service.instances.sequential(), is_idle))
          {
-            instances.sequential[ *found].reserve( std::move( caller));
-            return *found;
+            auto span = common::strong::execution::span::id::generate();
+            instances.sequential[ *found].reserve( transform_caller( message, span));
+            return { .instance = *found, .span = span};
          }
 
-         return {};
+         return {};         
       }
             
-      state::instance::concurrent::id::type State::reserve_concurrent( 
+      state::reservation::Concurrent State::reserve_concurrent( 
          state::service::id::type service_id,
+         const common::strong::correlation::id& correlation,
          std::span< state::instance::concurrent::id::type> preferred)
       {
          Trace trace{ "service::manager::State::reserve_concurrent"};
@@ -692,7 +725,10 @@ namespace casual
          auto& service = services[ service_id];
 
          if( auto instance_id = service.instances.next_concurrent( preferred))
-            return instance_id;
+         {
+            instances.concurrent[ instance_id].reserve( correlation);
+            return { .instance = instance_id, .span = common::strong::execution::span::id::generate()};
+         }
 
          return {};
       }
@@ -703,6 +739,26 @@ namespace casual
 
          instances.sequential[ instance_id].unreserve();
          services.metric( metric.service).update( metric);
+      }
+
+      auto State::unreserve( state::instance::concurrent::id::type instance_id, const common::message::event::service::Metric& metric) -> std::optional< common::message::service::concurrent::instance::disassociate::Reply>
+      {
+         Trace trace{ "service::manager::State::unreserve"};
+
+         auto& instance = instances.concurrent[ instance_id];
+
+         instance.unreserve( metric.correlation);
+         services.metric( metric.service).update( metric);
+
+         log::debug( "instance: ", instance);
+         
+         // if the instance is idle and we have a pending disassociation for the instance -> return the 
+         // reply message for the disassociation request.
+         if( instance.idle())
+            if( auto found = algorithm::find( pending.disassociation, metric.process.ipc))
+               return common::message::reverse::type( algorithm::container::extract( pending.disassociation, std::begin( found)));
+
+         return {};
       }
       
       State::prepare_shutdown_result State::prepare_shutdown( std::vector< common::process::Handle> processes)
@@ -778,9 +834,9 @@ namespace casual
          instances.sequential[ instance_id].alias = std::move( message.alias);
 
          // instance might be in "shutdown" mode..
-         if( auto found = algorithm::find( disabled, instance_id))
+         if( auto found = algorithm::find( disabled.sequential, instance_id))
          {
-            algorithm::container::erase( disabled, std::begin( found));
+            algorithm::container::erase( disabled.sequential, std::begin( found));
             return {};
          }
 
@@ -836,6 +892,7 @@ namespace casual
             return {};
          }
 
+         /*
          if( message.directive == decltype( message.directive)::reset)
          {
             // remove the instance and it's associations
@@ -853,6 +910,7 @@ namespace casual
             // we're removing stuff, no new services can be available.
             return {};
          }
+         */
 
          if( message.directive == decltype( message.directive)::instance)
          {
@@ -936,7 +994,14 @@ namespace casual
             return algorithm::container::extract( pending.lookups, extract);
 
          }
+      }
 
+      void State::unadvertise( state::instance::concurrent::id::type instance)
+      {
+         Trace trace{ "service::manager::State::unadvertise"};
+
+         for( auto service_id : services.indexes())
+            services[ service_id].instances.remove( instance);
       }
 
       std::vector< state::instance::concurrent::id::type> State::disassociate( common::transaction::global::id::range gtrid)
@@ -946,6 +1011,32 @@ namespace casual
 
          if( auto found = algorithm::find( transaction.associations, gtrid))
             return algorithm::container::extract( transaction.associations, std::begin( found)).second;
+
+         return {};
+      }
+
+      auto State::disassociate( const common::message::service::concurrent::instance::disassociate::Request& message) -> std::optional< common::message::service::concurrent::instance::disassociate::Reply>
+      {
+         Trace trace{ "service::manager::State::disassociate"};
+
+         auto instance_id = instances.concurrent.lookup( message.process.ipc);
+
+         if( ! instance_id)
+         {
+            log::debug( "disassociate request from unknown instance: ", message.process.ipc);
+            return common::message::reverse::type( message);
+         }
+
+         // unadvertise all services associated with the instance. 
+         unadvertise( instance_id);
+
+         if( instances.concurrent[ instance_id].idle())
+            return common::message::reverse::type( message);
+
+         // we need to wait for the instance to become idle, before we can reply to the disassociate request.
+         pending.disassociation.push_back( std::move( message));
+
+         log::debug( "pending.disassociation: ", pending.disassociation);
 
          return {};
       }

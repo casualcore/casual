@@ -222,6 +222,21 @@ namespace casual
             });
          }
 
+         bool Transaction::associated( common::strong::resource::id resource) const
+         {
+            for( auto& branch : branches)
+               if( common::algorithm::find( branch.resources, resource))
+                  return true;
+            return false;
+         }
+
+         std::vector< common::strong::resource::id> Transaction::associated() const
+         {
+            return common::algorithm::accumulate( branches, std::vector< common::strong::resource::id>{}, []( auto result, auto& branch){ 
+               return common::algorithm::container::append( branch.involved(), std::move( result));
+            });
+         }
+
          void Transaction::purge()
          {
             auto has_resources = []( auto& branch){ return ! branch.resources.empty();};
@@ -377,12 +392,28 @@ namespace casual
          return nullptr;
       }
 
+      common::strong::resource::id State::find_external( common::strong::ipc::id ipc) const noexcept
+      {
+         if( auto found = common::algorithm::find( externals, ipc))
+            return found->id;
+         return {};
+      }
+
       const state::resource::external::Instance& State::get_external( common::strong::resource::id rm) const
       {
          if( auto found = find_external( rm))
             return *found;
 
          code::raise::error( code::casual::invalid_argument, "failed to find external resource proxy: ", rm);
+      }
+
+      bool State::associated( common::strong::resource::id rm) const
+      {
+         for( auto& transaction : transactions)
+            if( transaction.associated( rm))
+               return true;
+
+         return false;
       }
 
       common::message::transaction::configuration::alias::Reply State::configuration(
@@ -429,7 +460,7 @@ namespace casual
 
          return reply;
       }
-
+     
       configuration::model::transaction::Model State::configuration() const
       {
          configuration::model::transaction::Model result;
