@@ -32,7 +32,7 @@ namespace casual
 system:
    resources:
       -  key: rm-mockup
-         server: "${CMAKE_BINARY_DIR}/middleware/transaction/bin/rm-proxy-casual-mockup"
+         server: "${CASUAL_MAKE_BUILD_ROOT}/middleware/transaction/bin/rm-proxy-casual-mockup"
          xa_struct_name: casual_mockup_xa_switch_static
          libraries:
             -  casual-mockup-rm
@@ -48,11 +48,11 @@ domain:
          dependencies: [ user]
    
    servers:
-      - path: "${CMAKE_BINARY_DIR}/middleware/service/bin/casual-service-manager"
+      - path: "${CASUAL_MAKE_BUILD_ROOT}/middleware/service/bin/casual-service-manager"
         memberships: [ base]
-      - path: "${CMAKE_BINARY_DIR}/middleware/transaction/bin/casual-transaction-manager"
+      - path: "${CASUAL_MAKE_BUILD_ROOT}/middleware/transaction/bin/casual-transaction-manager"
         memberships: [ base]
-      - path: "${CMAKE_BINARY_DIR}/middleware/gateway/bin/casual-gateway-manager"
+      - path: "${CASUAL_MAKE_BUILD_ROOT}/middleware/gateway/bin/casual-gateway-manager"
         memberships: [ gateway]
 )";
             } // configuration
@@ -87,7 +87,7 @@ domain:
    name: A
    servers:
       -  alias: a
-         path: "${CMAKE_BINARY_DIR}/middleware/example/server/bin/casual-example-server"          
+         path: "${CASUAL_MAKE_BUILD_ROOT}/middleware/example/server/bin/casual-example-server"          
             
 )");
 
@@ -130,7 +130,7 @@ domain:
    name: A
    servers:
       -  alias: a
-         path: "${CMAKE_BINARY_DIR}/middleware/example/server/bin/casual-example-server"          
+         path: "${CASUAL_MAKE_BUILD_ROOT}/middleware/example/server/bin/casual-example-server"          
             
 )");
 
@@ -184,12 +184,12 @@ domain:
          dependencies: [ B]      
    servers:
       -  alias: a
-         path: "${CMAKE_BINARY_DIR}/middleware/example/server/bin/casual-example-server"
+         path: "${CASUAL_MAKE_BUILD_ROOT}/middleware/example/server/bin/casual-example-server"
          memberships: [ A]
          instances: 2
          restart: true
       -  alias: b
-         path: "${CMAKE_BINARY_DIR}/middleware/example/server/bin/casual-example-server"
+         path: "${CASUAL_MAKE_BUILD_ROOT}/middleware/example/server/bin/casual-example-server"
          memberships: [ B]
          instances: 2
       -  alias: c
@@ -225,14 +225,14 @@ domain:
 /*
 alias                       CI  I  state     restart  #r  path                                                                              
 --------------------------  --  -  --------  -------  --  ----------------------------------------------------------------------------------
-a                            2  2  enabled      true   0  "${CMAKE_BINARY_DIR}/middleware/example/server/bin/casual-example-server"  
-b                            2  0  disabled    false   0  "${CMAKE_BINARY_DIR}/middleware/example/server/bin/casual-example-server"  
+a                            2  2  enabled      true   0  "${CASUAL_MAKE_BUILD_ROOT}/middleware/example/server/bin/casual-example-server"  
+b                            2  0  disabled    false   0  "${CASUAL_MAKE_BUILD_ROOT}/middleware/example/server/bin/casual-example-server"  
 c                            2  0  error       false   0  "/non/existent/path"                                                              
 casual-domain-discovery      1  1  enabled      true   0  "/Users/lazan/git/casual/1.7/casual/middleware/domain/bin/casual-domain-discovery"
 casual-domain-manager        1  1  enabled     false   0  "casual-domain-manager"                                                           
-casual-gateway-manager       1  1  enabled     false   0  "${CMAKE_BINARY_DIR}/middleware/gateway/bin/casual-gateway-manager"        
-casual-service-manager       1  1  enabled     false   0  "${CMAKE_BINARY_DIR}/middleware/service/bin/casual-service-manager"        
-casual-transaction-manager   1  1  enabled     false   0  "${CMAKE_BINARY_DIR}/middleware/transaction/bin/casual-transaction-manager"
+casual-gateway-manager       1  1  enabled     false   0  "${CASUAL_MAKE_BUILD_ROOT}/middleware/gateway/bin/casual-gateway-manager"        
+casual-service-manager       1  1  enabled     false   0  "${CASUAL_MAKE_BUILD_ROOT}/middleware/service/bin/casual-service-manager"        
+casual-transaction-manager   1  1  enabled     false   0  "${CASUAL_MAKE_BUILD_ROOT}/middleware/transaction/bin/casual-transaction-manager"
 */
             auto lines = local::execute_get_lines(  "casual --header false --color false domain --list-servers");
 
@@ -389,7 +389,7 @@ z      error         -  -
          auto domain = local::domain( R"(
 domain:
    servers:
-      -  path: "${CMAKE_BINARY_DIR}/middleware/example/server/bin/casual-example-server"
+      -  path: "${CASUAL_MAKE_BUILD_ROOT}/middleware/example/server/bin/casual-example-server"
          memberships: [ user]
          instances: 1
 )");
@@ -414,7 +414,7 @@ domain:
          auto domain = local::domain( R"(
 domain:
    servers:
-      -  path: "${CMAKE_BINARY_DIR}/middleware/example/server/bin/casual-example-server"
+      -  path: "${CASUAL_MAKE_BUILD_ROOT}/middleware/example/server/bin/casual-example-server"
          memberships: [ user]
          instances: 2
 )");
@@ -440,7 +440,7 @@ domain:
          auto domain = local::domain( R"(
 domain:
    servers:
-      -  path: "${CMAKE_BINARY_DIR}/middleware/example/server/bin/casual-example-server"
+      -  path: "${CASUAL_MAKE_BUILD_ROOT}/middleware/example/server/bin/casual-example-server"
          memberships: [ user]
          instances: 2
 )");
@@ -464,7 +464,7 @@ domain:
 domain:
    servers:
       -  alias: example-server
-         path: "${CMAKE_BINARY_DIR}/middleware/example/server/bin/casual-example-server"
+         path: "${CASUAL_MAKE_BUILD_ROOT}/middleware/example/server/bin/casual-example-server"
          memberships: [ user]
          instances: 1
 )");
@@ -493,7 +493,7 @@ domain:
 domain:
    servers:
       -  alias: example-server
-         path: "${CMAKE_BINARY_DIR}/middleware/example/server/bin/casual-example-server"
+         path: "${CASUAL_MAKE_BUILD_ROOT}/middleware/example/server/bin/casual-example-server"
          memberships: [ user]
          instances: 5
 )");
@@ -569,7 +569,7 @@ domain:
 domain:
    servers:
       - alias: echo-server
-        path: "${CMAKE_BINARY_DIR}/middleware/example/server/bin/casual-example-server"
+        path: "${CASUAL_MAKE_BUILD_ROOT}/middleware/example/server/bin/casual-example-server"
         memberships: [ user]
         instances: 1
 )");
@@ -591,7 +591,7 @@ domain:
 domain:
    servers:
       - alias: echo-server
-        path: "${CMAKE_BINARY_DIR}/middleware/example/server/bin/casual-example-server"
+        path: "${CASUAL_MAKE_BUILD_ROOT}/middleware/example/server/bin/casual-example-server"
         memberships: [ user]
         instances: 5
 )");
@@ -613,7 +613,7 @@ domain:
 domain:
    servers:
       - alias: echo-server
-        path: "${CMAKE_BINARY_DIR}/middleware/example/server/bin/casual-example-server"
+        path: "${CASUAL_MAKE_BUILD_ROOT}/middleware/example/server/bin/casual-example-server"
         memberships: [ user]
         instances: 1
 )");
@@ -673,7 +673,7 @@ domain:
 domain:
    servers:
       - alias: echo-server
-        path: "${CMAKE_BINARY_DIR}/middleware/example/server/bin/casual-example-server"
+        path: "${CASUAL_MAKE_BUILD_ROOT}/middleware/example/server/bin/casual-example-server"
         memberships: [ user]
         instances: 1
 )");
