@@ -44,7 +44,7 @@ domain:
    name: service-forward-domain
 
    servers:
-      - path: ./bin/casual-service-manager    
+      - path: "${CASUAL_MAKE_BUILD_ROOT}/middleware/service/bin/casual-service-manager"   
 )";
             }
 
