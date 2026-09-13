@@ -46,11 +46,11 @@ domain:
         dependencies: [ user]
    
    servers:
-      - path: ${CMAKE_BINARY_DIR}/middleware/service/bin/casual-service-manager
+      - path: ${CASUAL_MAKE_BUILD_ROOT}/middleware/service/bin/casual-service-manager
         memberships: [ base]
-      - path: ${CMAKE_BINARY_DIR}/middleware/transaction/bin/casual-transaction-manager
+      - path: ${CASUAL_MAKE_BUILD_ROOT}/middleware/transaction/bin/casual-transaction-manager
         memberships: [ base]
-      - path: ${CMAKE_BINARY_DIR}/middleware/queue/bin/casual-queue-manager
+      - path: ${CASUAL_MAKE_BUILD_ROOT}/middleware/queue/bin/casual-queue-manager
         memberships: [ base]
 )";
      
@@ -87,9 +87,9 @@ domain:
 domain:
    name: A
    servers:
-      - path: bin/casual-gateway-manager
+      - path: ${CASUAL_MAKE_BUILD_ROOT}/middleware/gateway/bin/casual-gateway-manager
         memberships: [ gateway]
-      - path: ${CMAKE_BINARY_DIR}/middleware/example/server/bin/casual-example-server
+      - path: ${CASUAL_MAKE_BUILD_ROOT}/middleware/example/server/bin/casual-example-server
         memberships: [ user]
    gateway:
       inbound:
@@ -149,9 +149,9 @@ domain:
 domain:
    name: A
    servers:
-      - path: ${CMAKE_BINARY_DIR}/middleware/example/server/bin/casual-example-server
+      - path: ${CASUAL_MAKE_BUILD_ROOT}/middleware/example/server/bin/casual-example-server
         memberships: [ user]
-      - path: ${CMAKE_BINARY_DIR}/middleware/gateway/bin/casual-gateway-manager
+      - path: ${CASUAL_MAKE_BUILD_ROOT}/middleware/gateway/bin/casual-gateway-manager
         memberships: [ gateway]
 
    gateway:
@@ -204,7 +204,7 @@ domain:
 domain:
    name: A
    servers:
-      - path: ${CMAKE_BINARY_DIR}/middleware/gateway/bin/casual-gateway-manager
+      - path: ${CASUAL_MAKE_BUILD_ROOT}/middleware/gateway/bin/casual-gateway-manager
         memberships: [ gateway]
    
    queue:
@@ -268,7 +268,7 @@ domain:
 domain:
    name: A
    servers:
-      - path: ${CMAKE_BINARY_DIR}/middleware/gateway/bin/casual-gateway-manager
+      - path: ${CASUAL_MAKE_BUILD_ROOT}/middleware/gateway/bin/casual-gateway-manager
         memberships: [ gateway]
    
    gateway:
@@ -416,7 +416,7 @@ domain:
 domain:
    name: A
    servers:
-      - path: ${CMAKE_BINARY_DIR}/middleware/gateway/bin/casual-gateway-manager
+      - path: ${CASUAL_MAKE_BUILD_ROOT}/middleware/gateway/bin/casual-gateway-manager
         memberships: [ gateway]
    
    gateway:
@@ -531,7 +531,7 @@ domain:
 domain:
    name: A
    servers:
-      - path: ${CMAKE_BINARY_DIR}/middleware/gateway/bin/casual-gateway-manager
+      - path: ${CASUAL_MAKE_BUILD_ROOT}/middleware/gateway/bin/casual-gateway-manager
         memberships: [ gateway]
 
    gateway:
@@ -588,7 +588,7 @@ domain:
 domain:
    name: A
    servers:
-      - path: ${CMAKE_BINARY_DIR}/middleware/gateway/bin/casual-gateway-manager
+      - path: ${CASUAL_MAKE_BUILD_ROOT}/middleware/gateway/bin/casual-gateway-manager
         memberships: [ gateway]
 
    gateway:

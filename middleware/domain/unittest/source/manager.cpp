@@ -70,16 +70,16 @@ namespace casual
 
             } // configuration
 
-            namespace repository
+            namespace build
             {
                auto root()
                {
-                  if( auto value = environment::variable::get< std::filesystem::path>( "CMAKE_BINARY_DIR"))
+                  if( auto value = environment::variable::get< std::filesystem::path>( "CASUAL_MAKE_BUILD_ROOT"))
                      return *value;
 
-                  code::raise::error( code::casual::invalid_argument, "CMAKE_BINARY_DIR has to be set");
+                  code::raise::error( code::casual::invalid_argument, "CASUAL_MAKE_BUILD_ROOT has to be set");
                }
-            } // repository
+            } // build
             
             namespace instance::devices
             {
@@ -324,7 +324,7 @@ namespace casual
 
             // spawn the domain-manager
             manager = local::Manager{ 
-               local::repository::root() / "middleware/domain/bin/casual-domain-manager",
+               local::build::root() / "middleware/domain/bin/casual-domain-manager",
                local::configuration::arguments( files, tasks.front())};
 
             common::message::dispatch::relaxed::pump( 

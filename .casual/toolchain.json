@@ -1,0 +1,91 @@
+{
+   "Linux" : { 
+      "g++" : {  
+         "defaults": {
+            "compiler": ["g++"],
+            "executable_linker": ["g++"],
+            "library_linker": ["g++"],
+            "archive_linker": ["ar", "rcs"],
+            "header_dependency_command": ["g++", "-std=c++23", "-E", "-MMD"],
+            "common_compile_flags": [
+               "-std=c++23",
+               "-Wall",
+               "-Wextra",
+               "-Werror",
+               "-Wno-unused-parameter",
+               "-Wno-implicit-fallthrough",
+               "-Wno-missing-field-initializers",
+               "-Wno-dangling-reference",
+               "-Wno-address", 
+               "-Wno-class-memaccess",
+               "-c", 
+               "-fPIC"
+            ],
+            "common_link_flags": ["-pthread"]
+         },
+         "profiles" : {
+            "normal" : {
+               "compile_extra": ["-O3", "-pthread"],
+               "link_extra_exe": ["-O3"],
+               "link_extra_lib": ["-O3", "-shared"]
+            },
+
+            "debug" : {
+               "compile_extra": ["-g", "-O0", "-DDEBUG"],
+               "link_extra_exe": ["-g", "-O0"],
+               "link_extra_lib": ["-g", "-O0", "-shared"]
+            },
+
+            "analyze" : {
+               "compile_extra": ["-O0", "-fanalyzer"],
+               "link_extra_exe": ["-O0", "-coverage"],
+               "link_extra_lib": ["-O0", "-coverage","-shared"]
+            }
+         }
+      }
+   },
+   "Darwin" : { 
+      "g++" : {  
+         "defaults": {
+            "compiler": ["g++"],
+            "executable_linker": ["g++"],
+            "library_linker": ["g++"],
+            "archive_linker": ["ar", "rcs"],
+            "header_dependency_command": ["g++", "-std=c++23", "-E", "-MMD"],
+            "common_compile_flags": [
+               "-std=c++23",
+               "-Wall",
+               "-Wextra",
+               "-Werror",
+               "-Wno-unused-parameter",
+               "-Wno-implicit-fallthrough",
+               "-Wno-missing-field-initializers",
+               "-Wno-character-conversion",
+               "-Wno-deprecated-literal-operator",
+               "-fPIC", 
+               "-c"],
+            "common_link_flags": ["-pthread"]
+         },
+         "profiles" : {
+            "normal" : {
+               "compile_extra": ["-O3","-pthread"],
+               "link_extra_exe": ["-O3"],
+               "link_extra_lib": ["-O3", "-dynamiclib"]
+            },
+
+            "debug" : {
+               "compile_extra": ["-g", "-O0", "-DDEBUG", "-ggdb"],
+               "link_extra_exe": ["-g","-ggdb"],
+               "link_extra_lib": ["-g", "-dynamiclib","-ggdb"]
+            },
+
+            "analyze" : {
+               "compile_extra": ["-O0", "-fanalyzer", "-fprofile-arcs", "-ftest-coverage"],
+               "link_extra_exe": ["-O0", "-lgcov", "-fprofile-arcs"],
+               "link_extra_lib": ["-O0", "-dynamiclib", "-fprofile-arcs"]
+            }
+         }
+      }
+   }
+
+}
