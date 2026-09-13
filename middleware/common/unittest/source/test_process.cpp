@@ -26,7 +26,7 @@ namespace casual
             {
                auto path()
                {
-                  return std::filesystem::path{ "./bin/simple_process"};
+                  return std::filesystem::path{ "${CASUAL_MAKE_BUILD_ROOT}/middleware/common/bin/simple_process"};
                }
             } // process
 

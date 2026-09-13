@@ -4,24 +4,31 @@
 #
 
 import os
-import tarfile
 import subprocess
 
 from shutil import copyfile
 
+
 NGINX_VERSION = "1.28.0"
 BASENAME = "nginx-" + NGINX_VERSION
-SOURCE_ROOT = os.getenv("CMAKE_BINARY_DIR")
+
+SOURCE_ROOT = os.getenv("CASUAL_MAKE_SOURCE_ROOT")
 CASUAL_THIRDPARTY = os.getenv("CASUAL_THIRDPARTY")
 
 if not SOURCE_ROOT or not CASUAL_THIRDPARTY:
-	raise SystemError("CMAKE_BINARY_DIR and CASUAL_THIRDPARTY need to be set")
+	raise SystemError("CASUAL_MAKE_SOURCE_ROOT and CASUAL_THIRDPARTY need to be set")
 
-os.chdir(CASUAL_THIRDPARTY + '/nginx/' + BASENAME)
+try:
+   directory = os.path.join(CASUAL_THIRDPARTY, 'nginx', BASENAME)
+   print(directory)
+   os.chdir(directory)
+except:
+   print("Aborting...")
+   raise SystemExit(-1)
 
 prefix = os.getenv('CASUAL_HOME', '/opt/casual') + '/nginx'
 
-print("Start setting up: " + BASENAME)
+print("Start setting up: nginx")
 
 print("Running configure")
 print( subprocess.check_output(['./configure',
@@ -30,6 +37,7 @@ print( subprocess.check_output(['./configure',
    '--with-cc-opt=-Wno-deprecated',
    '--add-module=' + SOURCE_ROOT + '/middleware/http/source/inbound/nginx/plugin',
    '--without-http_rewrite_module']).decode())
+
 print("Running make")
 print( subprocess.check_output(['make']).decode())
 print("Running install")

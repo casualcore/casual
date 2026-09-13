@@ -31,7 +31,7 @@ domain:
          dependencies: [ base]
 
    servers:
-      -  path: ${CMAKE_BINARY_DIR}/middleware/service/bin/casual-service-manager
+      -  path: ${CASUAL_MAKE_BUILD_ROOT}/middleware/service/bin/casual-service-manager
          memberships: [ base]
 
 )";
@@ -54,7 +54,7 @@ domain:
 domain:
    name: A
    servers:
-      -  path: ${CMAKE_BINARY_DIR}/middleware/example/server/bin/casual-example-server
+      -  path: ${CASUAL_MAKE_BUILD_ROOT}/middleware/example/server/bin/casual-example-server
          memberships: [ user]
 
 )");
