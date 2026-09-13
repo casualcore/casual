@@ -50,16 +50,16 @@ system:
             -  casual-mockup-rm
          paths:
             include:
-               -  "${CMAKE_SOURCE_DIR}/middleware/transaction/include"
-               -  "${CMAKE_SOURCE_DIR}/middleware/xatmi/include"
+               -  "${CASUAL_MAKE_SOURCE_ROOT}/middleware/transaction/include"
+               -  "${CASUAL_MAKE_SOURCE_ROOT}/middleware/xatmi/include"
             library: 
-               -  "${CMAKE_BINARY_DIR}/middleware/transaction/bin"
-               -  "${CMAKE_BINARY_DIR}/middleware/common/bin"
-               -  "${CMAKE_BINARY_DIR}/middleware/xatmi/bin"
+               -  "${CASUAL_MAKE_BUILD_ROOT}/middleware/transaction/bin"
+               -  "${CASUAL_MAKE_BUILD_ROOT}/middleware/common/bin"
+               -  "${CASUAL_MAKE_BUILD_ROOT}/middleware/xatmi/bin"
 )");
             }
 
-            constexpr std::string_view build_server_path = "${CMAKE_BINARY_DIR}/middleware/tools/bin/casual-build-server";
+            constexpr std::string_view build_server_path = "${CASUAL_MAKE_BUILD_ROOT}/middleware/tools/bin/casual-build-server";
 
          } // <unnamed>
       } // local
@@ -75,7 +75,7 @@ system:
          constexpr auto services = "a,b,c,d";
          
          auto capture = administration::unittest::cli::command::execute(
-            local::build_server_path, " --service ", services, " --output ", output.string(), " --build-directives ", object_file, " -O3 -I ${CMAKE_SOURCE_DIR}/middleware/xatmi/include -L ${CMAKE_BINARY_DIR}/middleware/xatmi/bin");
+            local::build_server_path, " --service ", services, " --output ", output.string(), " --build-directives ", object_file, " -O3 -I ${CASUAL_MAKE_SOURCE_ROOT}/middleware/xatmi/include -L ${CASUAL_MAKE_BUILD_ROOT}/middleware/xatmi/bin");
 
          EXPECT_TRUE( capture) << CASUAL_NAMED_VALUE( capture);
 
@@ -98,7 +98,7 @@ system:
             local::build_server_path, " --service ", services, " --output ", output.string(), 
             " --system-configuration ", system.string(), 
             " --resource-keys rm-mockup",
-            " --build-directives ", object_file, " -O3 -I ${CMAKE_SOURCE_DIR}/middleware/xatmi/include -L ${CMAKE_BINARY_DIR}/middleware/xatmi/bin");
+            " --build-directives ", object_file, " -O3 -I ${CASUAL_MAKE_SOURCE_ROOT}/middleware/xatmi/include -L ${CASUAL_MAKE_BUILD_ROOT}/middleware/xatmi/bin");
 
          EXPECT_TRUE( capture) << CASUAL_NAMED_VALUE( capture);
 
@@ -139,7 +139,7 @@ server:
          auto capture = administration::unittest::cli::command::execute(
             local::build_server_path," --definition ", configuration, " --output ", output, 
             " --system-configuration ", system, 
-            " --build-directives ", object_file, " -O3 -I ${CMAKE_SOURCE_DIR}/middleware/xatmi/include -L ${CMAKE_BINARY_DIR}/middleware/xatmi/bin");
+            " --build-directives ", object_file, " -O3 -I ${CASUAL_MAKE_SOURCE_ROOT}/middleware/xatmi/include -L ${CASUAL_MAKE_BUILD_ROOT}/middleware/xatmi/bin");
 
          EXPECT_TRUE( capture) << CASUAL_NAMED_VALUE( capture);
 

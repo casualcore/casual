@@ -65,11 +65,11 @@ domain:
         dependencies: [ user]
    
    servers:
-      - path: ${CMAKE_BINARY_DIR}/middleware/service/bin/casual-service-manager
+      - path: ${CASUAL_MAKE_BUILD_ROOT}/middleware/service/bin/casual-service-manager
         memberships: [ base]
-      - path: ${CMAKE_BINARY_DIR}/middleware/transaction/bin/casual-transaction-manager
+      - path: ${CASUAL_MAKE_BUILD_ROOT}/middleware/transaction/bin/casual-transaction-manager
         memberships: [ base]
-      - path: bin/casual-gateway-manager
+      - path: ${CASUAL_MAKE_BUILD_ROOT}/middleware/gateway/bin/casual-gateway-manager
         memberships: [ gateway]
 )";
 
@@ -695,7 +695,7 @@ domain:
          constexpr auto queue_manager = R"(
 domain: 
    servers:
-      - path: ${CMAKE_BINARY_DIR}/middleware/queue/bin/casual-queue-manager
+      - path: ${CASUAL_MAKE_BUILD_ROOT}/middleware/queue/bin/casual-queue-manager
         memberships: [ base]
 )";
          constexpr auto queue_configuration = R"(
@@ -757,7 +757,7 @@ domain:
          constexpr auto queue_manager = R"(
 domain:
    servers:
-      - path: ${CMAKE_BINARY_DIR}/middleware/queue/bin/casual-queue-manager
+      - path: ${CASUAL_MAKE_BUILD_ROOT}/middleware/queue/bin/casual-queue-manager
         memberships: [ base]
         restart: true
 )";
@@ -848,7 +848,7 @@ domain:
          constexpr auto queue_manager = R"(
 domain:
    servers:
-      - path: ${CMAKE_BINARY_DIR}/middleware/queue/bin/casual-queue-manager
+      - path: ${CASUAL_MAKE_BUILD_ROOT}/middleware/queue/bin/casual-queue-manager
         memberships: [ base]
         restart: true
 )";
@@ -1313,7 +1313,7 @@ domain:
 domain: 
    name: B   
    servers:
-      - path: ${CMAKE_BINARY_DIR}/middleware/example/server/bin/casual-example-server
+      - path: ${CASUAL_MAKE_BUILD_ROOT}/middleware/example/server/bin/casual-example-server
         memberships: [ user]
 
    gateway:
@@ -1740,7 +1740,7 @@ domain:
          dependencies: [ base]
    
    servers:
-      - path: ${CMAKE_BINARY_DIR}/middleware/example/server/bin/casual-example-server
+      - path: ${CASUAL_MAKE_BUILD_ROOT}/middleware/example/server/bin/casual-example-server
         memberships: [ user]
 
    gateway:
@@ -1798,7 +1798,7 @@ domain:
 system:
    resources:
       -  key: rm-mockup
-         server: "${CMAKE_BINARY_DIR}/middleware/transaction/bin/rm-proxy-casual-mockup"
+         server: "${CASUAL_MAKE_BUILD_ROOT}/middleware/transaction/bin/rm-proxy-casual-mockup"
          xa_struct_name: casual_mockup_xa_switch_static
          libraries:
             -  casual-mockup-rm
@@ -1813,7 +1813,7 @@ domain:
             key: rm-mockup
             instances: 1
    servers:
-   -  path: ${CMAKE_BINARY_DIR}/middleware/example/server/bin/casual-example-resource-server
+   -  path: ${CASUAL_MAKE_BUILD_ROOT}/middleware/example/server/bin/casual-example-resource-server
       arguments: [ --nested-calls, x ]
       memberships: [ user]
    gateway:
@@ -1837,7 +1837,7 @@ domain:
             instances: 1
    servers:
       -  alias: a-forward
-         path: ${CMAKE_BINARY_DIR}/middleware/example/server/bin/casual-example-resource-server
+         path: ${CASUAL_MAKE_BUILD_ROOT}/middleware/example/server/bin/casual-example-resource-server
          arguments: [ --nested-calls, casual/example/resource/nested/calls/B, casual/example/resource/nested/calls/B]
          memberships: [ user]
    gateway:
@@ -1927,7 +1927,7 @@ domain:
 system:
    resources:
       -  key: rm-mockup
-         server: "${CMAKE_BINARY_DIR}/middleware/transaction/bin/rm-proxy-casual-mockup"
+         server: "${CASUAL_MAKE_BUILD_ROOT}/middleware/transaction/bin/rm-proxy-casual-mockup"
          xa_struct_name: casual_mockup_xa_switch_static
          libraries:
             -  casual-mockup-rm
@@ -1939,7 +1939,7 @@ domain:
             key: rm-mockup
             instances: 1
    servers:
-      -  path: ${CMAKE_BINARY_DIR}/middleware/example/server/bin/casual-example-resource-server
+      -  path: ${CASUAL_MAKE_BUILD_ROOT}/middleware/example/server/bin/casual-example-resource-server
          arguments: [ --nested-calls, x]
          memberships: [ user]
    gateway:
@@ -2015,7 +2015,7 @@ domain:
 domain:
    name: A
    servers:
-      -  path: ${CMAKE_BINARY_DIR}/middleware/example/server/bin/casual-example-server
+      -  path: ${CASUAL_MAKE_BUILD_ROOT}/middleware/example/server/bin/casual-example-server
          arguments: [ --forward, b]
          memberships: [ user]
    gateway:

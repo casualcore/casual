@@ -1,0 +1,52 @@
+import casual.make.api as make
+import casual.middleware.make.api as dsl
+    
+make.IncludePaths( ['include',
+    'unittest/include',
+    '../common/include',
+    '../service/include',
+    '../xatmi/include',
+    '../cli/include',
+    ]
+    + make.optional_include_paths()
+    + dsl.paths().include.gtest
+    )
+
+make.LibraryPaths( ['bin',
+    '../common/bin',
+    '../domain/bin',
+    '../service/bin',
+    '../cli/bin']
+    + make.optional_library_paths()
+    + dsl.paths().library.gtest
+   )
+
+
+install_lib = []
+install_bin = []
+install_headers = []
+
+
+
+target = make.LinkLibrary( 'bin/casual-transaction-admin-cli',
+    [
+        make.Compile( 'source/manager/admin/cli.cpp')
+    ],
+    [ 
+        'casual-transaction',
+        'manager-archive',
+        'casual-cli',
+        'casual-domain-utility',
+        'casual-service',
+        'casual-common',
+    ])
+
+
+install_lib.append( target)
+
+
+make.Install( install_bin, dsl.paths().install + '/bin')
+make.Install( install_lib, dsl.paths().install + '/lib')
+
+
+

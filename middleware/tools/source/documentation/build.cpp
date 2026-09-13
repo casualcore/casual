@@ -23,18 +23,18 @@ namespace casual
          {
             auto source_root()
             {
-               if( auto path = common::environment::variable::get< std::filesystem::path>( "CMAKE_SOURCE_DIR"))
+               if( auto path = common::environment::variable::get< std::filesystem::path>( "CASUAL_MAKE_SOURCE_ROOT"))
                   return *path;
 
-               common::code::raise::error( common::code::casual::invalid_argument, "CMAKE_SOURCE_DIR is not set");
+               common::code::raise::error( common::code::casual::invalid_argument, "CASUAL_MAKE_SOURCE_ROOT is not set");
             }
 
             auto binary_root()
             {
-               if( auto path = common::environment::variable::get< std::filesystem::path>( "CMAKE_BINARY_DIR"))
+               if( auto path = common::environment::variable::get< std::filesystem::path>( "CASUAL_MAKE_BUILD_ROOT"))
                   return *path;
 
-               common::code::raise::error( common::code::casual::invalid_argument, "CMAKE_BINARY_DIR is not set");
+               common::code::raise::error( common::code::casual::invalid_argument, "CASUAL_MAKE_BUILD_ROOT is not set");
             }
 
             auto compose_path( std::string_view name)
@@ -55,7 +55,7 @@ namespace casual
             std::vector< common::environment::Variable> environment()
             {
                return { 
-                  //common::string::compose( "PATH=", common::environment::expand( "${CMAKE_BINARY_DIR}/middleware/tools/bin:${PATH}"))
+                  //common::string::compose( "PATH=", common::environment::expand( "${CASUAL_MAKE_BUILD_ROOT}/middleware/tools/bin:${PATH}"))
                };
             }
 

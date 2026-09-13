@@ -462,7 +462,7 @@ domain:
 domain:
    name: simple-server
    servers:
-      -  path: ./bin/test-simple-server
+      -  path: ${CASUAL_MAKE_BUILD_ROOT}/middleware/domain/bin/test-simple-server
          instances: 1
 
 )";
@@ -510,7 +510,7 @@ domain:
 domain:
    name: simple-server
    servers:
-      -  path: ./bin/test-simple-server
+      -  path: ${CASUAL_MAKE_BUILD_ROOT}/middleware/domain/bin/test-simple-server
          alias: foo
          instances: 1
 )";
@@ -536,7 +536,7 @@ domain:
    name: A
    servers:
       -  alias: faulty
-         path: ./bin/test-simple-server
+         path: ${CASUAL_MAKE_BUILD_ROOT}/middleware/domain/bin/test-simple-server
          arguments: [ --terminate ]
          instances: 1
          restart: true
@@ -564,7 +564,7 @@ domain:
 domain:
    name: simple-server
    servers:
-      -  path: ./bin/test-simple-server
+      -  path: ${CASUAL_MAKE_BUILD_ROOT}/middleware/domain/bin/test-simple-server
          alias: foo
          instances: 10
 )";
@@ -597,7 +597,7 @@ domain:
 domain:
    name: simple-server
    servers:
-      -  path: ./bin/test-simple-server
+      -  path: ${CASUAL_MAKE_BUILD_ROOT}/middleware/domain/bin/test-simple-server
          instances: 1
          environment:
             variables: 
@@ -632,7 +632,7 @@ domain:
 domain:
    name: simple-server
    servers:
-      -  path: ./bin/test-simple-server
+      -  path: ${CASUAL_MAKE_BUILD_ROOT}/middleware/domain/bin/test-simple-server
          instances: 1
 )";
 
@@ -675,7 +675,7 @@ domain:
 domain:
    name: simple-server
    servers:
-      -  path: ./bin/test-simple-server
+      -  path: ${CASUAL_MAKE_BUILD_ROOT}/middleware/domain/bin/test-simple-server
          instances: 1
 )";
 
@@ -720,7 +720,7 @@ domain:
 domain:
    name: simple-server
    servers:
-      -  path: ./bin/test-simple-server
+      -  path: ${CASUAL_MAKE_BUILD_ROOT}/middleware/domain/bin/test-simple-server
          alias: foo
          instances: 1
 )";
@@ -767,7 +767,7 @@ domain:
 domain:
    name: simple-server
    servers:
-      -  path: ./bin/test-simple-server
+      -  path: ${CASUAL_MAKE_BUILD_ROOT}/middleware/domain/bin/test-simple-server
          alias: foo
          instances: 1
 )";
@@ -806,7 +806,7 @@ domain:
    name: A
    servers:
       -  alias: foo
-         path: ./bin/test-simple-server
+         path: ${CASUAL_MAKE_BUILD_ROOT}/middleware/domain/bin/test-simple-server
          instances: 5
 )");
 
@@ -844,7 +844,7 @@ domain:
    name: A
    servers:
       -  alias: foo
-         path: ./bin/test-simple-server
+         path: ${CASUAL_MAKE_BUILD_ROOT}/middleware/domain/bin/test-simple-server
          instances: 2
 )");
 
@@ -883,7 +883,7 @@ domain:
    name: simple-server
    servers:
       -  alias: foo
-         path: ./bin/test-simple-server
+         path: ${CASUAL_MAKE_BUILD_ROOT}/middleware/domain/bin/test-simple-server
          instances: 2
 )";
 
@@ -1165,7 +1165,7 @@ domain:
 domain:
    name: simple-server
    servers:
-      -  path: ./bin/test-simple-server
+      -  path: ${CASUAL_MAKE_BUILD_ROOT}/middleware/domain/bin/test-simple-server
          alias: foo
          instances: 2
 
@@ -1203,7 +1203,7 @@ domain:
          dependencies: [ B]
 
    servers:
-      -  path: ./bin/test-simple-server
+      -  path: ${CASUAL_MAKE_BUILD_ROOT}/middleware/domain/bin/test-simple-server
          alias: foo
          instances: 2
          memberships: [ A]
@@ -1255,7 +1255,7 @@ domain:
          dependencies: [ B]
 
    servers:
-      -  path: ./bin/test-simple-server
+      -  path: ${CASUAL_MAKE_BUILD_ROOT}/middleware/domain/bin/test-simple-server
          alias: simple-server
          instances: 2
          memberships: [ A]
@@ -1309,7 +1309,7 @@ domain:
          dependencies: [ B]
 
    servers:
-      -  path: ./bin/test-simple-server
+      -  path: ${CASUAL_MAKE_BUILD_ROOT}/middleware/domain/bin/test-simple-server
          alias: simple-server
          instances: 2
          memberships: [ A]
@@ -1359,7 +1359,7 @@ domain:
          dependencies: [ B]
 
    servers:
-      -  path: ./bin/test-simple-server
+      -  path: ${CASUAL_MAKE_BUILD_ROOT}/middleware/domain/bin/test-simple-server
          alias: simple-server
          instances: 2
          memberships: [ A]
@@ -1410,7 +1410,7 @@ domain:
          dependencies: [ B]
 
    servers:
-      -  path: ./bin/test-simple-server
+      -  path: ${CASUAL_MAKE_BUILD_ROOT}/middleware/domain/bin/test-simple-server
          alias: simple-server
          instances: 2
          memberships: [ A]
@@ -1484,7 +1484,7 @@ domain:
       -  name: A
 
    servers:
-      -  path: ./bin/test-simple-server
+      -  path: ${CASUAL_MAKE_BUILD_ROOT}/middleware/domain/bin/test-simple-server
          alias: simple-server
          instances: 2
          memberships: [ A]
@@ -1512,11 +1512,11 @@ domain:
          dependencies: [ B]
 
    servers:
-      -  path: ./bin/test-simple-server
+      -  path: ${CASUAL_MAKE_BUILD_ROOT}/middleware/domain/bin/test-simple-server
          alias: simple-server
          instances: 1
          memberships: [ X]
-      -  path: ./bin/test-simple-server
+      -  path: ${CASUAL_MAKE_BUILD_ROOT}/middleware/domain/bin/test-simple-server
          alias: simple-server-added
          instances: 1
          memberships: [ X]
@@ -1553,7 +1553,7 @@ domain:
    groups:
       -  name: A
    servers:
-      -  path: ./bin/test-simple-server
+      -  path: ${CASUAL_MAKE_BUILD_ROOT}/middleware/domain/bin/test-simple-server
          alias: simple-server
          instances: 2
          memberships: [ A]
@@ -1575,7 +1575,7 @@ domain:
       -  name: B
          dependencies: [ A]
    servers:
-      -  path: ./bin/test-simple-server
+      -  path: ${CASUAL_MAKE_BUILD_ROOT}/middleware/domain/bin/test-simple-server
          alias: replaced-server
          instances: 3
          memberships: [ B]
@@ -1911,7 +1911,7 @@ domain:
          instances: 1
          restart: true
    servers:
-      -  path: ./bin/test-simple-server
+      -  path: ${CASUAL_MAKE_BUILD_ROOT}/middleware/domain/bin/test-simple-server
          alias: simple-server
          instances: 1
          restart: true

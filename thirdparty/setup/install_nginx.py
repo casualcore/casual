@@ -9,19 +9,22 @@ import subprocess
 
 from shutil import copyfile
 
-NGINX_VERSION = "1.28.0"
-BASENAME = "nginx-" + NGINX_VERSION
-SOURCE_ROOT = os.getenv("CMAKE_BINARY_DIR")
+SOURCE_ROOT = os.getenv("CASUAL_MAKE_SOURCE_ROOT")
 CASUAL_THIRDPARTY = os.getenv("CASUAL_THIRDPARTY")
 
 if not SOURCE_ROOT or not CASUAL_THIRDPARTY:
-	raise SystemError("CMAKE_BINARY_DIR and CASUAL_THIRDPARTY need to be set")
+	raise SystemError("CASUAL_MAKE_SOURCE_ROOT and CASUAL_THIRDPARTY need to be set")
 
-os.chdir(CASUAL_THIRDPARTY + '/nginx/' + BASENAME)
+try:
+   os.chdir(CASUAL_THIRDPARTY + '/src/nginx/')
+except:
+   print("Prerequisite conan stage missing")
+   print("Aborting...")
+   raise SystemExit(-1)
 
 prefix = os.getenv('CASUAL_HOME', '/opt/casual') + '/nginx'
 
-print("Start setting up: " + BASENAME)
+print("Start setting up: nginx")
 
 print("Running configure")
 print( subprocess.check_output(['./configure',
