@@ -60,37 +60,24 @@ $ source casual.env
 ```bash
 $ cd $HOME/git/casual
 $ conan profile detect # if never used conan before
-$ conan install conanfile.txt
+$ conan install . --output-folder=../casual-conan-dependencies --deployer=direct_deploy
 ...
 ```
 If that fails use this command to build dependencies from source
 ```bash
-$ conan install conanfile.txt --build=missing
+$ conan install . --build=missing --output-folder=../casual-conan-dependencies --deployer=direct_deploy
 ...
 ```
-**Note**: If you want to place your build binarys on another place then the default directory _build_ in your repo, you must add a exlicit path in conan install i.e.
-```
-$ conan install conanfile.txt --build=missing --output-folder /tmp/your_build_root
-```
-Then your binarys will end up under /tmp/your_build_root/build/Release
 
 ## build casual
      
 ```bash
 $ cd $HOME/git/casual
-$ cmake --preset conan-release # Configure cmake, made once
-$ cmake --build . --preset conan-release # Build
+$ casual-make compile && casual-make link
 ```
 
 ## test casual
 
 ```bash
-$ cmake --build . --preset conan-release --target test
-```
-
-## defined aliases i env
-```bash
-alias cmake-build='cmake --build . --preset conan-release'
-alias cmake-make='cmake --preset conan-release'
-alias cmake-test='cmake --build . --preset conan-release --target test'
+$ casual-make test
 ```

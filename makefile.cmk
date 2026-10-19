@@ -1,0 +1,8 @@
+import os
+import casual.make.api as make
+import casual.middleware.make.api
+
+
+make.Build( 'documentation/makefile.cmk')
+make.Build( 'middleware/makefile.cmk')
+make.Build( 'test/makefile.cmk')

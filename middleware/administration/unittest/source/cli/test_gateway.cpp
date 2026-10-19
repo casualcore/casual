@@ -37,11 +37,11 @@ domain:
          dependencies: [ user]
    
    servers:
-      - path: "${CMAKE_BINARY_DIR}/middleware/service/bin/casual-service-manager"
+      - path: "${CASUAL_MAKE_BUILD_ROOT}/middleware/service/bin/casual-service-manager"
         memberships: [ base]
-      - path: "${CMAKE_BINARY_DIR}/middleware/transaction/bin/casual-transaction-manager"
+      - path: "${CASUAL_MAKE_BUILD_ROOT}/middleware/transaction/bin/casual-transaction-manager"
         memberships: [ base]
-      - path: "${CMAKE_BINARY_DIR}/middleware/gateway/bin/casual-gateway-manager"
+      - path: "${CASUAL_MAKE_BUILD_ROOT}/middleware/gateway/bin/casual-gateway-manager"
         memberships: [ gateway]
 )";
             } // configuration

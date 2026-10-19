@@ -59,12 +59,12 @@ namespace casual
 
                // make sure we've got casual stuff in the path
                auto path = environment::expand( string::compose( "PATH=",
-                  "${CMAKE_BINARY_DIR}/middleware/administration/bin:",
-                  "${CMAKE_BINARY_DIR}/middleware/domain/bin:",
-                  "${CMAKE_BINARY_DIR}/middleware/queue/bin:",
-                  "${CMAKE_BINARY_DIR}/middleware/transaction/bin:",
-                  "${CMAKE_BINARY_DIR}/middleware/service/bin:",
-                  "${CMAKE_BINARY_DIR}/middleware/gateway/bin:",
+                  "${CASUAL_MAKE_BUILD_ROOT}/middleware/administration/bin:",
+                  "${CASUAL_MAKE_BUILD_ROOT}/middleware/domain/bin:",
+                  "${CASUAL_MAKE_BUILD_ROOT}/middleware/queue/bin:",
+                  "${CASUAL_MAKE_BUILD_ROOT}/middleware/transaction/bin:",
+                  "${CASUAL_MAKE_BUILD_ROOT}/middleware/service/bin:",
+                  "${CASUAL_MAKE_BUILD_ROOT}/middleware/gateway/bin:",
                   "${PATH}"
                ));
                

@@ -45,11 +45,11 @@ domain:
          dependencies: [ base]
    
    servers:
-      - path: "${CMAKE_BINARY_DIR}/middleware/service/bin/casual-service-manager"
+      - path: "${CASUAL_MAKE_BUILD_ROOT}/middleware/service/bin/casual-service-manager"
         memberships: [ base]
-      - path: "${CMAKE_BINARY_DIR}/middleware/transaction/bin/casual-transaction-manager"
+      - path: "${CASUAL_MAKE_BUILD_ROOT}/middleware/transaction/bin/casual-transaction-manager"
         memberships: [ base]
-      - path: "${CMAKE_BINARY_DIR}/middleware/file/bin/casual-file-manager"
+      - path: "${CASUAL_MAKE_BUILD_ROOT}/middleware/file/bin/casual-file-manager"
         memberships: [ file]
 )";
             } // configuration
@@ -144,7 +144,7 @@ path                                                  pid     gtrid             
 domain:
    name: A
    servers:
-      - path: "${CMAKE_BINARY_DIR}/middleware/queue/bin/casual-queue-manager"
+      - path: "${CASUAL_MAKE_BUILD_ROOT}/middleware/queue/bin/casual-queue-manager"
         memberships: [ base]
    queue:
       groups:

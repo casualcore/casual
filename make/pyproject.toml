@@ -1,0 +1,19 @@
+[build-system]
+requires = ["setuptools>=61.0.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "casual-make-casual"
+version = "1.9.0"
+description = "Specific recipies for casual"
+readme = "readme.md"
+authors = [
+    { name = "casual", email = "casual@laz.se" }
+]
+requires-python = ">=3.8"
+dependencies = [
+]
+
+[project.urls]
+Homepage = "https://github.com/casualcore/casual"
+
