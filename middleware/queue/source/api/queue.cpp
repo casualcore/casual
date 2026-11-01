@@ -139,10 +139,17 @@ namespace casual
                         if( ! group)
                            common::code::raise::error( common::code::queue::no_queue);
 
+                        if( transaction)
+                        {
+                           // Make the transaction external to trigger an interaction with the TM.
+                           transaction.external();
+                        }
+
                         // 'call' non-blocking dequeue
                         auto reply = common::communication::ipc::call( 
                            group.process.ipc,  
                            dequeue::request( group, selector, transaction.trid, false));
+
 
                         if( is_error( reply.code))
                         {
@@ -154,13 +161,6 @@ namespace casual
 
                         if( reply.message)
                         {
-                           if( transaction)
-                           {
-                              // Make sure we trigger an interaction with the TM.
-                              // Since the queue-groups act as 'external resources' to
-                              // the TM
-                              transaction.external();
-                           }
                            common::log::line( queue::event::log, "dequeue|", reply.message->id);
 
                            return std::vector< queue::Message>{ transform::message()( *reply.message)};

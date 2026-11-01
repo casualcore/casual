@@ -18,6 +18,8 @@
 #include "common/execute.h"
 #include "common/sink.h"
 
+#include "casual/tx.h"
+
 namespace casual
 {
    using namespace common;
@@ -435,6 +437,54 @@ domain:
             EXPECT_TRUE( ! message.empty());
          }
 
+      }
+
+      TEST( test_queue, domain_A_B__queue_b_in_B___dequeue_b_in_transaction__no_message___expect_transaction_commit)
+      {
+         common::unittest::Trace trace;
+
+         auto b = local::domain( R"(
+domain: 
+   name: B
+   queue:
+      groups:
+         -  alias: B
+            queuebase: ':memory:'
+            queues:
+               -  name: b             
+   gateway:
+      inbound:
+         groups:
+            -  connections:
+                  -  address: 127.0.0.1:7010
+)");
+
+         auto a = local::domain( R"(
+domain: 
+   name: A
+   gateway:
+      outbound:
+         groups:
+            -  connections:
+                  -  address: 127.0.0.1:7010
+)");
+         gateway::unittest::fetch::until( gateway::unittest::fetch::predicate::outbound::connected());
+
+
+         ASSERT_TRUE( tx_begin() == TX_OK);
+
+         // dequeue non existing message from b
+         EXPECT_TRUE( queue::dequeue( "b").empty());
+         
+         EXPECT_TRUE( tx_commit() == TX_OK);
+
+         // check outbound state
+         {
+            auto state = gateway::unittest::state();
+
+            ASSERT_TRUE( state.outbound.groups.size() == 1);
+            EXPECT_TRUE( state.outbound.groups.at( 0).pending.transactions.empty());
+         }
       }
       
    } // test
