@@ -908,5 +908,27 @@ domain:
          tpunadvertise( "c");
       }
 
+      TEST( test_xatmi_call, tpadvertise_300_chars_service)
+      {
+         common::unittest::Trace trace;
+
+         auto domain = local::domain();
+
+         auto service = common::unittest::random::string( 300);
+
+         tpadvertise( service.data(), &local::service);
+         
+         {
+            auto state = casual::service::unittest::state();
+
+            auto found = algorithm::find( state.services, service);
+            ASSERT_TRUE( found) << "service: " << service << "\n" << CASUAL_NAMED_VALUE( state.services);
+
+            EXPECT_TRUE( found->name == service);
+         }
+
+         tpunadvertise( service.data());
+      }
+
    } // test
 } // casual

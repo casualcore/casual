@@ -280,16 +280,9 @@ int casual_service_advertise( const char* service, void (*function)( TPSVCINFO *
 {
    return casual::xatmi::internal::error::wrap( [&]()
    {
-      auto name = std::string{ service};
-      if( name.size() >= XATMI_SERVICE_NAME_LENGTH)
-      {
-         name.resize( XATMI_SERVICE_NAME_LENGTH - 1);
-         casual::common::log::error( casual::common::code::xatmi::argument, "service name '", service, "' truncated to '", name, "'");
-      }
-
       casual::server::context().advertise( 
          casual::xatmi::internal::server::service::create( 
-            std::move( name), 
+            std::string{ service}, 
             function));
    });
 }
