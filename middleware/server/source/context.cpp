@@ -408,7 +408,19 @@ namespace casual
                   auto& service = found->second;
 
                   // initialize transaction, if any
-                  current_trid = local::initialize_transaction( message.trid, service);
+                  try
+                  {
+                     current_trid = local::initialize_transaction( message.trid, service);
+                  }
+                  catch( ...)
+                  {
+                     // Something went wrong while initializing the transaction, we get the current 
+                     // transaction from the global context, that has been set by "initialize_transaction"
+                     // TODO: this construct is not ideal, but the whole function is a bit of a mess, and
+                     // should be reworked. Possibly with monadic operations... 
+                     current_trid = transaction::context().current().trid;
+                     throw;
+                  }
 
                   auto parameter = local::transform::parameter( message, current_trid);
 

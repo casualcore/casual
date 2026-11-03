@@ -8,6 +8,7 @@
 #define CASUAL_NO_XATMI_UNDEFINE
 
 #include "common/unittest.h"
+#include "common/event/listen.h"
 
 #include "service/call/context.h"
 
@@ -107,6 +108,59 @@ domain:
 
       }
 
+      TEST( test_server, call_service_with_trid__xa_start__fails___expect_event_to_contain_trid)
+      {
+         common::unittest::Trace trace;
+
+         auto a = local::domain( R"(
+system:
+   resources:
+      -  key: rm-mockup
+         server: ${CASUAL_MAKE_SOURCE_ROOT}/middleware/transaction/bin/rm-proxy-casual-mockup
+         xa_struct_name: casual_mockup_xa_switch_static
+         libraries:
+            -  casual-mockup-rm
+domain: 
+   name: A
+   transaction:
+      resources:
+         -  key: rm-mockup
+            # #define XAER_RMFAIL  -7 
+            openinfo: --start -7 --end -7
+            name: example-resource-server
+            instances: 1
+
+   servers:
+      -  path: ${CASUAL_MAKE_SOURCE_ROOT}/middleware/example/server/bin/casual-example-resource-server
+         memberships: [ user]
+         instances: 1
+)");
+
+         auto event_guard = common::event::scope::subscribe( { common::message::Type::event_service_calls});
+
+         auto buffer = test::unittest::xatmi::buffer::x_octet{ 128L};
+         
+         // start a transaction 'manually'
+         ASSERT_TRUE( ::tx_begin() == TX_OK ) << "tx_begin: " << tperrnostring( tperrno);
+      
+         // service will fail in xa_start call to mockup resource.
+         EXPECT_TRUE( ::tpcall( "casual/example/resource/echo", buffer.data, buffer.size, &buffer.data, &buffer.size, 0) == -1);
+
+         // we should have received an event.
+         {
+            auto event = common::communication::ipc::receive< common::message::event::service::Calls>();
+
+            auto found = common::algorithm::find( event.metrics, "casual/example/resource/echo");
+            ASSERT_TRUE( found);
+
+            // The event should contain the transaction id of the call
+            EXPECT_TRUE( found->trid == casual::transaction::context().current().trid);
+         }
+
+         EXPECT_TRUE( ::tx_rollback() == TX_OK) << "tx_rollback: " << tperrnostring( tperrno);
+
+      }
+      
       
    } // test::server
 } // casual
