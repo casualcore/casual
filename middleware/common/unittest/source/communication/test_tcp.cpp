@@ -36,7 +36,7 @@ namespace casual
 
             auto spawn_tcp_server( const tcp::Address& address)
             {
-               auto path = "${CMAKE_BINARY_DIR}/middleware/common/bin/unittest_tcp_server";
+               auto path = "${CASUAL_MAKE_BUILD_ROOT}/middleware/common/bin/unittest_tcp_server";
 
                auto pid = common::process::spawn( path, { "--listen", address});
 

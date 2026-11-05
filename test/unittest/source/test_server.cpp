@@ -45,9 +45,9 @@ domain:
          dependencies: [ user]
    
    servers:
-      -  path: "${CMAKE_BINARY_DIR}/middleware/service/bin/casual-service-manager"
+      -  path: "${CASUAL_MAKE_BUILD_ROOT}/middleware/service/bin/casual-service-manager"
          memberships: [ base]
-      -  path: "${CMAKE_BINARY_DIR}/middleware/transaction/bin/casual-transaction-manager"
+      -  path: "${CASUAL_MAKE_BUILD_ROOT}/middleware/transaction/bin/casual-transaction-manager"
          memberships: [ base]
    
 )";
@@ -74,7 +74,7 @@ domain:
    transaction:
       log: ":memory:"
    servers:         
-      -  path: "${CMAKE_BINARY_DIR}/middleware/example/server/bin/casual-example-server"
+      -  path: "${CASUAL_MAKE_BUILD_ROOT}/middleware/example/server/bin/casual-example-server"
          memberships: [ user]
          instances: 4
 )");  
