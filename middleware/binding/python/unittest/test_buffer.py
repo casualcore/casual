@@ -1,8 +1,6 @@
 import unittest
-import ctypes
 
-import casual.server.buffer as buffer
-import casual.server.exception as exception
+from casual.server import buffer, exception
 
 
 class TestBufferMethods(unittest.TestCase):
@@ -25,7 +23,7 @@ class TestBufferMethods(unittest.TestCase):
         buf = buffer.JsonBuffer( data)
         self.assertTrue( isinstance(buf, buffer.JsonBuffer))
         self.assertEqual( buf.is_bytes, False)
-        self.assertEqual( buf.data(), data.encode())
+        self.assertEqual( buf.data(), data)
 
 
     def test_create_json_buffer_with_data_bytes(self):
