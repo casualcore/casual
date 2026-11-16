@@ -221,17 +221,22 @@ namespace casual
 
             namespace pending
             {
+               Deadline::~Deadline()
+               {
+                  if( ! std::empty( m_entries))
+                     log::debug( "Deadline destroyed with pending entries: ", m_entries);
+               }
              
                std::optional< common::chronology::time_point> Deadline::add( deadline::Entry entry)
                {
+                  Trace trace{ "service::manager::state::pending::Deadline::add"};
+                  log::debug( "entry: ", entry);
+
                   if( auto found = algorithm::find( m_entries, entry.correlation))
                   {
-                     // this should not happen, but if it does, we update the entry and log a warning.
+                     // this should not happen... we let the original entry be.
                      log::warning( code::casual::internal_correlation, "entry already known to deadline - current: ", *found, ", new: ", entry);
                      
-                     found->service = entry.service;
-                     found->target = entry.target;
-
                      return {};
                   }
 
@@ -247,7 +252,7 @@ namespace casual
 
                std::optional< deadline::Directive> Deadline::remove( const strong::correlation::id& correlation)
                {
-                  Trace trace{ "service::manager::state::pending::Deadline::remove"};
+                  Trace trace{ "service::manager::state::pending::Deadline::remove correlation"};
 
                   if( auto found = algorithm::find( m_entries, correlation))
                   {
@@ -268,6 +273,8 @@ namespace casual
 
                std::optional< deadline::Directive> Deadline::remove( instance::sequential::id::type instance)
                {
+                  Trace trace{ "service::manager::state::pending::Deadline::remove instance"};
+
                   auto has_instance = [ instance]( auto& entry){ return entry.target == instance;};
 
                   auto [ keep, remove] = algorithm::stable::partition( m_entries, predicate::negate( has_instance));
@@ -275,6 +282,8 @@ namespace casual
                   // if we removed nothing, we don't need to do anything more
                   if( std::empty( remove))
                      return {};
+
+                  log::debug( "remove: ", remove);
 
                   auto removed_deadline = remove->when;
 
@@ -322,6 +331,22 @@ namespace casual
                   return result;
                }
             } // pending
+
+
+            std::optional< Pending::Extracted> Pending::extract( const common::strong::correlation::id& correlation)
+            {
+               return extract_if( [ &correlation]( auto& entry){ return entry.request.correlation == correlation;});
+            }
+
+            void Pending::update( const state::Services& services)
+            {
+               for( auto& lookup : lookups)
+                  if( ! lookup.service)
+                     if( auto id = services.lookup( lookup.request.requested))
+                        lookup.service = id;
+            }
+
+
          } // service
  
 
@@ -477,6 +502,11 @@ namespace casual
             return {};
          }
 
+         instance::sequential::id::type Instances::find_sequential( common::strong::ipc::id ipc) const
+         {
+            return sequential.lookup( ipc);
+         }
+
          std::string_view description( Runlevel value)
          {
             switch( value)
@@ -590,8 +620,7 @@ namespace casual
                }
             }
 
-
-            std::vector< state::instance::Reservation> remove( State& state, auto process)
+            state::remove::Result remove( State& state, auto process)
             {
 
                auto find_indexes = []( auto& instances, auto process)
@@ -602,43 +631,79 @@ namespace casual
                   });
                };
 
-               auto clean_instances_from_services = []( auto& instance_ids, auto& services)
+               auto clean_instances_from_services = []( auto& instance_ids, auto& services, auto action)
                {
                   for( auto service_id : services.indexes())
                      for( auto instance_id : instance_ids)
-                        services[ service_id].instances.remove( instance_id);
+                        action( services, service_id, instance_id);
                };
 
-               std::vector< state::instance::Reservation> result;
+               state::remove::Result result;
 
                state.events.remove( process);
                
+               // clean up concurrent instances associated with the process
                {
+                  auto remove_instance = [](auto& services, auto service_id, auto instance_id)
+                  {
+                     services[ service_id].instances.remove( instance_id);
+                  };
+
                   auto concurrent = find_indexes( state.instances.concurrent, process);
-                  clean_instances_from_services( concurrent, state.services);
+
+                  clean_instances_from_services( concurrent, state.services, remove_instance);
                   
                   for( auto id : concurrent)
                       state.instances.concurrent.erase( id);
                }
+
+               // clean up sequential instances associated with the process
                {
+
+                  if( auto index = state.instances.find_sequential( process))
+                     result.deadline = state.pending.service.deadline.remove( index);
+
+                  // holds services that have no more instances after removal
+                  std::vector< state::service::id::type> no_instances;
+
+                  auto remove_instance = [ &no_instances](auto& services, auto service_id, auto instance_id)
+                  {
+                     if( services[ service_id].instances.remove( instance_id))
+                        no_instances.push_back( service_id);
+                  };
+                  
                   auto sequential = find_indexes( state.instances.sequential, process);
-                  clean_instances_from_services( sequential, state.services);
+
+                  clean_instances_from_services( sequential, state.services, remove_instance);
 
                   for( auto id : sequential)
                   {
                      if( state.instances.sequential[ id].caller())
                      {
                         auto& instance = state.instances.sequential[ id];
-                        result.push_back( { .caller = instance.caller(), .callee = instance.process});
+                        result.reservations.push_back( { .caller = instance.caller(), .callee = instance.process});
                      }
 
                      state.instances.sequential.erase( id);
                      std::erase( state.disabled.sequential, id);
                   }
+
+                  // take care of pending lookups for services that have no more instances
+                  auto affected = std::get< 0>( common::algorithm::intersection( state.pending.service.lookups, no_instances));
+
+                  result.lookups = common::algorithm::container::extract( state.pending.service.lookups, affected);
+
+                  // clear potentially deadlines for the affected lookups. They might get reissued later if needed.
+                  for( auto& lookup : result.lookups)
+                     if( auto deadline = state.pending.service.deadline.remove( lookup.request.correlation))
+                        result.deadline = std::move( deadline);
+
                }
 
                return result;
             }
+
+            
 
          } // <unnamed>
       } // local
@@ -651,14 +716,7 @@ namespace casual
          if( forward.pid == pid)
             forward.clear();
 
-         state::remove::Result result;
-      
-         if( auto id = instances.find_sequential( pid))
-            result.deadline = pending.deadline.remove( id);
-
-         result.reservations = local::remove( *this, pid);
-
-         return result;
+         return local::remove( *this, pid);
       }
 
 
@@ -667,14 +725,7 @@ namespace casual
          Trace trace{ "service::manager::State::remove"};
          log::debug( "ipc: ", ipc);
 
-         state::remove::Result result;
-
-         if( auto index = instances.sequential.lookup( ipc))
-            result.deadline = pending.deadline.remove( index);
-
-         result.reservations = local::remove( *this, ipc);
-
-         return result;
+         return local::remove( *this, ipc);
       }
 
 
@@ -707,6 +758,8 @@ namespace casual
 
          if( auto found = algorithm::find_if( service.instances.sequential(), is_idle))
          {
+            log::debug( "found: ", *found);
+
             auto span = common::strong::execution::span::id::generate();
             instances.sequential[ *found].reserve( transform_caller( message, span));
             return { .instance = *found, .span = span};
@@ -769,12 +822,12 @@ namespace casual
          {
             auto names = services.names( service_id);
             auto lookups = common::algorithm::container::extract( 
-               pending.lookups,
-               std::get< 0>( common::algorithm::intersection( pending.lookups, names)));
+               pending.service.lookups,
+               std::get< 0>( common::algorithm::intersection( pending.service.lookups, names)));
 
             auto get_correlation = []( auto& lookup){ return lookup.request.correlation;};
 
-            if( auto deadline = pending.deadline.remove( algorithm::transform( lookups, get_correlation)))
+            if( auto deadline = pending.service.deadline.remove( algorithm::transform( lookups, get_correlation)))
                result.deadline = deadline;
 
             std::ranges::move( lookups, std::back_inserter( result.pending));
@@ -859,6 +912,10 @@ namespace casual
             };
 
             algorithm::for_each( message.services.add, add_service);
+
+            // Potentially update pending lookups with the service id (it helps to only use id:s when matching requests
+            // later)
+            pending.service.update( services);
          }
 
          // remove
@@ -868,13 +925,13 @@ namespace casual
          {
             auto requested_service = [ &, instance_id]( auto& pending)
             {
-               if( auto service_id = services.lookup( pending.request.requested))
-                  return instances.sequential[ instance_id].service( service_id);
+               if( pending.service)
+                  return instances.sequential[ instance_id].service( pending.service );
                return false;
             };
  
-            if( auto found = algorithm::find_if( pending.lookups, requested_service))
-               result.pending.push_back( algorithm::container::extract( pending.lookups, std::begin( found)));
+            if( auto found = algorithm::find_if( pending.service.lookups, requested_service))
+               result.pending.push_back( algorithm::container::extract( pending.service.lookups, std::begin( found)));
          }
 
          return result;
@@ -958,9 +1015,13 @@ namespace casual
             };
 
             algorithm::for_each( message.services.add, add_service);
+
+            // Potentially update pending lookups with the service id (it helps to only use id:s when matching requests
+            // later)
+            pending.service.update( services);
          }
 
-         // remove
+         // remove concurrent instance. We can't have any pending lookups for it.
          local::remove_services( *this, instance_id, message.services.remove);
 
          // try to match pending discoveries - we try to keep calls in transactions to the
@@ -968,30 +1029,28 @@ namespace casual
          {
             auto requested_is_callable = [ this, instance_id]( const state::service::pending::Lookup& pending)
             {
-               auto service_id = services.lookup( pending.request.requested);
-
-               if( ! service_id)
+               if( ! pending.service)
                   return false;
 
                if( pending.request.trid)
                {
                   // right, the request is in a transaction, we need to match.
                   if( auto found = algorithm::find( transaction.associations, pending.request.trid.global()))  
-                     return std::ranges::contains( found->second, instance_id) && services[ service_id].instances.has_instance( instance_id);
+                     return std::ranges::contains( found->second, instance_id) && services[ pending.service].instances.has_instance( instance_id);
 
                   return false;
                }
                else
                {
                   // we don't need to match transaction, but we need to make sure that the instance can handle the service.
-                  return services[ service_id].instances.has_instance( instance_id);
+                  return services[ pending.service].instances.has_instance( instance_id);
                }
 
             };
 
-            auto extract = algorithm::stable::filter( pending.lookups, requested_is_callable);
+            auto extract = algorithm::stable::filter( pending.service.lookups, requested_is_callable);
 
-            return algorithm::container::extract( pending.lookups, extract);
+            return algorithm::container::extract( pending.service.lookups, extract);
 
          }
       }

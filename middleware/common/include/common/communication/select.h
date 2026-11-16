@@ -134,14 +134,14 @@ namespace casual
                   {
                      try 
                      {
-                        // we're idle (most likely)
-                        condition::detail::invoke< condition::detail::tag::idle>( condition);
-
                         // make sure we try to consume from the 'consume-handlers' before
                         // we might block forever. This gives possibilities to consume cached messages
                         // that wont be triggered via multiplexing on file descriptors
                         while( detail::consume::dispatch( handlers...))
                            ; // no-op
+
+                        // we might be idle.
+                        condition::detail::invoke< condition::detail::tag::idle>( condition);
 
                         // we might be done after idle, and consumed
                         if( condition::detail::invoke< condition::detail::tag::done>( condition))
