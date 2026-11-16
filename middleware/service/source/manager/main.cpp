@@ -97,13 +97,7 @@ namespace casual
             {
                return common::message::dispatch::condition::compose(
                   common::message::dispatch::condition::done( [&state]() { return state.done();}),
-                  common::message::dispatch::condition::idle( [&state]()
-                  {
-                     // the input socket is empty, we can't know if there ever gonna be any more 
-                     // messages to read, we need to send metric, if any...
-                     if( state.metric && state.events.active< common::message::event::service::Calls>())
-                        manager::handle::metric::send( state);
-                  })
+                  common::message::dispatch::condition::idle( [&state]() { handle::idle( state);})
                );
             }
 

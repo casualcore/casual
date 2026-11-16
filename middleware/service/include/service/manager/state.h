@@ -40,6 +40,8 @@ namespace casual
       
       namespace state
       {
+         struct Services;
+
          template< typename Tag>
          struct id_policy
          {
@@ -241,16 +243,16 @@ namespace casual
             {
                struct Lookup
                {
-                  Lookup( common::message::service::lookup::Request request, common::chronology::time_point when)
-                  : request{ std::move( request)}, when{ when} {}
-
+                  state::service::id::type service{};
                   common::message::service::lookup::Request request;
                   common::chronology::time_point when;
 
                   inline friend bool operator == ( const Lookup& lhs, const common::strong::correlation::id& rhs) { return lhs.request == rhs;}
-                  inline friend bool operator == ( const Lookup& lhs, const std::string& service) { return lhs.request.requested == service;}
+                  inline friend bool operator == ( const Lookup& lhs, std::string_view service) { return lhs.request.requested == service;}
+                  inline friend bool operator == ( const Lookup& lhs, const state::service::id::type& service) { return lhs.service == service;}
 
                   CASUAL_LOG_SERIALIZE( 
+                     CASUAL_SERIALIZE( service);
                      CASUAL_SERIALIZE( request);
                      CASUAL_SERIALIZE( when);
                   )
@@ -292,7 +294,9 @@ namespace casual
                } // deadline
 
                struct Deadline
-               {      
+               {
+                  ~Deadline();
+
                   std::optional< common::chronology::time_point> add( deadline::Entry entry);
                   std::optional< deadline::Directive> remove( const common::strong::correlation::id& correlation);
                   std::optional< deadline::Directive> remove( instance::sequential::id::type instance);
@@ -323,6 +327,48 @@ namespace casual
                   std::vector< deadline::Entry> m_entries;
                };
             } // pending
+
+            struct Pending
+            {
+               pending::Deadline deadline;
+               std::vector< pending::Lookup> lookups;
+
+               struct Extracted
+               {
+                  pending::Lookup lookup;
+                  std::optional< pending::deadline::Directive> deadline;
+
+                  CASUAL_LOG_SERIALIZE(
+                     CASUAL_SERIALIZE( lookup);
+                     CASUAL_SERIALIZE( deadline);
+                  )
+               };
+
+               template< typename Predicate>
+               std::optional< Extracted> extract_if( Predicate predicate)
+               {
+                  if( auto found = common::algorithm::find_if( lookups, predicate))
+                  {
+                     auto correlation = found->request.correlation;
+                     return Extracted{ 
+                        .lookup = common::algorithm::container::extract( lookups, std::begin( found)),
+                        .deadline = deadline.remove( correlation)
+                     };
+                  }
+
+                  return std::nullopt;
+               }
+
+               std::optional< Extracted> extract( const common::strong::correlation::id& correlation);
+
+               // Update the pending lookups service id:s, if any.
+               void update( const state::Services& services);
+
+               CASUAL_LOG_SERIALIZE(
+                  CASUAL_SERIALIZE( deadline);
+                  CASUAL_SERIALIZE( lookups);
+               )
+            };
 
             namespace instances
             {
@@ -376,7 +422,6 @@ namespace casual
                inline const auto& sequential() const noexcept { return m_sequential;}
                inline const auto& concurrent() const noexcept { return m_concurrent;}
 
-               
 
                CASUAL_LOG_SERIALIZE(
                   CASUAL_SERIALIZE( m_sequential);
@@ -534,6 +579,7 @@ namespace casual
 
             //! @returns the sequential id for the given `pid`, or 'nil-id' if not found
             instance::sequential::id::type find_sequential( common::strong::process::id pid) const;
+            instance::sequential::id::type find_sequential( common::strong::ipc::id ipc) const;
 
             CASUAL_LOG_SERIALIZE(
                CASUAL_SERIALIZE( sequential);
@@ -541,16 +587,22 @@ namespace casual
             )
          };
 
+
          namespace remove
          {
             struct Result
             {
                std::vector< state::instance::Reservation> reservations;
+               
+               //! pending lookups that needs to be reissued.
+               std::vector< state::service::pending::Lookup> lookups;
+
                //! potentially new deadline to be set.
                std::optional< service::pending::deadline::Directive> deadline;
 
                CASUAL_LOG_SERIALIZE(
                   CASUAL_SERIALIZE( reservations);
+                  CASUAL_SERIALIZE( lookups);
                   CASUAL_SERIALIZE( deadline);
                )
             };
@@ -617,14 +669,12 @@ namespace casual
 
          struct
          {
-            state::service::pending::Deadline deadline;
-            std::vector< state::service::pending::Lookup> lookups;
+            state::service::Pending service;
             common::message::coordinate::fan::Out< common::message::service::call::ACK, common::strong::process::id> shutdown;
             std::vector< common::message::service::concurrent::instance::disassociate::Request> disassociation;
             
             CASUAL_LOG_SERIALIZE(
-               CASUAL_SERIALIZE( deadline);
-               CASUAL_SERIALIZE( lookups);
+               CASUAL_SERIALIZE( service);
                CASUAL_SERIALIZE( shutdown);
                CASUAL_SERIALIZE( disassociation);
             )

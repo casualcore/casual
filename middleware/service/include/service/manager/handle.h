@@ -27,6 +27,8 @@ namespace casual
 
       void timeout( State& state);
 
+      void idle( State& state);
+
       namespace metric
       {
          //! tries to send metrics regardless

@@ -131,6 +131,23 @@ domain:
                
             } // concurrent
 
+            namespace emulate
+            {
+               auto exit( common::strong::process::id pid, common::process::lifetime::exit::Reason reason)
+               {
+                  common::message::event::process::Exit event;
+                  event.state.pid = pid;
+                  event.state.reason = reason;
+                  local::send( event);
+               }
+
+               void exit( common::process::lifetime::exit::Reason reason = common::process::lifetime::exit::Reason::exited)
+               {
+                  exit( common::process::id(), reason);
+               }
+
+            } // emulate
+
 
          } // <unnamed>
       } // local
@@ -1818,6 +1835,45 @@ domain:
             ASSERT_TRUE( state.instances.concurrent.size() == 1);
             EXPECT_TRUE( state.instances.concurrent.at( 0).process == instance.process());
             EXPECT_TRUE( state.instances.concurrent.at( 0).reservations.empty()) << CASUAL_NAMED_VALUE( state.instances.concurrent);
+         }
+      }
+
+      TEST( service_manager, advertise_a__pending_lookups_a__fake_kill_of_instance__expect_absent_replies)
+      {
+         common::unittest::Trace trace;
+
+         auto domain = local::domain( R"(
+domain:
+   name: A
+   services:
+      -  name: a
+         execution:
+            timeout:
+               duration: 2s
+
+      )");
+
+         unittest::advertise( { "a"});
+         
+         // 4 lookups for service "a"
+         auto lookups = std::array{ service::Lookup{ "a", {}}, service::Lookup{ "a", {}}, service::Lookup{ "a", {}}, service::Lookup{ "a", {}}};
+
+         // emulate a fake kill of the instance
+         local::emulate::exit();
+
+         {
+            auto reply = service::lookup::reply( std::move( lookups.at( 0)));
+            EXPECT_TRUE( reply.process.pid == common::process::id()) << CASUAL_NAMED_VALUE( reply);
+
+            for( auto& lookup : std::ranges::subrange( std::next( lookups.begin()), lookups.end()))
+               EXPECT_CODE( service::lookup::reply( std::move( lookup)), common::code::xatmi::no_entry) << CASUAL_NAMED_VALUE( lookup);
+         }
+
+         // check that we don't have any pending and active deadlines left
+         {
+            auto state = unittest::state();
+            EXPECT_TRUE( state.pending.requests.empty()) << CASUAL_NAMED_VALUE( state.pending);
+            EXPECT_TRUE( state.pending.deadlines.empty()) << CASUAL_NAMED_VALUE( state.pending);
          }
 
       }
