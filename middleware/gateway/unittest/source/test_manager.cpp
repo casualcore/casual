@@ -687,6 +687,97 @@ domain:
          }
       }
 
+      TEST( gateway_manager, domain_a__to_b_c__b_has_service_example_server___call_echo__scale_down_example_in_b_scale_up_example_in_c___expect_outbound_to_unadvertise_for_b__call_to_c)
+      {
+         common::unittest::Trace trace;
+
+         auto b = local::domain( R"(
+domain:
+   name: B
+   servers:
+      -  alias: example
+         path: "${CASUAL_MAKE_SOURCE_ROOT}/middleware/example/server/bin/casual-example-server"
+         instances: 1
+         memberships: [ user]
+   gateway:
+      inbound:
+         groups:
+            -  alias: in-B
+               connections: 
+                  -  address: 127.0.0.1:7010
+)");
+
+         auto c = local::domain( R"(
+domain:
+   name: C
+   servers:
+      -  alias: example
+         path: "${CASUAL_MAKE_SOURCE_ROOT}/middleware/example/server/bin/casual-example-server"
+         instances: 0
+         memberships: [ user]
+   gateway:
+      inbound:
+         groups:
+            -  alias: in-C
+               connections: 
+                  -  address: 127.0.0.1:7011
+)");
+
+         auto a = local::domain( R"(
+domain:
+   name: A
+   gateway:
+      outbound:
+         groups:
+            -  alias: out-A
+               connections: 
+                  -  address: 127.0.0.1:7010
+                  -  address: 127.0.0.1:7011
+)");
+
+         unittest::fetch::until( unittest::fetch::predicate::outbound::connected());
+
+         auto call_echo = []()
+         {
+            buffer::Payload payload;
+            payload.type = "X_OCTET/";
+            common::algorithm::copy( binary::span::make( "casual"), std::back_inserter( payload.data));
+
+            return casual::service::call::invoke( "casual/example/echo", payload, {});
+         };
+
+         EXPECT_NO_THROW({
+            call_echo();
+         });
+
+         // scale down example in B, and scale up example in C
+         {
+            b.activate();
+            casual::domain::unittest::scale::alias( "example", 0);
+
+            c.activate();
+            casual::domain::unittest::scale::alias( "example", 1);
+         }
+
+         // back to main domain A
+         a.activate();
+
+         // expect call to b, unadvertise for b, throw with no_entry
+         EXPECT_CODE({
+            call_echo();
+         }, common::code::xatmi::no_entry);
+
+         // casual/example/echo is not known any more, next call should get a discovery and we'll
+         // find the service in C
+         EXPECT_NO_THROW({
+            call_echo();
+         });
+
+         EXPECT_NO_THROW({
+            call_echo();
+         });
+
+      }
 
       TEST( gateway_manager,  enqueue_dequeue___expect_message)
       {

@@ -185,7 +185,12 @@ namespace casual
                   {
                      if( auto handle = state.connections.process_handle( descriptor))
                      {
-                        common::message::service::Advertise unadvertise{ handle};
+                        auto information = state.connections.information( descriptor);
+                        CASUAL_ASSERT( information);
+
+                        common::message::service::concurrent::Advertise unadvertise{ handle};
+                        unadvertise.description = information->domain.name;
+                        unadvertise.order = state.order;
                         unadvertise.alias = instance::alias();
                         unadvertise.services.remove = std::move( services);
                         state.multiplex.send( ipc::manager::service(), unadvertise);
@@ -296,11 +301,11 @@ namespace casual
                               Trace trace{ "gateway::group::outbound::handle::local::internal::detail::create::task call::Reply"};
                               log::debug( "message: ", message);
 
-                              state.multiplex.send( shared->ipc, message);
-
                               // we unadvertise the service if we get no_entry
                               if( message.code.result == decltype( message.code.result)::no_entry)
                                  service::unadvertise( state, descriptor, { shared->service});
+
+                              state.multiplex.send( shared->ipc, message);
 
                               internal::service::metric( state, message, std::move( *shared), message.code);
                            },

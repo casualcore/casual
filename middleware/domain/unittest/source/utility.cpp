@@ -69,6 +69,18 @@ namespace casual
          return local::find_instance( state.executables, alias, index);
       }
 
+      namespace scale
+      {
+         void alias( std::string alias, platform::size::type instances)
+         {
+            auto argument = std::vector< manager::admin::model::scale::Alias>{ { .name = std::move( alias), .instances = instances}};
+
+            manager::admin::call::service( 
+               manager::admin::service::name::scale::aliases, 
+               argument);
+         }
+      } // scale
+
 
       namespace instances
       {
