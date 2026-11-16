@@ -445,5 +445,159 @@ namespace casual
          }
       }
 
+      TEST( service_manager_state, remove_process__expect_all_sequential_and_concurrent_instances_removed)
+      {
+         common::unittest::Trace trace;
+
+         auto state = local::state();
+         const auto removed_pid = common::strong::process::id{ 100};
+         const auto retained_pid = common::strong::process::id{ 101};
+         const auto removed_sequential_ipc = common::strong::ipc::id::generate();
+         const auto retained_sequential_ipc = common::strong::ipc::id::generate();
+         const auto removed_concurrent_ipc = common::strong::ipc::id::generate();
+         const auto retained_concurrent_ipc = common::strong::ipc::id::generate();
+
+         auto advertise_sequential = [&]( auto pid, auto ipc)
+         {
+            common::message::service::Advertise message;
+            message.process = { pid, ipc};
+            message.services.add.push_back( { .name = "sequential"});
+            EXPECT_TRUE( state.update( std::move( message)).pending.empty());
+         };
+
+         auto advertise_concurrent = [&]( auto pid, auto ipc)
+         {
+            common::message::service::concurrent::Advertise message;
+            message.process = { pid, ipc};
+            message.services.add.push_back( { .name = "concurrent"});
+            std::ignore = state.update( std::move( message));
+         };
+
+         advertise_sequential( removed_pid, removed_sequential_ipc);
+         advertise_sequential( retained_pid, retained_sequential_ipc);
+         advertise_concurrent( removed_pid, removed_concurrent_ipc);
+         advertise_concurrent( retained_pid, retained_concurrent_ipc);
+
+         auto result = state.remove( removed_pid);
+
+         EXPECT_TRUE( result.reservations.empty());
+         EXPECT_TRUE( result.lookups.empty());
+         EXPECT_FALSE( state.instances.sequential.lookup( removed_sequential_ipc));
+         EXPECT_FALSE( state.instances.concurrent.lookup( removed_concurrent_ipc));
+         EXPECT_TRUE( state.instances.sequential.lookup( retained_sequential_ipc));
+         EXPECT_TRUE( state.instances.concurrent.lookup( retained_concurrent_ipc));
+
+         auto sequential = state.services.lookup( "sequential");
+         auto concurrent = state.services.lookup( "concurrent");
+         ASSERT_TRUE( sequential);
+         ASSERT_TRUE( concurrent);
+         EXPECT_TRUE( state.services[ sequential].instances.sequential().size() == 1);
+         EXPECT_TRUE( state.services[ concurrent].instances.concurrent().size() == 1);
+      }
+
+      TEST( service_manager_state, remove_process__service_has_other_instance__expect_pending_lookup_retained)
+      {
+         common::unittest::Trace trace;
+
+         auto state = local::state();
+         const auto removed_pid = common::strong::process::id{ 110};
+         const auto retained_pid = common::strong::process::id{ 111};
+
+         auto advertise = [&]( auto pid)
+         {
+            common::message::service::Advertise message;
+            message.process.pid = pid;
+            message.process.ipc = common::strong::ipc::id::generate();
+            message.services.add.push_back( { .name = "service"});
+            EXPECT_TRUE( state.update( std::move( message)).pending.empty());
+         };
+
+         advertise( removed_pid);
+         advertise( retained_pid);
+
+         auto service = state.services.lookup( "service");
+         ASSERT_TRUE( service);
+
+         common::message::service::lookup::Request request;
+         request.requested = "service";
+         request.correlation = common::strong::correlation::id::generate();
+         state.pending.service.lookups.push_back( {
+            .request = request,
+            .when = common::chronology::time_point::clock::now()
+         });
+
+         auto result = state.remove( removed_pid);
+
+         EXPECT_TRUE( result.lookups.empty());
+         ASSERT_TRUE( state.pending.service.lookups.size() == 1);
+         EXPECT_TRUE( state.pending.service.lookups.front().request.correlation == request.correlation);
+         EXPECT_TRUE( state.services[ service].instances.sequential().size() == 1);
+      }
+
+      TEST( service_manager_state, remove_process__last_instance_for_service__expect_pending_lookup_returned)
+      {
+         common::unittest::Trace trace;
+
+         auto state = local::state();
+         const auto pid = common::strong::process::id{ 120};
+         const auto ipc = common::strong::ipc::id::generate();
+
+         common::message::service::Advertise advertise;
+         advertise.process.pid = pid;
+         advertise.process.ipc = ipc;
+         advertise.services.add.push_back( { .name = "service"});
+         EXPECT_TRUE( state.update( std::move( advertise)).pending.empty());
+
+         auto service = state.services.lookup( "service");
+         ASSERT_TRUE( service);
+         auto instance = state.instances.sequential.lookup( ipc);
+         ASSERT_TRUE( instance);
+
+         common::message::service::lookup::Request request;
+         request.requested = "service";
+         request.correlation = common::strong::correlation::id::generate();
+         state.pending.service.lookups.push_back( {
+            .request = request,
+            .when = common::chronology::time_point::clock::now()
+         });
+         state.pending.service.deadline.add( {
+            .when = common::chronology::time_point::clock::now(),
+            .correlation = request.correlation,
+            .target = instance,
+            .service = service
+         });
+
+         auto result = state.remove( pid);
+
+         ASSERT_TRUE( result.lookups.size() == 1);
+         EXPECT_TRUE( result.lookups.front().request.correlation == request.correlation);
+         ASSERT_TRUE( result.deadline);
+         EXPECT_TRUE( std::holds_alternative< state::service::pending::deadline::Unset>( *result.deadline));
+         EXPECT_TRUE( state.pending.service.deadline.entries().empty());
+         EXPECT_TRUE( state.pending.service.lookups.empty());
+         EXPECT_TRUE( state.instances.sequential.empty());
+         EXPECT_TRUE( state.services[ service].instances.sequential().empty());
+      }
+
+      TEST( service_manager_state, remove_unknown_process__expect_state_unchanged)
+      {
+         common::unittest::Trace trace;
+
+         auto state = local::state();
+         common::message::service::Advertise advertise;
+         advertise.process = common::process::handle();
+         advertise.services.add.push_back( { .name = "service"});
+         EXPECT_TRUE( state.update( std::move( advertise)).pending.empty());
+
+         auto result = state.remove( common::strong::process::id{ 999});
+
+         EXPECT_TRUE( result.reservations.empty());
+         EXPECT_TRUE( result.lookups.empty());
+         EXPECT_TRUE( state.instances.sequential.size() == 1);
+         auto service = state.services.lookup( "service");
+         ASSERT_TRUE( service);
+         EXPECT_TRUE( state.services[ service].instances.sequential().size() == 1);
+      }
+
    } // service::manager
 } // casual

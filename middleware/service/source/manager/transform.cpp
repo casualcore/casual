@@ -195,8 +195,8 @@ namespace casual
 
          local::services( state, result.services);
 
-         common::algorithm::transform( state.pending.lookups, result.pending.requests, local::pending::request());
-         common::algorithm::transform( state.pending.deadline.entries(), result.pending.deadlines, local::pending::deadlines( state));
+         common::algorithm::transform( state.pending.service.lookups, result.pending.requests, local::pending::request());
+         common::algorithm::transform( state.pending.service.deadline.entries(), result.pending.deadlines, local::pending::deadlines( state));
          common::algorithm::transform( state.pending.disassociation, result.pending.disassociation, local::pending::disassociate());
 
          common::algorithm::for_each( state.routes, [&result]( auto& pair)
@@ -221,8 +221,6 @@ namespace casual
             });
 
          }
-
-
 
          return result;
       }

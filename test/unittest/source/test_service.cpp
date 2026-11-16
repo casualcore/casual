@@ -83,7 +83,26 @@ domain:
                   };
                }
                         
-            } // is   
+            } // is
+
+            struct Instance
+            {
+               common::communication::ipc::inbound::Device device;
+
+               auto process() const { return common::process::Handle( common::process::id(), device.connector().handle().ipc());}
+            };
+
+            namespace emulate
+            {
+               auto exit( common::strong::process::id pid)
+               {
+                  common::message::event::process::Exit event;
+                  event.state.pid = pid;
+                  event.state.reason = common::process::lifetime::exit::Reason::exited;
+                  common::communication::device::blocking::send( communication::instance::outbound::service::manager::device(), event);
+               }
+            } // emulate
+               
 
          } // <unnamed>
       } // local
@@ -740,6 +759,69 @@ domain:
          casual::transaction::unittest::commit( trid);
 
       }
+
+      TEST( test_service, domain_A_B__domain_B_advertise_x__lookup_x___A_advertize_x__lookup_x_twice__pending_lookup_to_x__process_exit_in_A__expect_lookup_reply_to_x_in_B)
+      {
+         common::unittest::Trace trace;
+
+         struct
+         {
+            local::Instance a;
+            local::Instance b;
+
+         } instance;
+
+         auto b = local::domain( R"(
+domain:
+   name: B
+   gateway:
+      inbound:
+         groups:
+            -  connections:
+                  -  address: 127.0.0.1:7010
+         )");
+
+
+         casual::service::unittest::advertise( { "x"}, instance.b.process());
+
+
+         auto a = local::domain( R"(
+domain:
+   name: A
+   gateway:
+      outbound:
+         groups:
+            -  alias: a
+               connections:
+                  -  address: 127.0.0.1:7010
+         )");
+
+         const auto state = gateway::unittest::fetch::until( gateway::unittest::fetch::predicate::outbound::connected());
+         
+         // lookup x in B
+         casual::service::unittest::wait::until::advertised( "x");
+
+         // advertise x in A
+         casual::service::unittest::advertise( { "x"}, instance.a.process());
+
+         // send call to x, twice
+         auto lookups = std::array{ casual::service::Lookup{ "x", {}}, casual::service::Lookup{ "x", {}}};
+
+         // the second lookup is now pending. Lets emulate exit of A
+         local::emulate::exit( instance.a.process().pid);
+
+         // we should get a lookup reply for outbound
+         {
+            auto b_connection = state.connections.at( 0).ipc;
+
+            auto lookup_reply = casual::service::lookup::reply( std::move( lookups[ 1]));
+            EXPECT_TRUE( lookup_reply.process.ipc == b_connection);
+
+            // discard for good measure
+            casual::service::lookup::discard( std::move( lookup_reply));
+         }
+      }
+
    } // test::domain::service
 
 } // casual

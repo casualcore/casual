@@ -40,6 +40,7 @@ namespace casual
       
       namespace state
       {
+
          template< typename Tag>
          struct id_policy
          {
@@ -241,14 +242,15 @@ namespace casual
             {
                struct Lookup
                {
-                  Lookup( common::message::service::lookup::Request request, common::chronology::time_point when)
-                  : request{ std::move( request)}, when{ when} {}
-
                   common::message::service::lookup::Request request;
-                  common::chronology::time_point when;
+                  std::optional< common::chronology::time_point> when{};
+
+                  //! @returns the duration the request has been pending, or 'zero' if it's not been logically pending,
+                  //!    for instance, if the request has 'wait' directive set.
+                  common::chronology::duration pending() const;
 
                   inline friend bool operator == ( const Lookup& lhs, const common::strong::correlation::id& rhs) { return lhs.request == rhs;}
-                  inline friend bool operator == ( const Lookup& lhs, const std::string& service) { return lhs.request.requested == service;}
+                  inline friend bool operator == ( const Lookup& lhs, std::string_view service) { return lhs.request.requested == service;}
 
                   CASUAL_LOG_SERIALIZE( 
                      CASUAL_SERIALIZE( request);
@@ -292,7 +294,9 @@ namespace casual
                } // deadline
 
                struct Deadline
-               {      
+               {
+                  ~Deadline();
+
                   std::optional< common::chronology::time_point> add( deadline::Entry entry);
                   std::optional< deadline::Directive> remove( const common::strong::correlation::id& correlation);
                   std::optional< deadline::Directive> remove( instance::sequential::id::type instance);
@@ -324,6 +328,45 @@ namespace casual
                };
             } // pending
 
+            struct Pending
+            {
+               pending::Deadline deadline;
+               std::vector< pending::Lookup> lookups;
+
+               struct Extracted
+               {
+                  pending::Lookup lookup;
+                  std::optional< pending::deadline::Directive> deadline;
+
+                  CASUAL_LOG_SERIALIZE(
+                     CASUAL_SERIALIZE( lookup);
+                     CASUAL_SERIALIZE( deadline);
+                  )
+               };
+
+               template< typename Predicate>
+               std::optional< Extracted> extract_if( Predicate predicate)
+               {
+                  if( auto found = common::algorithm::find_if( lookups, predicate))
+                  {
+                     auto correlation = found->request.correlation;
+                     return Extracted{ 
+                        .lookup = common::algorithm::container::extract( lookups, std::begin( found)),
+                        .deadline = deadline.remove( correlation)
+                     };
+                  }
+
+                  return std::nullopt;
+               }
+
+               std::optional< Extracted> extract( const common::strong::correlation::id& correlation);
+
+               CASUAL_LOG_SERIALIZE(
+                  CASUAL_SERIALIZE( deadline);
+                  CASUAL_SERIALIZE( lookups);
+               )
+            };
+
             namespace instances
             {
 
@@ -352,10 +395,9 @@ namespace casual
 
                void add( state::instance::concurrent::id::type instance, platform::size::type order, state::instance::concurrent::Property property);
 
-               //! @return true if there are no instances left after the removal
+               //! @return true if there are no sequential instances left after the removal
                bool remove( instance::sequential::id::type id);
-               //! @return true if there are no instances left after the removal
-               bool remove( instance::concurrent::id::type id);
+               void remove( instance::concurrent::id::type id);
 
 
                inline bool has_sequential() const noexcept { return ! m_sequential.empty();}
@@ -376,7 +418,6 @@ namespace casual
                inline const auto& sequential() const noexcept { return m_sequential;}
                inline const auto& concurrent() const noexcept { return m_concurrent;}
 
-               
 
                CASUAL_LOG_SERIALIZE(
                   CASUAL_SERIALIZE( m_sequential);
@@ -534,6 +575,7 @@ namespace casual
 
             //! @returns the sequential id for the given `pid`, or 'nil-id' if not found
             instance::sequential::id::type find_sequential( common::strong::process::id pid) const;
+            instance::sequential::id::type find_sequential( common::strong::ipc::id ipc) const;
 
             CASUAL_LOG_SERIALIZE(
                CASUAL_SERIALIZE( sequential);
@@ -541,16 +583,22 @@ namespace casual
             )
          };
 
+
          namespace remove
          {
             struct Result
             {
                std::vector< state::instance::Reservation> reservations;
+               
+               //! pending lookups that needs to be reissued.
+               std::vector< state::service::pending::Lookup> lookups;
+
                //! potentially new deadline to be set.
                std::optional< service::pending::deadline::Directive> deadline;
 
                CASUAL_LOG_SERIALIZE(
                   CASUAL_SERIALIZE( reservations);
+                  CASUAL_SERIALIZE( lookups);
                   CASUAL_SERIALIZE( deadline);
                )
             };
@@ -617,14 +665,12 @@ namespace casual
 
          struct
          {
-            state::service::pending::Deadline deadline;
-            std::vector< state::service::pending::Lookup> lookups;
+            state::service::Pending service;
             common::message::coordinate::fan::Out< common::message::service::call::ACK, common::strong::process::id> shutdown;
             std::vector< common::message::service::concurrent::instance::disassociate::Request> disassociation;
             
             CASUAL_LOG_SERIALIZE(
-               CASUAL_SERIALIZE( deadline);
-               CASUAL_SERIALIZE( lookups);
+               CASUAL_SERIALIZE( service);
                CASUAL_SERIALIZE( shutdown);
                CASUAL_SERIALIZE( disassociation);
             )

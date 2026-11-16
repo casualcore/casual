@@ -134,14 +134,22 @@ namespace casual
                   {
                      try 
                      {
-                        // we're idle (most likely)
-                        condition::detail::invoke< condition::detail::tag::idle>( condition);
 
                         // make sure we try to consume from the 'consume-handlers' before
                         // we might block forever. This gives possibilities to consume cached messages
-                        // that wont be triggered via multiplexing on file descriptors
+                        // that wont be triggered via multiplexing on file descriptors.
                         while( detail::consume::dispatch( handlers...))
                            ; // no-op
+
+                        // we might be idle.
+                        condition::detail::invoke< condition::detail::tag::idle>( condition);
+
+                        // TODO: idle might have pushed a message into the cache, so we should try to consume them before blocking.
+                        // We don't do that in any 'idle' right now, but if an 'idle' were to push messages into the cache, 
+                        // and we block without consuming, we might never get 'done' -> hard to find bug
+                        // TODO: consider get rid of push to cache, and send messages to the actual ipc device. The 
+                        // multiplex-abstraction will eventually send the message even if the ipc device is "full".
+                        // detail::consume::dispatch( handlers...);
 
                         // we might be done after idle, and consumed
                         if( condition::detail::invoke< condition::detail::tag::done>( condition))

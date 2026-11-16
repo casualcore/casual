@@ -426,6 +426,20 @@ namespace casual
          EXPECT_TRUE( algorithm::equal( std::get< 1>( split), ( std::vector< int>{ 9, 7, 8, 6})));
       }
 
+
+      TEST( common_algorithm, intersection_empty_lookup)
+      {
+         common::unittest::Trace trace;
+
+         std::vector< int> source{ 9, 3, 1, 7, 4, 2, 5, 8, 6};
+         std::vector< int> lookup{};
+
+         auto [ intersection, difference] = algorithm::intersection( source, lookup);
+
+         EXPECT_TRUE( intersection.empty());
+         EXPECT_TRUE( algorithm::equal( difference, source));
+      }
+
       namespace local
       {
          namespace
@@ -436,8 +450,15 @@ namespace casual
                {
                   common( int v) : value{ v} {}
                   int value = 0;
-                  friend bool operator == ( const common& lhs, const common& rhs) { return lhs.value == rhs.value;}
-                  friend bool operator < ( const common& lhs, const common& rhs) { return lhs.value < rhs.value;}
+
+                  friend auto operator <=> ( const common&, const common&) = default;
+                  friend bool operator == ( const common&, const common&) = default;
+
+                  friend bool operator == ( const common& lhs, int rhs) { return lhs.value == rhs;}
+
+                  CASUAL_CONST_CORRECT_SERIALIZE(
+                     CASUAL_SERIALIZE( value);
+                  )
                };
 
                struct A : common
@@ -465,10 +486,40 @@ namespace casual
          std::vector< A> range{ 9, 3, 1, 7, 4, 2, 5, 8, 6};
          std::vector< B> lookup{ 4, 1, 3, 5, 2};
 
-         auto split = algorithm::intersection( range, lookup, []( const A& a, const B& b){ return a.value == b.value;});
+         auto [ intersection, difference]= algorithm::intersection( range, lookup, []( const A& a, const B& b){ return a.value == b.value;});
 
-         EXPECT_TRUE( algorithm::equal( algorithm::sort( std::get< 0>( split)), algorithm::sort( lookup)));// << std::get< 0>( split);
-         EXPECT_TRUE( algorithm::equal( std::get< 1>( split), ( std::vector< int>{ 9, 7, 8, 6})));
+         EXPECT_TRUE( algorithm::equal( algorithm::sort( intersection), algorithm::sort( lookup)));
+         EXPECT_TRUE( algorithm::equal( difference, ( std::vector< int>{ 9, 7, 8, 6})));
+      }
+
+      TEST( common_algorithm, intersection_equality_operator)
+      {
+         common::unittest::Trace trace;
+
+         using namespace local::intersection;
+
+         std::vector< A> range{ 9, 3, 1, 7, 4, 2, 5, 8, 6};
+         std::array lookup{ 4, 1, 3};
+
+         auto [ intersection, difference]= algorithm::intersection( range, lookup);
+
+         EXPECT_TRUE( algorithm::equal( algorithm::sort( intersection), algorithm::sort( lookup)));
+         EXPECT_TRUE( algorithm::equal( difference, ( std::array{ 9, 7, 2, 5, 8, 6}))) << CASUAL_NAMED_VALUE( difference);
+      }
+
+      TEST( common_algorithm, intersection_equality_operator_empty_lookup)
+      {
+         common::unittest::Trace trace;
+
+         using namespace local::intersection;
+
+         std::vector< A> range{ 9, 3, 1, 7, 4, 2, 5, 8, 6};
+         std::array< int, 0> lookup{};
+
+         auto [ intersection, difference]= algorithm::intersection( range, lookup);
+
+         EXPECT_TRUE( std::empty( intersection));
+         EXPECT_TRUE( algorithm::equal( difference, ( std::array{ 9, 3, 1, 7, 4, 2, 5, 8, 6}))) << CASUAL_NAMED_VALUE( difference);
       }
 
 

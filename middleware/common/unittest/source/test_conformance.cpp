@@ -507,32 +507,30 @@ namespace casual
 
       }
 
-
-      /*
-       * generates error with -Werror=return-type
-       *
-      namespace local
+      TEST( common_conformance_optional, monadic)
       {
-         namespace
+         common::unittest::Trace trace;
+
          {
-            bool ommit_return()
+            std::optional< int>{ 42}.and_then( []( int value) -> std::optional< int>
             {
+               EXPECT_TRUE( value == 42);
+               return std::nullopt;
+            });
 
-            }
-         } // <unnamed>
-      } // local
+            bool called = false;
 
+            std::optional< int>{}.and_then( [&called]( int value) -> std::optional< int>
+            {
+               called = true;
+               return std::nullopt;
+            });
+            EXPECT_TRUE( ! called);
 
-      TEST( common_conformance, ommitt_return)
-      {
-         EXPECT_TRUE( local::ommit_return());
+         }
+         
+
       }
-      */
-
-
-
-      
-
 
    } // common
 } // casual

@@ -156,9 +156,6 @@ namespace casual
             } services;
 
 
-            //! @return true ii the intention is to remove all advertised services for the server
-            inline bool clear() const { return services.add.empty() && services.remove.empty();}
-
             CASUAL_CONST_CORRECT_SERIALIZE(
                base_advertise::serialize( archive);
                CASUAL_SERIALIZE( alias);
