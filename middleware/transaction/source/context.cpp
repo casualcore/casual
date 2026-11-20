@@ -4,7 +4,6 @@
 //! This software is licensed under the MIT license, https://opensource.org/licenses/MIT
 //!
 
-
 #include "transaction/context.h"
 #include "transaction/common.h"
 
@@ -33,7 +32,6 @@
 
 namespace casual
 {
-
    namespace transaction
    {   
       std::string_view description( Control value) noexcept
@@ -714,14 +712,10 @@ namespace casual
       {
          Trace trace{ "transaction::Context::open"};
 
-         // XA spec: if one, or more of resources opens ok, then it's not an error...
-         //   seams really strange not to notify user that some of the resources has
-         //   failed to open...
-
          return log::code( common::algorithm::accumulate( m_resources.all, code::tx::ok, local::accumulate::code( []( auto& resource)
          {
             return code::convert::to::tx( resource.open());
-         })), "failed to open one or more resource");
+         })), "some resources failed to open");
 
       }
 
@@ -732,7 +726,7 @@ namespace casual
          return log::code( common::algorithm::accumulate( m_resources.all, code::tx::ok, local::accumulate::code( []( auto& resource)
          {
             return code::convert::to::tx( resource.close());
-         })), "failed to close one or more resource");
+         })), "some resources failed to close");
       }
 
       namespace local
@@ -779,7 +773,6 @@ namespace casual
             } // precondition
          } // <unnamed>
       } // local
-
 
       code::tx Context::commit( const Transaction& transaction)
       {
@@ -1124,8 +1117,5 @@ namespace casual
          common::execution::context::trid::set( current().trid);
 
       }
-
    } // transaction
 } //casual
-
-
