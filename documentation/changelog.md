@@ -1,6 +1,17 @@
 # Changelog
 This is the changelog for `casual` and all changes are listed in this document.
 
+## [1.8.18] - 2026-11-24
+
+### Fixes
+- service: manager now cleans deadlines correctly ([#746](https://github.com/casualcore/casual/issues/746))
+- gateway: outbound now unadvertises services correctly if TPNOENT ([#751](https://github.com/casualcore/casual/issues/751))
+- server: now includes trid in service metric event if xa_start fails ([#744](https://github.com/casualcore/casual/issues/744))
+- xatmi: tpadvertise does not truncate service name to 127 chars ([#749](https://github.com/casualcore/casual/issues/749))
+- queue: dequeue with no message now marks transaction "external" 
+   -> ensures correct transaction handling over domain boundaries ([#747](https://github.com/casualcore/casual/issues/747))
+
+
 ## [1.8.17] - 2026-08-24
 
 ### Fixes
