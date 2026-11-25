@@ -63,24 +63,26 @@ const char* casual_field_description( int code);
 */
 
 /* value is encoded and added to buffer */
-int casual_field_add_char(    char** buffer, long id, char value);
+int casual_field_add_char(          char** buffer, long id, char value);
 /* value is encoded and added to buffer */
-int casual_field_add_short(   char** buffer, long id, short value);
+int casual_field_add_short(         char** buffer, long id, short value);
 /* value is encoded and added to buffer */
-int casual_field_add_long(    char** buffer, long id, long value);
+int casual_field_add_long(          char** buffer, long id, long value);
 /* value is encoded and added to buffer */
-int casual_field_add_float(   char** buffer, long id, float value);
+int casual_field_add_float(         char** buffer, long id, float value);
 /* value is encoded and added to buffer */
-int casual_field_add_double(  char** buffer, long id, double value);
-/* value is null-terminated added to buffer */
-int casual_field_add_string(  char** buffer, long id, const char* value);
+int casual_field_add_double(        char** buffer, long id, double value);
+/* value added with null-terminating to buffer */
+int casual_field_add_string(        char** buffer, long id, const char* value);
+/* value added with null-terminating to buffer */
+int casual_field_add_string_view(   char** buffer, long id, const char* value, long count);
 /* value is added to buffer */
-int casual_field_add_binary(  char** buffer, long id, const char* value, long count);
+int casual_field_add_binary(        char** buffer, long id, const char* value, long count);
 /* value is (perhaps encoded and) added to buffer where count is relevant only for CASUAL_FIELD_BINARY */
-int casual_field_add_value(   char** buffer, long id, const void* value, long count);
+int casual_field_add_value(         char** buffer, long id, const void* value, long count);
 
 /* an empty value is added to buffer */
-int casual_field_add_empty(   char** buffer, long id);
+int casual_field_add_empty(         char** buffer, long id);
 
 
 
@@ -89,21 +91,23 @@ int casual_field_add_empty(   char** buffer, long id);
 */
 
 /* data is decoded and stored into value */
-int casual_field_get_char(    const char* buffer, long id, long index, char* value);
+int casual_field_get_char(          const char* buffer, long id, long index, char* value);
 /* data is decoded and stored into value */
-int casual_field_get_short(   const char* buffer, long id, long index, short* value);
+int casual_field_get_short(         const char* buffer, long id, long index, short* value);
 /* data is decoded and stored into value */
-int casual_field_get_long(    const char* buffer, long id, long index, long* value);
+int casual_field_get_long(          const char* buffer, long id, long index, long* value);
 /* data is decoded and stored into value */
-int casual_field_get_float(   const char* buffer, long id, long index, float* value);
+int casual_field_get_float(         const char* buffer, long id, long index, float* value);
 /* data is decoded and stored into value */
-int casual_field_get_double(  const char* buffer, long id, long index, double* value);
+int casual_field_get_double(        const char* buffer, long id, long index, double* value);
 /* value points to internal (null-terminated) buffer */
-int casual_field_get_string(  const char* buffer, long id, long index, const char** value);
+int casual_field_get_string(        const char* buffer, long id, long index, const char** value);
+/* value points to internal (null-terminated) buffer */
+int casual_field_get_string_view(   const char* buffer, long id, long index, const char** value, long* count);
 /* value points to internal buffer and size is decoded and stored into count */
-int casual_field_get_binary(  const char* buffer, long id, long index, const char** value, long* count);
+int casual_field_get_binary(        const char* buffer, long id, long index, const char** value, long* count);
 /* data is (perhaps decoded and) copied into value if (any) count is large enough and (perhaps) updates count */
-int casual_field_get_value(   const char* buffer, long id, long index, void* value, long* count);
+int casual_field_get_value(         const char* buffer, long id, long index, void* value, long* count);
 
 
 /*
@@ -111,24 +115,26 @@ int casual_field_get_value(   const char* buffer, long id, long index, void* val
 */
 
 /* value is encoded and updated in buffer */
-int casual_field_set_char(    char** buffer, long id, long index, char value);
+int casual_field_set_char(          char** buffer, long id, long index, char value);
 /* value is encoded and updated in buffer */
-int casual_field_set_short(   char** buffer, long id, long index, short value);
+int casual_field_set_short(         char** buffer, long id, long index, short value);
 /* value is encoded and updated in buffer */
-int casual_field_set_long(    char** buffer, long id, long index, long value);
+int casual_field_set_long(          char** buffer, long id, long index, long value);
 /* value is encoded and updated in buffer */
-int casual_field_set_float(   char** buffer, long id, long index, float value);
+int casual_field_set_float(         char** buffer, long id, long index, float value);
 /* value is encoded and updated in buffer */
-int casual_field_set_double(  char** buffer, long id, long index, double value);
-/* value is encoded and updated in buffer */
-int casual_field_set_string(  char** buffer, long id, long index, const char* value);
-/* value is encoded and updated in buffer */
-int casual_field_set_binary(  char** buffer, long id, long index, const char* value, long count);
+int casual_field_set_double(        char** buffer, long id, long index, double value);
+/* value updated with null-terminating in buffer */
+int casual_field_set_string(        char** buffer, long id, long index, const char* value);
+/* value updated with null-terminating in buffer */
+int casual_field_set_string_view(   char** buffer, long id, long index, const char* value, long count);
+/* value is updated in buffer */
+int casual_field_set_binary(        char** buffer, long id, long index, const char* value, long count);
 /* value is (perhaps encoded and) updated in buffer where count is relevant only for CASUAL_FIELD_BINARY */
-int casual_field_set_value(   char** buffer, long id, long index, const void* value, long count);
+int casual_field_set_value(         char** buffer, long id, long index, const void* value, long count);
 
 /* value is (perhaps encoded and) updated in - or added to the buffer (perhaps along with some magic empty values) */
-int casual_field_put_value(   char** buffer, long id, long index, const void* value, long count);
+int casual_field_put_value(         char** buffer, long id, long index, const void* value, long count);
 
 
 /*
