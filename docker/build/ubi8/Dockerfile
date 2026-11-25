@@ -10,7 +10,7 @@ ARG CASUAL_RELEASE=1
 
 # Copy repos from host
 COPY casual /home/casual/repo/casual
-COPY casual-thirdparty /home/casual/repo/casual-thirdparty
+COPY polylite /home/casual/repo/polylite
 
 RUN chown -R casual:casual /home/casual/
 

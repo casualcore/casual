@@ -48,13 +48,13 @@ jobs:
           path: 'casual'
           fetch-depth: 0
 
-      - name: check out casual-thirdparty 
+      - name: check out polylite
         uses: actions/checkout@v6
         with:
-          repository: 'casualcore/casual-thirdparty'
-          ref: 1.9
-          path: 'casual-thirdparty'
- 
+          repository: KristianIvarsson/polylite
+          ref: 6.0.2
+          path: polylite
+
       - name: Build
         timeout-minutes: 15
         run: |

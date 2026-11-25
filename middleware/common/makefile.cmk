@@ -157,7 +157,7 @@ casual_common_objectfiles = [
 
 common = make.LinkLibrary( 'bin/casual-common', 
 	casual_common_objectfiles,
-	platform_specific_libs + [ 'yaml-cpp', 'pugixml'])
+	platform_specific_libs + [ 'pugixml'])
 
 install_libs.append( common)
 

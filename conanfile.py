@@ -16,9 +16,7 @@ class CasualConan(ConanFile):
     virtualrunenv = False
 
     def requirements(self):
-        self.requires("yaml-cpp/0.8.0")
         self.requires("pugixml/1.15")
         self.requires("gtest/1.16.0")
         self.requires("cppcodec/0.2")
-        self.requires("tomlplusplus/3.4.0")
 
