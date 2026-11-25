@@ -300,8 +300,12 @@ namespace casual
          EXPECT_TRUE( casual_field_add_long( &buffer, FLD_LONG1, 654321) == CASUAL_FIELD_SUCCESS);
          EXPECT_TRUE( casual_field_add_float( &buffer, FLD_FLOAT1, 3.14) == CASUAL_FIELD_SUCCESS);
          EXPECT_TRUE( casual_field_add_double( &buffer, FLD_DOUBLE1, 987.654) == CASUAL_FIELD_SUCCESS);
-         EXPECT_TRUE( casual_field_add_string( &buffer, FLD_STRING1, "Hello!") == CASUAL_FIELD_SUCCESS);
-         EXPECT_TRUE( casual_field_add_binary( &buffer, FLD_BINARY1, "Some Data", 9) == CASUAL_FIELD_SUCCESS);
+
+         char string[] = "Hello!";
+         EXPECT_TRUE( casual_field_add_string( &buffer, FLD_STRING1, string) == CASUAL_FIELD_SUCCESS);
+         EXPECT_TRUE( casual_field_add_string_view( &buffer, FLD_STRING1, string, std::strlen( string)) == CASUAL_FIELD_SUCCESS);
+         char binary[] = "Some Data";
+         EXPECT_TRUE( casual_field_add_binary( &buffer, FLD_BINARY1, binary, std::strlen( binary)) == CASUAL_FIELD_SUCCESS);
 
          {
             char value{};
@@ -335,16 +339,38 @@ namespace casual
 
          {
             const char* value{};
-            EXPECT_TRUE( casual_field_get_string( buffer, FLD_STRING1, 0, &value) == CASUAL_FIELD_SUCCESS);
-            EXPECT_STREQ( value, "Hello!") << value;
+            EXPECT_TRUE( casual_field_get_string( buffer, FLD_STRING1, 0, &value) == CASUAL_FIELD_SUCCESS) << casual_field_get_string( buffer, FLD_STRING1, 0, &value);
+            EXPECT_STREQ( value, string) << value;
          }
+
+         {
+            const char* value{};
+            long count{};
+            EXPECT_TRUE( casual_field_get_string_view( buffer, FLD_STRING1, 0, &value, &count) == CASUAL_FIELD_SUCCESS) << casual_field_get_string_view( buffer, FLD_STRING1, 0, &value, &count);
+            EXPECT_STREQ( value, string) << value;
+            EXPECT_EQ( count, static_cast< long>( std::strlen( string)));
+         }
+
+         {
+            const char* value{};
+            EXPECT_TRUE( casual_field_get_string( buffer, FLD_STRING1, 1, &value) == CASUAL_FIELD_SUCCESS) << casual_field_get_string( buffer, FLD_STRING1, 1, &value);
+            EXPECT_STREQ( value, string) << value;
+         }
+
+         {
+            const char* value{};
+            long count{};
+            EXPECT_TRUE( casual_field_get_string_view( buffer, FLD_STRING1, 1, &value, &count) == CASUAL_FIELD_SUCCESS) << casual_field_get_string_view( buffer, FLD_STRING1, 1, &value, &count);
+            EXPECT_STREQ( value, string) << value;
+         }
+
 
          {
             const char* data{};
             long size{};
-            EXPECT_TRUE( casual_field_get_binary( buffer, FLD_BINARY1, 0, &data, &size) == CASUAL_FIELD_SUCCESS);
-            EXPECT_TRUE( std::string( data, size) == "Some Data") << std::string( data, size);
-            EXPECT_TRUE( size == 9) << size;
+            EXPECT_TRUE( casual_field_get_binary( buffer, FLD_BINARY1, 0, &data, &size) == CASUAL_FIELD_SUCCESS) << casual_field_get_binary( buffer, FLD_BINARY1, 0, &data, &size);
+            EXPECT_TRUE( std::string_view( data, size) == std::string_view( binary, std::strlen( binary))) << std::string_view( data, size);
+            EXPECT_TRUE( size == static_cast< long>( std::strlen( binary))) << size;
          }
 
          tpfree( buffer);
