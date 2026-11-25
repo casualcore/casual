@@ -25,7 +25,6 @@
         "pipemessage",
         "pugi",
         "queuebase",
-        "rapidjson",
         "RMERR",
         "RMFAIL",
         "rollbacked",

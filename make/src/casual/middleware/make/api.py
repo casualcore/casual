@@ -45,26 +45,27 @@ def paths():
         install = (
             os.getenv("CASUAL_HOME") if os.getenv("CASUAL_HOME") else "/opt/casual"
         )
+        polylite = (
+            os.getenv("CASUAL_POLYLITE")
+            if os.getenv("CASUAL_POLYLITE")
+            else api.source_root() + "/../polylite"
+         )
 
         class Include:
-            def __init__(self, conandependencies, thirdparty):
+            def __init__(self, conandependencies, thirdparty, polylite):
                 self.serialization = [
-                    thirdparty + "/rapidjson/include",
-                    conandependencies + "/yaml-cpp/include",
+                    polylite + "/include",
                     conandependencies + "/pugixml/include",
-                    conandependencies + "/tomlplusplus/include",
                 ]
                 self.cppcodec = [conandependencies + "/cppcodec/include"]
                 self.gtest = [conandependencies + "/gtest/include"]
 
-        include = Include(conandependencies, thirdparty)
+        include = Include(conandependencies, thirdparty, polylite)
 
         class Library:
             def __init__(self, conandependencies):
                 self.serialization = [
-                    conandependencies + "/yaml-cpp/lib",
                     conandependencies + "/pugixml/lib",
-                    conandependencies + "/tomlplusplus/lib",
                 ]
                 self.gtest = [conandependencies + "/gtest/lib"]
 

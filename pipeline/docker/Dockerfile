@@ -4,7 +4,7 @@ MAINTAINER flurig <flurig@localhost>
 RUN yum  -y install wget cmake make python rsync libuuid-devel sqlite-devel gcc-c++ zlib-devel unzip rpm-build
 #RUN wget http://dl.fedoraproject.org/pub/epel/7/x86_64/Packages/e/epel-release-7-13.noarch.rpm
 #RUN rpm -Uvh epel-release*rpm
-#RUN yum -y install pugixml yaml-cpp03
+#RUN yum -y install pugixml
 
 ARG CASUAL_RPM
 COPY ${CASUAL_RPM} /tmp/casual-middleware.rpm
