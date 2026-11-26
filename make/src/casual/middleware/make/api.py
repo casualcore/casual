@@ -3,12 +3,12 @@ import inspect
 import os
 
 from casual.make import api
-from casual.make.entity import model, recipe, state
+from casual.make.entity import model, recipe, settings
 from casual.make.entity.target import Recipe, Target
 from casual.make.platform import common
 from casual.make.tools import executor
 
-compiler_handler_module = state.settings.compiler_handler_module()
+compiler_handler_module = settings.get_settings().compiler_handler_module()
 selector = importlib.import_module(compiler_handler_module)
 
 

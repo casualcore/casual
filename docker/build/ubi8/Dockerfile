@@ -18,10 +18,10 @@ USER casual
 WORKDIR /home/casual/repo/casual
 
 # Environment variables used in build and test
-ENV CASUAL_MAKE_SOURCE_ROOT=/home/casual/repo/casual
+ENV WORKDIR=/home/casual/repo/casual
 ENV CASUAL_MAKE_BUILD_ROOT=/tmp/casual/build
 ENV CASUAL_THIRDPARTY=/home/casual/repo/casual-thirdparty
-ENV PYTHONPATH=$CASUAL_MAKE_SOURCE_ROOT/make/src
+ENV PYTHONPATH=$WORKDIR/make/src
 ENV PATH=$PATH:/home/casual/.local/bin
 ENV CASUAL_HOME=/opt/casual
 ENV CASUAL_LOG_PATH=${CASUAL_MAKE_BUILD_ROOT}/casual.log
